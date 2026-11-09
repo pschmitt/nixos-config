@@ -132,7 +132,10 @@ main() {
     return
   fi
 
-  jq -r "${jq_args[@]}" "${JQ_SELECT} | ${JQ_TABLE}" <<< "$states" | column -t -s $'\t'
+  {
+    printf 'WHEN\tWHO\tCHANNEL\tTEXT\n'
+    jq -r "${jq_args[@]}" "${JQ_SELECT} | ${JQ_TABLE}" <<< "$states"
+  } | tsvtool
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

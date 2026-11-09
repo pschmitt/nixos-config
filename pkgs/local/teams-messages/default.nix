@@ -1,16 +1,17 @@
 {
   lib,
+  stdenv,
   writeShellApplication,
+  inputs,
   curl,
   jq,
-  util-linux,
 }:
 writeShellApplication {
   name = "teams-messages";
   runtimeInputs = [
     curl
     jq
-    util-linux # column
+    inputs.tsvtool.packages.${stdenv.hostPlatform.system}.default
   ];
   text = builtins.readFile ./teams-messages.sh;
   meta = {
