@@ -31,6 +31,24 @@ let
     text = builtins.readFile ./scripts/browser-mcp.sh;
   };
 
+  # Card rules stay in a user-owned runtime file, outside the Nix store.
+  browserDaemonMcp = pkgs.writeShellApplication {
+    name = "browser-daemon-mcp";
+    runtimeInputs = [ pkgs.browser-daemon ];
+    text = ''
+      card_rules="''${XDG_CONFIG_HOME:-$HOME/.config}/browser-daemon/card-allowlist"
+      if [[ -r "$card_rules" ]]
+      then
+        while IFS= read -r rule || [[ -n "$rule" ]]
+        do
+          [[ -z "$rule" || "$rule" == \#* ]] && continue
+          set -- "$@" --allow-card "$rule"
+        done < "$card_rules"
+      fi
+      exec browser-daemon "$@"
+    '';
+  };
+
   # Labels this agent conversation's browser sessions with a topic.
   browserAgentTopic = pkgs.writeShellApplication {
     name = "browser-agent-topic";
@@ -202,7 +220,7 @@ let
     ];
   };
   browserMcps.browser-daemon = {
-    command = lib.getExe' pkgs.browser-daemon "browser-daemon";
+    command = lib.getExe browserDaemonMcp;
     env.XDG_RUNTIME_DIR = "/run/user/${toString config.host.uid}";
     args = [
       "mcp"
