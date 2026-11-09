@@ -5,7 +5,8 @@
 #
 # - No SOPS env file: secrets (the Authelia OIDC client secret and the Sentry
 #   DSN) are passed as file paths.
-# - Link imports and AI (via Hermes) are on; OCR and Wayback stay disabled.
+# - Link imports, AI (via Hermes) and Wayback snapshots of pattern links are on;
+#   OCR stays disabled.
 # - stricknani.maintenance.enable = true answers every request with a 503
 #   maintenance page (./stricknani-maintenance.nix), e.g. for a data restore.
 {
@@ -92,7 +93,7 @@ in
     extraConfig = {
       SIGNUP_ENABLED = "false";
       OCR_ENABLED = "false";
-      WAYBACK_ENABLED = "false";
+      WAYBACK_ENABLED = "true";
     };
   };
 }
