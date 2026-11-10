@@ -40,14 +40,6 @@
         allowUnfree = true;
         allowBroken = true;
       };
-      overlays = [
-        (mfinal: mprev: {
-          pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
-            ((import ./hotfixes/playwright.nix) mfinal.fetchFromGitHub)
-            (import ./hotfixes/pytest-playwright.nix)
-          ];
-        })
-      ];
     };
   };
 

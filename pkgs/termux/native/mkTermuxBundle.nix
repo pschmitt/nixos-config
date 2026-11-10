@@ -30,9 +30,18 @@ let
   };
   nvimInitLua = homeManagerProfile.config.xdg.configFile."nvim/init.lua".text;
   nvimDevPathParts = lib.splitString "dev = {\n  path = \"" nvimInitLua;
+  nvimDevPathFunction = lib.any (line: lib.hasInfix "path = function(plugin)" line) (
+    lib.splitString "\n" nvimInitLua
+  );
+  nvimDevPathReturnParts = lib.splitString "return \"" nvimInitLua;
+  nvimDevPathReturn = lib.findFirst (
+    part: lib.hasInfix "plugin.name" part
+  ) null nvimDevPathReturnParts;
   nvimDevPath =
     if lib.length nvimDevPathParts == 2 then
       lib.head (lib.splitString "\"" (lib.elemAt nvimDevPathParts 1))
+    else if nvimDevPathFunction && nvimDevPathReturn != null then
+      lib.removeSuffix "/" (lib.head (lib.splitString "\"" nvimDevPathReturn))
     else
       throw "Termux Neovim init.lua does not contain the expected LazyVim dev path.";
   nvimLazyPath = "${nvimDevPath}/lazy.nvim";
@@ -342,9 +351,22 @@ let
           '-- Termux plugin sources are immutable; their helptags are not regenerated.'
         substituteInPlace "$out/home/.config/nvim/init.lua" \
           --replace-fail ${lib.escapeShellArg "local lazypath = vim.fn.stdpath(\"data\") .. \"/lazy/lazy.nvim\""} \
-          ${lib.escapeShellArg "local lazypath = vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/lazy.nvim\""} \
-          --replace-fail ${lib.escapeShellArg "path = \"${nvimDevPath}\""} \
-          ${lib.escapeShellArg "path = function(plugin) return vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/\" .. vim.fn.fnamemodify(plugin.name, \":t\") end"} \
+          ${lib.escapeShellArg "local lazypath = vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/lazy.nvim\""}
+        ${
+          if nvimDevPathFunction then
+            ''
+              substituteInPlace "$out/home/.config/nvim/init.lua" \
+                --replace-fail ${lib.escapeShellArg "\"${nvimDevPath}/\""} \
+                  ${lib.escapeShellArg "vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/\""}
+            ''
+          else
+            ''
+              substituteInPlace "$out/home/.config/nvim/init.lua" \
+                --replace-fail ${lib.escapeShellArg "path = \"${nvimDevPath}\""} \
+                  ${lib.escapeShellArg "path = function(plugin) return vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/\" .. vim.fn.fnamemodify(plugin.name, \":t\") end"}
+            ''
+        }
+        substituteInPlace "$out/home/.config/nvim/init.lua" \
           --replace-fail ${lib.escapeShellArg "patterns = {},  -- Don't automatically match, use explicit dev = true"} \
           ${lib.escapeShellArg "patterns = { \"\" }, -- Use the bundled local plugin sources"} \
           --replace-fail ${lib.escapeShellArg "  -- User plugins"} \

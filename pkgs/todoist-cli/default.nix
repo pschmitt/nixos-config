@@ -2,6 +2,7 @@
   lib,
   stdenv,
   buildNpmPackage,
+  fetchNpmDeps,
   fetchFromGitHub,
   installAgentSkills,
   installShellFiles,
@@ -21,6 +22,21 @@ buildNpmPackage (finalAttrs: {
   };
 
   npmDepsHash = "sha256-zp7lnehapGRu8cAKYDya0gSSqDXHFYEb+GsPZfxbFTc=";
+
+  # The npm dependency derivation also runs postPatch, which uses jq. The
+  # buildNpmPackage default does not pass the package's nativeBuildInputs to
+  # that derivation.
+  npmDeps = fetchNpmDeps {
+    name = "${finalAttrs.pname}-${finalAttrs.version}-npm-deps";
+    hash = finalAttrs.npmDepsHash;
+    inherit (finalAttrs) src;
+    prePatch = finalAttrs.prePatch or "";
+    patches = finalAttrs.patches or [ ];
+    postPatch = finalAttrs.postPatch or "";
+    patchFlags = finalAttrs.patchFlags or [ ];
+    fetcherVersion = finalAttrs.npmDepsFetcherVersion or 1;
+    nativeBuildInputs = [ jq ];
+  };
 
   doCheck = false;
 
