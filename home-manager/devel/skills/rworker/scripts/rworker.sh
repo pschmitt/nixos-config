@@ -49,7 +49,7 @@ Actions:
   start NAME [--name JOB] [--workdir DIR] -- CMD
                        start a registered job
   jobs NAME            list registered jobs
-  ps [NAME]            show processes of running jobs on one or all workers
+  ps [NAME] [--long]   show processes of running jobs on one or all workers
   logs [NAME [JOB]] [--lines N] [--follow] [--no-events]
                        show logs; follow includes lifecycle events by default
   events [--interval SECONDS]
@@ -125,6 +125,7 @@ action inspect show everything known about a worker
 action help show the help of an action
 flag start --name=job name the registered job
 flag start --workdir=path working directory on the worker
+flag ps --long show full process command lines
 flag logs --lines=count number of lines per job
 flag logs --follow follow all jobs on all workers
 flag logs --no-events suppress lifecycle events while following
@@ -196,7 +197,8 @@ action_help() {
       printf 'Usage: %s jobs WORKER\n' "$me"
       ;;
     ps)
-      printf 'Usage: %s ps [WORKER]\n' "$me"
+      printf 'Usage: %s ps [WORKER] [--long]\n' "$me"
+      printf '  --long shows full command lines, including arguments\n'
       ;;
     logs)
       printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events]\n' "$me"
@@ -1831,14 +1833,23 @@ RUN_JOB
     done
     ;;
   ps)
-    processes=$(ps -eo pid=,ppid=,etime=,comm=)
+    if [[ "${1:-}" == --long && $# -eq 1 ]]
+    then
+      processes=$(ps -ww -eo pid=,ppid=,etime=,args=)
+    elif [[ $# -eq 0 ]]
+    then
+      processes=$(ps -eo pid=,ppid=,etime=,comm=)
+    else
+      printf 'usage: ps [--long]\n' >&2
+      exit 2
+    fi
     for dir in "$root"/*
     do
       [[ -d "$dir" && -f "$dir/pid" && ! -f "$dir/exit" ]] || continue
       pid=$(cat "$dir/pid")
       [[ "$pid" =~ ^[0-9]+$ ]] || continue
       awk -v root="$pid" -v job="${dir##*/}" '
-        { pids[NR]=$1; parents[NR]=$2; elapsed[NR]=$3; command[NR]=$4 }
+        { pids[NR]=$1; parents[NR]=$2; elapsed[NR]=$3; sub(/^[[:space:]]*[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]+[[:space:]]+/, ""); command[NR]=$0 }
         END {
           selected[root]=1
           do {
@@ -2000,16 +2011,26 @@ cmd_logs() {
 }
 
 cmd_ps() {
-  local workers worker target kind login processes line rows status=0
-  if (( $# > 1 )) || [[ "${1:-}" == -* ]]
-  then
-    action_help ps >&2
-    return 2
-  fi
+  local workers worker target="" kind login processes line rows long="" status=0
+  while [[ $# -gt 0 ]]
+  do
+    case "$1" in
+      --long) long=1 ;;
+      -*) action_help ps >&2; return 2 ;;
+      *)
+        if [[ -n "$target" ]]
+        then
+          action_help ps >&2
+          return 2
+        fi
+        target="$1"
+        ;;
+    esac
+    shift
+  done
   workers=$(remote_ls) || return 1
-  if [[ -n "${1:-}" ]]
+  if [[ -n "$target" ]]
   then
-    target="$1"
     workers=$(jq -r --arg n "${target#*@}" '.[] | select(.name == $n) | [.name, .kind] | @tsv' <<< "$workers") || return 1
     if [[ -z "$workers" ]]
     then
@@ -2032,7 +2053,9 @@ cmd_ps() {
     else
       login="$worker"
     fi
-    if ! processes=$(cmd_jobs_remote ps "$login")
+    local -a ps_args=()
+    [[ -z "$long" ]] || ps_args+=(--long)
+    if ! processes=$(cmd_jobs_remote ps "$login" "${ps_args[@]}")
     then
       printf 'could not read job processes from %s\n' "$worker" >&2
       status=1
@@ -2051,7 +2074,7 @@ cmd_ps() {
     sed -E \
       -e "1s/.*/${bold}&${reset}/" \
       -e "2,\$s/^([^ ]+)( +)([^ ]+)/${cyan}\\1${reset}\\2${green}\\3${reset}/" \
-      -e "2,\$s/([^ ]+)\$/${yellow}\\1${reset}/" <<< "$rows"
+      -e "2,\$s/^(([^ ]+ +){5})(.*)\$/\\1${yellow}\\3${reset}/" <<< "$rows"
   else
     printf '%s\n' "$rows"
   fi

@@ -28,6 +28,8 @@ class JobsTest(unittest.TestCase):
                     break
                 self.assertLess(time.monotonic(), deadline)
                 time.sleep(0.05)
+            self.assertTrue(any(line.startswith(job + "\t") and line.endswith("\tsleep 2")
+                                for line in call("ps", "worker", "--long").splitlines()))
             time.sleep(2)
             self.assertNotIn(job, call("ps", "worker"))
 
