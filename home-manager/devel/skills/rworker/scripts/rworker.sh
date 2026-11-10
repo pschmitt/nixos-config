@@ -189,6 +189,7 @@ action_help() {
       ;;
     logs)
       printf 'Usage: %s logs WORKER [JOB] [--lines N] [--follow]\n' "$me"
+      printf '       %s logs WORKER --follow  # follow all jobs with colored prefixes\n' "$me"
       ;;
     register)
       printf 'Usage: %s register WORKER JOB --log PATH\n' "$me"
@@ -1737,8 +1738,35 @@ RUN_JOB
       valid "$job" || exit 2
       dirs=("$root/$job")
     else
-      [[ -z "$follow" ]] || { printf 'follow requires a job name\n' >&2; exit 2; }
       dirs=("$root"/*)
+    fi
+    if [[ -n "$follow" ]]
+    then
+      colors=(31 32 33 34 35 36)
+      pids=()
+      index=0
+      for dir in "${dirs[@]}"
+      do
+        if [[ ! -d "$dir" ]]
+        then
+          [[ -z "$job" ]] && continue
+          printf 'unknown job\n' >&2
+          exit 1
+        fi
+        logfile="$dir/log"
+        [[ ! -f "$dir/log-path" ]] || logfile=$(cat "$dir/log-path")
+        color=${colors[$((index % ${#colors[@]}))]}
+        name=${dir##*/}
+        tail -n "$lines" -f -- "$logfile" | while IFS= read -r line || [[ -n "$line" ]]
+        do
+          printf '\033[1;%sm[%s]\033[0m %s\n' "$color" "$name" "$line"
+        done &
+        pids+=("$!")
+        ((index += 1))
+      done
+      [[ ${#pids[@]} -gt 0 ]] || { printf 'no jobs found\n' >&2; exit 1; }
+      wait "${pids[@]}"
+      exit $?
     fi
     for dir in "${dirs[@]}"
     do
@@ -1746,12 +1774,7 @@ RUN_JOB
       logfile="$dir/log"
       [[ ! -f "$dir/log-path" ]] || logfile=$(cat "$dir/log-path")
       printf '==> %s <==\n' "${dir##*/}"
-      if [[ -n "$follow" ]]
-      then
-        tail -n "$lines" -f -- "$logfile"
-      else
-        tail -n "$lines" -- "$logfile"
-      fi
+      tail -n "$lines" -- "$logfile"
     done
     ;;
 esac
