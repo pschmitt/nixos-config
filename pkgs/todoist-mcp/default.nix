@@ -9,16 +9,16 @@
 
 buildNpmPackage rec {
   pname = "todoist-mcp";
-  version = "13.10.2";
+  version = "14.0.1";
 
   src = fetchFromGitHub {
     owner = "Doist";
     repo = "todoist-mcp";
     rev = "v${version}";
-    hash = "sha256-SHm9VLk4up2YMToKXNsIGYJi9N7Y2BKdaFphTS6VE38=";
+    hash = "sha256-FfTiLE8vfe1MO4XKYUaG/w9rSJ7xkGK9McSfYGZ26Y8=";
   };
 
-  npmDepsHash = "sha256-+qgFNPPM7YZ1vKm4h94xp38P061ecXGglz2pBbKqkN4=";
+  npmDepsHash = "sha256-eTYgMfLfA69AsJXhkTExK1UVlwJKDFi9rdazuOL5XG8=";
 
   doCheck = false;
 
