@@ -49,6 +49,7 @@ Actions:
   start NAME [--name JOB] [--workdir DIR] -- CMD
                        start a registered job
   jobs NAME            list registered jobs
+  ps [NAME]            show active registered jobs on one or all workers
   logs [NAME [JOB]] [--lines N] [--follow] [--no-events]
                        show logs; follow includes lifecycle events by default
   events [--interval SECONDS]
@@ -104,6 +105,7 @@ spec() {
   cat <<'SPEC'
 action start start a registered job
 action jobs list registered jobs
+action ps show active registered jobs
 action logs show job logs on one or all workers
 action events stream worker and job lifecycle events
 action register register an existing log file
@@ -176,7 +178,7 @@ values format json wide
 values topic
 values user agent pschmitt nix-remote-builder
 values interval 2 5 10 30
-worker down extend ssh sync builder prune inspect nix-cache start jobs logs register
+worker down extend ssh sync builder prune inspect nix-cache start jobs ps logs register
 global --json force JSON output
 global -j short for --json
 SPEC
@@ -192,6 +194,9 @@ action_help() {
       ;;
     jobs)
       printf 'Usage: %s jobs WORKER\n' "$me"
+      ;;
+    ps)
+      printf 'Usage: %s ps [WORKER]\n' "$me"
       ;;
     logs)
       printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events]\n' "$me"
@@ -1968,6 +1973,39 @@ cmd_logs() {
   fi
 }
 
+cmd_ps() {
+  local workers worker jobs job state started status=0
+  if (( $# > 1 )) || [[ "${1:-}" == -* ]]
+  then
+    action_help ps >&2
+    return 2
+  fi
+  if [[ -n "${1:-}" ]]
+  then
+    workers="$1"
+  else
+    workers=$(remote_ls) || return 1
+    workers=$(jq -r '.[].name' <<< "$workers") || return 1
+  fi
+  printf 'WORKER\tJOB\tSTATE\tSTARTED\n'
+  while IFS= read -r worker
+  do
+    [[ -n "$worker" ]] || continue
+    if ! jobs=$(cmd_jobs_remote jobs "$worker")
+    then
+      printf 'could not read jobs from %s\n' "$worker" >&2
+      status=1
+      continue
+    fi
+    while IFS=$'\t' read -r job state started
+    do
+      [[ -n "$job" && "$state" != exit* ]] || continue
+      printf '%s\t%s\t%s\t%s\n' "$worker" "$job" "$state" "$started"
+    done <<< "$jobs"
+  done <<< "$workers"
+  return "$status"
+}
+
 cmd_logs_all() {
   local lines="$1" workers worker status=0
   workers=$(remote_ls) || return 1
@@ -2569,6 +2607,9 @@ main() {
       ;;
     jobs)
       cmd_jobs_remote "$action" "$@"
+      ;;
+    ps)
+      cmd_ps "$@"
       ;;
     logs)
       cmd_logs "$@"
