@@ -99,7 +99,10 @@ after its client restarts.
 
 - **Rust:** `sync` the tree, then `ssh "$w" 'cd X && nix develop -c cargo
   build'`. Fetch artifacts back with `rsync` and the same `ssh` options, or
-  build through Nix (below) so results land in the local store.
+  build through Nix (below) so results land in the local store. If restoring a
+  worker-only test mutation with `sync`, touch the restored source on the
+  worker before retesting: rsync preserves its older timestamp, so Cargo can
+  otherwise reuse the mutated test binary.
 - **Android/Gradle:** `nix develop` needs the project's Android SDK shell;
   give it `--disk 250` (Gradle caches are large) and a TTL that covers the
   first, uncached build.
