@@ -58,6 +58,7 @@
     };
 
   llm-agents = inputs.llm-agents.overlays.shared-nixpkgs;
+  llm-agents-hotfixes = import ./hotfixes/codex.nix;
 
   old-packages = final: _prev: {
     kubectl-123 = import inputs.nixpkgs-kubectl-123 { inherit (final.stdenv.hostPlatform) system; };

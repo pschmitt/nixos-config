@@ -14,6 +14,7 @@
       outputs.overlays.old-packages
       outputs.overlays.flakes
       outputs.overlays.llm-agents
+      outputs.overlays.llm-agents-hotfixes
       inputs.fenix.overlays.default # rust-nightly
 
       # You can also add overlays exported from other flakes:
