@@ -1974,24 +1974,39 @@ cmd_logs() {
 }
 
 cmd_ps() {
-  local workers worker jobs job state started status=0
+  local workers worker target kind login jobs job state started status=0
   if (( $# > 1 )) || [[ "${1:-}" == -* ]]
   then
     action_help ps >&2
     return 2
   fi
+  workers=$(remote_ls) || return 1
   if [[ -n "${1:-}" ]]
   then
-    workers="$1"
+    target="$1"
+    workers=$(jq -r --arg n "${target#*@}" '.[] | select(.name == $n) | [.name, .kind] | @tsv' <<< "$workers") || return 1
+    if [[ -z "$workers" ]]
+    then
+      printf 'No worker named %s\n' "$target" >&2
+      return 1
+    fi
   else
-    workers=$(remote_ls) || return 1
-    workers=$(jq -r '.[].name' <<< "$workers") || return 1
+    workers=$(jq -r '.[] | [.name, .kind] | @tsv' <<< "$workers") || return 1
   fi
   printf 'WORKER\tJOB\tSTATE\tSTARTED\n'
-  while IFS= read -r worker
+  while IFS=$'\t' read -r worker kind
   do
     [[ -n "$worker" ]] || continue
-    if ! jobs=$(cmd_jobs_remote jobs "$worker")
+    if [[ "${target:-}" == *@* ]]
+    then
+      login="$target"
+    elif [[ "$kind" == adhoc ]]
+    then
+      login="agent@$worker"
+    else
+      login="$worker"
+    fi
+    if ! jobs=$(cmd_jobs_remote jobs "$login")
     then
       printf 'could not read jobs from %s\n' "$worker" >&2
       status=1
