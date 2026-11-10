@@ -14,7 +14,12 @@
   # Loading a plugin triggers a config reload (PluginSystem.cpp), so the guarded
   # block below re-runs once hl.plugin.hyprgrass exists and the config applies.
   wayland.windowManager.hyprland.plugins = [
-    inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.hyprgrass
+    (inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.hyprgrass.overrideAttrs (old: {
+      # Hyprland no longer carries hyprlang; this include is unused by the plugin.
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace src/main.cpp --replace-fail '#include <hyprlang.hpp>' ""
+      '';
+    }))
   ];
 
   wayland.windowManager.hyprland.extraConfig = ''
