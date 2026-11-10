@@ -707,7 +707,7 @@ creator_meta() {
 # on a terminal and gone once the worker is ready or failed; anything else
 # is printed above it. Without a terminal only the other lines pass.
 render_progress() {
-  local frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏' i=0 stage="REQUESTING" line rc tty="" color frame
+  local frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏' i=0 stage="REQUESTING" line rc tty="" color frame state detail
   local start=$SECONDS
   if [[ -t 2 ]]
   then
@@ -731,7 +731,13 @@ render_progress() {
         then
           printf '\r\e[K' >&2
         fi
-        printf '%s\n' "$line" >&2
+        if [[ -n "$esc" && "$line" =~ ^creating[[:space:]]+([^[:space:]]+)[[:space:]]+\(([^()]*)\)[[:space:]]+from[[:space:]]+image[[:space:]]+(.+)$ ]]
+        then
+          printf 'creating \e[36m%s\e[0m (\e[33m%s\e[0m) from image \e[36m%s\e[0m\n' \
+            "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" >&2
+        else
+          printf '%s\n' "$line" >&2
+        fi
       fi
     else
       rc=$?
@@ -743,7 +749,14 @@ render_progress() {
     fi
     if [[ -n "$tty" ]]
     then
-      case "$stage" in
+      state="$stage"
+      detail=""
+      if [[ "$stage" == *" · "* ]]
+      then
+        state="${stage%% · *}"
+        detail="${stage#* · }"
+      fi
+      case "$state" in
         ACTIVE*)
           color=32
           ;;
@@ -758,8 +771,12 @@ render_progress() {
       i=$(( i + 1 ))
       if [[ -n "$esc" ]]
       then
-        printf '\r\e[K\e[36m%s\e[0m \e[%sm%s\e[0m \e[2m(%ds)\e[0m' \
-          "$frame" "$color" "$stage" $(( SECONDS - start )) >&2
+        printf '\r\e[K\e[36m%s\e[0m \e[%sm%s\e[0m' "$frame" "$color" "$state" >&2
+        if [[ -n "$detail" ]]
+        then
+          printf ' · \e[33m%s\e[0m' "$detail" >&2
+        fi
+        printf ' \e[2m(%ds)\e[0m' $(( SECONDS - start )) >&2
       else
         printf '\r\e[K%s %s (%ds)' "$frame" "$stage" $(( SECONDS - start )) >&2
       fi
