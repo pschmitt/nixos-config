@@ -49,8 +49,8 @@ Actions:
   start NAME [--name JOB] [--workdir DIR] -- CMD
                        start a registered job
   jobs NAME            list registered jobs
-  logs [NAME [JOB]] [--lines N] [--follow]
-                       show logs from one worker or all workers
+  logs [NAME [JOB]] [--lines N] [--follow] [--no-events]
+                       show logs; follow includes lifecycle events by default
   events [--interval SECONDS]
                        stream worker and job lifecycle events
   register NAME JOB --log PATH
@@ -125,6 +125,7 @@ flag start --name=job name the registered job
 flag start --workdir=path working directory on the worker
 flag logs --lines=count number of lines per job
 flag logs --follow follow all jobs on all workers
+flag logs --no-events suppress lifecycle events while following
 flag events --interval=interval event polling interval
 flag register --log=path absolute path to an existing log file
 values job
@@ -193,8 +194,8 @@ action_help() {
       printf 'Usage: %s jobs WORKER\n' "$me"
       ;;
     logs)
-      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow]\n' "$me"
-      printf '       %s logs [-f]  # follow jobs on all workers\n' "$me"
+      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events]\n' "$me"
+      printf '       %s logs [-f]  # follow jobs and events on all workers\n' "$me"
       ;;
     events)
       printf 'Usage: %s events [--interval SECONDS]\n' "$me"
@@ -485,6 +486,39 @@ paint_flavor() {
   paint 34 "$*"
 }
 
+paint_state() {
+  local state="${1^^}" color="" bold=""
+  case "$state" in
+    ACTIVE|READY|SUCCEEDED|SUCCESS|COMPLETED)
+      color=32
+      bold=1
+      ;;
+    ERROR|FAILED|FAILURE)
+      color=31
+      bold=1
+      ;;
+    PENDING|QUEUED|BUILD|BUILDING|REBUILD|RESIZE|DELETING|BOOTING)
+      color=33
+      ;;
+    SHUTOFF|DELETED)
+      color=31
+      ;;
+    *)
+      printf '%s' "$state"
+      return
+      ;;
+  esac
+  if [[ -n "$COLOR" && -n "$bold" ]]
+  then
+    printf '\e[1;%sm%s\e[0m' "$color" "$state"
+  elif [[ -n "$COLOR" ]]
+  then
+    printf '\e[%sm%s\e[0m' "$color" "$state"
+  else
+    printf '%s' "$state"
+  fi
+}
+
 paint_event_target() {
   local target="$1"
   if [[ "$target" == */* ]]
@@ -727,7 +761,7 @@ creator_meta() {
 # on a terminal and gone once the worker is ready or failed; anything else
 # is printed above it. Without a terminal only the other lines pass.
 render_progress() {
-  local frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏' i=0 stage="REQUESTING" line rc tty="" color frame state detail
+  local frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏' i=0 stage="REQUESTING" line rc tty="" color frame state detail bold
   local start=$SECONDS
   if [[ -t 2 ]]
   then
@@ -776,29 +810,48 @@ render_progress() {
         state="${stage%% · *}"
         detail="${stage#* · }"
       fi
+      state="${state^^}"
       case "$state" in
-        ACTIVE*)
+        ACTIVE*|READY*|SUCCEEDED*|SUCCESS*|COMPLETED*)
           color=32
+          bold=1
           ;;
-        ERROR*)
+        ERROR*|FAILED*|FAILURE*)
           color=31
+          bold=1
+          ;;
+        SHUTOFF*|DELETED*)
+          color=31
+          bold=""
           ;;
         *)
           color=33
+          bold=""
           ;;
       esac
       frame="${frames:i % ${#frames}:1}"
       i=$(( i + 1 ))
       if [[ -n "$esc" ]]
       then
-        printf '\r\e[K\e[36m%s\e[0m \e[%sm%s\e[0m' "$frame" "$color" "$state" >&2
+        printf '\r\e[K\e[36m%s\e[0m ' "$frame" >&2
+        if [[ -n "$bold" ]]
+        then
+          printf '\e[1;%sm%s\e[0m' "$color" "$state" >&2
+        else
+          printf '\e[%sm%s\e[0m' "$color" "$state" >&2
+        fi
         if [[ -n "$detail" ]]
         then
           printf ' · \e[33m%s\e[0m' "$detail" >&2
         fi
         printf ' \e[2m(%ds)\e[0m' $(( SECONDS - start )) >&2
       else
-        printf '\r\e[K%s %s (%ds)' "$frame" "$stage" $(( SECONDS - start )) >&2
+        if [[ -n "$detail" ]]
+        then
+          printf '\r\e[K%s %s · %s (%ds)' "$frame" "$state" "$detail" $(( SECONDS - start )) >&2
+        else
+          printf '\r\e[K%s %s (%ds)' "$frame" "$state" $(( SECONDS - start )) >&2
+        fi
       fi
     fi
   done
@@ -810,7 +863,7 @@ render_progress() {
 
 cmd_up() {
   local key_file="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}" info name ip
-  local login="" login_user="" topic="" nix_cache=auto cache_info settings
+  local login="" login_user="" topic="" nix_cache=auto cache_info settings quiet_topic_warning=""
   local -a args=() meta=()
   while [[ -n "${1:-}" ]]
   do
@@ -838,6 +891,9 @@ cmd_up() {
         topic="${2:-}"
         shift
         ;;
+      --quiet-topic-warning)
+        quiet_topic_warning=1
+        ;;
       *)
         args+=("$1")
         ;;
@@ -846,10 +902,9 @@ cmd_up() {
   done
   set -- "${args[@]}"
   mapfile -t meta < <(creator_meta "$topic")
-  if [[ -z "$topic" ]]
+  if [[ -z "$topic" && -z "$quiet_topic_warning" ]]
   then
-    printf '%s no --topic given: ls/inspect will show "-" for this worker; pass --topic "what it is for"\n' \
-      "$(paint 33 '!')" >&2
+    printf '%s no topic provided\n' "$(paint 33 '!')" >&2
   fi
   if [[ ! -r "$key_file" ]]
   then
@@ -910,7 +965,7 @@ cmd_up() {
   fi
   local me
   me=$(basename "$0")
-  ok "$(paint_vm "$name") is $(paint 32 'ready') $(paint 2 "($(( $(date +%s) - started ))s)")"
+  ok "$(paint_vm "$name") is $(paint '1;32' 'READY') $(paint 2 "($(( $(date +%s) - started ))s)")"
   local label value
   while IFS='|' read -r label value
   do
@@ -973,7 +1028,7 @@ table_plain() {
     (["NAME", "KIND", "PROFILE", "STATUS", "OWNER", "AGENT", "TOPIC", "EXPIRES", "AGE"]
       + (if $wide then ["FLAVOR", "IP", "CWD"] else [] end)),
     (sort_by(.kind, .name)[] | [
-      .name, .kind, (.profile // "standard"), .status, opt(.owner),
+      .name, .kind, (.profile // "standard"), (.status | ascii_upcase), opt(.owner),
       (if $wide and .agent_pid then "\(agent_label(.agent)) (\(.agent_pid))"
        else agent_label(.agent) end),
       opt(.topic), expiry,
@@ -1003,16 +1058,17 @@ paint_agents() {
 }
 
 colorize() {
-  local bold=$'\e[1m' green=$'\e[32m' yellow=$'\e[33m' red=$'\e[31m'
+  local bold=$'\e[1m' bold_green=$'\e[1;32m' green=$'\e[32m'
+  local yellow=$'\e[33m' red=$'\e[31m' bold_red=$'\e[1;31m'
   local cyan=$'\e[36m' reset=$'\e[0m'
   # EXPIRES under an hour: orange, under 30 minutes: bold red.
   local warn=$'\e[38;5;208m' urgent=$'\e[1;31m'
   sed -E \
     -e "1s/.*/${bold}&${reset}/" \
-    -e "2,\$s/ (ACTIVE) / ${green}\1${reset} /" \
-    -e "2,\$s/ (BUILD|REBUILD|RESIZE|DELETING) / ${yellow}\1${reset} /" \
-    -e "2,\$s/ (ERROR|SHUTOFF|DELETED) / ${red}\1${reset} /" \
-    -e "2,\$s/ (expired) / ${red}\1${reset} /" \
+    -e "2,\$s/ (ACTIVE|READY) / ${bold_green}\1${reset} /" \
+    -e "2,\$s/ (PENDING|QUEUED|BUILD|BUILDING|REBUILD|RESIZE|DELETING|BOOTING) / ${yellow}\1${reset} /" \
+    -e "2,\$s/ (ERROR|FAILED|FAILURE) / ${bold_red}\1${reset} /" \
+    -e "2,\$s/ (SHUTOFF|DELETED|expired) / ${red}\1${reset} /" \
     -e "2,\$s/ (grace [0-9]+[mhd]|draining) / ${yellow}\1${reset} /" \
     -e "2,\$s/ (busy) / ${green}\1${reset} /" \
     -e "2,\$s/ (([0-9]|[12][0-9])m)( +[0-9]+[mhd])/ ${urgent}\1${reset}\3/" \
@@ -1311,7 +1367,7 @@ cmd_inspect() {
     (.last_busy // 0)' <<< "$info")
   label Name "$(paint_vm "${f[0]}")"
   label Kind "${f[1]}"
-  label Status "${f[2]}"
+  label Status "$(paint_state "${f[2]}")"
   label Owner "${f[3]}"
   printf '%s\n' "$(paint 1 Creator:)"
   local agent="${f[4]}"
@@ -1531,10 +1587,10 @@ cmd_exec() {
   fi
 
   local json="$JSON" info name ip
-  info=$(JSON=1 cmd_up "${up_args[@]}") || return 1
+  info=$(JSON=1 cmd_up --quiet-topic-warning "${up_args[@]}") || return 1
   name=$(jq -er .name <<< "$info") || return 1
   ip=$(jq -er .ip <<< "$info") || return 1
-  printf '%s %s is %s\n' "$(paint 32 '✔')" "$(paint_vm "$name")" "$(paint 32 'ready')" >&2
+  printf '%s %s is %s\n' "$(paint 32 '✔')" "$(paint_vm "$name")" "$(paint '1;32' 'READY')" >&2
 
   local rc=0 opts out_file err_file
   mapfile -t opts < <(ssh_opts "$name")
@@ -1871,7 +1927,7 @@ REMOTE_JOBS
 }
 
 cmd_logs() {
-  local lines=200 follow="" arg
+  local lines=200 follow="" no_events="" arg
   if [[ -n "${1:-}" && "$1" != -* ]]
   then
     cmd_jobs_remote logs "$@"
@@ -1888,6 +1944,10 @@ cmd_logs() {
         follow=1
         shift
         ;;
+      --no-events)
+        no_events=1
+        shift
+        ;;
       *)
         printf 'Unknown logs option: %s\n' "$1" >&2
         action_help logs >&2
@@ -1902,7 +1962,7 @@ cmd_logs() {
   fi
   if [[ -n "$follow" ]]
   then
-    cmd_logs_all_follow "$lines"
+    cmd_logs_all_follow "$lines" "$no_events"
   else
     cmd_logs_all "$lines"
   fi
@@ -1923,7 +1983,7 @@ cmd_logs_all() {
 }
 
 cmd_logs_all_follow() {
-  local lines="$1" workers worker pid ready_workers
+  local lines="$1" no_events="${2:-}" workers worker pid ready_workers events_pid=""
   local discovery_interval=5
   declare -A pids=() current=()
   cleanup_followers() {
@@ -1931,10 +1991,20 @@ cmd_logs_all_follow() {
     do
       kill "${pids[$worker]}" 2>/dev/null || true
     done
+    if [[ -n "$events_pid" ]]
+    then
+      kill "$events_pid" 2>/dev/null || true
+      wait "$events_pid" 2>/dev/null || true
+    fi
   }
   trap cleanup_followers EXIT
   trap 'exit 130' INT
   trap 'exit 143' TERM
+  if [[ -z "$no_events" ]]
+  then
+    cmd_events --interval "$discovery_interval" &
+    events_pid=$!
+  fi
   while :
   do
     if ! workers=$(remote_ls)
