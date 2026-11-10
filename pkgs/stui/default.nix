@@ -2,6 +2,8 @@
   lib,
   rustPlatform,
   fetchFromGitHub,
+  pkg-config,
+  sqlite,
 }:
 
 rustPlatform.buildRustPackage rec {
@@ -17,9 +19,9 @@ rustPlatform.buildRustPackage rec {
 
   cargoLock.lockFile = "${src}/Cargo.lock";
 
-  # rusqlite's "bundled" feature vendors and compiles its own SQLite, and
-  # reqwest is configured for rustls (not openssl) -- no extra system
-  # buildInputs needed.
+  # Nixpkgs links rusqlite against system SQLite even with the bundled feature.
+  nativeBuildInputs = [ pkg-config ];
+  buildInputs = [ sqlite ];
 
   meta = {
     description = "Syncthing TUI for file and folder management";
