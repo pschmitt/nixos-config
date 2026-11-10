@@ -49,7 +49,7 @@ Actions:
   start NAME [--name JOB] [--workdir DIR] -- CMD
                        start a registered job
   jobs NAME            list registered jobs
-  ps [NAME]            show active registered jobs on one or all workers
+  ps [NAME]            show processes of running jobs on one or all workers
   logs [NAME [JOB]] [--lines N] [--follow] [--no-events]
                        show logs; follow includes lifecycle events by default
   events [--interval SECONDS]
@@ -105,7 +105,7 @@ spec() {
   cat <<'SPEC'
 action start start a registered job
 action jobs list registered jobs
-action ps show active registered jobs
+action ps show processes of running jobs
 action logs show job logs on one or all workers
 action events stream worker and job lifecycle events
 action register register an existing log file
@@ -1830,6 +1830,32 @@ RUN_JOB
       printf '%s\t%s\t%s\n' "${dir##*/}" "$state" "$(cat "$dir/started")"
     done
     ;;
+  ps)
+    processes=$(ps -eo pid=,ppid=,etime=,comm=)
+    for dir in "$root"/*
+    do
+      [[ -d "$dir" && -f "$dir/pid" && ! -f "$dir/exit" ]] || continue
+      pid=$(cat "$dir/pid")
+      [[ "$pid" =~ ^[0-9]+$ ]] || continue
+      awk -v root="$pid" -v job="${dir##*/}" '
+        { pids[NR]=$1; parents[NR]=$2; elapsed[NR]=$3; command[NR]=$4 }
+        END {
+          selected[root]=1
+          do {
+            changed=0
+            for (i=1; i<=NR; i++)
+              if (selected[parents[i]] && !selected[pids[i]]) {
+                selected[pids[i]]=1
+                changed=1
+              }
+          } while (changed)
+          for (i=1; i<=NR; i++)
+            if (selected[pids[i]])
+              printf "%s\t%s\t%s\t%s\t%s\n", job, pids[i], parents[i], elapsed[i], command[i]
+        }
+      ' <<< "$processes"
+    done
+    ;;
   logs)
     job=""
     lines=200
@@ -1974,7 +2000,7 @@ cmd_logs() {
 }
 
 cmd_ps() {
-  local workers worker target kind login jobs job state started status=0
+  local workers worker target kind login processes line status=0
   if (( $# > 1 )) || [[ "${1:-}" == -* ]]
   then
     action_help ps >&2
@@ -1993,7 +2019,7 @@ cmd_ps() {
   else
     workers=$(jq -r '.[] | [.name, .kind] | @tsv' <<< "$workers") || return 1
   fi
-  printf 'WORKER\tJOB\tSTATE\tSTARTED\n'
+  printf 'WORKER\tJOB\tPID\tPPID\tELAPSED\tCOMMAND\n'
   while IFS=$'\t' read -r worker kind
   do
     [[ -n "$worker" ]] || continue
@@ -2006,17 +2032,17 @@ cmd_ps() {
     else
       login="$worker"
     fi
-    if ! jobs=$(cmd_jobs_remote jobs "$login")
+    if ! processes=$(cmd_jobs_remote ps "$login")
     then
-      printf 'could not read jobs from %s\n' "$worker" >&2
+      printf 'could not read job processes from %s\n' "$worker" >&2
       status=1
       continue
     fi
-    while IFS=$'\t' read -r job state started
+    while IFS= read -r line
     do
-      [[ -n "$job" && "$state" != exit* ]] || continue
-      printf '%s\t%s\t%s\t%s\n' "$worker" "$job" "$state" "$started"
-    done <<< "$jobs"
+      [[ -n "$line" ]] || continue
+      printf '%s\t%s\n' "$worker" "$line"
+    done <<< "$processes"
   done <<< "$workers"
   return "$status"
 }
