@@ -477,6 +477,22 @@ paint() {
   fi
 }
 
+paint_resource() {
+  paint 35 "$*"
+}
+
+paint_event_target() {
+  local target="$1"
+  if [[ "$target" == */* ]]
+  then
+    paint_resource "${target%%/*}"
+    printf '/'
+    paint 36 "${target#*/}"
+  else
+    paint_resource "$target"
+  fi
+}
+
 ok() {
   printf '%s %s\n' "$(paint 32 '✔')" "$*"
 }
@@ -575,13 +591,13 @@ adopt() {
     || return 1
   if [[ -z "$info" ]]
   then
-    printf 'No worker named %s\n' "$name" >&2
+    printf 'No worker named %s\n' "$(paint_resource "$name")" >&2
     return 1
   fi
   if [[ "$(jq -r '.ip // empty' <<< "$info")" == "" \
     || "$(jq -r '.host_key // empty' <<< "$info")" == "" ]]
   then
-    printf '%s has no IP or host key yet (still booting?)\n' "$name" >&2
+    printf '%s has no IP or host key yet (still booting?)\n' "$(paint_resource "$name")" >&2
     return 1
   fi
   # agent's keys are the creator's; everyone else logs in as themselves.
@@ -733,7 +749,7 @@ render_progress() {
         fi
         if [[ -n "$esc" && "$line" =~ ^creating[[:space:]]+([^[:space:]]+)[[:space:]]+\(([^()]*)\)[[:space:]]+from[[:space:]]+image[[:space:]]+(.+)$ ]]
         then
-          printf 'creating \e[36m%s\e[0m (\e[33m%s\e[0m) from image \e[36m%s\e[0m\n' \
+          printf 'creating \e[35m%s\e[0m (\e[33m%s\e[0m) from image \e[35m%s\e[0m\n' \
             "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" >&2
         else
           printf '%s\n' "$line" >&2
@@ -875,11 +891,11 @@ cmd_up() {
     if [[ $(jq -r .daemon <<< "$cache_info") == image-too-old ]]
     then
       printf '%s image predates --nix-cache: nothing pushed to %s\n' \
-        "$(paint 33 '!')" "$name" >&2
+        "$(paint 33 '!')" "$(paint_resource "$name")" >&2
     elif [[ $(jq -r .ok <<< "$cache_info") != true ]]
     then
       printf '%s could not set up the S3 cache on %s (the worker is fine); retry: %s nix-cache %s\n' \
-        "$(paint 33 '!')" "$name" "$(basename "$0")" "$name" >&2
+        "$(paint 33 '!')" "$(paint_resource "$name")" "$(basename "$0")" "$name" >&2
     fi
     info=$(jq -c --argjson c "$cache_info" '. + {nix_cache: $c}' <<< "$info")
   fi
@@ -890,7 +906,7 @@ cmd_up() {
   fi
   local me
   me=$(basename "$0")
-  ok "$(paint 36 "$name") is ready $(paint 2 "($(( $(date +%s) - started ))s)")"
+  ok "$(paint_resource "$name") is $(paint 32 'ready') $(paint 2 "($(( $(date +%s) - started ))s)")"
   local label value
   while IFS='|' read -r label value
   do
@@ -922,7 +938,7 @@ connect() {
     then
       break
     fi
-    printf 'Waiting for %s to accept SSH (%d)...\n' "$name" "$i" >&2
+    printf 'Waiting for %s to accept SSH (%d)...\n' "$(paint_resource "$name")" "$i" >&2
     sleep 3
   done
   # shellcheck disable=SC2029 # no remote command, just the login
@@ -984,7 +1000,7 @@ paint_agents() {
 
 colorize() {
   local bold=$'\e[1m' green=$'\e[32m' yellow=$'\e[33m' red=$'\e[31m'
-  local cyan=$'\e[36m' reset=$'\e[0m'
+  local magenta=$'\e[35m' reset=$'\e[0m'
   # EXPIRES under an hour: orange, under 30 minutes: bold red.
   local warn=$'\e[38;5;208m' urgent=$'\e[1;31m'
   sed -E \
@@ -997,7 +1013,7 @@ colorize() {
     -e "2,\$s/ (busy) / ${green}\1${reset} /" \
     -e "2,\$s/ (([0-9]|[12][0-9])m)( +[0-9]+[mhd])/ ${urgent}\1${reset}\3/" \
     -e "2,\$s/ ([3-5][0-9]m)( +[0-9]+[mhd])/ ${warn}\1${reset}\2/" \
-    -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/" \
+    -e "2,\$s/^([^ ]+)/${magenta}\1${reset}/" \
     | paint_agents
 }
 
@@ -1260,7 +1276,7 @@ cmd_inspect() {
     || return 1
   if [[ -z "$info" ]]
   then
-    printf 'No worker named %s\n' "$name" >&2
+    printf 'No worker named %s\n' "$(paint_resource "$name")" >&2
     return 1
   fi
   if [[ -n "$boot" ]]
@@ -1289,7 +1305,7 @@ cmd_inspect() {
     (.last_active // 0), (.max_lifetime_end // 0), (.host_key // "-"),
     (.availability_zone // "-"), (.pool_state // ""),
     (.last_busy // 0)' <<< "$info")
-  label Name "$(paint 36 "${f[0]}")"
+  label Name "$(paint_resource "${f[0]}")"
   label Kind "${f[1]}"
   label Status "${f[2]}"
   label Owner "${f[3]}"
@@ -1429,7 +1445,7 @@ cmd_prune() {
     then
       forget "$name"
       results+=("$(jq -nc --arg n "$name" --arg o "$owner" '{name: $n, owner: $o, deleted: true}')")
-      [[ -n "$JSON" ]] || ok "deleted $(paint 36 "$name")"
+      [[ -n "$JSON" ]] || ok "deleted $(paint_resource "$name")"
     else
       failed=1
       results+=("$(jq -nc --arg n "$name" --arg o "$owner" '{name: $n, owner: $o, deleted: false}')")
@@ -1514,7 +1530,7 @@ cmd_exec() {
   info=$(JSON=1 cmd_up "${up_args[@]}") || return 1
   name=$(jq -er .name <<< "$info") || return 1
   ip=$(jq -er .ip <<< "$info") || return 1
-  printf '%s %s is ready\n' "$(paint 32 '✔')" "$name" >&2
+  printf '%s %s is %s\n' "$(paint 32 '✔')" "$(paint_resource "$name")" "$(paint 32 'ready')" >&2
 
   local rc=0 opts out_file err_file
   mapfile -t opts < <(ssh_opts "$name")
@@ -1567,7 +1583,7 @@ cmd_exec() {
   if (( rc != 0 )) && [[ -n "$keep_failed" ]]
   then
     EXEC_KEEP=1
-    printf 'Command failed (%d); keeping %s: %s ssh %s\n' "$rc" "$name" \
+    printf 'Command failed (%d); keeping %s: %s ssh %s\n' "$rc" "$(paint_resource "$name")" \
       "$(basename "$0")" "$name" >&2
   fi
   if [[ -n "$json" ]]
@@ -1602,7 +1618,7 @@ cmd_extend() {
     return 0
   fi
   name=$(jq -r .name <<< "$out") || return 1
-  ok "$(paint 36 "$name") now expires $(fmt_expiry "$(jq -r .expires_at <<< "$out")"), at most until $(date -d "@$(jq -r .max_lifetime_end <<< "$out")" '+%a %H:%M')"
+  ok "$(paint_resource "$name") now expires $(fmt_expiry "$(jq -r .expires_at <<< "$out")"), at most until $(date -d "@$(jq -r .max_lifetime_end <<< "$out")" '+%a %H:%M')"
 }
 
 cmd_down() {
@@ -1624,7 +1640,7 @@ cmd_down() {
   then
     jq -nc --arg n "$1" '{name: $n, deleted: true}'
   else
-    ok "deleted $(paint 36 "$1")"
+    ok "deleted $(paint_resource "$1")"
   fi
 }
 
@@ -1895,7 +1911,7 @@ cmd_logs_all() {
   do
     [[ -n "$worker" ]] || continue
     cmd_jobs_remote logs "$worker" --lines "$lines" || {
-      printf 'could not read logs from %s\n' "$worker" >&2
+      printf 'could not read logs from %s\n' "$(paint_resource "$worker")" >&2
       status=1
     }
   done < <(jq -r '.[].name' <<< "$workers")
@@ -1970,7 +1986,7 @@ emit_event() {
       color=36
       ;;
   esac
-  printf '%s %s %s' "$(date -u +%FT%TZ)" "$(paint "$color" "$kind")" "$(paint 36 "$target")"
+  printf '%s %s %s' "$(date -u +%FT%TZ)" "$(paint "$color" "$kind")" "$(paint_event_target "$target")"
   if [[ -n "$details" ]]
   then
     printf ' %s' "$(paint 33 "$details")"
@@ -2140,7 +2156,7 @@ cmd_sync() {
     jq -nc --arg n "$name" --arg s "$src" --arg d "$dest" --arg u "$user" \
       '{name: $n, src: $s, dest: $d, user: $u}'
   else
-    ok "synced $src to $(paint 36 "$name"):$dest"
+    ok "synced $src to $(paint_resource "$name"):$dest"
   fi
 }
 
@@ -2356,23 +2372,23 @@ cmd_nix_cache() {
   fi
   if [[ -n "$dry" ]]
   then
-    printf 'Would push to %s:\n' "$(paint 36 "$name")"
+    printf 'Would push to %s:\n' "$(paint_resource "$name")"
     jq -r '"  substituter \(.substituters[])", "  profile     \(.profiles[])",
            "  trusted keys \(.keys | length)"' <<< "$out"
     return 0
   fi
   case "$(jq -r .daemon <<< "$out")" in
     restarted)
-      ok "$(paint 36 "$name") substitutes from the S3 cache"
+      ok "$(paint_resource "$name") substitutes from the S3 cache"
       ;;
     image-too-old)
       printf '%s %s runs an image from before --nix-cache existed: nothing was pushed (create a new worker)\n' \
-        "$(paint 33 '!')" "$name" >&2
+        "$(paint 33 '!')" "$(paint_resource "$name")" >&2
       return 1
       ;;
     *)
       printf '%s pushed to %s, but its nix-daemon did not restart in time\n' \
-        "$(paint 33 '!')" "$name" >&2
+        "$(paint 33 '!')" "$(paint_resource "$name")" >&2
       ;;
   esac
 }
