@@ -1,0 +1,13 @@
+diff --git a/xmlschema/validators/xsdbase.py b/xmlschema/validators/xsdbase.py
+--- a/xmlschema/validators/xsdbase.py
++++ b/xmlschema/validators/xsdbase.py
+@@ -75,4 +75,8 @@
+     def _cached_properties(cls) -> Iterator[str]:
+         for k in dir(cls):
+-            if isinstance(getattr(cls, k), cached_property):
++            try:
++                attr = getattr(cls, k)
++            except AttributeError:
++                continue
++            if isinstance(attr, cached_property):
+                 yield k

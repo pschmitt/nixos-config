@@ -2,6 +2,7 @@
 # Noctalia's patch bundle is applied at explicit positions by ../noctalia.nix.
 let
   packageOverrides = [
+    (import ./matrix-synapse.nix { inherit final prev; })
     (import ./squeekboard.nix { inherit prev; })
     (import ./taskchampion-sync-server.nix { inherit final prev; })
   ];
@@ -10,6 +11,7 @@ let
   pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
     (import ./pysaml2.nix)
     (import ./rich.nix { inherit (final) lib; })
+    (import ./xmlschema.nix)
   ];
 
   mergedPackages = builtins.foldl' (merged: overlay: merged // overlay) { } packageOverrides;
