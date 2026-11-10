@@ -824,6 +824,8 @@ in
         skills = allSkills;
         enableMcpIntegration = true;
         settings = {
+          model = "Gemini 3.8 Flash (Medium)";
+
           trustedWorkspaces = [
             "/etc/nixos"
             "/mnt/ha"
