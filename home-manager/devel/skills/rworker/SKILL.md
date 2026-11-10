@@ -129,9 +129,10 @@ after its client restarts.
   `start`, and short jobs with MCP `exec` when available. These register the
   job and capture combined output. Use `rworker jobs "$w"`, `rworker logs
   "$w" [JOB] [--lines N]` to inspect output, `rworker logs "$w" --follow` to
-  follow all jobs with colored job-name prefixes, or `rworker logs "$w" JOB
-  --follow` to follow one job. Each unnamed job gets a unique ID. MCP `exec`
-  returns the ID even on timeout;
+  follow all jobs with colored job-name prefixes (including jobs created while
+  following; new logs are discovered within about one second), or `rworker logs
+  "$w" JOB --follow` to follow one job. Each unnamed job gets a unique ID. MCP
+  `exec` returns the ID even on timeout;
   the job continues. If a job must be launched separately, register its existing
   absolute log file with `rworker register "$w" JOB --log /path/to/log` (or MCP
   `register`) immediately. Logs and metadata disappear with the worker.

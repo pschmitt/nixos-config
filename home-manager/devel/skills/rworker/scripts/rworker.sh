@@ -1744,29 +1744,67 @@ RUN_JOB
     then
       colors=(31 32 33 34 35 36)
       pids=()
-      index=0
-      for dir in "${dirs[@]}"
-      do
-        if [[ ! -d "$dir" ]]
-        then
-          [[ -z "$job" ]] && continue
-          printf 'unknown job\n' >&2
-          exit 1
-        fi
+      if [[ -n "$job" ]]
+      then
+        dir="${dirs[0]}"
+        [[ -d "$dir" ]] || { printf 'unknown job\n' >&2; exit 1; }
         logfile="$dir/log"
         [[ ! -f "$dir/log-path" ]] || logfile=$(cat "$dir/log-path")
-        color=${colors[$((index % ${#colors[@]}))]}
         name=${dir##*/}
+        color=${colors[0]}
         tail -n "$lines" -f -- "$logfile" | while IFS= read -r line || [[ -n "$line" ]]
         do
-          printf '\033[1;%sm[%s]\033[0m %s\n' "$color" "$name" "$line"
+          printf '\033[1;%sm%s\033[0m %s\n' "$color" "$name" "$line"
         done &
         pids+=("$!")
-        ((index += 1))
+        wait "${pids[@]}"
+        exit $?
+      fi
+
+      declare -A followed=()
+      index=0
+      reported_waiting=""
+      cleanup_tailers() {
+        local pid
+        for pid in "${pids[@]}"
+        do
+          kill "$pid" 2>/dev/null || true
+        done
+      }
+      trap cleanup_tailers EXIT
+      trap 'exit 130' INT
+      trap 'exit 143' TERM
+      while :
+      do
+        found_job=""
+        for dir in "$root"/*
+        do
+          [[ -d "$dir" ]] || continue
+          name=${dir##*/}
+          [[ -n "${followed[$name]:-}" ]] && continue
+          logfile="$dir/log"
+          if [[ -f "$dir/log-path" ]]
+          then
+            logfile=$(cat "$dir/log-path")
+          fi
+          [[ -f "$logfile" ]] || continue
+          followed["$name"]=1
+          found_job=1
+          color=${colors[$((index % ${#colors[@]}))]}
+          tail -n "$lines" -f -- "$logfile" | while IFS= read -r line || [[ -n "$line" ]]
+          do
+            printf '\033[1;%sm%s\033[0m %s\n' "$color" "$name" "$line"
+          done &
+          pids+=("$!")
+          ((index += 1))
+        done
+        if [[ -z "$found_job" && ${#followed[@]} -eq 0 && -z "$reported_waiting" ]]
+        then
+          printf 'waiting for jobs...\n' >&2
+          reported_waiting=1
+        fi
+        sleep 1
       done
-      [[ ${#pids[@]} -gt 0 ]] || { printf 'no jobs found\n' >&2; exit 1; }
-      wait "${pids[@]}"
-      exit $?
     fi
     for dir in "${dirs[@]}"
     do
