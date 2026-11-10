@@ -128,11 +128,15 @@ after its client restarts.
 - Agents must run long jobs with `rworker start "$w" -- 'command'` or MCP
   `start`, and short jobs with MCP `exec` when available. These register the
   job and capture combined output. Use `rworker jobs "$w"`, `rworker logs
-  "$w" [JOB] [--lines N]` to inspect output, `rworker logs "$w" --follow` to
-  follow all jobs with colored job-name prefixes (including jobs created while
-  following; new logs are discovered within about one second), or `rworker logs
-  "$w" JOB --follow` to follow one job. Each unnamed job gets a unique ID. MCP
-  `exec` returns the ID even on timeout;
+  `"$w" [JOB] [--lines N]` to inspect one worker, or `rworker logs [--lines N]`
+  to inspect all workers. `rworker logs -f` follows all jobs across all workers,
+  with colored `WORKER/JOB` prefixes. It discovers new jobs within about one
+  second and rescans the worker list every five seconds, attaching to new workers
+  and stopping when workers disappear. `rworker events` emits only lifecycle
+  changes after its initial snapshot: workers added or deleted, jobs added or
+  deleted, and job state changes. Use `rworker events --interval N` to set the
+  polling interval in seconds. Each unnamed job gets a unique ID. MCP `exec`
+  returns the ID even on timeout;
   the job continues. If a job must be launched separately, register its existing
   absolute log file with `rworker register "$w" JOB --log /path/to/log` (or MCP
   `register`) immediately. Logs and metadata disappear with the worker.

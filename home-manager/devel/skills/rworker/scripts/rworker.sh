@@ -49,8 +49,10 @@ Actions:
   start NAME [--name JOB] [--workdir DIR] -- CMD
                        start a registered job
   jobs NAME            list registered jobs
-  logs NAME [JOB] [--lines N] [--follow]
-                       show job logs
+  logs [NAME [JOB]] [--lines N] [--follow]
+                       show logs from one worker or all workers
+  events [--interval SECONDS]
+                       stream worker and job lifecycle events
   register NAME JOB --log PATH
                        register an existing log file
   profiles             list available worker profiles
@@ -102,7 +104,8 @@ spec() {
   cat <<'SPEC'
 action start start a registered job
 action jobs list registered jobs
-action logs show job logs
+action logs show job logs on one or all workers
+action events stream worker and job lifecycle events
 action register register an existing log file
 action up create a worker and wait until it is ready
 action profiles list available worker profiles
@@ -121,10 +124,12 @@ action help show the help of an action
 flag start --name=job name the registered job
 flag start --workdir=path working directory on the worker
 flag logs --lines=count number of lines per job
-flag logs --follow follow one job log
+flag logs --follow follow all jobs on all workers
+flag events --interval=interval event polling interval
 flag register --log=path absolute path to an existing log file
 values job
 values count 50 200 1000
+values interval 1 2 5 10
 flag up --ttl=duration lifetime, e.g. 90m or 2h
 flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
@@ -188,8 +193,11 @@ action_help() {
       printf 'Usage: %s jobs WORKER\n' "$me"
       ;;
     logs)
-      printf 'Usage: %s logs WORKER [JOB] [--lines N] [--follow]\n' "$me"
-      printf '       %s logs WORKER --follow  # follow all jobs with colored prefixes\n' "$me"
+      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow]\n' "$me"
+      printf '       %s logs [-f]  # follow jobs on all workers\n' "$me"
+      ;;
+    events)
+      printf 'Usage: %s events [--interval SECONDS]\n' "$me"
       ;;
     register)
       printf 'Usage: %s register WORKER JOB --log PATH\n' "$me"
@@ -1635,6 +1643,10 @@ target_user() {
 cmd_jobs_remote() {
   local action="$1" worker="${2:-}" arg remote="bash -s --"
   shift 2 || return 2
+  if [[ "$action" == logs ]]
+  then
+    set -- "$@" --worker-prefix "$worker"
+  fi
   if [[ -z "$worker" ]]
   then
     printf 'worker name required\n' >&2
@@ -1724,11 +1736,13 @@ RUN_JOB
     job=""
     lines=200
     follow=""
+    worker_prefix=""
     while [[ $# -gt 0 ]]
     do
       case "$1" in
         --lines) lines=$2; shift 2 ;;
         --follow|-f) follow=1; shift ;;
+        --worker-prefix) worker_prefix=$2; shift 2 ;;
         *) [[ -z "$job" ]] || exit 2; job=$1; shift ;;
       esac
     done
@@ -1754,7 +1768,7 @@ RUN_JOB
         color=${colors[0]}
         tail -n "$lines" -f -- "$logfile" | while IFS= read -r line || [[ -n "$line" ]]
         do
-          printf '\033[1;%sm%s\033[0m %s\n' "$color" "$name" "$line"
+          printf '\033[1;%sm%s/%s\033[0m %s\n' "$color" "$worker_prefix" "$name" "$line"
         done &
         pids+=("$!")
         wait "${pids[@]}"
@@ -1793,7 +1807,7 @@ RUN_JOB
           color=${colors[$((index % ${#colors[@]}))]}
           tail -n "$lines" -f -- "$logfile" | while IFS= read -r line || [[ -n "$line" ]]
           do
-            printf '\033[1;%sm%s\033[0m %s\n' "$color" "$name" "$line"
+            printf '\033[1;%sm%s/%s\033[0m %s\n' "$color" "$worker_prefix" "$name" "$line"
           done &
           pids+=("$!")
           ((index += 1))
@@ -1811,12 +1825,225 @@ RUN_JOB
       [[ -d "$dir" ]] || { [[ -z "$job" ]] && continue; printf 'unknown job\n' >&2; exit 1; }
       logfile="$dir/log"
       [[ ! -f "$dir/log-path" ]] || logfile=$(cat "$dir/log-path")
-      printf '==> %s <==\n' "${dir##*/}"
+      printf '==> %s/%s <==\n' "$worker_prefix" "${dir##*/}"
       tail -n "$lines" -- "$logfile"
     done
     ;;
 esac
 REMOTE_JOBS
+}
+
+cmd_logs() {
+  local lines=200 follow="" arg
+  if [[ -n "${1:-}" && "$1" != -* ]]
+  then
+    cmd_jobs_remote logs "$@"
+    return
+  fi
+  while [[ -n "${1:-}" ]]
+  do
+    case "$1" in
+      --lines)
+        lines="${2:-}"
+        shift 2
+        ;;
+      --follow|-f)
+        follow=1
+        shift
+        ;;
+      *)
+        printf 'Unknown logs option: %s\n' "$1" >&2
+        action_help logs >&2
+        return 2
+        ;;
+    esac
+  done
+  if [[ ! "$lines" =~ ^[0-9]+$ ]]
+  then
+    printf 'invalid line count\n' >&2
+    return 2
+  fi
+  if [[ -n "$follow" ]]
+  then
+    cmd_logs_all_follow "$lines"
+  else
+    cmd_logs_all "$lines"
+  fi
+}
+
+cmd_logs_all() {
+  local lines="$1" workers worker status=0
+  workers=$(remote_ls) || return 1
+  while IFS= read -r worker
+  do
+    [[ -n "$worker" ]] || continue
+    cmd_jobs_remote logs "$worker" --lines "$lines" || {
+      printf 'could not read logs from %s\n' "$worker" >&2
+      status=1
+    }
+  done < <(jq -r '.[].name' <<< "$workers")
+  return "$status"
+}
+
+cmd_logs_all_follow() {
+  local lines="$1" workers worker pid ready_workers
+  local discovery_interval=5
+  declare -A pids=() current=()
+  cleanup_followers() {
+    for worker in "${!pids[@]}"
+    do
+      kill "${pids[$worker]}" 2>/dev/null || true
+    done
+  }
+  trap cleanup_followers EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  while :
+  do
+    if ! workers=$(remote_ls)
+    then
+      printf 'could not refresh worker list; retrying\n' >&2
+      sleep "$discovery_interval"
+      continue
+    fi
+    current=()
+    ready_workers=$(jq -r '.[] | select((.ip // "") != "" and (.host_key // "") != "") | .name' <<< "$workers")
+    while IFS= read -r worker
+    do
+      [[ -n "$worker" ]] || continue
+      current["$worker"]=1
+    done < <(jq -r '.[].name' <<< "$workers")
+    while IFS= read -r worker
+    do
+      [[ -n "$worker" ]] || continue
+      if [[ -n "${pids[$worker]:-}" ]] && kill -0 "${pids[$worker]}" 2>/dev/null
+      then
+        continue
+      fi
+      unset 'pids[$worker]'
+      cmd_jobs_remote logs "$worker" --lines "$lines" --follow &
+      pids["$worker"]=$!
+    done <<< "$ready_workers"
+    for worker in "${!pids[@]}"
+    do
+      if [[ -z "${current[$worker]:-}" ]]
+      then
+        pid=${pids[$worker]}
+        kill "$pid" 2>/dev/null || true
+        unset 'pids[$worker]'
+      fi
+    done
+    sleep "$discovery_interval"
+  done
+}
+
+cmd_events() {
+  local interval=2 workers worker ready_workers jobs job state started key previous initialized=""
+  local -A previous_workers=() current_workers=() previous_jobs=() current_jobs=() polled_workers=()
+  while [[ -n "${1:-}" ]]
+  do
+    case "$1" in
+      --interval)
+        interval="${2:-}"
+        shift 2
+        ;;
+      *)
+        printf 'Unknown events option: %s\n' "$1" >&2
+        action_help events >&2
+        return 2
+        ;;
+    esac
+  done
+  if [[ ! "$interval" =~ ^[0-9]+$ ]] || (( interval < 1 ))
+  then
+    printf 'interval must be a positive whole number of seconds\n' >&2
+    return 2
+  fi
+  while :
+  do
+    if ! workers=$(remote_ls)
+    then
+      printf 'could not refresh worker list; retrying\n' >&2
+      sleep "$interval"
+      continue
+    fi
+    current_workers=()
+    current_jobs=()
+    polled_workers=()
+    while IFS= read -r worker
+    do
+      [[ -n "$worker" ]] || continue
+      current_workers["$worker"]=1
+      if [[ -n "$initialized" && -z "${previous_workers[$worker]:-}" ]]
+      then
+        printf '%s worker-added %s\n' "$(date -u +%FT%TZ)" "$worker"
+      fi
+    done < <(jq -r '.[].name' <<< "$workers")
+    if [[ -n "$initialized" ]]
+    then
+      for worker in "${!previous_workers[@]}"
+      do
+        if [[ -z "${current_workers[$worker]:-}" ]]
+        then
+          printf '%s worker-deleted %s\n' "$(date -u +%FT%TZ)" "$worker"
+        fi
+      done
+    fi
+    ready_workers=$(jq -r '.[] | select((.ip // "") != "" and (.host_key // "") != "") | .name' <<< "$workers")
+    while IFS= read -r worker
+    do
+      [[ -n "$worker" ]] || continue
+      if ! jobs=$(cmd_jobs_remote jobs "$worker")
+      then
+        continue
+      fi
+      polled_workers["$worker"]=1
+      while IFS=$'\t' read -r job state started
+      do
+        [[ -n "$job" ]] || continue
+        key="$worker/$job"
+        current_jobs["$key"]="$state"
+        previous="${previous_jobs[$key]:-}"
+        if [[ -n "$initialized" && -z "$previous" ]]
+        then
+          printf '%s job-added %s state=%s\n' "$(date -u +%FT%TZ)" "$key" "$state"
+        elif [[ -n "$initialized" && "$state" != "$previous" ]]
+        then
+          printf '%s job-state %s %s -> %s\n' "$(date -u +%FT%TZ)" "$key" "$previous" "$state"
+        fi
+      done <<< "$jobs"
+    done <<< "$ready_workers"
+    if [[ -n "$initialized" ]]
+    then
+      for key in "${!previous_jobs[@]}"
+      do
+        worker="${key%%/*}"
+        if [[ -z "${current_workers[$worker]:-}" ]]
+        then
+          continue
+        fi
+        if [[ -z "${polled_workers[$worker]:-}" ]]
+        then
+          current_jobs["$key"]="${previous_jobs[$key]}"
+        elif [[ -z "${current_jobs[$key]:-}" ]]
+        then
+          printf '%s job-deleted %s\n' "$(date -u +%FT%TZ)" "$key"
+        fi
+      done
+    fi
+    previous_workers=()
+    for worker in "${!current_workers[@]}"
+    do
+      previous_workers["$worker"]=1
+    done
+    previous_jobs=()
+    for key in "${!current_jobs[@]}"
+    do
+      previous_jobs["$key"]="${current_jobs[$key]}"
+    done
+    initialized=1
+    sleep "$interval"
+  done
 }
 
 cmd_ssh() {
@@ -2213,7 +2440,10 @@ main() {
       cmd_jobs_remote "$action" "$@"
       ;;
     logs)
-      cmd_jobs_remote "$action" "$@"
+      cmd_logs "$@"
+      ;;
+    events)
+      cmd_events "$@"
       ;;
     register)
       cmd_jobs_remote "$action" "$@"
