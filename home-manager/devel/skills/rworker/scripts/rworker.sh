@@ -2000,7 +2000,7 @@ cmd_logs() {
 }
 
 cmd_ps() {
-  local workers worker target kind login processes line status=0
+  local workers worker target kind login processes line rows status=0
   if (( $# > 1 )) || [[ "${1:-}" == -* ]]
   then
     action_help ps >&2
@@ -2019,7 +2019,7 @@ cmd_ps() {
   else
     workers=$(jq -r '.[] | [.name, .kind] | @tsv' <<< "$workers") || return 1
   fi
-  printf 'WORKER\tJOB\tPID\tPPID\tELAPSED\tCOMMAND\n'
+  rows=$'WORKER\tJOB\tPID\tPPID\tELAPSED\tCOMMAND'
   while IFS=$'\t' read -r worker kind
   do
     [[ -n "$worker" ]] || continue
@@ -2041,9 +2041,20 @@ cmd_ps() {
     while IFS= read -r line
     do
       [[ -n "$line" ]] || continue
-      printf '%s\t%s\n' "$worker" "$line"
+      rows+=$'\n'"$worker"$'\t'"$line"
     done <<< "$processes"
   done <<< "$workers"
+  rows=$(column -t -s $'\t' <<< "$rows") || return 1
+  if [[ -n "$COLOR" ]]
+  then
+    local bold=$'\e[1m' cyan=$'\e[36m' green=$'\e[32m' yellow=$'\e[33m' reset=$'\e[0m'
+    sed -E \
+      -e "1s/.*/${bold}&${reset}/" \
+      -e "2,\$s/^([^ ]+)( +)([^ ]+)/${cyan}\\1${reset}\\2${green}\\3${reset}/" \
+      -e "2,\$s/([^ ]+)\$/${yellow}\\1${reset}/" <<< "$rows"
+  else
+    printf '%s\n' "$rows"
+  fi
   return "$status"
 }
 
