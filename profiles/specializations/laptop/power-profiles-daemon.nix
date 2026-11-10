@@ -47,6 +47,7 @@ let
   ppdReact = pkgs.writeShellApplication {
     name = "ppd-react";
     runtimeInputs = with pkgs; [
+      brightnessctl
       coreutils
       gawk
       jq

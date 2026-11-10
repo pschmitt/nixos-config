@@ -96,6 +96,41 @@ apply_tdp_profile() {
   fi
 }
 
+apply_display_brightness() {
+  local power_state="$1"
+  local brightness_info
+  local current_percentage
+
+  case "$power_state" in
+    battery)
+      if ! brightnessctl set 30% >/dev/null
+      then
+        log_warn "failed to set display brightness to 30% on battery"
+      fi
+    ;;
+    connected)
+      if ! brightness_info="$(brightnessctl -m info 2>/dev/null)"
+      then
+        log_warn "failed to read display brightness on external power"
+        return 0
+      fi
+
+      IFS=, read -r _ _ _ _ current_percentage <<<"$brightness_info"
+      current_percentage="${current_percentage%\%}"
+      if [[ ! "$current_percentage" =~ ^[0-9]+$ ]]
+      then
+        log_warn "could not parse display brightness: $brightness_info"
+        return 0
+      fi
+
+      if (( current_percentage < 50 )) && ! brightnessctl set 50% >/dev/null
+      then
+        log_warn "failed to raise display brightness to 50% on external power"
+      fi
+    ;;
+  esac
+}
+
 get_active_profile() {
   local json
 
@@ -645,6 +680,7 @@ main() {
     last_profile=""
   fi
   last_power_state="$(external_power_state)"
+  apply_display_brightness "$last_power_state"
 
   if [[ -n "$last_profile" ]]
   then
@@ -695,6 +731,7 @@ main() {
     if [[ "$current_power_state" != "$last_power_state" ]]
     then
       power_changed=1
+      apply_display_brightness "$current_power_state"
     fi
 
     if [[ -n "$power_changed" && "$ONLY_STOP_UNITS_ON_BATTERY" && "$last_profile" == power-saver ]]
