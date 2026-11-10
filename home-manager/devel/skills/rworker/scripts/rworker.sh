@@ -1937,6 +1937,30 @@ cmd_logs_all_follow() {
   done
 }
 
+emit_event() {
+  local kind="$1" target="$2" details="${3:-}" color
+  case "$kind" in
+    *-added)
+      color=32
+      ;;
+    *-deleted)
+      color=31
+      ;;
+    job-state)
+      color=33
+      ;;
+    *)
+      color=36
+      ;;
+  esac
+  printf '%s %s %s' "$(date -u +%FT%TZ)" "$(paint "$color" "$kind")" "$(paint 36 "$target")"
+  if [[ -n "$details" ]]
+  then
+    printf ' %s' "$(paint 33 "$details")"
+  fi
+  printf '\n'
+}
+
 cmd_events() {
   local interval=2 workers worker ready_workers jobs job state started key previous initialized=""
   local -A previous_workers=() current_workers=() previous_jobs=() current_jobs=() polled_workers=()
@@ -1976,7 +2000,7 @@ cmd_events() {
       current_workers["$worker"]=1
       if [[ -n "$initialized" && -z "${previous_workers[$worker]:-}" ]]
       then
-        printf '%s worker-added %s\n' "$(date -u +%FT%TZ)" "$worker"
+        emit_event worker-added "$worker"
       fi
     done < <(jq -r '.[].name' <<< "$workers")
     if [[ -n "$initialized" ]]
@@ -1985,7 +2009,7 @@ cmd_events() {
       do
         if [[ -z "${current_workers[$worker]:-}" ]]
         then
-          printf '%s worker-deleted %s\n' "$(date -u +%FT%TZ)" "$worker"
+          emit_event worker-deleted "$worker"
         fi
       done
     fi
@@ -2006,10 +2030,10 @@ cmd_events() {
         previous="${previous_jobs[$key]:-}"
         if [[ -n "$initialized" && -z "$previous" ]]
         then
-          printf '%s job-added %s state=%s\n' "$(date -u +%FT%TZ)" "$key" "$state"
+          emit_event job-added "$key" "state=$state"
         elif [[ -n "$initialized" && "$state" != "$previous" ]]
         then
-          printf '%s job-state %s %s -> %s\n' "$(date -u +%FT%TZ)" "$key" "$previous" "$state"
+          emit_event job-state "$key" "$previous -> $state"
         fi
       done <<< "$jobs"
     done <<< "$ready_workers"
@@ -2027,7 +2051,7 @@ cmd_events() {
           current_jobs["$key"]="${previous_jobs[$key]}"
         elif [[ -z "${current_jobs[$key]:-}" ]]
         then
-          printf '%s job-deleted %s\n' "$(date -u +%FT%TZ)" "$key"
+          emit_event job-deleted "$key"
         fi
       done
     fi
