@@ -1,10 +1,7 @@
 name: nix-update-rebase
 
-# Keep the open nix-update PRs rebased on main between the daily runs.
+# Rebase open nix-update PRs on demand between the daily runs.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

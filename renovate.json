@@ -3,7 +3,7 @@
   "extends": [
     "config:recommended"
   ],
-  "rebaseWhen": "conflicted",
+  "rebaseWhen": "behind-base-branch",
   "nix": {
     "enabled": true,
     "fileMatch": [
