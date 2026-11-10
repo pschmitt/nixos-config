@@ -5,6 +5,7 @@ let
     (import ./matrix-synapse.nix { inherit final prev; })
     (import ./squeekboard.nix { inherit prev; })
     (import ./taskchampion-sync-server.nix { inherit final prev; })
+    (import ./taskwarrior.nix { inherit final prev; })
   ];
 
   # Apply targeted workarounds to each Python package set.
