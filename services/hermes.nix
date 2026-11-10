@@ -43,6 +43,20 @@ let
   # release tag reachable from the locked hermes-agent rev; bump it alongside
   # the flake input.
   hermesVersion = "0.21.6";
+  # Hermes applies a patch for patchelf 0.19.2 to its pinned binaries. Nixpkgs
+  # currently supplies 0.15.2, where that patch does not apply. Remove when
+  # Hermes handles the selected patchelf version itself. Reviewed 2026-11-10
+  # at Nixpkgs f4a03c008967841f2a0b3cb7c436fc6fc31671f6; Node and npm start.
+  hermesPatchelf = pkgs.patchelf.overrideAttrs (_: {
+    version = "0.19.2";
+    src = pkgs.fetchurl {
+      url = "https://github.com/NixOS/patchelf/releases/download/0.19.2/patchelf-0.19.2.tar.bz2";
+      hash = "sha256-1K2aTlxongkRnOLzCpSw6LT5jHhZASPqIWZeNMaSiAE=";
+    };
+  });
+  hermesPmPackages = lib.filterAttrs (_: lib.isDerivation) (
+    pkgs.callPackage (inputs.hermes-agent + "/nix/pm-packages.nix") { patchelf = hermesPatchelf; }
+  );
   hermesPyModulesShim = pkgs.runCommand "hermes-py-modules-shim" { } ''
     mkdir -p $out
     cp ${inputs.hermes-agent}/registration_lifecycle.py $out/
@@ -403,6 +417,7 @@ in
       enable = true;
       package = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
         version = hermesVersion;
+        pmPackages = hermesPmPackages;
       };
       # Home Assistant left core for the catalog plugin. Hermes' own
       # `plugins install`/`enable` runs a uv venv sync against the read-only
