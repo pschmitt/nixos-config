@@ -3,6 +3,7 @@
 let
   packageOverrides = [
     (import ./squeekboard.nix { inherit prev; })
+    (import ./taskchampion-sync-server.nix { inherit final prev; })
   ];
 
   # Apply targeted workarounds to each Python package set.
