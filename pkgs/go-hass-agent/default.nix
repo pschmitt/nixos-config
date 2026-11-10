@@ -11,16 +11,16 @@
 # go.mod requires Go >= 1.27.3.
 buildGo127Module rec {
   pname = "go-hass-agent";
-  version = "14.18.0";
+  version = "14.19.0";
 
   src = pkgs.fetchFromGitHub {
     owner = "joshuar";
     repo = "go-hass-agent";
     rev = "v${version}";
-    hash = "sha256-P4FECABO2Kq5wxTvkVyv6//fsqOR6EoIqe506MOXBto=";
+    hash = "sha256-ApaNeScISB3qVUZ7aDAjL/ufNvm7VhB/NhdmPBB3cS0=";
   };
 
-  vendorHash = "sha256-x1qanfl5qe3dvFgmSrQqsZqL7ON8Cj7veyYdSL3ocgU=";
+  vendorHash = "sha256-+JCAolvTS/gkHZg9x1aLg6x9b6NJoXT/FY9V96ojFq8=";
 
   ldflags = [
     "-s"
