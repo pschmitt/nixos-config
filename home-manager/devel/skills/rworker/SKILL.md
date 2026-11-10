@@ -102,7 +102,19 @@ after its client restarts.
   build through Nix (below) so results land in the local store. If restoring a
   worker-only test mutation with `sync`, touch the restored source on the
   worker before retesting: rsync preserves its older timestamp, so Cargo can
-  otherwise reuse the mutated test binary.
+  otherwise reuse the mutated test binary. When the synced tree has no `.git`,
+  Nix treats it as a path flake and snapshots the whole source on every
+  `nix develop`, including a `target/` created by an earlier Cargo run. This
+  can copy gigabytes and race a running build. Keep Cargo output outside the
+  flake from the first run, for example:
+
+  ```bash
+  rworker start "$w" -- 'cd rbw && CARGO_TARGET_DIR="$HOME/build-target/rbw" nix develop -c cargo test'
+  ```
+
+  If `target/` already exists, move it to that target directory first, then use
+  the same `CARGO_TARGET_DIR` for subsequent commands. Refresh the source as
+  usual when flake inputs or source files change.
 - **Android/Gradle:** `nix develop` needs the project's Android SDK shell;
   give it `--disk 250` (Gradle caches are large) and a TTL that covers the
   first, uncached build.
