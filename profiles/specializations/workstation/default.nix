@@ -9,6 +9,14 @@
 }:
 let
   hyprRdp = inputs.hypr-rdp.packages.${pkgs.stdenv.hostPlatform.system}.hypr-rdp.overrideAttrs (old: {
+    # The current Nixpkgs Rust hooks require system AWS-LC and zstd. Local
+    # workaround until hypr-rdp supplies them. Reviewed 2026-11-10 at Nixpkgs
+    # f4a03c008967841f2a0b3cb7c436fc6fc31671f6; the patched package builds.
+    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.pkg-config ];
+    buildInputs = (old.buildInputs or [ ]) ++ [
+      pkgs.aws-lc
+      pkgs.zstd
+    ];
     patches = (old.patches or [ ]) ++ [
       (inputs.nixos-config-private.outPath + "/pkgs/hypr-rdp-rotated-output.patch")
     ];
