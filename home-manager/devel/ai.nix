@@ -34,8 +34,30 @@ let
   # Card rules stay in a user-owned runtime file, outside the Nix store.
   browserDaemonMcp = pkgs.writeShellApplication {
     name = "browser-daemon-mcp";
-    runtimeInputs = [ pkgs.browser-daemon ];
+    runtimeInputs = [
+      pkgs.browser-daemon
+      pkgs.jq
+    ];
     text = ''
+      api_config="''${XDG_CONFIG_HOME:-$HOME/.config}/browser-daemon/rbw-api.json"
+      api_url="$(jq -er '.url' "$api_config")"
+      api_ca="$(jq -er '.ca' "$api_config")"
+      set -- "$@" --rbw-api-url "$api_url" --rbw-api-ca "$api_ca"
+      mapfile -t api_certs < <(jq -er '.clients[].cert' "$api_config")
+      mapfile -t api_keys < <(jq -er '.clients[].key' "$api_config")
+      if (( ''${#api_certs[@]} == 0 || ''${#api_certs[@]} != ''${#api_keys[@]} ))
+      then
+        printf '%s\n' 'RBW API client certificate/key configuration is incomplete' >&2
+        exit 1
+      fi
+      for cert in "''${api_certs[@]}"
+      do
+        set -- "$@" --rbw-api-cert "$cert"
+      done
+      for key in "''${api_keys[@]}"
+      do
+        set -- "$@" --rbw-api-key "$key"
+      done
       card_rules="''${XDG_CONFIG_HOME:-$HOME/.config}/browser-daemon/card-allowlist"
       if [[ -r "$card_rules" ]]
       then
@@ -240,11 +262,6 @@ let
       (lib.getExe browserAskHuman)
       "--allow-export"
       "*"
-      # The profile's rbw, which an upgrade updates: this server lives as
-      # long as the agent session, and a store path would keep it on the
-      # rbw it started with (an old rbw used to stop the newer agent).
-      "--rbw"
-      "${config.home.profileDirectory}/bin/rbw"
     ];
   };
 
