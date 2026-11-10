@@ -80,6 +80,9 @@ in
         lockTimeout = 86400;
         syncInterval = 3600;
       };
+      # Replace an agent that outlived an rbw upgrade in place, keeping
+      # the vault unlocked (on activation and on the next rbw command).
+      upgrade.autoRestart = true;
       pinentry = {
         command = "pinentry";
       };
