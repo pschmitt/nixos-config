@@ -12,6 +12,12 @@ Check hosts in parallel when possible. Use non-interactive SSH with a connection
 timeout and `sudo -n`; never hang waiting for a password. An access failure is an
 incident to report, not a reason to guess.
 
+When using the Home Assistant `ssh_cmd_turris` tool, pass one command at a time:
+it does not interpret shell syntax. Characters such as `;` and `|` are passed as
+arguments, so a pipeline intended to filter logs may instead return the unfiltered
+log. Use a command's native filter options, or another verified shell-capable
+access path, before inspecting log output.
+
 ## 2. Inspect live Monit state
 
 On each host, start with concise output:
