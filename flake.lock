@@ -325,11 +325,11 @@
     },
     "crane_4": {
       "locked": {
-        "lastModified": 1793576233,
-        "narHash": "sha256-F53BB9a44pOYWyxQxzBBh7rmZybX29Ah1ETaG5D02JI=",
+        "lastModified": 1793836618,
+        "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "4866304b6bd1ad48412ad90bcd3b1a6296f3affd",
+        "rev": "79fd63528501446749c09f08cad486a58c7d173e",
         "type": "github"
       },
       "original": {
@@ -1469,11 +1469,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794123665,
-        "narHash": "sha256-zqs6COQDMLs+Bur8Ay7OfgttX6gLafwKxcNqaxF+v78=",
+        "lastModified": 1794398772,
+        "narHash": "sha256-t2VZ8mw8Us1AVKAMyzafFPboJdWFpbFroJW3rXeMkxE=",
         "owner": "pschmitt",
         "repo": "monarch",
-        "rev": "83926c3defb189762a32aa7c64aa14803f63ef52",
+        "rev": "d713b06b98a027cc0415f2b658bfdc63d4f4151b",
         "type": "github"
       },
       "original": {
@@ -1789,11 +1789,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1794384217,
-        "narHash": "sha256-OFvSjp/cuqJQYgRKr9U5j04qT5twJCDsEsj24+t8MEo=",
+        "lastModified": 1794397274,
+        "narHash": "sha256-MxuHyUhPRErqZJP139FOwUA4NF6CZoa0KUAFq1JjfMc=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "bf1a0fc9770b78857522a5bc50e41327df3b2a41",
+        "rev": "b1f0c9024b487d8437c53b3c429beda34ba4aabd",
         "type": "github"
       },
       "original": {

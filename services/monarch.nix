@@ -19,6 +19,8 @@ in
     "monarch/homeassistant/password" = config.sops.mkHostSecret { };
     # shared: monit agents report with it (see monit/config/mmonit)
     "monarch/collector/password" = { };
+    # shared: monarchctl on the workstations and home servers uses it
+    "monarch/cli/token" = { };
   };
 
   services.monarch = {
@@ -57,6 +59,12 @@ in
         emailFile = config.sops.secrets."monarch/admin/email".path;
         role = "admin";
         passwordFile = config.sops.secrets."monarch/admin/password".path;
+        apiTokens = [
+          {
+            name = "monarchctl";
+            file = config.sops.secrets."monarch/cli/token".path;
+          }
+        ];
       }
       {
         username = "monit";

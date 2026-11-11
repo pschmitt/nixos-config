@@ -16,6 +16,7 @@
     ../../../services/web-vnc-console.nix
     ../../../services/kmscon.nix
     ../../../services/kvm-usb.nix
+    ../../../services/monarchctl.nix
     ../../../services/nfs/nfs-server.nix
     ./cli-tools.nix
     ./nix.nix

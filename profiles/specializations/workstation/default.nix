@@ -47,6 +47,7 @@ in
     ../../features/work/vpn/openvpn.nix
     ../../features/work/nix-cache.nix
 
+    ../../../services/monarchctl.nix
     ../../../services/restic
     ../../../services/autoupgrade.nix
   ];
