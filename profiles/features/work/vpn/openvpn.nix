@@ -12,33 +12,21 @@ let
     sha256 = "sha256-HsUD8scOdJZSbT1GUTMftrrEodQo34VcqqC78WaAl50=";
   };
 
-  # Remove "auth-user-pass"
-  removeUnwantedLines =
-    configPath:
-    let
-      configContent = builtins.readFile configPath;
-      lines = lib.splitString "\n" configContent;
-      # Regular expression to match either "auth-user-pass" or "dev tun"
-      unwantedRegex = "auth-user-pass|dev tun";
-    in
-    lib.filter (line: builtins.match unwantedRegex line == null) lines;
-
-  # Apply the function to your configuration files
-  wiitFilteredLines = removeUnwantedLines wiitOvpnConfig;
+  wiitFilteredConfig = pkgs.runCommand "wiit-filtered.ovpn" { } ''
+    ${lib.getExe pkgs.gnused} -e '/^auth-user-pass$/d' -e '/^dev tun$/d' ${wiitOvpnConfig} > "$out"
+  '';
 
   wiitAuthUserPass = "/run/secrets/openvpn-wiit";
 
   # Append custom config options
-  wiitOvpnConfigMod = lib.concatStringsSep "\n" (
-    wiitFilteredLines
-    ++ [
-      "dev ovpn-wiit"
-      "dev-type tun"
-      "auth-user-pass ${wiitAuthUserPass}"
-      # "auth-nocache"
-      "setenv UV_IP4_TABLE FRA"
-    ]
-  );
+  wiitOvpnConfigMod = lib.removeSuffix "\n" ''
+    config ${wiitFilteredConfig}
+
+    dev ovpn-wiit
+    dev-type tun
+    auth-user-pass ${wiitAuthUserPass}
+    setenv UV_IP4_TABLE FRA
+  '';
 
   # WIIT
   wiitUsername = "philipp.schmitt";
