@@ -12,7 +12,7 @@ Keep secret values out of everything you can see or log: tool-call arguments, to
 Use the safe form:
 
 - Home Assistant: never read `.storage/core.config_entries`, `.storage/auth` or `secrets.yaml`, and never `rg`/`grep` `/mnt/ha` without `-l` or a `--glob '!...'` that excludes them. Use `zsh -lc 'zhj hass::config-entries [--domain X]'` (key names only) and `zhj hass::check-config` instead of `ha core check`. Filter `ha core logs`/`ha apps info` with `jq` or `grep -v` on named fields.
-- Processes: no `ps aux`, `ps -ef`, `pgrep -a`, or `/proc/*/cmdline` (signed browser URLs, `--passwd` arguments). Use `pgrep -l NAME`, `pgrep -c NAME` or `ps -o pid,etime,comm -p PID`.
+- Processes: no `ps aux`, `ps -ef`, `pgrep -a`, `top` in batch mode, or `/proc/*/cmdline` (full arguments can contain signed URLs and `--passwd` values). Use `uptime` or Monit for load, `pgrep -l NAME` / `pgrep -c NAME` for process names/counts, or `ps -o pid,etime,comm -p PID` for a known PID.
 - Environment: no bare `env`, `printenv`, `export` or `set` (they print `SOPS_AGE_KEY`); name the variable you need.
 - Tokens: never print any part of one, not even a derived "name". Splitting on `:` (`${tok%%:*}`) assumes the Rancher `name:secret` format and prints the whole token for formats without a colon, such as Kubernetes ServiceAccount JWTs (a cluster-admin token leaked this way). To test a token, send it from a header file and print only the HTTP status (`curl -s -o /dev/null -w '%{http_code}' -H @<(printf 'Authorization: Bearer %s\n' "$tok") URL`); report a length, a hash or a public name you validated against the expected format.
 - Vault: no `rbw ... --json/--raw` without a `jq` field selection; prefer the redacted `rbw` MCP. Never `source` an env file to test it.
