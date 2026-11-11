@@ -1,12 +1,16 @@
 <p align="center">
-  <img src="assets/logo.svg" width="200" alt="A pyramid with a floating gold capstone holding an eye whose iris is a Nix snowflake, in front of a black hole">
+  <img src="assets/fresco.png" alt="A weathered medieval fresco: Death in a snowflake-marked robe points at plague victims and a branded sinner beneath the banner &quot;Quidquid Nix tangit, corrumpitur.&quot;">
 </p>
+
+<p align="right">
+  <sub><em>Quidquid Nix tangit, corrumpitur.</em></sub>
+</p>
+
+<h1 align="center">pschmitt's nixos book of horrors</h1>
 
 <p align="center">
   <a href="https://nixbot.brkn.lol/repos/github/pschmitt/nixos-config"><img src="https://nixbot.brkn.lol/repos/github/pschmitt/nixos-config/badge.svg?branch=main" alt="nixbot"></a>
 </p>
-
-<h1 align="center">pschmitt's nixos book of horrors</h1>
 
 <p align="center">
   One flake for all my machines: laptops, servers, Raspberry Pis and install
