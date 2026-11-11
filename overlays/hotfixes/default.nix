@@ -6,6 +6,7 @@ let
     (import ./onnxruntime.nix { inherit prev; })
     (import ./squeekboard.nix { inherit prev; })
     (import ./stalwart-cli.nix { inherit final prev; })
+    (import ./stalwart.nix { inherit final prev; })
     (import ./taskchampion-sync-server.nix { inherit final prev; })
     (import ./taskwarrior.nix { inherit final prev; })
   ];
