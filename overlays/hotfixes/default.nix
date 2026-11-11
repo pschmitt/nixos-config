@@ -5,6 +5,7 @@ let
     (import ./matrix-synapse.nix { inherit final prev; })
     (import ./onnxruntime.nix { inherit prev; })
     (import ./squeekboard.nix { inherit prev; })
+    (import ./stalwart-cli.nix { inherit final prev; })
     (import ./taskchampion-sync-server.nix { inherit final prev; })
     (import ./taskwarrior.nix { inherit final prev; })
   ];
