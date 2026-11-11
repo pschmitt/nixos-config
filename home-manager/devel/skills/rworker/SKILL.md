@@ -32,8 +32,10 @@ rworker down "$w"
 ```
 
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints a summary;
-  `--profile browser-daemon` selects the browser-ready image; the default `standard`
-  profile stays the build-worker image. `exec` and `ssh --create` accept it too.
+  `--profile browser-daemon` is the image for browser-daemon's ephemeral
+  browser nodes (small `s1.medium.d`), not for building anything, browser-daemon
+  included: builds and tests use the default `standard` profile (the
+  build-worker image, `s1.xlarge`). `exec` and `ssh --create` accept it too.
   `--profile large-builder` uses the build image with `s1.2xlarge` and a
   500 GiB disk; `--flavor` and `--disk` can override either default.
   with `-j`/`--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
@@ -215,5 +217,7 @@ See [maintenance](references/maintenance.md) when changing the client.
 - Credentials the task needs may go to a worker (see **Secrets and private
   inputs**), as a file and never in the transcript. The automatic S3 cache
   key is handled separately by `rworker`.
+- Parallel agents (subagents building at the same time) get one worker each:
+  several cargo builds on one worker overload it until SSH and NetBird time out.
 - Prefer a worker over the shared build nodes for anything that takes more
   than a few minutes of full CPU.

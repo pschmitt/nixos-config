@@ -9,14 +9,6 @@ let
   # Keep the proxy on the stable Python set: unstable mcp-proxy requires MCP
   # 1.27.1, while unstable currently ships MCP 2.x.
   mcpProxy = pkgs.stable.mcp-proxy;
-  browserHosts = [
-    "fnuc"
-    "rofl-13"
-    "rofl-14"
-    "rofl-15"
-    "rofl-16"
-  ];
-
   browserNode = host: "https://browser.${host}.${config.domains.netbird}";
 
   # Starts the Playwright MCP and tells the node which agent connects (agent,
@@ -69,17 +61,6 @@ let
       fi
       exec browser-daemon "$@"
     '';
-  };
-
-  # Labels this agent conversation's browser sessions with a topic.
-  browserAgentTopic = pkgs.writeShellApplication {
-    name = "browser-agent-topic";
-    runtimeInputs = [
-      pkgs.curl
-      pkgs.jq
-    ];
-    runtimeEnv.BROWSER_AGENT_NODES = lib.concatMapStringsSep " " browserNode browserHosts;
-    text = builtins.readFile ./scripts/browser-agent-topic.sh;
   };
 
   claudeStatusline = pkgs.writeShellApplication {
@@ -262,6 +243,10 @@ let
       (lib.getExe browserAskHuman)
       "--allow-export"
       "*"
+      # Public links to the agent's session or recordings (browser_share).
+      "--allow-share"
+      # Curved mouse paths and paced typing, so fewer bot checks trip.
+      "--human-input"
     ];
   };
 
@@ -990,9 +975,7 @@ in
           #   exec ${mistral-vibe}/bin/vibe "$@"
           # '')
         ]
-        # Agents label their browser sessions with it (see CONTEXT.md).
         ++ [
-          browserAgentTopic
           rworker
           claudeOgl
           claudeStatusline
