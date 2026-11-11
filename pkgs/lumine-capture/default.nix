@@ -27,8 +27,11 @@ rustPlatform.buildRustPackage {
 
   src = source;
 
-  # Keep this copy in sync with the pinned upstream release.
+  # Upstream lock with an updated root certificate bundle.
   cargoLock.lockFile = ./Cargo.lock;
+  postPatch = ''
+    cp ${./Cargo.lock} Cargo.lock
+  '';
 
   nativeBuildInputs = [
     autoPatchelfHook

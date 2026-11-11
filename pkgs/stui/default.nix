@@ -18,8 +18,8 @@ rustPlatform.buildRustPackage rec {
   };
 
   # Upstream lock with security updates for selected transitive dependencies.
-  # Ratatui 0.29 pins lru 0.12 (GHSA-rhfx-m35p-ff5j); its layout cache uses
-  # get_or_insert/resize, not the affected IterMut. Recheck on a Stui bump.
+  # Ratatui 0.29 pins lru 0.12; its layout cache does not use the affected
+  # IterMut, and its Rect/Layout keys have no panicking Drop. Recheck on bump.
   cargoLock.lockFile = ./Cargo.lock;
   postPatch = ''
     cp ${./Cargo.lock} Cargo.lock
