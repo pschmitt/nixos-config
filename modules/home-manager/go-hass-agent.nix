@@ -95,6 +95,7 @@ in
         "sensors.desktop.desktop_settings_sensors"
         "sensors.disk.rates"
         "sensors.location"
+        "sensors.media.webcam_in_use"
         # NOTE sensors.media.audio must stay enabled: the MQTT volume/mute
         # controls are fed by the audio worker and the agent panics in
         # NumberEntity.MarshalConfig when it is disabled
