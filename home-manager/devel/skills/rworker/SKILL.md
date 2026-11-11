@@ -63,7 +63,10 @@ rworker down "$w"
 - `ssh NAME [CMD]` and `sync NAME SRC [DEST]` use the pinned host key.
   `sync` mirrors with `--delete` and skips `target/`, `.direnv/`, `result`.
 - `cp NAME:REMOTE LOCAL` / `cp LOCAL NAME:REMOTE` copies files or
-  directories (rsync, like scp); `exec [up options] [--sync SRC[:DEST]]
+  directories (rsync, like scp). Mind rsync's trailing slash:
+  `cp NAME:repo/src/ ./` drops the *contents* of `src` into `./`; to bring a
+  directory back to the same place use `cp NAME:repo/src/ ./src/` (or omit
+  the slash: `cp NAME:repo/src ./`). `exec [up options] [--sync SRC[:DEST]]
   [--fetch REMOTE[:LOCAL]] -- CMD` is a one-shot worker: create, copy, run,
   fetch, delete (also on failure; `--keep-on-failure` to debug).
   The command runs from `/home/agent`, and `--sync SRC:DEST` puts the

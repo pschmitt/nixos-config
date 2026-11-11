@@ -81,6 +81,23 @@ To onboard a repository:
    run one at a time, so expect a queue after enabling many repositories.
 7. README: put the nixbot badge first in the badge row.
 
+## Docker images
+
+`docker-build.yaml` builds every platform under QEMU: fine for images that
+only install packages, far too slow for images that compile Rust or other
+native code on arm64. For those, use `docker-native.yaml`, which builds each
+platform on a native runner, pushes by digest and merges one manifest per
+registry (tags `latest`, `sha-<commit>`, the branch, and the version on tag
+pushes; GHCR attestation). The caller keeps its triggers (including a
+`schedule` for security rebuilds) and passes `publish`, for example
+`${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}`.
+luks-ssh-unlock is a caller; rbw still has its own equivalent `docker.yaml`.
+
+GitHub serves a workflow's `badge.svg` (and shields.io its status) only once
+the workflow file exists on the default branch; on a feature branch a badge
+for a new workflow returns 404 and READMEs show the alt text. That fixes
+itself on merge; it is not a broken URL.
+
 ## Scope and references
 
 Repositories using shared components are not interchangeable. Check the target repository's own instructions, workflows, package layout, and release process; examples in `ci-workflows` are starting points, not a mandate to make every repository identical.
