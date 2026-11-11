@@ -15,4 +15,10 @@
           '{kCudaExecutionProvider, kCudaNHWCExecutionProvider, kTensorrtExecutionProvider, kQnnExecutionProvider, kWebGpuExecutionProvider, kOpenVINOExecutionProvider});'
     '';
   });
+
+  # Firefox does not need the test-only change. Keep its upstream ONNX input so
+  # the browser can use Hydra's binary cache; remove with the workaround above.
+  firefox-unwrapped = prev.firefox-unwrapped.override {
+    inherit (prev) onnxruntime;
+  };
 }
