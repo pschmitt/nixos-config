@@ -6,7 +6,6 @@ let
     (import ./onnxruntime.nix { inherit prev; })
     (import ./squeekboard.nix { inherit prev; })
     (import ./stalwart.nix { inherit final prev; })
-    (import ./taskchampion-sync-server.nix { inherit final prev; })
   ];
 
   # Apply targeted workarounds to each Python package set.
