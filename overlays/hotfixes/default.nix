@@ -12,6 +12,7 @@ let
 
   # Apply targeted workarounds to each Python package set.
   pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+    (import ./mail-parser.nix { inherit (final) fetchPypi; })
     (import ./pysaml2.nix)
     (import ./rich.nix { inherit (final) lib; })
     (import ./xmlschema.nix)
