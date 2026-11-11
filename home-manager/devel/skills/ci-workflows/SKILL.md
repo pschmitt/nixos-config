@@ -91,7 +91,7 @@ registry (tags `latest`, `sha-<commit>`, the branch, and the version on tag
 pushes; GHCR attestation). The caller keeps its triggers (including a
 `schedule` for security rebuilds) and passes `publish`, for example
 `${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}`.
-luks-ssh-unlock is a caller; rbw still has its own equivalent `docker.yaml`.
+rbw and luks-ssh-unlock are callers.
 
 GitHub serves a workflow's `badge.svg` (and shields.io its status) only once
 the workflow file exists on the default branch; on a feature branch a badge
