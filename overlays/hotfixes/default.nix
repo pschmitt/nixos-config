@@ -3,12 +3,16 @@
 let
   packageOverrides = [
     (import ./matrix-synapse.nix { inherit final prev; })
+    (import ./onnxruntime.nix { inherit prev; })
     (import ./squeekboard.nix { inherit prev; })
+    (import ./stalwart-cli.nix { inherit final prev; })
     (import ./taskchampion-sync-server.nix { inherit final prev; })
+    (import ./taskwarrior.nix { inherit final prev; })
   ];
 
   # Apply targeted workarounds to each Python package set.
   pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+    (import ./mail-parser.nix { inherit (final) fetchPypi; })
     (import ./pysaml2.nix)
     (import ./rich.nix { inherit (final) lib; })
     (import ./xmlschema.nix)

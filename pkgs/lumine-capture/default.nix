@@ -3,6 +3,7 @@
   autoPatchelfHook,
   lib,
   onnxruntime,
+  oniguruma,
   pkg-config,
   pipewire,
   rustPlatform,
@@ -41,6 +42,7 @@ rustPlatform.buildRustPackage {
     libxkbcommon
     openssl
     onnxruntime
+    oniguruma
     pipewire
     wayland
     zlib

@@ -18,7 +18,13 @@
     };
 
     rpi.kernelPackages = pkgs.linuxPackagesFor (
-      pkgs.callPackage "${inputs.hardware}/raspberry-pi/common/kernel.nix" { rpiVersion = 4; }
+      (pkgs.callPackage "${inputs.hardware}/raspberry-pi/common/kernel.nix" { rpiVersion = 4; })
+      .overrideAttrs
+        (old: {
+          # Backport upstream 10a47fb67340 for newer ARM userspace headers.
+          # Remove when the Raspberry Pi kernel contains this fix.
+          patches = (old.patches or [ ]) ++ [ ./rpi-kernel-tools-u128.patch ];
+        })
     );
 
     enableAllHardware = lib.mkForce false;

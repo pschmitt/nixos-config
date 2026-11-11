@@ -44,7 +44,11 @@ let
       lib.removeSuffix "/" (lib.head (lib.splitString "\"" nvimDevPathReturn))
     else
       throw "Termux Neovim init.lua does not contain the expected LazyVim dev path.";
-  nvimLazyPath = "${nvimDevPath}/lazy.nvim";
+  nvimLazyDir = if nvimDevPathFunction then "folke--lazy.nvim" else "lazy.nvim";
+  nvimLazyPath = "${nvimDevPath}/${nvimLazyDir}";
+  nvimLazyAssignment = lib.head (
+    lib.filter (line: lib.hasPrefix "local lazypath = " line) (lib.splitString "\n" nvimInitLua)
+  );
   termuxNvimPlugins = {
     "vimwiki" = pkgs.vimPlugins.vimwiki.src;
     "b64.nvim" = pkgs.vimPlugins.b64-nvim.src;
@@ -345,13 +349,13 @@ let
           echo "Neovim plugin bundle contains Nix store paths after sanitization." >&2
           exit 1
         fi
-        substituteInPlace "$out/home/.local/share/nvim/lazy-dev/lazy.nvim/lua/lazy/help.lua" \
+        substituteInPlace "$out/home/.local/share/nvim/lazy-dev/${nvimLazyDir}/lua/lazy/help.lua" \
           --replace-fail \
           'vim.cmd.helptags(Config.plugins["lazy.nvim"].dir .. "/doc")' \
           '-- Termux plugin sources are immutable; their helptags are not regenerated.'
         substituteInPlace "$out/home/.config/nvim/init.lua" \
-          --replace-fail ${lib.escapeShellArg "local lazypath = vim.fn.stdpath(\"data\") .. \"/lazy/lazy.nvim\""} \
-          ${lib.escapeShellArg "local lazypath = vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/lazy.nvim\""}
+          --replace-fail ${lib.escapeShellArg nvimLazyAssignment} \
+          ${lib.escapeShellArg "local lazypath = vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/${nvimLazyDir}\""}
         ${
           if nvimDevPathFunction then
             ''
