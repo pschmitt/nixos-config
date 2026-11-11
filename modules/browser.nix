@@ -14,9 +14,9 @@ let
   bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
   bruvtabFirefoxAddon = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.firefoxAddon;
   bruvtabChromeCrx = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.chromeCrx;
-  bruvtabChromeExtensionId = lib.removeSuffix "\n" (
-    builtins.readFile "${bruvtabChromeCrx}/extension-id"
-  );
+  bruvtabChromeExtensionId =
+    (builtins.fromJSON (builtins.readFile "${inputs.bruvtab}/browser/packages/metadata.json"))
+    .chromiumId;
 in
 {
   options.dotfiles.desktop.browser = {
