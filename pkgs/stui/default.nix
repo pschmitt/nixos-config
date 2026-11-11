@@ -17,7 +17,8 @@ rustPlatform.buildRustPackage rec {
     hash = "sha256-bprPYW5gDBgrKQFb9uRPIL5X+zmIeL/A+PbJPkt6EHk=";
   };
 
-  cargoLock.lockFile = "${src}/Cargo.lock";
+  # Keep this copy in sync with the pinned upstream release.
+  cargoLock.lockFile = ./Cargo.lock;
 
   # Nixpkgs links rusqlite against system SQLite even with the bundled feature.
   nativeBuildInputs = [ pkg-config ];

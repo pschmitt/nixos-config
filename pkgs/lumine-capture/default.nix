@@ -27,7 +27,8 @@ rustPlatform.buildRustPackage {
 
   src = source;
 
-  cargoLock.lockFile = "${source}/Cargo.lock";
+  # Keep this copy in sync with the pinned upstream release.
+  cargoLock.lockFile = ./Cargo.lock;
 
   nativeBuildInputs = [
     autoPatchelfHook
