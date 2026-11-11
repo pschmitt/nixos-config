@@ -9,6 +9,8 @@
 let
   pkgsTermux =
     (import ../../pkgs/termux/native/package-set.nix { inherit inputs pkgs; }).termuxPackages;
+  # Termux only reads ~/.termux/font.ttf; an OTF under that name works.
+  termuxFont = "${pkgs.ComicCodeNF}/share/fonts/opentype/ComicCodeNerdFont-Regular-resized.otf";
 in
 {
   imports = [
@@ -111,6 +113,7 @@ in
         ".config/nvim/lua"
         ".config/nvim/snippets"
         ".config/nvim/stylua.toml"
+        ".termux/font.ttf"
       ]
       ++ lib.optionals (config.termux.ssh.hostKeysSopsFile != null) [
         ".local/share/termux-native/ssh-host-keys.sops.yaml"
@@ -250,6 +253,7 @@ in
       };
 
       home = {
+        file.".termux/font.ttf".source = termuxFont;
         username = "termux";
         homeDirectory = "/data/data/com.termux/files/home";
         stateVersion = "26.05";

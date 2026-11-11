@@ -18,7 +18,6 @@
     ./noctalia.nix
     ./initrd-network.nix
     ./helixnotes.nix
-    ./managarr.nix
     ./noisetorch.nix
     ./network.nix
     ./power-profiles-daemon.nix
