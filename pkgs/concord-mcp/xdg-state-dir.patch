@@ -101,8 +101,8 @@ diff -ru orig/src/install/adapters/index.ts src/src/install/adapters/index.ts
  } from '../../domain/harness-config.js';
  import { userHome } from '../../config/paths.js';
 +import { userConcordDir } from '../../config/user-config.js';
- import { spawnCommandSync } from '../spawn-command.js';
- import {
+ import { installOpencode, statusOpencode } from './opencode.js';
+ import { atLeast, executablePath, run, versionTuple } from './probe.js';
    devinMcpInstalled,
 @@ -878,7 +879,7 @@
        ? entry
