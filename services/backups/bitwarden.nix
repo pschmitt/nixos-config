@@ -88,7 +88,7 @@
             "Anika hat ihr Passwort vergessen"
           ];
         };
-        pruneDestination = false;
+        pruneDestination = true;
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
         # Offset from backupJobs.personal's "0/6:00:00" schedule: both jobs
         # log into the same "personal" account, and a same-second collision
