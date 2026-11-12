@@ -16,7 +16,7 @@ Use this skill for NetBox inventory and metadata work.
    them.
 
 This skill is for the private NetBox only. The work (WIIT) inventory is a separate NetBox instance with its own
-token: see the `work` skill, section "Management NetBox". Do not use the credentials above there.
+token: see the `netbox-wiit` skill. Do not use the credentials above there.
 
 ## Workflow
 
