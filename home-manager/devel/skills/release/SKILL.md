@@ -12,15 +12,26 @@ order of steps and the traps that cost rounds before.
 
 1. `git status` is clean, `main` is pushed and lint is green. If lint fails, fix it first, then
    release (not the other way round).
-2. Land open dependency PRs: `gh pr list`, merge those with green checks (Renovate rebases the
-   conflicting ones; wait), skip failing or major ones and say so. Let CI finish on the resulting
-   `main` (`ci-watch` skill).
-3. Pick the version from the existing tags: `git tag --sort=-v:refname | head -3`. Do not skip a
+2. Coordinate first: check Concord (`inspect_work` on the repository's workspace) for other agents
+   working in it, ask them through `update_work` whether their work is pushed and in the changelog,
+   and tell them not to push until the tag is out. Verify pushed state yourself (`git log`,
+   `git status`) when they are not live.
+3. Get the Renovate (and other dependency) PRs in: `gh pr list`. Merge the green ones; rebase a
+   conflicting one (tick its rebase box, or wait for Renovate) and merge it once green; fix a
+   failing one when the fix is small (`merge-prs` skill). Only skip one that needs a real
+   migration or a major update, and say which and why. Let CI finish on the resulting `main`
+   (`ci-watch` skill).
+4. Pick the version from the existing tags: `git tag --sort=-v:refname | head -3`. Do not skip a
    number (rbw once went to 2.27.2 without a 2.27.1). A change to the rbw agent protocol needs at
    least a minor bump. Any extension source change needs a new version.
-4. Changelog: put the entries under the unreleased heading in `CHANGELOG.md` before
-   `release-prepare`, which dates it. A forgotten changelog means editing the last release.
-5. The tag is GPG-signed: run the unlock and probe from `CONTEXT.md` first.
+5. Changelog (when the project has one): it should already be current, because every change adds
+   its entry under the unreleased heading in the same commit. Before `release-prepare`, which
+   dates it, check that each commit since the last tag (`git log vLAST..`) is covered, add what
+   is missing (merged dependency PRs, other agents' work), and merge entries for intermediate
+   steps into what actually ships. A forgotten changelog means editing the last release.
+6. The tag is GPG-signed: run the unlock and probe from `CONTEXT.md` (`gpg-signing` skill) right
+   before every signed commit and again right before `release-tag`; the cache can expire while
+   CI runs.
 
 ## Release
 
