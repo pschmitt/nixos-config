@@ -49,7 +49,9 @@ restoration. Commit the complete related set, or remove only your own unrelated
 intent-to-add entries from the index while keeping their files on disk, then
 stage them again for their commit. Do not bypass the hook.
 
-Never evaluate or build on the machine the agent runs on (see `AGENTS.md`). Prefer an ad-hoc
+Follow the repository's workload limits: lightweight metadata, lock updates and small targeted
+evaluations can run locally when host load permits; offload builds and substantial or uncertain
+evaluations (see `AGENTS.md`). Prefer an ad-hoc
 `rworker` (see the `rworker` skill: `rworker exec --sync SRC -- CMD`, or `sync` + `ssh`), which
 needs no `~/build` cleanup; the scripts below target the shared build nodes. Two scripts in this
 skill's `scripts/` directory replace the hand-typed rsync/ssh and `gh run` loops:

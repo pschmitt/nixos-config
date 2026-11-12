@@ -123,23 +123,24 @@ after its client restarts.
 - **Android/Gradle:** `nix develop` needs the project's Android SDK shell;
   give it `--disk 250` (Gradle caches are large) and a TTL that covers the
   first, uncached build.
+- **Nix evaluation:** Remote builders and `--eval-store` do not move evaluation.
+  Sync the tree and run Nix on the worker for expensive evaluations. Follow
+  the repository's workload policy for deciding when to offload.
 - **Nix builds:** `nix build --max-jobs 0 --builders "$(rworker builder "$w")"
   .#pkg` builds on the worker and copies the result back. The worker
   substitutes from cache.nixos.org and nixbot's store itself, and from the
   private S3 cache unless it was created with `--no-nix-cache`. Add
   `--option builders-use-substitutes true` so inputs are fetched on the
   worker instead of being copied up from here.
-- **Updating and checking a flake:** sync the checkout to a run-specific
+- **Checking a flake on a worker:** sync the checkout to a run-specific
   worker directory. `rworker sync` copies `.git`; remove only that directory's
   `.git` before running Nix so it sees the synced working tree, including
-  uncommitted changes. For private GitHub or GitLab inputs, transfer a minimal
-  Nix config with only the required `access-tokens` entries as a mode-0600
-  file and set `NIX_USER_CONF_FILES` on the worker command; never put tokens
-  in command arguments or the store. Pass `--accept-flake-config` when the project
-  requires its configured substituters or other trusted settings. Run
-  `nix flake update` there, review the resulting lockfile against the
-  pre-update copy, then run the repository's checks and build its required
-  outputs on the worker. Copy back only the reviewed files, and remove the
+  uncommitted changes. For private inputs, see **Secrets and private inputs**.
+  Pass `--accept-flake-config` when the project
+  requires its configured substituters or other trusted settings. If updating
+  inputs there, review the resulting lockfile against the pre-update copy;
+  run the repository's checks and build its required outputs on the worker.
+  Copy back only the reviewed files, and remove the
   auth file before deleting the worker.
 - **Keep big closures off the home link.** The user's home connection is DSL
   and slow: copying a large result back to the agent's host wastes their
@@ -208,14 +209,28 @@ tear down the worker. Remove any local temporary secret file, revoke temporary t
 when finished, and always `down` the worker. Do not assume deletion erases
 copies made by the workload.
 
-For a GitHub private flake fetch, the file may instead be a minimal Nix user
-configuration containing only the scoped `access-tokens` entry, prepared locally
-without printing the token. Run the worker's Nix command with
-`NIX_USER_CONF_FILES=<worker-file-path>` in its environment; this replaces the
-usual user configuration for that command. This authenticates the Nix client
-fetch, not arbitrary build sandboxes or daemon-side private cache access. Do
-not put the token itself in `NIX_CONFIG` or a command argument. The separate
-`nix-cache` mechanism above handles its own read-only S3 credentials.
+For private flake fetches, prepare a minimal Nix user configuration without
+printing tokens. Include `access-tokens` for every private host, including nested
+inputs: overriding the parent does not authenticate its dependencies. GitLab
+tokens need a `PAT:` or `OAuth2:` prefix. Set `NIX_USER_CONF_FILES` to this file
+for the worker's Nix command; it replaces the normal user configuration and
+authenticates client fetches, not build sandboxes or daemon-side cache access.
+Do not put tokens in `NIX_CONFIG` or arguments. `nix-cache` handles S3 separately.
+
+On hosts with our Home Manager Nix configuration, the rendered SOPS template
+already contains the GitHub and WIIT GitLab entries, including those needed by
+the private configuration's nested inputs. Set up an existing worker in one
+step (the file stays on its encrypted disk, readable only by the worker user):
+
+```bash
+rworker ssh "$w" 'umask 077 && mkdir -p "$HOME/.config/rworker" && chmod 700 "$HOME/.config/rworker" && install -m 600 /dev/stdin "$HOME/.config/rworker/nix-auth.conf"' < "$HOME/.config/sops-nix/secrets/rendered/nix-access-tokens"
+rworker ssh "$w" "cd repo && NIX_USER_CONF_FILES=\$HOME/.config/rworker/nix-auth.conf nix eval --json '.#nixosConfigurations.example.config.system.build.toplevel.drvPath'"
+rworker ssh "$w" 'rm -f "$HOME/.config/rworker/nix-auth.conf"'
+```
+
+Use the synced checkout and desired command; keep the config until fetching is
+done. If the template is unavailable, use the minimal-config method above.
+Remove the file even on failure and then tear down the worker as usual.
 
 ## Changing rworker
 

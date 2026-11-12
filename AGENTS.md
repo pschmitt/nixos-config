@@ -15,19 +15,21 @@
 - Keep large scratch trees and archives in a project-specific directory under
   `~/build` or on the remote worker, not `/tmp` (which may be memory-backed).
   Remove your own temporary artifacts when finished.
-- **Never run Nix evaluation or builds on the machine where the agent is running**,
-  regardless of host. That covers `nix eval`, `nix build`, `nix run
-  nixpkgs#<tool>` (e.g. deadnix), `nix flake check`, `nix flake lock` and
-  `nix-instantiate`, not just host evaluations. Plain binaries already on
-  PATH (`statix`, `nixfmt`, `git`, `sops`) are fine.
-- Evaluate on an ad-hoc `rworker` instead (see the `rworker` skill); use a
+- Protect interactive machines and shared services from heavy workloads. Lightweight
+  operations such as `nix flake update`, `nix flake lock`, metadata inspection,
+  and small targeted evaluations may run locally. Consider fetch size, CPU,
+  memory, and current host load; stop and move the work if it becomes costly.
+  Plain binaries already on PATH (`statix`, `nixfmt`, `git`, `sops`) are fine.
+- Run builds, `nix flake check`, full system or multi-host evaluations, and
+  other substantial or uncertain workloads on an ad-hoc `rworker` (see the
+  `rworker` skill); use a
   shared remote build host (see the private `brkn-infra` skill) only for quick
   one-offs. Either way: rsync the working tree(s) to
   `~/build/<project>` (`rworker sync` does this; exclude `.git/`, and remove any stale `.git` there so
   the path flake sees untracked files), then run `nix` over SSH with
   `--override-input nixos-config-private path:<remote private checkout>`
-  for uncommitted private changes. Lock-file updates run there too; copy
-  `flake.lock` back afterwards.
+  for uncommitted private changes. If a lock-file update runs remotely, copy
+  `flake.lock` back afterwards and check for concurrent changes first.
 - On a shared build host, keep remote build directories from accumulating. Before starting a new run,
   remove only stale build files or directories that you can identify as left
   by your own earlier runs; never delete another agent's files or anything
@@ -48,7 +50,7 @@
   user's time and internet bandwidth count; a separate pre-verification round
   trip is wasted effort here. This holds especially when the target is not far
   behind `main`, so the deploy builds little. Build on the target, not on the
-  host the agent runs on (the local-evaluation ban above stays).
+  host the agent runs on (the heavy-workload restriction above stays).
   Use an `rworker` for large or risky changes (many hosts, refactors, flake
   input bumps, anything whose closure is big or whose failure would be hard
   to undo). When unsure which side of the line a change is on, ask, briefly.
