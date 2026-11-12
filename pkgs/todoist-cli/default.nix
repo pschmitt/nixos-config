@@ -12,16 +12,16 @@
 
 buildNpmPackage (finalAttrs: {
   pname = "todoist-cli";
-  version = "5.12.4";
+  version = "6.1.0";
 
   src = fetchFromGitHub {
     owner = "Doist";
     repo = finalAttrs.pname;
     rev = "v${finalAttrs.version}";
-    hash = "sha256-sA41yc9mP3xIcXqk+RReyEHCBAEs59dNXz4ZWICu9mM=";
+    hash = "sha256-ikOmd1G526ZslCKiv59cJqvMcJgagokTQBrIDeNNQ00=";
   };
 
-  npmDepsHash = "sha256-ykMp/0hGG5vstFzk1rO4m9KqWWqhwSnXcjp0SwnqC4E=";
+  npmDepsHash = "sha256-Y+JJ2bxt6mrblnXzy5PFnN/avRICpqpo2z0zbvVY0Ek=";
 
   # The npm dependency derivation also runs postPatch, which uses jq. The
   # buildNpmPackage default does not pass the package's nativeBuildInputs to
