@@ -64,7 +64,7 @@ buildNpmPackage (finalAttrs: {
   env.NODE_OPTIONS = lib.optionalString stdenv.hostPlatform.isAarch64 "--jitless";
 
   postInstall = ''
-    tabtabTemplates=$out/lib/node_modules/@doist/todoist-cli/node_modules/@pnpm/tabtab/lib/templates
+    tabtabTemplates=$PWD/node_modules/@pnpm/tabtab/lib/templates
 
     mkdir -p "$TMPDIR/completions"
     sed "s/{pkgname}/td/g; s|{completer}|$out/bin/td|g" \
@@ -81,7 +81,7 @@ buildNpmPackage (finalAttrs: {
 
     # Ship the skill of the CLI: $out/share/skills/todoist-cli/todoist-cli/
     mkdir -p "$TMPDIR/skill/todoist-cli"
-    TD_PKG="$out/lib/node_modules/@doist/todoist-cli" \
+    TD_PKG="$out/lib/node_modules/@todoist/cli" \
     TD_SKILL_OUT="$TMPDIR/skill/todoist-cli/SKILL.md" \
     ${nodejs}/bin/node --input-type=module << 'JSEOF'
     import { readFileSync, writeFileSync } from 'node:fs';
