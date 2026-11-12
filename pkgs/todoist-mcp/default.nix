@@ -2,23 +2,42 @@
   lib,
   stdenv,
   buildNpmPackage,
+  fetchNpmDeps,
   fetchFromGitHub,
+  jq,
   makeWrapper,
   nodejs,
 }:
 
-buildNpmPackage rec {
+buildNpmPackage (finalAttrs: {
   pname = "todoist-mcp";
-  version = "14.0.4";
+  version = "15.0.3";
 
   src = fetchFromGitHub {
     owner = "Doist";
     repo = "todoist-mcp";
-    rev = "v${version}";
-    hash = "sha256-y8xTQbTZQxK9Wddg+5rGhR10vHnXT9coAUiJWQRFOmQ=";
+    rev = "v${finalAttrs.version}";
+    hash = "sha256-PgMs8BxLWBgGXjhT/ug8GcMsZATxb/mmA9ElthVGr1Y=";
   };
 
-  npmDepsHash = "sha256-ZOqsRS0MJcJRy0jkH+2sHtHafifMu3TDcHNMf6HSYow=";
+  npmDepsHash = "sha256-+1Jv51r+MBQC8NEkQuZhC0zAKsR+JeP0gPBzCx2WvBQ=";
+
+  npmDeps = fetchNpmDeps {
+    name = "${finalAttrs.pname}-${finalAttrs.version}-npm-deps";
+    hash = finalAttrs.npmDepsHash;
+    inherit (finalAttrs) src;
+    prePatch = finalAttrs.prePatch or "";
+    patches = finalAttrs.patches or [ ];
+    postPatch = finalAttrs.postPatch or "";
+    patchFlags = finalAttrs.patchFlags or [ ];
+    fetcherVersion = finalAttrs.npmDepsFetcherVersion or 1;
+    nativeBuildInputs = [ jq ];
+  };
+
+  postPatch = ''
+    jq 'del(.scripts.prepare)' package.json > package.json.new
+    mv package.json.new package.json
+  '';
 
   doCheck = false;
 
@@ -26,7 +45,7 @@ buildNpmPackage rec {
     mkdir -p "$out/lib/node_modules/@doist/todoist-mcp"
   '';
 
-  nativeBuildInputs = lib.optionals stdenv.hostPlatform.isAarch64 [ makeWrapper ];
+  nativeBuildInputs = [ jq ] ++ lib.optionals stdenv.hostPlatform.isAarch64 [ makeWrapper ];
 
   # Under aarch64 QEMU, npm ci needs --jitless to avoid a QEMU JIT crash, but
   # Vite needs WebAssembly during the build. Run npm itself single-threaded and
@@ -53,4 +72,4 @@ buildNpmPackage rec {
     maintainers = [ lib.maintainers.pschmitt ];
     mainProgram = "todoist-mcp";
   };
-}
+})
