@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.services.cli-proxy-api;
+  yaml = pkgs.formats.yaml { };
 in
 {
   options.services.cli-proxy-api = {
@@ -17,8 +18,25 @@ in
       description = "CLIProxyAPI package to run.";
     };
 
+    settings = lib.mkOption {
+      inherit (yaml) type;
+      default = { };
+      description = "Non-secret CLIProxyAPI configuration. Keep credentials in a runtime configFile.";
+    };
+
+    modelPools = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.attrsOf lib.types.str);
+      default = { };
+      description = ''
+        Named model pools, mapping OAuth providers to upstream model IDs.
+        Each pool becomes a shared alias while preserving original model names.
+        These select routes; they do not restrict a client's access to other models.
+      '';
+    };
+
     configFile = lib.mkOption {
       type = lib.types.str;
+      default = toString (yaml.generate "cli-proxy-api.yaml" cfg.settings);
       description = ''
         Runtime YAML configuration, including client authentication keys.
         Supply a secret path or SOPS template; never put credentials in the Nix store.
@@ -33,6 +51,32 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    services.cli-proxy-api.settings = {
+      config-version = lib.mkDefault 8;
+      server.host = lib.mkDefault "127.0.0.1";
+      oauth = {
+        auth-dir = lib.mkDefault "${cfg.dataDir}/auth";
+        model-alias = lib.mkIf (cfg.modelPools != { }) (
+          lib.foldlAttrs (
+            aliases: pool: providers:
+            lib.foldlAttrs (
+              acc: provider: name:
+              acc
+              // {
+                ${provider} = (acc.${provider} or [ ]) ++ [
+                  {
+                    inherit name;
+                    alias = pool;
+                    fork = true;
+                  }
+                ];
+              }
+            ) aliases providers
+          ) { } cfg.modelPools
+        );
+      };
+    };
+
     environment.systemPackages = [ cfg.package ];
 
     users = {
