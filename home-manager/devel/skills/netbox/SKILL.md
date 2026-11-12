@@ -15,6 +15,9 @@ Use this skill for NetBox inventory and metadata work.
    the `rbw` skill ("Using a credential from another skill"), never print
    them.
 
+This skill is for the private NetBox only. The work (WIIT) inventory is a separate NetBox instance with its own
+token: see the `work` skill, section "Management NetBox". Do not use the credentials above there.
+
 ## Workflow
 
 1. Identify whether the task is about inventory modeling, metadata cleanup,
