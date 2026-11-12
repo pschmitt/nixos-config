@@ -30,6 +30,8 @@ let
   };
 in
 {
+  programs.zsh.shellAliases.clw = "claude-work";
+
   home.file = {
     ".config/claude-work/rules/context.md".source = ../devel/CONTEXT.md;
     ".config/claude-work/keybindings.json".source = ../devel/claude-keybindings.json;

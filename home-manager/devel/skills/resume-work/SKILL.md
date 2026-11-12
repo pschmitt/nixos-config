@@ -50,6 +50,8 @@ browser-daemon) is often started from `nixos-config.git`. If the user names a
 project, an agent or a config dir (`~/.config/claude-work`), search that one
 instead of `$PWD`:
 
+- **claude-auto**: `~/.config/claude-auto/projects/<slug>/*.jsonl`; its
+  project directory also contains tool results and project memory.
 - **claude**: `~/.config/claude/projects/<slug>/*.jsonl` (the configured
   `CLAUDE_CONFIG_DIR`; `~/.claude/projects` only holds older sessions)
 - **claude-work**: `~/.config/claude-work/projects/<slug>/*.jsonl`

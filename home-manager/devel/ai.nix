@@ -665,7 +665,11 @@ in
     '';
 
     programs = {
-      zsh.shellAliases.rk = "rworker";
+      zsh.shellAliases = {
+        cl = "claude";
+        cx = "codex";
+        rk = "rworker";
+      };
       claude-code = {
         enable = true;
         package = pkgs.llm-agents.claude-code;
