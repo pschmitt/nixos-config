@@ -44,7 +44,7 @@
       };
       backupPath = "/srv/bw-backup/data";
       environmentFiles = [ config.sops.secrets."rbw-auto/backup".path ];
-      retention = 30;
+      retentionDays = 30;
       schedule = "0/6:00:00";
       monit = {
         enable = true;
@@ -62,7 +62,7 @@
       # destination org's collections: "Default collection" and "Anika hat
       # ihr Passwort vergessen" are 1:1 copies of the equally-named source
       # collections; "Personal vault" has no source-side counterpart, so it
-      # gets a copy of the whole source vault. `pruneDestination` moves
+      # gets the source's personal vault. `pruneDestination` moves
       # copies whose source entry is gone to the trash, so every collection
       # stays an exact copy.
       #
@@ -82,6 +82,9 @@
         mode = "collections";
         collections = {
           org = "bitwarden.com";
+          # "Personal vault" holds the source's personal vault only; the
+          # organization entries live in their own collections.
+          fallback = "personal-vault";
           names = [
             "Personal vault"
             "Default collection"
