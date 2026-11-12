@@ -152,7 +152,14 @@ _rworker() {
   local skip=2
   if (( ${takes_worker[(Ie)$action]} )) && [[ "$action" != prune ]]
   then
-    skip=3
+    if [[ "$action" == logs && "${words[3]:-}" == -* ]]
+    then
+      # logs accepts flags without a worker, so keep a leading option for
+      # _arguments instead of consuming it as the optional worker position.
+      skip=2
+    else
+      skip=3
+    fi
   elif [[ "$action" == up && "${words[2]}" == ssh ]]
   then
     # ssh --create: skip the --create too.
