@@ -129,6 +129,18 @@ after its client restarts.
   private S3 cache unless it was created with `--no-nix-cache`. Add
   `--option builders-use-substitutes true` so inputs are fetched on the
   worker instead of being copied up from here.
+- **Updating and checking a flake:** sync the checkout to a run-specific
+  worker directory. `rworker sync` copies `.git`; remove only that directory's
+  `.git` before running Nix so it sees the synced working tree, including
+  uncommitted changes. For private GitHub or GitLab inputs, transfer a minimal
+  Nix config with only the required `access-tokens` entries as a mode-0600
+  file and set `NIX_USER_CONF_FILES` on the worker command; never put tokens
+  in command arguments or the store. Pass `--accept-flake-config` when the project
+  requires its configured substituters or other trusted settings. Run
+  `nix flake update` there, review the resulting lockfile against the
+  pre-update copy, then run the repository's checks and build its required
+  outputs on the worker. Copy back only the reviewed files, and remove the
+  auth file before deleting the worker.
 - **Keep big closures off the home link.** The user's home connection is DSL
   and slow: copying a large result back to the agent's host wastes their
   bandwidth and time. Fetch only small artifacts home. For a closure that
