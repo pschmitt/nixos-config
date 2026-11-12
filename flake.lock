@@ -144,11 +144,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794489514,
-        "narHash": "sha256-WmlGclgKj4x3irhlrSsBlLDozoBmsMgmKlalxmyHfmc=",
+        "lastModified": 1794491548,
+        "narHash": "sha256-tqFoADrxEbGHOHyJiMmBmPo7K5TFNdndTjG4HOEhF3E=",
         "owner": "pschmitt",
         "repo": "bruvtab",
-        "rev": "8e94790eea631efe24b6cae589fefccb4e783db0",
+        "rev": "0c4c9c0cfd06be41f9edc5fccc59b44c3db4b514",
         "type": "github"
       },
       "original": {
