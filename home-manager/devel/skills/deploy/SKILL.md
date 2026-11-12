@@ -86,4 +86,11 @@ project's own CI is a `release` concern.)
 - Do not run builds or full evaluations on the machine you are on. A lock update is fine.
 - A host that serves builds to others must not restart mid-rollout: its upgrade can freeze the other
   hosts' upgrades in a copy. If they stall, restart their upgrades once it is back.
+- **Build nodes first, one of them alone.** When the bump needs a build that is in no cache yet (a
+  fresh project commit), never restart the build nodes (rofl-13 to rofl-16) together with each
+  other or with their clients: each offloads the same derivation to another, and they wait on
+  each other's locks for hours with no error (2026-11-12, browser-daemon). Upgrade one build node
+  alone; once it has finished (the build is then cached), run the others in parallel.
+  If upgrades already hang on `building ... on 'ssh-ng://...'`, stop them all
+  (`systemctl stop nixos-upgrade`, safe before the switch) and restart in that order.
 - A deploy that touches an agent skill or `CONTEXT.md` only takes effect in new sessions.
