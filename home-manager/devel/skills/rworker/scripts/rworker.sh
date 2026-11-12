@@ -2370,6 +2370,11 @@ cmd_cp() {
     show_help cp >&2
     return 2
   fi
+  # Make relative local paths unambiguous to rsync, including names with colons.
+  if [[ "$local_path" != /* && "$local_path" != ./* && "$local_path" != ../* ]]
+  then
+    local_path="./$local_path"
+  fi
   target="${remote%%:*}"
   split_target "$target" || return 2
   ip=$(worker_field "$TARGET_NAME" ip) || return 1

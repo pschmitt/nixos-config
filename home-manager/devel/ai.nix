@@ -202,6 +202,9 @@ let
   rworker = pkgs.symlinkJoin {
     name = "rworker";
     meta.mainProgram = "rworker";
+    postBuild = ''
+      ln -s rworker "$out/bin/wk"
+    '';
     paths = [
       (pkgs.writeShellApplication {
         name = "rworker";
