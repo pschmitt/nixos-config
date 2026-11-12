@@ -210,6 +210,7 @@ let
           pkgs.gnused
           pkgs.jq
           pkgs.openssh
+          pkgs.procps
           pkgs.rsync
           pkgs.util-linux
         ];

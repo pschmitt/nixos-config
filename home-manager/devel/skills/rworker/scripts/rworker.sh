@@ -2096,6 +2096,18 @@ cmd_logs_all() {
   return "$status"
 }
 
+# Kill a background job and everything below it. Killing only the subshell
+# leaves its ssh child running (and printing) after Ctrl-C, because bash starts
+# background jobs of a non-interactive script with SIGINT ignored.
+kill_tree() {
+  local pid="$1" child
+  for child in $(pgrep -P "$pid" 2>/dev/null)
+  do
+    kill_tree "$child"
+  done
+  kill "$pid" 2>/dev/null || true
+}
+
 cmd_logs_all_follow() {
   local lines="$1" no_events="${2:-}" workers worker pid ready_workers events_pid=""
   # shellcheck disable=SC2034 # read and written through namerefs in emit_status
@@ -2104,11 +2116,11 @@ cmd_logs_all_follow() {
   cleanup_followers() {
     for worker in "${!pids[@]}"
     do
-      kill "${pids[$worker]}" 2>/dev/null || true
+      kill_tree "${pids[$worker]}"
     done
     if [[ -n "$events_pid" ]]
     then
-      kill "$events_pid" 2>/dev/null || true
+      kill_tree "$events_pid"
       wait "$events_pid" 2>/dev/null || true
     fi
   }
@@ -2154,7 +2166,7 @@ cmd_logs_all_follow() {
       if [[ -z "${current[$worker]:-}" ]]
       then
         pid=${pids[$worker]}
-        kill "$pid" 2>/dev/null || true
+        kill_tree "$pid"
         unset 'pids[$worker]'
       fi
     done
