@@ -51,7 +51,8 @@ Actions:
   jobs NAME            list registered jobs
   ps [NAME] [--long]   show processes of running jobs on one or all workers
   logs [NAME [JOB]] [--lines N] [--follow] [--no-events]
-                       show logs; follow includes lifecycle events by default
+                       show logs; follow includes lifecycle events and a worker
+                       count status line (every 5 min, once when none) by default
   events [--interval SECONDS]
                        stream worker and job lifecycle events
   register NAME JOB --log PATH
@@ -2097,7 +2098,8 @@ cmd_logs_all() {
 
 cmd_logs_all_follow() {
   local lines="$1" no_events="${2:-}" workers worker pid ready_workers events_pid=""
-  local discovery_interval=5
+  # shellcheck disable=SC2034 # read and written through namerefs in emit_status
+  local discovery_interval=5 status_interval=300 last_status_key="" last_status_at=0
   declare -A pids=() current=()
   cleanup_followers() {
     for worker in "${!pids[@]}"
@@ -2126,6 +2128,9 @@ cmd_logs_all_follow() {
       sleep "$discovery_interval"
       continue
     fi
+    [[ -n "$no_events" ]] || {
+      emit_status "$workers" "$status_interval" last_status_key last_status_at
+    }
     current=()
     ready_workers=$(jq -r '.[] | select((.ip // "") != "" and (.host_key // "") != "") | .name' <<< "$workers")
     while IFS= read -r worker
@@ -2155,6 +2160,31 @@ cmd_logs_all_follow() {
     done
     sleep "$discovery_interval"
   done
+}
+
+# Periodic worker count for `logs -f`: every interval while workers exist, and
+# once (not repeatedly) when there are none until the count changes.
+# Args: worker JSON, interval, names of the key and timestamp variables.
+emit_status() {
+  local workers="$1" interval="$2" key_var="$3" at_var="$4" key summary now
+  local -n last_key="$key_var" last_at="$at_var"
+  key=$(jq -r 'length' <<< "$workers") || return 0
+  now=$(date +%s)
+  if [[ "$key" == "$last_key" ]] && { [[ "$key" == 0 ]] || (( now - last_at < interval )); }
+  then
+    return 0
+  fi
+  if [[ "$key" == 0 ]]
+  then
+    summary="no workers"
+  else
+    summary=$(jq -r 'length as $n
+      | (group_by(.kind) | map("\(length) \(.[0].kind)") | join(", ")) as $k
+      | "\($n) worker\(if $n == 1 then "" else "s" end) (\($k))"' <<< "$workers") || return 0
+  fi
+  printf '%s %s %s\n' "$(date -u +%FT%TZ)" "$(paint 35 status)" "$(paint 35 "$summary")"
+  last_key="$key"
+  last_at="$now"
 }
 
 emit_event() {
