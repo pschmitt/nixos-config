@@ -90,6 +90,10 @@ in
     };
   };
 
+  # Root-owned parent of the backup directory: tmpfiles refuses to manage a
+  # path below a directory owned by another (non-root) user.
+  systemd.tmpfiles.rules = [ "d /srv/bw-backup 0755 root root -" ];
+
   # A hung attachment download (no network timeout) must not wedge the
   # oneshot unit forever and block its timer; fail so the next run retries
   # and Monit alerts.
