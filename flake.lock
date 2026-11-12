@@ -2084,6 +2084,22 @@
     },
     "nixpkgs_7": {
       "locked": {
+        "lastModified": 1792773339,
+        "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_8": {
+      "locked": {
         "lastModified": 1785602060,
         "narHash": "sha256-z7D96eESRM4CPV/XtwpwFn8IDdfLAmxz6lVWrGYXvR4=",
         "owner": "NixOS",
@@ -2692,19 +2708,17 @@
         "flake-utils": [
           "flake-utils"
         ],
-        "nixpkgs": [
-          "nixpkgs"
-        ],
+        "nixpkgs": "nixpkgs_7",
         "pre-commit-hooks": [
           "pre-commit-hooks"
         ]
       },
       "locked": {
-        "lastModified": 1794513944,
-        "narHash": "sha256-54XZa0neK4F9s6Ji4FUdlNDTQyHcYxVwJFmkrmd3LwY=",
+        "lastModified": 1794516841,
+        "narHash": "sha256-4OsaQE5I6QkSPokoFr93WNVG6brhbNNP9DSQRzgWel4=",
         "owner": "pschmitt",
         "repo": "stricknani",
-        "rev": "787531efa8cce0f2e6a26fbc22e1657b688f2039",
+        "rev": "7e214c354d7ef2797044a71eb417b9eb0732d469",
         "type": "github"
       },
       "original": {
@@ -3145,7 +3159,7 @@
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",
-        "nixpkgs": "nixpkgs_7",
+        "nixpkgs": "nixpkgs_8",
         "rust-overlay": "rust-overlay_2",
         "zlib": "zlib"
       },

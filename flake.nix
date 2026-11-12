@@ -88,7 +88,7 @@
     stricknani = {
       url = "github:pschmitt/stricknani";
       inputs = {
-        nixpkgs.follows = "nixpkgs";
+        # Keep the application's pinned nixpkgs so deployment reuses its tested CI package.
         flake-utils.follows = "flake-utils";
         pre-commit-hooks.follows = "pre-commit-hooks";
       };

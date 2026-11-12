@@ -83,6 +83,40 @@ To onboard a repository:
 
 ## Docker images
 
+For native package producers in GitHub Actions, use `nix-build.yaml` followed
+by `nix-checks.yaml` with a caller-owned `needs` dependency. Both accept a
+native `runner`, `system`, `pin-prefix` and optional Niks3 read credentials;
+the producer also caches dependency artifacts. Checks publish their successful
+outputs too. Use these lanes when E2E, release or image jobs need artifacts;
+keep existing nixbot coverage and platform-specific tests. Prefer Nix cache
+hits to long path-filter lists for these lanes. ARM checks without KVM use
+`full-flake-check: false` and preserve any `exclude-checks` entries.
+
+The shared `nix-lint.yaml` exposes independent `statix`, `deadnix` and `nixfmt`
+jobs. Their names contain only the tool; GitHub adds the caller's prefix.
+
+When a flake already exports a `dockerTools` image, prefer the shared
+`nix-image.yaml` workflow. Pass `prebuilt-artifact` and `archive-file` to load
+the image from an earlier producer job without another Nix build. Without
+an artifact, `package` names the flake image output to build. Keep the server,
+web assets and image in one Nix dependency graph instead of running Nix again
+inside a Dockerfile's separate store.
+
+For multi-architecture images, pass `platforms: linux/amd64,linux/arm64` and
+`prebuilt-artifacts`, a JSON map from each platform to its producer artifact.
+The ARM producer can export its existing image with `nix-aarch64.yaml`'s
+`image-package`, `image-artifact` and `image-archive-file` inputs. Each archive
+is loaded and checked on a native runner; no emulated compilation is needed.
+
+The caller keeps its triggers and application-specific verification in a
+checked-in Bash script passed as `test-script`; the workflow sets `NIX_IMAGE`
+to the loaded image name and tag. Publication to GHCR is opt-in through
+`publish`: platform images are pushed by digest, then one manifest receives
+the tags after every native check passes. Grant `contents: read` and
+`packages: write` to match the reusable workflow's job permissions, including
+its opt-in publication jobs. Image labels and runtime configuration belong
+in the flake.
+
 `docker-build.yaml` builds every platform under QEMU: fine for images that
 only install packages, far too slow for images that compile Rust or other
 native code on arm64. For those, use `docker-native.yaml`, which builds each
