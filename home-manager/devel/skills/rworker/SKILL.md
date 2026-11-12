@@ -142,11 +142,9 @@ after its client restarts.
   run the repository's checks and build its required outputs on the worker.
   Copy back only the reviewed files, and remove the
   auth file before deleting the worker.
-- **Keep big closures off the home link.** The user's home connection is DSL
-  and slow: copying a large result back to the agent's host wastes their
-  bandwidth and time. Fetch only small artifacts home. For a closure that
-  other hosts will deploy, have it go from the worker to the S3 cache and let
-  the targets substitute, or build on the target itself.
+- **Whole host closures and big transfers:** build them on a `--profile
+  large-builder` worker and keep the result off the home link; see
+  [host-closures](references/host-closures.md).
 - **Pushing to the S3 cache is fine, with the local credentials.** Workers
   are private and temporary, so the user allows using the S3 credentials of
   the agent's own host on a worker, without asking each time: the same AWS
