@@ -25,6 +25,13 @@ _rworker_workers() {
   _describe -t workers 'worker' workers
 }
 
+_rworker_jobs() {
+  local worker="${_rworker_job_worker:-}"
+  local -a jobs
+  jobs=(${(@f)$(rworker __jobs "$worker" 2>/dev/null)})
+  _describe -t jobs 'job' jobs
+}
+
 _rworker() {
   _rworker_spec
   local line action
@@ -109,7 +116,11 @@ _rworker() {
     return
   fi
 
-  local flag spec_flag values desc
+  local flag spec_flag values desc _rworker_job_worker="${words[3]:-}"
+  if [[ "$action" == logs ]] && (( CURRENT >= 4 ))
+  then
+    flags+=('1:job:_rworker_jobs')
+  fi
   for line in "${_rworker_spec_cache[@]}"
   do
     [[ "$line" == "flag $action "* ]] || continue

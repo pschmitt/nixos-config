@@ -2622,6 +2622,11 @@ main() {
       cmd_workers "${2:-}"
       return 0
       ;;
+    __jobs)
+      [[ -n "${2:-}" ]] || return 0
+      cmd_jobs_remote jobs "$2" | cut -f1
+      return
+      ;;
     -h|--help|help)
       if [[ -n "${2:-}" ]]
       then

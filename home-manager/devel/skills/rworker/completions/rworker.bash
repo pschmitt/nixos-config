@@ -58,6 +58,10 @@ _rworker() {
       words+=" $(sed -n 's/^global \([^ ]*\) .*/\1/p' <<< "$spec")"
     fi
   fi
+  if [[ "$action" == logs && $COMP_CWORD -ge 3 ]]
+  then
+    words+=" $(rworker __jobs "${COMP_WORDS[2]}" 2>/dev/null)"
+  fi
   mapfile -t COMPREPLY < <(compgen -W "$words" -- "$cur")
 }
 
