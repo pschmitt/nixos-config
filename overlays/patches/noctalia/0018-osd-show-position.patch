@@ -1,43 +1,43 @@
 diff --git a/src/shell/osd/osd_overlay.cpp b/src/shell/osd/osd_overlay.cpp
-index 6a84d9fbe..540b0e4ed 100644
+index bb11db1..5e287d3 100644
 --- a/src/shell/osd/osd_overlay.cpp
 +++ b/src/shell/osd/osd_overlay.cpp
-@@ -178,6 +178,12 @@ namespace {
+@@ -179,6 +179,12 @@ namespace {
      return std::min(ph * 0.5F, Style::scaledRadiusSm(layoutScale));
    }
- 
-+  [[nodiscard]] bool isValidOsdPosition(const std::string& position) {
+
++  bool isValidOsdPosition(const std::string& position) {
 +    return position == "top_left" || position == "top_center" || position == "top_right" || position == "bottom_left"
 +        || position == "bottom_center" || position == "bottom_right" || position == "center_left"
-+        || position == "center_right";
++        || position == "center_right" || position == "center";
 +  }
 +
-   [[nodiscard]] bool isBottomPosition(const std::string& position) { return position.starts_with("bottom_"); }
- 
-   [[nodiscard]] bool isCenterPosition(const std::string& position) { return position.starts_with("center_"); }
-@@ -270,6 +276,7 @@ void OsdOverlay::registerIpc(IpcService& ipc) {
+   bool isBottomPosition(const std::string& position) { return position.starts_with("bottom_"); }
+
+   bool isCenterPosition(const std::string& position) { return position.starts_with("center_") || position == "center"; }
+@@ -271,6 +277,7 @@ void OsdOverlay::registerIpc(IpcService& ipc) {
      std::string value;
      std::optional<double> progress;
      bool inactive = false;
 +    std::string position;
- 
+
      if (input.front() == '{') {
        const nlohmann::json payload = nlohmann::json::parse(input, nullptr, false);
-@@ -300,6 +307,13 @@ void OsdOverlay::registerIpc(IpcService& ipc) {
+@@ -301,6 +308,13 @@ void OsdOverlay::registerIpc(IpcService& ipc) {
          }
          inactive = it->get<bool>();
        }
 +      if (const auto it = payload.find("position"); it != payload.end()) {
 +        if (!it->is_string() || !isValidOsdPosition(it->get<std::string>())) {
 +          return "error: osd-show field 'position' must be one of top_left, top_center, top_right, "
-+                 "bottom_left, bottom_center, bottom_right, center_left, center_right\n";
++                 "bottom_left, bottom_center, bottom_right, center_left, center_right, center\n";
 +        }
 +        position = it->get<std::string>();
 +      }
      } else {
        const std::size_t split = input.find_first_of(" \t");
        icon = input.substr(0, split);
-@@ -311,7 +325,9 @@ void OsdOverlay::registerIpc(IpcService& ipc) {
+@@ -312,7 +326,9 @@ void OsdOverlay::registerIpc(IpcService& ipc) {
      if (icon.empty()) {
        return "error: osd-show requires a non-empty icon\n";
      }
@@ -48,7 +48,7 @@ index 6a84d9fbe..540b0e4ed 100644
      return "ok\n";
    });
  }
-@@ -484,7 +500,9 @@ void OsdOverlay::ensureSurfaces() {
+@@ -495,7 +511,9 @@ void OsdOverlay::ensureSurfaces() {
        : "top_center";
    const bool showProgress = m_content.showProgress;
    const std::string orientation = effectiveOsdOrientation(m_content, configOrientation);
@@ -60,7 +60,7 @@ index 6a84d9fbe..540b0e4ed 100644
    m_followFocusedOutput = m_config != nullptr && m_config->config().osd.followFocusedOutput;
    if (!m_followFocusedOutput) {
 diff --git a/src/shell/osd/osd_overlay.h b/src/shell/osd/osd_overlay.h
-index 4fb2911ba..590d6ea7c 100644
+index ad0a20d..d07f75f 100644
 --- a/src/shell/osd/osd_overlay.h
 +++ b/src/shell/osd/osd_overlay.h
 @@ -50,6 +50,8 @@ struct OsdContent {
@@ -70,5 +70,5 @@ index 4fb2911ba..590d6ea7c 100644
 +  // Per-OSD position override (e.g. "center_right"); empty uses the configured position.
 +  std::string position;
  };
- 
+
  // Custom OSD as requested by plugins and the osd-show IPC command. No progress hides the bar;

@@ -71,6 +71,9 @@ in
         # payload that overrides the configured position for that OSD only; the
         # next OSD without one goes back to the config. Used by `osd --position`.
         ./patches/noctalia/0018-osd-show-position.patch
+
+        # Adapt notification helpers to the grouped history layout.
+        ./patches/noctalia/0021-notification-layout-port.patch
       ];
   });
 }

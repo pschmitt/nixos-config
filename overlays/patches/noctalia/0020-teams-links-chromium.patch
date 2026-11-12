@@ -6,7 +6,7 @@ index 000000000..0d67febaa
 @@ -0,0 +1,32 @@
 +#pragma once
 +
-+#include "core/process/process.h"
++#include "system/process.h"
 +#include "net/url_open.h"
 +
 +#include <gio/gio.h>
@@ -41,7 +41,7 @@ index f08045331..c81450e39 100644
 --- a/src/shell/control_center/tabs/notifications_tab.cpp
 +++ b/src/shell/control_center/tabs/notifications_tab.cpp
 @@ -12 +12 @@
--#include "core/process/process.h"
+-#include "system/process.h"
 +#include "notification/link_open.h"
 @@ -101,2 +101 @@ namespace {
 -      if (chromium ? process::runAsync(std::vector<std::string>{"chromium", url}, token)

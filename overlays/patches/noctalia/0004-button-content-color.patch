@@ -1,5 +1,5 @@
---- a/src/ui/controls/button.h
-+++ b/src/ui/controls/button.h
+--- a/lib/ui/controls/button.h
++++ b/lib/ui/controls/button.h
 @@ -62,6 +62,9 @@
    void setSelected(bool selected);
    void setContentAlign(ButtonContentAlign align);
@@ -18,8 +18,8 @@
    Color m_displayedBg{};
    Color m_displayedBorder{};
    Color m_displayedLabel{};
---- a/src/ui/controls/button.cpp
-+++ b/src/ui/controls/button.cpp
+--- a/lib/ui/controls/button.cpp
++++ b/lib/ui/controls/button.cpp
 @@ -300,6 +300,14 @@
    setMaxHeight(pinned);
  }
@@ -49,8 +49,8 @@
  }
  
  void Button::applyVisualState() {
---- a/src/ui/ui_tree_reconciler.cpp
-+++ b/src/ui/ui_tree_reconciler.cpp
+--- a/src/scripting/ui/ui_tree_reconciler.cpp
++++ b/src/scripting/ui/ui_tree_reconciler.cpp
 @@ -482,7 +482,7 @@
                                                                "visible",     "text",    "glyph",        "fontSize",
                                                                "glyphSize",   "variant", "contentAlign", "enabled",

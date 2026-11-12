@@ -1,10 +1,14 @@
 diff --git a/src/notification/link_markup.h b/src/notification/link_markup.h
-index 7eeda991d..0ecd1947a 100644
+index 7eeda99..0ecd194 100644
 --- a/src/notification/link_markup.h
 +++ b/src/notification/link_markup.h
-@@ -5,0 +6 @@
+@@ -3,8 +3,16 @@
+ #include <regex>
+ #include <string>
+ #include <string_view>
 +#include <unordered_set>
-@@ -7,0 +9,7 @@ namespace notification {
+
+ namespace notification {
 +  inline std::unordered_set<std::string>& visitedLinks() {
 +    static std::unordered_set<std::string> links;
 +    return links;
@@ -12,19 +16,37 @@ index 7eeda991d..0ecd1947a 100644
 +
 +  inline void markLinkVisited(const std::string& url) { visitedLinks().insert(url); }
 +
-@@ -45 +53,3 @@ namespace notification {
+   inline std::string linkAt(std::string_view text, int index) {
+     if (index < 0) return {};
+     static const std::regex pattern(R"(https?://[^\s<>"']+)");
+@@ -42,7 +50,9 @@ namespace notification {
+         --length;
+       }
+       appendEscaped(std::string_view(source).substr(cursor, start - cursor));
 -      result += "<span foreground=\"#8ab4f8\" underline=\"single\">";
 +      const auto url = source.substr(start, length);
 +      result += visitedLinks().contains(url) ? "<span foreground=\"#c58af9\" underline=\"single\">"
 +                                             : "<span foreground=\"#8ab4f8\" underline=\"single\">";
+       appendEscaped(std::string_view(source).substr(start, length));
+       result += "</span>";
+       cursor = start + length;
 diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
-index 2bd00898e..e3fc65188 100644
+index 3354361..1c88f6b 100644
 --- a/src/shell/control_center/tabs/notifications_tab.cpp
 +++ b/src/shell/control_center/tabs/notifications_tab.cpp
-@@ -87 +87 @@ namespace {
+@@ -84,7 +84,7 @@ namespace {
+     return links;
+   }
+
 -  std::unique_ptr<Button> makeLinkButton(const std::string& url, std::size_t index, float scale) {
 +  std::unique_ptr<Button> makeLinkButton(const std::string& url, std::size_t index, float scale, std::function<void()> refresh = {}) {
-@@ -95 +95,6 @@ namespace {
+     auto button = ui::button({
+         .text = "Open link " + std::to_string(index + 1),
+         .glyph = "external-link",
+@@ -92,7 +92,12 @@ namespace {
+         .variant = ButtonVariant::Default,
+         .tooltip = url,
+     });
 -    button->setOnClick([url] { (void)net::openInBrowser(url); });
 +    button->setOnClick([url, refresh = std::move(refresh)] {
 +      if (net::openInBrowser(url)) {
@@ -32,30 +54,54 @@ index 2bd00898e..e3fc65188 100644
 +        if (refresh) refresh();
 +      }
 +    });
-@@ -487,0 +493,4 @@ namespace {
+     return button;
+   }
+
+@@ -485,6 +490,10 @@ namespace {
+       m_body = static_cast<Label*>(m_card->addChild(
+           ui::label({
+               .fontSize = Style::fontSizeBody * scale,
 +      auto refreshLinks = [summary = m_summary, body = m_body, summaryText = metrics.summaryText, bodyText = metrics.bodyText] {
 +        summary->setText(notification::linkMarkup(summaryText));
 +        body->setText(notification::linkMarkup(bodyText));
 +      };
-@@ -491 +500 @@ namespace {
+               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+               .visible = false,
+           })
+@@ -627,9 +636,12 @@ namespace {
+       for (const auto& [label, plain] : {std::pair{m_summary, metrics.summaryText}, std::pair{m_body, metrics.bodyText}}) {
+         label->setHitTestVisible(!links.empty());
+         label->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
 -        label->setOnClick([label, plain, &renderer](const InputArea::PointerData& data) {
 +        label->setOnClick([label, plain, &renderer, refreshLinks](const InputArea::PointerData& data) {
-@@ -493 +502,4 @@ namespace {
+           const auto url = notification::linkAt(plain, label->textIndexAt(renderer, data.sceneX, data.sceneY));
 -          if (!url.empty()) (void)net::openInBrowser(url);
 +          if (!url.empty() && net::openInBrowser(url)) {
 +            notification::markLinkVisited(url);
 +            refreshLinks();
 +          }
-@@ -517 +529 @@ namespace {
+         });
+       }
+       if (item.kind != NotificationDisplayItemKind::GroupHeader
+@@ -654,7 +666,7 @@ namespace {
+         }
+
+         for (std::size_t i = 0; i < links.size(); ++i) {
 -          buttons.push_back(makeLinkButton(links[i], i, m_scale));
 +          buttons.push_back(makeLinkButton(links[i], i, m_scale, refreshLinks));
+         }
+
+         auto rows = wrapButtonsIntoRows(renderer, buttons, metrics.cardTextWidth, Style::spaceXs * m_scale);
 diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
-index f3357a934..eeaf13662 100644
+index cf95cdb..83a33de 100644
 --- a/src/shell/notification/notification_toast.cpp
 +++ b/src/shell/notification/notification_toast.cpp
-@@ -2851,0 +2852 @@ InputArea* NotificationToast::buildCard(
+@@ -3023,10 +3023,13 @@ InputArea* NotificationToast::buildCard(
+     if (data.button != BTN_LEFT) return;
+     std::string url = notification::linkAt(displaySummary, summaryLabel->textIndexAt(renderer, data.sceneX, data.sceneY));
+     if (url.empty()) url = notification::linkAt(displayBody, bodyLabel->textIndexAt(renderer, data.sceneX, data.sceneY));
 +    if (url.empty()) url = link;
-@@ -2853,3 +2854,5 @@ InputArea* NotificationToast::buildCard(
+     if (!url.empty()) {
 -      (void)net::openInBrowser(url);
 -    } else if (!link.empty()) {
 -      (void)net::openInBrowser(link);
@@ -64,3 +110,6 @@ index f3357a934..eeaf13662 100644
 +        summaryLabel->setText(notification::linkMarkup(displaySummary));
 +        bodyLabel->setText(notification::linkMarkup(displayBody));
 +      }
+     } else if (hasDefaultAction && m_notifications != nullptr) {
+       const std::string token = m_wayland != nullptr ? m_wayland->requestActivationToken(sourceSurface) : std::string{};
+       if (!m_notifications->invokeAction(id, "default", token, true)) kLog.warn("notification toast: failed to invoke default action for #{}", id);

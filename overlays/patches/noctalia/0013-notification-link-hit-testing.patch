@@ -1,35 +1,25 @@
-diff --git a/src/notification/link_markup.h b/src/notification/link_markup.h
-index 64cc3ce46..7eeda991d 100644
---- a/src/notification/link_markup.h
-+++ b/src/notification/link_markup.h
-@@ -7,0 +8,14 @@ namespace notification {
-+  inline std::string linkAt(std::string_view text, int index) {
-+    if (index < 0) return {};
-+    static const std::regex pattern(R"(https?://[^\s<>"']+)");
-+    const std::string source(text);
-+    for (std::sregex_iterator it(source.begin(), source.end(), pattern), end; it != end; ++it) {
-+      const auto start = static_cast<std::size_t>(it->position());
-+      std::size_t length = static_cast<std::size_t>(it->length());
-+      while (length > 0 && std::string_view(".,;:!?").find(source[start + length - 1]) != std::string_view::npos) --length;
-+      if (static_cast<std::size_t>(index) >= start && static_cast<std::size_t>(index) < start + length)
-+        return source.substr(start, length);
-+    }
-+    return {};
-+  }
-+
-diff --git a/src/render/core/renderer.h b/src/render/core/renderer.h
-index 94234f41d..5bd95f2bf 100644
---- a/src/render/core/renderer.h
-+++ b/src/render/core/renderer.h
-@@ -121,0 +122,3 @@ public:
+diff --git a/lib/render/core/renderer.h b/lib/render/core/renderer.h
+index 717fefe..1400e44 100644
+--- a/lib/render/core/renderer.h
++++ b/lib/render/core/renderer.h
+@@ -119,6 +119,9 @@ public:
+   ) {
+     outSpans.clear();
+   }
 +  // Return the UTF-8 byte index at a point relative to the text baseline, or -1.
 +  virtual int textIndexAt(std::string_view, float, const TextFont&, float, int, TextAlign,
 +                          TextEllipsize, bool, float, float) { return -1; }
-diff --git a/src/render/render_context.cpp b/src/render/render_context.cpp
-index 2e1b3045a..47b0deae8 100644
---- a/src/render/render_context.cpp
-+++ b/src/render/render_context.cpp
-@@ -288,4 +288,10 @@
+   virtual TextMetrics measureGlyph(char32_t codepoint, float fontSize) = 0;
+   virtual TextureManager& textureManager() = 0;
+   virtual float renderScale() const noexcept = 0;
+diff --git a/lib/render/render_context.cpp b/lib/render/render_context.cpp
+index 1c4ead0..0cb412a 100644
+--- a/lib/render/render_context.cpp
++++ b/lib/render/render_context.cpp
+@@ -267,6 +267,12 @@ void RenderContext::measureTextCursorStopsWrappedScaled(
+   m_textRenderer.measureCursorStopsWrapped(scale, text, fontSize, byteOffsets, maxWidth, outStops, font);
+ }
+
 +int RenderContext::textIndexAtScaled(float scale, std::string_view text, float fontSize, const TextFont& font,
 +                                     float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
 +                                     bool markup, float x, float y) {
@@ -39,38 +29,58 @@ index 2e1b3045a..47b0deae8 100644
  void RenderContext::measureTextCharSpansScaled(
      float scale, std::string_view text, float fontSize, const std::vector<std::size_t>& byteOffsets,
      std::vector<TextCharSpan>& outSpans, const TextFont& font
- ) {
-diff --git a/src/render/render_context.h b/src/render/render_context.h
-index 15aee830f..892682da1 100644
---- a/src/render/render_context.h
-+++ b/src/render/render_context.h
-@@ -78,0 +79,3 @@ private:
+diff --git a/lib/render/render_context.h b/lib/render/render_context.h
+index 13a5344..d11fee5 100644
+--- a/lib/render/render_context.h
++++ b/lib/render/render_context.h
+@@ -76,6 +76,9 @@ private:
+       float scale, std::string_view text, float fontSize, const std::vector<std::size_t>& byteOffsets,
+       std::vector<TextCharSpan>& outSpans, const TextFont& font
+   );
 +  int textIndexAtScaled(float scale, std::string_view text, float fontSize, const TextFont& font,
 +                        float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
 +                        bool markup, float x, float y);
-diff --git a/src/render/render_target.cpp b/src/render/render_target.cpp
-index 199f136a1..cea1d157d 100644
---- a/src/render/render_target.cpp
-+++ b/src/render/render_target.cpp
-@@ -57,0 +58,6 @@ void ScaledRenderer::measureTextCharSpans(
+   TextMetrics measureGlyphScaled(float scale, char32_t codepoint, float fontSize);
+
+   bool makeCurrentNoSurface();
+diff --git a/lib/render/render_target.cpp b/lib/render/render_target.cpp
+index 199f136..cea1d15 100644
+--- a/lib/render/render_target.cpp
++++ b/lib/render/render_target.cpp
+@@ -55,6 +55,12 @@ void ScaledRenderer::measureTextCharSpans(
+   m_context->measureTextCharSpansScaled(currentScale(), text, fontSize, byteOffsets, outSpans, font);
+ }
+
 +int ScaledRenderer::textIndexAt(std::string_view text, float fontSize, const TextFont& font, float maxWidth,
 +                                int maxLines, TextAlign align, TextEllipsize ellipsize, bool markup, float x, float y) {
 +  assert(m_context != nullptr);
 +  return m_context->textIndexAtScaled(currentScale(), text, fontSize, font, maxWidth, maxLines, align, ellipsize, markup, x, y);
 +}
 +
-diff --git a/src/render/render_target.h b/src/render/render_target.h
-index ff1c97918..14df69977 100644
---- a/src/render/render_target.h
-+++ b/src/render/render_target.h
-@@ -55,0 +56,2 @@ public:
+ TextMetrics ScaledRenderer::measureGlyph(char32_t codepoint, float fontSize) {
+   assert(m_context != nullptr && "ScaledRenderer measureGlyph without a bound RenderContext");
+   return m_context->measureGlyphScaled(currentScale(), codepoint, fontSize);
+diff --git a/lib/render/render_target.h b/lib/render/render_target.h
+index 49d1715..95c3f3e 100644
+--- a/lib/render/render_target.h
++++ b/lib/render/render_target.h
+@@ -53,6 +53,8 @@ public:
+       std::string_view text, float fontSize, const std::vector<std::size_t>& byteOffsets,
+       std::vector<TextCharSpan>& outSpans, const TextFont& font = {}
+   ) override;
 +  int textIndexAt(std::string_view text, float fontSize, const TextFont& font, float maxWidth,
 +                  int maxLines, TextAlign align, TextEllipsize ellipsize, bool markup, float x, float y) override;
-diff --git a/src/render/text/cairo_text_renderer.cpp b/src/render/text/cairo_text_renderer.cpp
-index e3e367681..555c49606 100644
---- a/src/render/text/cairo_text_renderer.cpp
-+++ b/src/render/text/cairo_text_renderer.cpp
-@@ -671,0 +672,30 @@ void CairoTextRenderer::measureCursorStopsWrapped(
+   TextMetrics measureGlyph(char32_t codepoint, float fontSize) override;
+   TextureManager& textureManager() override;
+   float renderScale() const noexcept override;
+diff --git a/lib/render/text/cairo_text_renderer.cpp b/lib/render/text/cairo_text_renderer.cpp
+index e3e3676..555c496 100644
+--- a/lib/render/text/cairo_text_renderer.cpp
++++ b/lib/render/text/cairo_text_renderer.cpp
+@@ -669,6 +669,36 @@ void CairoTextRenderer::measureCursorStopsWrapped(
+   g_object_unref(layout);
+ }
+
 +int CairoTextRenderer::textIndexAt(float scale, std::string_view text, float fontSize, const TextFont& font,
 +                                   float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
 +                                   bool markup, float x, float y) {
@@ -101,26 +111,94 @@ index e3e367681..555c49606 100644
 +  return index;
 +}
 +
-diff --git a/src/render/text/cairo_text_renderer.h b/src/render/text/cairo_text_renderer.h
-index 71c236cd6..96d887aca 100644
---- a/src/render/text/cairo_text_renderer.h
-+++ b/src/render/text/cairo_text_renderer.h
-@@ -90,0 +91,4 @@ public:
+ void CairoTextRenderer::measureCharSpans(
+     float contentScale, std::string_view text, float fontSize, const std::vector<std::size_t>& byteOffsets,
+     std::vector<TextCharSpan>& outSpans, const TextFont& font
+diff --git a/lib/render/text/cairo_text_renderer.h b/lib/render/text/cairo_text_renderer.h
+index 8a93329..fb667ca 100644
+--- a/lib/render/text/cairo_text_renderer.h
++++ b/lib/render/text/cairo_text_renderer.h
+@@ -88,6 +88,10 @@ public:
+       std::vector<TextCharSpan>& outSpans, const TextFont& font = {}
+   );
+
 +  int textIndexAt(float scale, std::string_view text, float fontSize, const TextFont& font,
 +                  float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
 +                  bool markup, float x, float y);
 +
+   void draw(
+       float contentScale, float surfaceWidth, float surfaceHeight, float x, float baselineY, std::string_view text,
+       float fontSize, const Color& color, const Mat3& transform, const TextFont& font = {}, float maxWidth = 0.0F,
+diff --git a/lib/ui/controls/label.cpp b/lib/ui/controls/label.cpp
+index 116b38c..ef9d853 100644
+--- a/lib/ui/controls/label.cpp
++++ b/lib/ui/controls/label.cpp
+@@ -487,6 +487,15 @@ void Label::doArrange(Renderer& renderer, const LayoutRect& rect) {
+   setSize(rect.width, rect.height > 0.0F ? rect.height : measured.height);
+ }
+
++int Label::textIndexAt(Renderer& renderer, float sceneX, float sceneY) const {
++  float x = 0.0F, y = 0.0F;
++  if (!visible() || !Node::mapFromScene(this, sceneX, sceneY, x, y)
++      || x < 0.0F || y < 0.0F || x >= width() || y >= height()) return -1;
++  return renderer.textIndexAt(m_plainText, m_textNode->fontSize(), m_textNode->font(), m_textNode->maxWidth(),
++      m_textNode->maxLines(), m_textNode->textAlign(), m_textNode->ellipsize(), m_textNode->useMarkup(),
++      x - m_textNode->x(), y - m_textNode->y());
++}
++
+ void Label::measure(Renderer& renderer) {
+   LayoutConstraints constraints;
+   measureWithConstraints(renderer, constraints);
+diff --git a/lib/ui/controls/label.h b/lib/ui/controls/label.h
+index ec899d4..dc409a4 100644
+--- a/lib/ui/controls/label.h
++++ b/lib/ui/controls/label.h
+@@ -80,6 +80,7 @@ public:
+   LabelBaselineMode baselineMode() const noexcept { return m_baselineMode; }
+   float baselineOffset() const noexcept { return m_baselineOffset; }
+   float textOriginX() const noexcept { return m_textNode->x(); }
++  [[nodiscard]] int textIndexAt(Renderer& renderer, float sceneX, float sceneY) const;
+   float textWrapWidth() const noexcept { return m_textNode->maxWidth(); }
+
+   void measure(Renderer& renderer);
+diff --git a/src/notification/link_markup.h b/src/notification/link_markup.h
+index 64cc3ce..7eeda99 100644
+--- a/src/notification/link_markup.h
++++ b/src/notification/link_markup.h
+@@ -5,6 +5,20 @@
+ #include <string_view>
+
+ namespace notification {
++  inline std::string linkAt(std::string_view text, int index) {
++    if (index < 0) return {};
++    static const std::regex pattern(R"(https?://[^\s<>"']+)");
++    const std::string source(text);
++    for (std::sregex_iterator it(source.begin(), source.end(), pattern), end; it != end; ++it) {
++      const auto start = static_cast<std::size_t>(it->position());
++      std::size_t length = static_cast<std::size_t>(it->length());
++      while (length > 0 && std::string_view(".,;:!?").find(source[start + length - 1]) != std::string_view::npos) --length;
++      if (static_cast<std::size_t>(index) >= start && static_cast<std::size_t>(index) < start + length)
++        return source.substr(start, length);
++    }
++    return {};
++  }
++
+   // Notification text is untrusted: escape it before adding our own markup.
+   inline std::string linkMarkup(std::string_view text) {
+     static const std::regex pattern(R"(https?://[^\s<>"']+)");
 diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
-index 06c8baafe..2bd00898e 100644
+index f1bbfde..3354361 100644
 --- a/src/shell/control_center/tabs/notifications_tab.cpp
 +++ b/src/shell/control_center/tabs/notifications_tab.cpp
-@@ -488,3 +488,2 @@ namespace {
--      // Only make the text clickable when its destination is unambiguous.
+@@ -624,14 +624,13 @@ namespace {
+       m_actionsRow->setVisible(false);
+       const auto links = item.kind == NotificationDisplayItemKind::GroupHeader
+           ? std::vector<std::string>{} : notificationLinks(entry.notification);
 -      for (Label* label : {m_summary, m_body}) {
 -        label->setHitTestVisible(links.size() == 1);
 +      for (const auto& [label, plain] : {std::pair{m_summary, metrics.summaryText}, std::pair{m_body, metrics.bodyText}}) {
 +        label->setHitTestVisible(!links.empty());
-@@ -492,5 +491,4 @@ namespace {
+         label->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
 -        label->setOnClick(links.size() == 1
 -            ? std::function<void(const InputArea::PointerData&)>([url = links.front()](const InputArea::PointerData&) {
 -                (void)net::openInBrowser(url);
@@ -130,11 +208,17 @@ index 06c8baafe..2bd00898e 100644
 +          const auto url = notification::linkAt(plain, label->textIndexAt(renderer, data.sceneX, data.sceneY));
 +          if (!url.empty()) (void)net::openInBrowser(url);
 +        });
+       }
+       if (item.kind != NotificationDisplayItemKind::GroupHeader
+           && ((showHistoryActions && !entry.notification.actions.empty()) || !links.empty())) {
 diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
-index 1dae5736b..f3357a934 100644
+index 3a15c14..cf95cdb 100644
 --- a/src/shell/notification/notification_toast.cpp
 +++ b/src/shell/notification/notification_toast.cpp
-@@ -2444,15 +2443,0 @@ InputArea* NotificationToast::buildCard(
+@@ -2608,21 +2608,6 @@ InputArea* NotificationToast::buildCard(
+   viewport->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
+   wl_surface* const sourceSurface = outputInstance.surface->wlSurface();
+   const std::string link = singleNotificationLink(entry.summary, entry.body);
 -  viewport->setOnClick([this, id = entry.notificationId, sourceSurface, link,
 -                        hasDefaultAction =
 -                            hasNotificationAction(entry.actions, "default")](const InputArea::PointerData& data) {
@@ -150,13 +234,36 @@ index 1dae5736b..f3357a934 100644
 -      }
 -    }
 -  });
-@@ -2605,0 +2591 @@ InputArea* NotificationToast::buildCard(
+   viewport->setCursorShape(!link.empty() || hasNotificationAction(entry.actions, "default")
+       ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+
+@@ -2778,12 +2763,14 @@ InputArea* NotificationToast::buildCard(
+
+   const std::string displaySummary = StringUtils::trimLeadingBlankLines(entry.summary);
+   const std::string displayBody = StringUtils::trimLeadingBlankLines(entry.body);
 +  Label* summaryLabel = nullptr;
-@@ -2611,0 +2598 @@ InputArea* NotificationToast::buildCard(
+   auto textColumn = ui::column(
+       {
+           .align = FlexAlign::Stretch,
+           .width = textMaxWidth,
+       },
+       ui::label({
 +          .out = &summaryLabel,
-@@ -2770,0 +2758 @@ InputArea* NotificationToast::buildCard(
+           .text = notification::linkMarkup(displaySummary),
+           .fontSize = summaryFontSize(scale),
+           .fontWeight = FontWeight::Bold,
+@@ -2943,6 +2930,7 @@ InputArea* NotificationToast::buildCard(
+       .participatesInLayout = entry.toastBodyLines > 0 && !StringUtils::isBlank(displayBody),
+       .configure = [](Label& label) { label.setUseMarkup(true); },
+   });
 +  Label* bodyLabel = body.get();
-@@ -2853,0 +2842,19 @@ InputArea* NotificationToast::buildCard(
+   textColumn->addChild(std::move(body));
+
+   if (actionsRow != nullptr) {
+@@ -3025,6 +3013,25 @@ InputArea* NotificationToast::buildCard(
+         })
+     );
+   }
 +  viewport->setOnClick([this, id = entry.notificationId, sourceSurface, link,
 +                        hasDefaultAction = hasNotificationAction(entry.actions, "default"),
 +                        summaryLabel, bodyLabel, displaySummary, displayBody, &renderer](const InputArea::PointerData& data) {
@@ -176,33 +283,23 @@ index 1dae5736b..f3357a934 100644
 +      if (!m_notifications->invokeAction(id, "default", token, true)) kLog.warn("notification toast: failed to invoke default action for #{}", id);
 +    }
 +  });
-diff --git a/src/ui/controls/label.cpp b/src/ui/controls/label.cpp
-index 4b26ebe92..f3c30b9d5 100644
---- a/src/ui/controls/label.cpp
-+++ b/src/ui/controls/label.cpp
-@@ -489,0 +490,9 @@ void Label::doArrange(Renderer& renderer, const LayoutRect& rect) {
-+int Label::textIndexAt(Renderer& renderer, float sceneX, float sceneY) const {
-+  float x = 0.0F, y = 0.0F;
-+  if (!visible() || !Node::mapFromScene(this, sceneX, sceneY, x, y)
-+      || x < 0.0F || y < 0.0F || x >= width() || y >= height()) return -1;
-+  return renderer.textIndexAt(m_plainText, m_textNode->fontSize(), m_textNode->font(), m_textNode->maxWidth(),
-+      m_textNode->maxLines(), m_textNode->textAlign(), m_textNode->ellipsize(), m_textNode->useMarkup(),
-+      x - m_textNode->x(), y - m_textNode->y());
-+}
-+
-diff --git a/src/ui/controls/label.h b/src/ui/controls/label.h
-index 10adcc191..b9b359c9e 100644
---- a/src/ui/controls/label.h
-+++ b/src/ui/controls/label.h
-@@ -82,0 +83 @@ public:
-+  [[nodiscard]] int textIndexAt(Renderer& renderer, float sceneX, float sceneY) const;
+   cardRoot->layout(renderer);
+   viewport->addChild(std::move(cardRoot));
+
 diff --git a/tests/cairo_text_renderer_test.cpp b/tests/cairo_text_renderer_test.cpp
-index 47fcb2b95..ba011248b 100644
+index e978de0..e922c00 100644
 --- a/tests/cairo_text_renderer_test.cpp
 +++ b/tests/cairo_text_renderer_test.cpp
-@@ -1,0 +2 @@
+@@ -1,4 +1,5 @@
+ #include "render/text/cairo_text_renderer.h"
 +#include "notification/link_markup.h"
-@@ -88,0 +90,25 @@ namespace {
+ #include "tests/test_check.h"
+
+ #include <array>
+@@ -63,6 +64,32 @@ namespace {
+     TEST_CHECK(sameMetrics(hiA, hiB));
+   }
+
 +  int notificationLinksCase(CairoTextRenderer& renderer) {
 +    const std::string plain = "α & <Go> https://one.example/long/path then https://two.example/path end";
 +    const std::string markup = notification::linkMarkup(plain);
@@ -228,7 +325,14 @@ index 47fcb2b95..ba011248b 100644
 +    return 0;
 +  }
 +
-@@ -98 +124,2 @@ int main() {
--  return wrappingBoundaryCase(renderer);
-+  if (const int rc = wrappingBoundaryCase(renderer); rc != 0) return rc;
++
+ } // namespace
+
+ int main() {
+@@ -71,5 +98,5 @@ int main() {
+
+   scaleKeyedCacheCase(renderer);
+   wrappingBoundaryCase(renderer);
+-  return 0;
 +  return notificationLinksCase(renderer);
+ }

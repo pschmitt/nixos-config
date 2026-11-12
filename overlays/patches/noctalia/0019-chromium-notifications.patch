@@ -34,7 +34,7 @@ index b0ec17a2c..f08045331 100644
 --- a/src/shell/control_center/tabs/notifications_tab.cpp
 +++ b/src/shell/control_center/tabs/notifications_tab.cpp
 @@ -11,0 +12 @@
-+#include "core/process/process.h"
++#include "system/process.h"
 @@ -90 +91 @@ namespace {
 -                                         std::function<void(const std::string&)> focusLink = {}) {
 +                                         std::function<void(const std::string&, bool)> focusLink = {}, bool chromium = false) {

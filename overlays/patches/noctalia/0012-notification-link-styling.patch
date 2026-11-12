@@ -43,52 +43,120 @@ index 000000000..64cc3ce46
 +    return result;
 +  }
 +}
-diff --git a/src/render/text/cairo_text_renderer.cpp b/src/render/text/cairo_text_renderer.cpp
-index ecc01ff13..e3e367681 100644
---- a/src/render/text/cairo_text_renderer.cpp
-+++ b/src/render/text/cairo_text_renderer.cpp
-@@ -991 +991,3 @@ CairoTextRenderer::CacheEntry* CairoTextRenderer::lookupOrRasterize(
+diff --git a/lib/render/text/cairo_text_renderer.cpp b/lib/render/text/cairo_text_renderer.cpp
+index ecc01ff..e3e3676 100644
+--- a/lib/render/text/cairo_text_renderer.cpp
++++ b/lib/render/text/cairo_text_renderer.cpp
+@@ -988,7 +988,9 @@ CairoTextRenderer::CacheEntry* CairoTextRenderer::lookupOrRasterize(
+
+   PangoLayout* layout =
+       buildLayout(contentScale, text, fontSize, font, maxWidth * contentScale, maxLines, align, ellipsize, useMarkup);
 -  const bool tinted = !containsColorGlyph(layout);
 +  // Foreground spans need RGBA: the A8 path discards their colors.
 +  const bool tinted = !(useMarkup && text.find("foreground=") != std::string_view::npos)
 +      && !containsColorGlyph(layout);
+   if (tinted) {
+     key.colorRgba = 0U;
+   }
 diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
-index c7f888fdd..06c8baafe 100644
+index 0f886e9..f1bbfde 100644
 --- a/src/shell/control_center/tabs/notifications_tab.cpp
 +++ b/src/shell/control_center/tabs/notifications_tab.cpp
-@@ -9,0 +10 @@
+@@ -7,6 +7,7 @@
+ #include "core/log.h"
+ #include "i18n/i18n.h"
+ #include "net/url_open.h"
 +#include "notification/link_markup.h"
-@@ -464 +465,2 @@ namespace {
--      m_summary->setText(metrics.summaryText);
-+      m_summary->setUseMarkup(true);
-+      m_summary->setText(notification::linkMarkup(metrics.summaryText));
-@@ -474 +476,2 @@ namespace {
+ #include "net/uri.h"
+ #include "notification/notification.h"
+ #include "notification/notification_display_name.h"
+@@ -598,7 +599,8 @@ namespace {
+         m_summary->setText("");
+       } else {
+         m_summary->setVisible(true);
+-        m_summary->setText(metrics.summaryText);
++        m_summary->setUseMarkup(true);
++        m_summary->setText(notification::linkMarkup(metrics.summaryText));
+         m_summary->setMaxWidth(metrics.cardTextWidth);
+         m_summary->setMaxLines(metrics.expanded ? kExpandedMaxLines : kSummaryMaxLines);
+         m_summary->measure(renderer);
+@@ -609,7 +611,8 @@ namespace {
+         m_body->setText("");
+       } else {
+         m_body->setVisible(true);
 -        m_body->setText(metrics.bodyText);
 +        m_body->setUseMarkup(true);
 +        m_body->setText(notification::linkMarkup(metrics.bodyText));
+         m_body->setMaxWidth(metrics.cardTextWidth);
+         m_body->setMaxLines(metrics.expanded ? kExpandedMaxLines : kBodyMaxLines);
+         m_body->measure(renderer);
 diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
-index a19497c0d..1dae5736b 100644
+index f52c40f..3a15c14 100644
 --- a/src/shell/notification/notification_toast.cpp
 +++ b/src/shell/notification/notification_toast.cpp
-@@ -13,0 +14 @@
+@@ -11,6 +11,7 @@
+ #include "net/http_client.h"
+ #include "net/uri.h"
+ #include "net/url_open.h"
 +#include "notification/link_markup.h"
-@@ -459 +460 @@ namespace {
+ #include "notification/notification_display_name.h"
+ #include "notification/notification_manager.h"
+ #include "render/core/texture_manager.h"
+@@ -464,23 +465,25 @@ namespace {
+             .width = textMaxWidth,
+         },
+         ui::label({
 -            .text = StringUtils::trimLeadingBlankLines(summary),
 +            .text = notification::linkMarkup(StringUtils::trimLeadingBlankLines(summary)),
-@@ -464,0 +466 @@ namespace {
+             .fontSize = summaryFontSize(scale),
+             .fontWeight = FontWeight::Bold,
+             .color = colorSpecFromRole(ColorRole::OnSurface),
+             .maxWidth = topTextMaxWidth,
+             .maxLines = std::max(1, summaryLines),
 +            .configure = [](Label& label) { label.setUseMarkup(true); },
-@@ -471 +473 @@ namespace {
+         })
+     );
+
+     if (bodyLines > 0 && !StringUtils::isBlank(body)) {
+       textColumn->addChild(
+           ui::label({
 -              .text = StringUtils::trimLeadingBlankLines(body),
 +              .text = notification::linkMarkup(StringUtils::trimLeadingBlankLines(body)),
-@@ -475,0 +478 @@ namespace {
+               .fontSize = bodyFontSize(scale),
+               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+               .maxWidth = textMaxWidth,
+               .maxLines = std::max(1, bodyLines),
 +              .configure = [](Label& label) { label.setUseMarkup(true); },
-@@ -2609 +2612 @@ InputArea* NotificationToast::buildCard(
+           })
+       );
+     }
+@@ -2781,12 +2784,13 @@ InputArea* NotificationToast::buildCard(
+           .width = textMaxWidth,
+       },
+       ui::label({
 -          .text = displaySummary,
 +          .text = notification::linkMarkup(displaySummary),
-@@ -2614,0 +2618 @@ InputArea* NotificationToast::buildCard(
+           .fontSize = summaryFontSize(scale),
+           .fontWeight = FontWeight::Bold,
+           .color = colorSpecFromRole(ColorRole::OnSurface),
+           .maxWidth = topTextMaxWidth,
+           .maxLines = kMaxSummaryLines,
 +          .configure = [](Label& label) { label.setUseMarkup(true); },
-@@ -2758 +2762 @@ InputArea* NotificationToast::buildCard(
+       })
+   );
+   std::unique_ptr<Flex> actionsRow;
+@@ -2930,13 +2934,14 @@ InputArea* NotificationToast::buildCard(
+   }
+
+   auto body = ui::label({
 -      .text = displayBody,
 +      .text = notification::linkMarkup(displayBody),
-@@ -2764,0 +2769 @@ InputArea* NotificationToast::buildCard(
+       .fontSize = bodyFontSize(scale),
+       .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+       .maxWidth = textMaxWidth,
+       .maxLines = std::max(1, entry.toastBodyLines),
+       .visible = entry.toastBodyLines > 0 && !StringUtils::isBlank(displayBody),
+       .participatesInLayout = entry.toastBodyLines > 0 && !StringUtils::isBlank(displayBody),
 +      .configure = [](Label& label) { label.setUseMarkup(true); },
+   });
+   textColumn->addChild(std::move(body));

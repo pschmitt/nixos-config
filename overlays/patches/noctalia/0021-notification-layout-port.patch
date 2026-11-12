@@ -1,0 +1,42 @@
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index 6d36289..b2bb5e3 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -69,7 +69,6 @@ namespace {
+   }
+   constexpr float kNotificationActionButtonSize = Style::controlHeightSm;
+
+-  std::string historyActionLabel(std::string_view actionKey, std::string_view actionLabel) {
+   std::vector<std::string> notificationLinks(const Notification& notification) {
+     static const std::regex pattern(R"(https?://[^\s<>"']+)");
+     const std::string text = notification.summary + "\n" + notification.body;
+@@ -107,6 +106,7 @@ namespace {
+     return button;
+   }
+
++  std::string historyActionLabel(std::string_view actionKey, std::string_view actionLabel) {
+     if (!StringUtils::isBlank(actionLabel)) {
+       return std::string(actionLabel);
+     }
+@@ -497,10 +497,6 @@ namespace {
+       m_body = static_cast<Label*>(m_card->addChild(
+           ui::label({
+               .fontSize = Style::fontSizeBody * scale,
+-      auto refreshLinks = [summary = m_summary, body = m_body, summaryText = metrics.summaryText, bodyText = metrics.bodyText] {
+-        summary->setText(notification::linkMarkup(summaryText));
+-        body->setText(notification::linkMarkup(bodyText));
+-      };
+               .color = colorSpecFromRole(ColorRole::OnSurfaceVariant),
+               .visible = false,
+           })
+@@ -640,6 +636,10 @@ namespace {
+         m_actionsRow->removeChild(m_actionsRow->children().back().get());
+       }
+       m_actionsRow->setVisible(false);
++      auto refreshLinks = [summary = m_summary, body = m_body, summaryText = metrics.summaryText, bodyText = metrics.bodyText] {
++        summary->setText(notification::linkMarkup(summaryText));
++        body->setText(notification::linkMarkup(bodyText));
++      };
+       const auto links = item.kind == NotificationDisplayItemKind::GroupHeader
+           ? std::vector<std::string>{} : notificationLinks(entry.notification);
+       for (const auto& [label, plain] : {std::pair{m_summary, metrics.summaryText}, std::pair{m_body, metrics.bodyText}}) {

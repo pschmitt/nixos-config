@@ -1,6 +1,6 @@
 diff --git a/src/notification/link_focus.h b/src/notification/link_focus.h
 new file mode 100644
-index 000000000..8c28b1a2a
+index 0000000..8c28b1a
 --- /dev/null
 +++ b/src/notification/link_focus.h
 @@ -0,0 +1,36 @@
@@ -41,41 +41,100 @@ index 000000000..8c28b1a2a
 +  }
 +}
 diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
-index 0a14d3b13..b0ec17a2c 100644
+index c875cd7..2bea9c7 100644
 --- a/src/shell/control_center/tabs/notifications_tab.cpp
 +++ b/src/shell/control_center/tabs/notifications_tab.cpp
-@@ -10,0 +11 @@
+@@ -8,6 +8,7 @@
+ #include "i18n/i18n.h"
+ #include "net/url_open.h"
+ #include "notification/link_markup.h"
 +#include "notification/link_focus.h"
-@@ -88 +89,2 @@ namespace {
+ #include "net/uri.h"
+ #include "notification/notification.h"
+ #include "notification/notification_display_name.h"
+@@ -85,7 +86,8 @@ namespace {
+   }
+
+   std::unique_ptr<Button> makeLinkButton(const std::string& url, std::size_t index, float scale, std::function<void()> refresh = {},
 -                                         std::function<std::string()> activationToken = {}) {
 +                                         std::function<std::string()> activationToken = {},
 +                                         std::function<void(const std::string&)> focusLink = {}) {
-@@ -96 +98 @@ namespace {
+     auto button = ui::button({
+         .text = "Open link " + std::to_string(index + 1),
+         .glyph = "external-link",
+@@ -93,10 +95,11 @@ namespace {
+         .variant = ButtonVariant::Default,
+         .tooltip = url,
+     });
 -    button->setOnClick([url, refresh = std::move(refresh), activationToken = std::move(activationToken)] {
 +    button->setOnClick([url, refresh = std::move(refresh), activationToken = std::move(activationToken), focusLink = std::move(focusLink)] {
-@@ -99,0 +102 @@ namespace {
+       if (net::openInBrowser(url, activationToken ? activationToken() : std::string{})) {
+         notification::markLinkVisited(url);
+         if (refresh) refresh();
 +        if (focusLink) focusLink(url);
-@@ -444 +447,2 @@ namespace {
+       }
+     });
+     return button;
+@@ -536,7 +539,8 @@ namespace {
+         bool expanded, bool showHistoryActions, IconResolver& iconResolver, std::optional<ColorSpec> iconTint,
+         std::function<void()> onToggleExpanded, std::function<void()> onRemove,
+         const std::function<void(uint32_t, const std::string&)>& onAction,
 -        const std::function<std::string()>& activationToken
 +        const std::function<std::string()>& activationToken,
 +        const std::function<void(const std::string&)>& focusLink
-@@ -510 +514 @@ namespace {
+     ) {
+       const NotificationCardMetrics metrics =
+           measureNotificationCard(renderer, item, entry, m_scale, width, expanded, showHistoryActions);
+@@ -646,11 +650,12 @@ namespace {
+         };
+         label->setOnEnter(updateCursor);
+         label->setOnMotion(updateCursor);
 -        label->setOnClick([label, plain, &renderer, refreshLinks, activationToken](const InputArea::PointerData& data) {
 +        label->setOnClick([label, plain, &renderer, refreshLinks, activationToken, focusLink](const InputArea::PointerData& data) {
-@@ -514,0 +519 @@ namespace {
+           const auto url = notification::linkAt(plain, label->textIndexAt(renderer, data.sceneX, data.sceneY));
+           if (!url.empty() && net::openInBrowser(url, activationToken())) {
+             notification::markLinkVisited(url);
+             refreshLinks();
 +            focusLink(url);
-@@ -539 +544 @@ namespace {
+           }
+         });
+       }
+@@ -676,7 +681,7 @@ namespace {
+         }
+
+         for (std::size_t i = 0; i < links.size(); ++i) {
 -          buttons.push_back(makeLinkButton(links[i], i, m_scale, refreshLinks, activationToken));
 +          buttons.push_back(makeLinkButton(links[i], i, m_scale, refreshLinks, activationToken, focusLink));
-@@ -718 +723,2 @@ public:
+         }
+
+         auto rows = wrapButtonsIntoRows(renderer, buttons, metrics.cardTextWidth, Style::spaceXs * m_scale);
+@@ -891,7 +896,8 @@ public:
+         [this] {
+           auto* platform = m_owner.m_platform;
+           return platform != nullptr ? platform->requestActivationToken(platform->lastPointerSurface()) : std::string{};
 -        }
 +        },
 +        [this](const std::string& url) { notification::focusLinkHandler(m_owner.m_platform, url); }
+     );
+   }
+
 diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
-index 4bbf7b9f8..93acf355b 100644
+index 3150ef5..beac402 100644
 --- a/src/shell/notification/notification_toast.cpp
 +++ b/src/shell/notification/notification_toast.cpp
-@@ -14,0 +15 @@
+@@ -12,6 +12,7 @@
+ #include "net/uri.h"
+ #include "net/url_open.h"
+ #include "notification/link_markup.h"
 +#include "notification/link_focus.h"
-@@ -2863,0 +2865 @@ InputArea* NotificationToast::buildCard(
+ #include "notification/notification_display_name.h"
+ #include "notification/notification_manager.h"
+ #include "render/core/texture_manager.h"
+@@ -3032,6 +3033,7 @@ InputArea* NotificationToast::buildCard(
+     if (!url.empty()) {
+       const std::string token = m_wayland != nullptr ? m_wayland->requestActivationToken(sourceSurface) : std::string{};
+       if (net::openInBrowser(url, token)) {
 +        notification::focusLinkHandler(m_platform, url);
+         notification::markLinkVisited(url);
+         summaryLabel->setText(notification::linkMarkup(displaySummary));
+         bodyLabel->setText(notification::linkMarkup(displayBody));

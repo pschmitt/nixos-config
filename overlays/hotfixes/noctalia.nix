@@ -1,6 +1,6 @@
 # Patch bundle consumed by ../noctalia.nix at explicit positions so the
 # original interleaving with feature patches is preserved.
-# Reviewed 2026-11-10 against Noctalia 815aebe1cfd79c9a18197441eea92f0b275035fc
+# Reviewed 2026-11-12 against Noctalia c2573248a89470383e41b8e1ac432424691cbc1f
 # and Nixpkgs f4a03c008967841f2a0b3cb7c436fc6fc31671f6. The patched package builds.
 # These are local fixes with no upstream issue recorded yet. Remove each when
 # the pinned source implements the corresponding correction.

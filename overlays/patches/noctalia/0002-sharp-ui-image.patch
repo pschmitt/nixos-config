@@ -1,5 +1,5 @@
---- a/src/ui/ui_tree_reconciler.cpp
-+++ b/src/ui/ui_tree_reconciler.cpp
+--- a/src/scripting/ui/ui_tree_reconciler.cpp
++++ b/src/scripting/ui/ui_tree_reconciler.cpp
 @@ -1360,11 +1360,11 @@ void UiTreeReconciler::updateNode(const DesiredNode& desired, MountedNode& slot,
        }
        if (const std::string* path = strProp(desired, "path")) {

@@ -1,14 +1,30 @@
 diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
-index be8477057..c7f888fdd 100644
+index f52d722..0f886e9 100644
 --- a/src/shell/control_center/tabs/notifications_tab.cpp
 +++ b/src/shell/control_center/tabs/notifications_tab.cpp
-@@ -5,0 +6 @@
+@@ -3,8 +3,10 @@
+ #include "compositors/compositor_platform.h"
+ #include "config/config_service.h"
+ #include "core/input/keybind_matcher.h"
 +#include "cursor-shape-v1-client-protocol.h"
-@@ -7,0 +9 @@
+ #include "core/log.h"
+ #include "i18n/i18n.h"
 +#include "net/url_open.h"
-@@ -31,0 +34 @@
+ #include "net/uri.h"
+ #include "notification/notification.h"
+ #include "notification/notification_display_name.h"
+@@ -29,6 +31,7 @@
+ #include <algorithm>
+ #include <chrono>
+ #include <cmath>
 +#include <regex>
-@@ -66,0 +70,28 @@ namespace {
+ #include <cstddef>
+ #include <ctime>
+ #include <filesystem>
+@@ -64,6 +67,34 @@ namespace {
+   constexpr float kNotificationActionButtonSize = Style::controlHeightSm;
+
+   std::string historyActionLabel(std::string_view actionKey, std::string_view actionLabel) {
 +  std::vector<std::string> notificationLinks(const Notification& notification) {
 +    static const std::regex pattern(R"(https?://[^\s<>"']+)");
 +    const std::string text = notification.summary + "\n" + notification.body;
@@ -37,18 +53,36 @@ index be8477057..c7f888fdd 100644
 +    return button;
 +  }
 +
-@@ -68 +99 @@ namespace {
+     if (!StringUtils::isBlank(actionLabel)) {
+       return std::string(actionLabel);
+     }
+@@ -77,9 +108,9 @@ namespace {
+   }
+
+   float measureHistoryActionsRowHeight(
 -      Renderer& renderer, const std::vector<std::string>& actions, float cardTextWidth, float scale
 +      Renderer& renderer, const std::vector<std::string>& actions, const std::vector<std::string>& links, float cardTextWidth, float scale
-@@ -70 +101 @@ namespace {
+   ) {
 -    if (actions.empty()) {
 +    if (actions.empty() && links.empty()) {
-@@ -93,0 +125,4 @@ namespace {
+       return 0.0F;
+     }
+     auto container = ui::column({
+@@ -103,6 +134,10 @@ namespace {
+       );
+     }
+
 +    for (std::size_t i = 0; i < links.size(); ++i) {
 +      buttons.push_back(makeLinkButton(links[i], i, scale));
 +    }
 +
-@@ -280,3 +315,5 @@ namespace {
+     auto rows = wrapButtonsIntoRows(renderer, buttons, cardTextWidth, Style::spaceXs * scale);
+     populateRowContainer(*container, std::move(rows), cardTextWidth, Style::spaceXs * scale);
+
+@@ -322,9 +357,11 @@ namespace {
+               metrics.expanded ? kExpandedMaxLines : kBodyMaxLines
+           );
+
 -    const float actionsRowHeight = showHistoryActions
 -        ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, metrics.cardTextWidth, scale)
 -        : 0.0F;
@@ -57,10 +91,15 @@ index be8477057..c7f888fdd 100644
 +        renderer, showHistoryActions ? entry.notification.actions : std::vector<std::string>{}, links,
 +        metrics.cardTextWidth, scale
 +    );
-@@ -447 +484,12 @@ namespace {
--      if (showHistoryActions && !entry.notification.actions.empty()) {
-+      const auto links = notificationLinks(entry.notification);
-+      // Only make the text clickable when its destination is unambiguous.
+
+     int visibleSegments = 2;
+     if (!metrics.bodyText.empty()) {
+@@ -582,11 +619,22 @@ namespace {
+         m_actionsRow->removeChild(m_actionsRow->children().back().get());
+       }
+       m_actionsRow->setVisible(false);
++      const auto links = item.kind == NotificationDisplayItemKind::GroupHeader
++          ? std::vector<std::string>{} : notificationLinks(entry.notification);
 +      for (Label* label : {m_summary, m_body}) {
 +        label->setHitTestVisible(links.size() == 1);
 +        label->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
@@ -70,25 +109,52 @@ index be8477057..c7f888fdd 100644
 +              })
 +            : nullptr);
 +      }
-+      if ((showHistoryActions && !entry.notification.actions.empty()) || !links.empty()) {
-@@ -449 +497,2 @@ namespace {
+       if (item.kind != NotificationDisplayItemKind::GroupHeader
+-          && showHistoryActions
+-          && !entry.notification.actions.empty()) {
++          && ((showHistoryActions && !entry.notification.actions.empty()) || !links.empty())) {
+         std::vector<std::unique_ptr<Button>> buttons;
 -        const std::size_t limit = std::min(entry.notification.actions.size(), kMaxNotificationActions * 2);
 +        const std::size_t limit = showHistoryActions
 +            ? std::min(entry.notification.actions.size(), kMaxNotificationActions * 2) : 0;
-@@ -465,0 +515,4 @@ namespace {
+         for (std::size_t i = 0; i + 1 < limit; i += 2) {
+           const std::string& actionKey = entry.notification.actions[i];
+           if (actionKey.empty()) {
+@@ -603,6 +651,10 @@ namespace {
+           buttons.push_back(std::move(button));
+         }
+
 +        for (std::size_t i = 0; i < links.size(); ++i) {
 +          buttons.push_back(makeLinkButton(links[i], i, m_scale));
 +        }
 +
+         auto rows = wrapButtonsIntoRows(renderer, buttons, metrics.cardTextWidth, Style::spaceXs * m_scale);
+         populateRowContainer(*m_actionsRow, std::move(rows), metrics.cardTextWidth, Style::spaceXs * m_scale);
+
 diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
-index 1eefbef79..a19497c0d 100644
+index 2022e6e..f52c40f 100644
 --- a/src/shell/notification/notification_toast.cpp
 +++ b/src/shell/notification/notification_toast.cpp
-@@ -12,0 +13 @@
+@@ -10,6 +10,7 @@
+ #include "i18n/i18n.h"
+ #include "net/http_client.h"
+ #include "net/uri.h"
 +#include "net/url_open.h"
-@@ -32,0 +34 @@
+ #include "notification/notification_display_name.h"
+ #include "notification/notification_manager.h"
+ #include "render/core/texture_manager.h"
+@@ -30,6 +31,7 @@
+
+ #include <algorithm>
+ #include <cmath>
 +#include <regex>
-@@ -70,0 +73,17 @@ namespace {
+ #include <filesystem>
+ #include <linux/input-event-codes.h>
+ #include <unistd.h>
+@@ -68,6 +70,23 @@ namespace {
+   constexpr float kIconTextGap = Style::spaceSm;
+   constexpr float kActionGap = Style::spaceXs;
+   constexpr float kActionRowGap = Style::spaceSm;
 +  std::string singleNotificationLink(std::string_view summary, std::string_view body) {
 +    static const std::regex pattern(R"(https?://[^\s<>"']+)");
 +    const std::string text = std::string(summary) + "\n" + std::string(body);
@@ -106,14 +172,31 @@ index 1eefbef79..a19497c0d 100644
 +    return result;
 +  }
 +
-@@ -2421 +2440,2 @@ InputArea* NotificationToast::buildCard(
+   std::string fallbackActionLabel() { return i18n::tr("notifications.actions.fallback"); }
+
+   bool hasInlineReplyAction(const std::vector<std::string>& actions) {
+@@ -2585,11 +2604,14 @@ InputArea* NotificationToast::buildCard(
+   auto viewport = ui::inputArea({});
+   viewport->setAcceptedButtons(InputArea::buttonMask({BTN_LEFT, BTN_RIGHT}));
+   wl_surface* const sourceSurface = outputInstance.surface->wlSurface();
 -  viewport->setOnClick([this, id = entry.notificationId, sourceSurface,
 +  const std::string link = singleNotificationLink(entry.summary, entry.body);
 +  viewport->setOnClick([this, id = entry.notificationId, sourceSurface, link,
-@@ -2425,0 +2446,2 @@ InputArea* NotificationToast::buildCard(
+                         hasDefaultAction =
+                             hasNotificationAction(entry.actions, "default")](const InputArea::PointerData& data) {
+     if (data.button == BTN_RIGHT) {
+       requestClose(id, CloseReason::Dismissed);
 +    } else if (data.button == BTN_LEFT && !link.empty()) {
 +      (void)net::openInBrowser(link);
-@@ -2434 +2456,2 @@ InputArea* NotificationToast::buildCard(
+     } else if (data.button == BTN_LEFT && hasDefaultAction && m_notifications != nullptr) {
+       const std::string activationToken =
+           m_wayland != nullptr ? m_wayland->requestActivationToken(sourceSurface) : std::string{};
+@@ -2598,7 +2620,8 @@ InputArea* NotificationToast::buildCard(
+       }
+     }
+   });
 -  viewport->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
 +  viewport->setCursorShape(!link.empty() || hasNotificationAction(entry.actions, "default")
 +      ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+
+   auto cardRoot = ui::node({.out = outCardContent});
