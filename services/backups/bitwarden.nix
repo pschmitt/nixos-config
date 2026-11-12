@@ -4,110 +4,94 @@
   ...
 }:
 
+let
+  # Read by systemd and handed to the units through LoadCredential, so they
+  # can stay root-owned.
+  secret = name: config.sops.secrets."rbw/${name}".path;
+in
 {
   imports = [
     inputs.rbw.nixosModules.auto
   ];
 
   sops.secrets = {
-    "rbw-auto/backup" = config.sops.mkHostSecret {
-      owner = config.services.rbw-auto.backupUser;
-      group = config.services.rbw-auto.backupGroup;
-    };
-    "rbw-auto/sync" = config.sops.mkHostSecret {
-      owner = config.services.rbw-auto.syncUser;
-      group = config.services.rbw-auto.syncGroup;
-    };
+    "rbw/personal/password" = config.sops.mkHostSecret { };
+    "rbw/personal/totp" = config.sops.mkHostSecret { };
+    "rbw/personal/client-id" = config.sops.mkHostSecret { };
+    "rbw/personal/client-secret" = config.sops.mkHostSecret { };
+    "rbw/vaultwarden/password" = config.sops.mkHostSecret { };
+    "rbw/backup/passphrase" = config.sops.mkHostSecret { };
+    "rbw/backup/healthcheck-url" = config.sops.mkHostSecret { };
+    "rbw/mirror/healthcheck-url" = config.sops.mkHostSecret { };
   };
 
-  services.rbw-auto = {
-    # Both the backup and sync timers log into the same "personal" account.
-    # Their default 1h RandomizedDelaySec can put them within the same
-    # second of each other regardless of the 10-minute stagger between
-    # backupJobs.personal.schedule and syncJobs.*.period below, and Bitwarden
-    # rejects a concurrent login's TOTP code as already used. Capping the
-    # jitter at 5m each keeps their possible windows ([0,5m] vs [10,15m])
-    # from ever overlapping.
-    backupRandomizedDelaySec = "5m";
-    syncRandomizedDelaySec = "5m";
-
-    backupJobs.personal = {
-      # `environmentFiles` (the sops-managed rbw-auto/backup secret) must
-      # supply, as plain KEY=value lines: BW_PASSWORD (this account's master
-      # password) and, once (only needed if this account has never run
-      # `rbw register` before),
-      # BW_BACKUP_REGISTER_CLIENT_ID/BW_BACKUP_REGISTER_CLIENT_SECRET
-      # (personal API key from https://bitwarden.com/help/article/personal-api-key/).
-      account = {
-        name = "personal";
+  services.rbw = {
+    accounts = {
+      # bitwarden.com, the source of truth.
+      personal = {
         email = config.mainUser.email.personal;
+        passwordFile = secret "personal/password";
+        totpSecretFile = secret "personal/totp";
+        # bitwarden.com wants new devices registered with the personal API
+        # key; rbw does that by itself when it asks.
+        apiKey = {
+          clientIdFile = secret "personal/client-id";
+          clientSecretFile = secret "personal/client-secret";
+        };
       };
-      backupPath = "/srv/bw-backup/data";
-      environmentFiles = [ config.sops.secrets."rbw-auto/backup".path ];
-      retentionDays = 30;
-      schedule = "0/6:00:00";
-      monit = {
-        enable = true;
-        thresholdSeconds = 86400;
+
+      # The local Vaultwarden, which receives the one-way mirror.
+      vaultwarden = {
+        email = config.mainUser.email.personal;
+        baseUrl = config.services.vaultwarden.config.DOMAIN;
+        passwordFile = secret "vaultwarden/password";
       };
     };
 
-    # `environmentFiles` (the sops-managed rbw-auto/sync secret) must
-    # supply, as plain KEY=value lines: SRC_BW_PASSWORD/DEST_BW_PASSWORD (both
-    # accounts' master passwords) and, once per account that needs it,
-    # SRC_/DEST_REGISTER_CLIENT_ID/_CLIENT_SECRET (same personal-API-key
-    # register step as above).
-    syncJobs = {
-      # One job mirrors the personal (source) account one way into the
-      # destination org's collections: "Default collection" and "Anika hat
-      # ihr Passwort vergessen" are 1:1 copies of the equally-named source
-      # collections; "Personal vault" has no source-side counterpart, so it
-      # gets the source's personal vault. `pruneDestination` moves
-      # copies whose source entry is gone to the trash, so every collection
-      # stays an exact copy.
-      #
-      # Org membership/roles for anyone besides destAccount (e.g. Anika)
-      # still need to be set up by hand -- `rbw org invite`/`rbw org
-      # confirm`, not something this module automates.
-      vaultwarden = {
-        sourceAccount = {
-          name = "personal";
-          email = config.mainUser.email.personal;
-        };
-        destAccount = {
-          name = "vaultwarden";
-          email = config.mainUser.email.personal;
-          baseUrl = config.services.vaultwarden.config.DOMAIN;
-        };
-        mode = "collections";
-        collections = {
-          org = "bitwarden.com";
-          # "Personal vault" holds the source's personal vault only; the
-          # organization entries live in their own collections.
-          fallback = "personal-vault";
-          names = [
-            "Personal vault"
-            "Default collection"
-            "Anika hat ihr Passwort vergessen"
-          ];
-        };
-        pruneDestination = true;
-        environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
-        # Offset from backupJobs.personal's "0/6:00:00" schedule: both jobs
-        # log into the same "personal" account, and a same-second collision
-        # made Bitwarden reject one job's TOTP code as already used.
-        period = "0/6:10:00";
-        monit = {
-          enable = true;
-          thresholdSeconds = 86400;
-        };
+    backups.personal = {
+      account = "personal";
+      path = "/srv/bw-backup/data";
+      retentionDays = 30;
+      passphraseFile = secret "backup/passphrase";
+      healthcheckUrlFile = secret "backup/healthcheck-url";
+      # The backup and the mirror both log into "personal": keep their
+      # windows ([0,5m] and [10,15m] past the hour) apart, since bitwarden.com
+      # rejects a TOTP code that was already used.
+      schedule = "0/6:00:00";
+      randomizedDelaySec = "5m";
+    };
+
+    # One-way mirror into the destination org's collections: "Default
+    # collection" and "Anika hat ihr Passwort vergessen" are 1:1 copies of
+    # the equally-named source collections; "Personal vault" has no
+    # source-side counterpart and gets the source's personal vault. Copies
+    # whose source entry is gone are moved to the trash, so every collection
+    # stays an exact copy.
+    #
+    # Org membership/roles for anyone besides the destination account (e.g.
+    # Anika) are set up by hand (`rbw org invite`/`rbw org confirm`).
+    mirror = {
+      enable = true;
+      from = "personal";
+      to = "vaultwarden";
+      collections = {
+        org = "bitwarden.com";
+        fallback = "personal-vault";
+        names = [
+          "Personal vault"
+          "Default collection"
+          "Anika hat ihr Passwort vergessen"
+        ];
       };
+      prune = true;
+      healthcheckUrlFile = secret "mirror/healthcheck-url";
+      schedule = "0/6:10:00";
+      randomizedDelaySec = "5m";
     };
   };
 
-  # A single hung `bw get attachment` download (no network timeout) can wedge
-  # these oneshot units in "activating" forever, which also blocks the daily
-  # timers. Fail instead so the next timer run retries and monit alerts.
-  systemd.services."rbw-auto-sync".serviceConfig.TimeoutStartSec = "2h";
-  systemd.services."rbw-auto-backup-personal".serviceConfig.TimeoutStartSec = "2h";
+  # A hung attachment download (no network timeout) must not wedge the
+  # oneshot unit forever and block its timer; fail so the next run retries
+  # and Monit alerts.
+  systemd.services.rbw-backup-personal.serviceConfig.TimeoutStartSec = "2h";
 }
