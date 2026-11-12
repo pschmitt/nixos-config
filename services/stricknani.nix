@@ -57,6 +57,27 @@ in
     };
   };
 
+  # Browsers land on wolle only: passkeys are bound to it (passkeys.rpId below). The web UI on
+  # the wool/stricken aliases redirects there; the API, media and /.well-known stay reachable on
+  # every alias so Android apps configured with an alias keep working (OkHttp drops the
+  # Authorization header on a cross-host redirect).
+  services.nginx.virtualHosts.${mainHost}.locations =
+    let
+      uiLocation = {
+        proxyPass = "http://127.0.0.1:${toString port}";
+        recommendedProxySettings = true;
+        extraConfig = ''
+          if ($host != "${oidcHost}") {
+            return 308 https://${oidcHost}$request_uri;
+          }
+        '';
+      };
+    in
+    {
+      "= /" = uiLocation;
+      "/app/" = uiLocation;
+    };
+
   services.stricknani = {
     enable = true;
     backend = "rust";
