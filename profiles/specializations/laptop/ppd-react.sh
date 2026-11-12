@@ -115,7 +115,7 @@ apply_display_brightness() {
         return 0
       fi
 
-      IFS=, read -r _ _ _ _ current_percentage <<<"$brightness_info"
+      IFS=, read -r _ _ _ current_percentage _ <<<"$brightness_info"
       current_percentage="${current_percentage%\%}"
       if [[ ! "$current_percentage" =~ ^[0-9]+$ ]]
       then
