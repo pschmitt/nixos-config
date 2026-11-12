@@ -37,8 +37,8 @@ In this order. Drop a section only if it has nothing to say.
 6. **`## Documentation`**: a two-column table, `Topic | (description)`, one row per file in
    `docs/`, in the order a reader needs them. Include the subproject READMEs
    (`browser/README.md`, `custom_components/…/README.md`) and the changelog.
-7. **`## License`**: SPDX name and a link to `LICENSE`. Mention exceptions (rbw-auto is GPL-3.0
-   while the rest of rbw is not) here or in `AGENTS.md`.
+7. **`## License`**: SPDX name and a link to `LICENSE`. Mention exceptions (parts under another
+   license than the rest) here or in `AGENTS.md`.
 
 ## What goes where
 
