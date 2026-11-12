@@ -52,51 +52,24 @@
       };
     };
 
-    # `environmentFiles` (the sops-managed rbw-auto/sync secret, shared by
-    # both jobs below -- same two accounts either way) must supply, as
-    # plain KEY=value lines: SRC_BW_PASSWORD/DEST_BW_PASSWORD (both
+    # `environmentFiles` (the sops-managed rbw-auto/sync secret) must
+    # supply, as plain KEY=value lines: SRC_BW_PASSWORD/DEST_BW_PASSWORD (both
     # accounts' master passwords) and, once per account that needs it,
     # SRC_/DEST_REGISTER_CLIENT_ID/_CLIENT_SECRET (same personal-API-key
     # register step as above).
     syncJobs = {
-      # "Personal vault" has no same-named source-side collection, so
-      # bw-sync.sh gives it a full mirror of the whole source vault -- into
-      # the "bitwarden.com" org's "Personal vault" collection rather than
-      # destAccount's own bare personal vault.
-      personal = {
-        sourceAccount = {
-          name = "personal";
-          email = config.mainUser.email.personal;
-        };
-        destAccount = {
-          name = "vaultwarden";
-          email = config.mainUser.email.personal;
-          baseUrl = config.services.vaultwarden.config.DOMAIN;
-        };
-        mode = "collections";
-        collections = {
-          org = "bitwarden.com";
-          names = [ "Personal vault" ];
-        };
-        environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
-        # Offset from backupJobs.personal's "0/6:00:00" schedule: both jobs
-        # log into the same "personal" account, and a same-second collision
-        # made Bitwarden reject one job's TOTP code as already used.
-        period = "0/6:10:00";
-        monit = {
-          enable = true;
-          thresholdSeconds = 86400;
-        };
-      };
-
+      # One job mirrors the personal (source) account one way into the
+      # destination org's collections: "Default collection" and "Anika hat
+      # ihr Passwort vergessen" are 1:1 copies of the equally-named source
+      # collections; "Personal vault" has no source-side counterpart, so it
+      # gets a copy of the whole source vault. `pruneDestination` moves
+      # copies whose source entry is gone to the trash, so every collection
+      # stays an exact copy.
+      #
       # Org membership/roles for anyone besides destAccount (e.g. Anika)
       # still need to be set up by hand -- `rbw org invite`/`rbw org
       # confirm`, not something this module automates.
-      #
-      # "Anika hat ihr Passwort vergessen" and "Default collection" are
-      # 1:1 mirrors of the equally-named collections that already exist
-      # in the source (personal) account.
-      collections = {
+      vaultwarden = {
         sourceAccount = {
           name = "personal";
           email = config.mainUser.email.personal;
@@ -110,11 +83,16 @@
         collections = {
           org = "bitwarden.com";
           names = [
+            "Personal vault"
             "Default collection"
             "Anika hat ihr Passwort vergessen"
           ];
         };
+        pruneDestination = false;
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
+        # Offset from backupJobs.personal's "0/6:00:00" schedule: both jobs
+        # log into the same "personal" account, and a same-second collision
+        # made Bitwarden reject one job's TOTP code as already used.
         period = "0/6:10:00";
         monit = {
           enable = true;
