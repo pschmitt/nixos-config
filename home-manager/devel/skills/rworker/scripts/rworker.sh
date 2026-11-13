@@ -2287,7 +2287,13 @@ emit_event() {
   printf '%s %s %s' "$(date -u +%FT%TZ)" "$(paint "$color" "$kind")" "$(paint_event_target "$target")"
   if [[ -n "$details" ]]
   then
-    printf ' %s' "$(paint 33 "$details")"
+    if [[ "$details" =~ ^([a-z_-]+=)(.*)$ ]]
+    then
+      # key=value: only the value is colored
+      printf ' %s%s' "${BASH_REMATCH[1]}" "$(paint 33 "${BASH_REMATCH[2]}")"
+    else
+      printf ' %s' "$(paint 33 "$details")"
+    fi
   fi
   printf '\n'
 }
