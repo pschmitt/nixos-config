@@ -31,6 +31,8 @@ JSON=""
 WIDE=""
 # Colors, decided once: paint mostly runs inside $(...), where stdout is a
 # pipe even when the user's terminal is not.
+# --quiet: no status messages (timestamp + italics) in `logs -f`
+QUIET=""
 COLOR=""
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]
 then
@@ -50,7 +52,7 @@ Actions:
                        start a registered job
   jobs NAME            list registered jobs
   ps [NAME] [--long]   show processes of running jobs on one or all workers
-  logs [NAME [JOB]] [--lines N] [--follow] [--no-events]
+  logs [NAME [JOB]] [--lines N] [--follow] [--no-events] [--quiet]
                        show logs; follow includes lifecycle events and a worker
                        count status line (every 5 min, once when none) by default
   events [--interval SECONDS]
@@ -132,6 +134,7 @@ flag ps --long show full process command lines
 flag logs --lines=count number of lines per job
 flag logs --follow follow all jobs on all workers
 flag logs --no-events suppress lifecycle events while following
+flag logs --quiet suppress all status messages (timestamped, italic) while following
 flag events --interval=interval event polling interval
 flag register --log=path absolute path to an existing log file
 values job
@@ -208,7 +211,7 @@ action_help() {
       printf '  --long shows full command lines, including arguments\n'
       ;;
     logs)
-      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events]\n' "$me"
+      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events] [--quiet]\n' "$me"
       printf '       %s logs [-f]  # follow jobs and events on all workers\n' "$me"
       ;;
     events)
@@ -595,6 +598,7 @@ italic() {
 
 # A status message: gray italic timestamp, then the italic text.
 status_msg() {
+  [[ -z "$QUIET" ]] || return 0
   printf '%s %s\n' "$(paint_timestamp)" "$(italic "$*")"
 }
 
@@ -1984,12 +1988,14 @@ RUN_JOB
     job=""
     lines=200
     follow=""
+    quiet=""
     worker_prefix=""
     while [[ $# -gt 0 ]]
     do
       case "$1" in
         --lines) lines=$2; shift 2 ;;
         --follow|-f) follow=1; shift ;;
+        --quiet|-q) quiet=1; shift ;;
         --worker-prefix) worker_prefix=$2; shift 2 ;;
         *) [[ -z "$job" ]] || exit 2; job=$1; shift ;;
       esac
@@ -2060,7 +2066,7 @@ RUN_JOB
           pids+=("$!")
           ((index += 1))
         done
-        if [[ -z "$found_job" && ${#followed[@]} -eq 0 && -z "$reported_waiting" ]]
+        if [[ -z "$found_job" && ${#followed[@]} -eq 0 && -z "$reported_waiting" && -z "$quiet" ]]
         then
           printf '\033[3;90m%s\033[0m \033[3mwaiting for jobs...\033[0m\n' "$(date -u +%FT%TZ)" >&2
           reported_waiting=1
@@ -2082,7 +2088,7 @@ REMOTE_JOBS
 }
 
 cmd_logs() {
-  local lines=200 follow="" no_events="" arg
+  local lines=200 follow="" no_events="" quiet="" arg
   if [[ -n "${1:-}" && "$1" != -* ]]
   then
     cmd_jobs_remote logs "$@"
@@ -2103,6 +2109,10 @@ cmd_logs() {
         no_events=1
         shift
         ;;
+      --quiet|-q)
+        quiet=1
+        shift
+        ;;
       *)
         printf 'Unknown logs option: %s\n' "$1" >&2
         action_help logs >&2
@@ -2117,7 +2127,7 @@ cmd_logs() {
   fi
   if [[ -n "$follow" ]]
   then
-    cmd_logs_all_follow "$lines" "$no_events"
+    cmd_logs_all_follow "$lines" "$no_events" "$quiet"
   else
     cmd_logs_all "$lines"
   fi
@@ -2221,7 +2231,7 @@ kill_tree() {
 }
 
 cmd_logs_all_follow() {
-  local lines="$1" no_events="${2:-}" workers worker pid ready_workers events_pid=""
+  local lines="$1" no_events="${2:-}" quiet="${3:-}" workers worker pid ready_workers events_pid=""
   # shellcheck disable=SC2034 # read and written through namerefs in emit_status
   local discovery_interval=5 status_interval=300 last_status_key="" last_status_at=0
   declare -A pids=() current=()
@@ -2239,6 +2249,11 @@ cmd_logs_all_follow() {
   trap cleanup_followers EXIT
   trap 'exit 130' INT
   trap 'exit 143' TERM
+  if [[ -n "$quiet" ]]
+  then
+    QUIET=1
+    no_events=1
+  fi
   if [[ -z "$no_events" ]]
   then
     cmd_events --interval "$discovery_interval" &
@@ -2270,7 +2285,7 @@ cmd_logs_all_follow() {
         continue
       fi
       unset 'pids[$worker]'
-      cmd_jobs_remote logs "$worker" --lines "$lines" --follow &
+      cmd_jobs_remote logs "$worker" --lines "$lines" --follow ${quiet:+--quiet} &
       pids["$worker"]=$!
     done <<< "$ready_workers"
     for worker in "${!pids[@]}"
