@@ -1,7 +1,8 @@
 diff --git a/src/cli.rs b/src/cli.rs
+index df701f4..b2d168a 100644
 --- a/src/cli.rs
 +++ b/src/cli.rs
-@@ -64,6 +64,10 @@
+@@ -64,6 +64,10 @@ pub struct Args {
      #[arg(long)]
      pub reconnect: bool,
  
@@ -13,9 +14,10 @@ diff --git a/src/cli.rs b/src/cli.rs
      #[arg(long)]
      pub force: bool,
 diff --git a/src/main.rs b/src/main.rs
+index b3610db..a1139c1 100644
 --- a/src/main.rs
 +++ b/src/main.rs
-@@ -20,6 +20,7 @@
+@@ -20,6 +20,7 @@ use term::{Metrics, TerminalGuard, caps};
  
  fn main() -> std::process::ExitCode {
      let args = Args::parse();
@@ -24,9 +26,31 @@ diff --git a/src/main.rs b/src/main.rs
  
      match run(&args) {
 diff --git a/src/session.rs b/src/session.rs
+index c91da0a..c727949 100644
 --- a/src/session.rs
 +++ b/src/session.rs
-@@ -1121,6 +1121,9 @@
+@@ -932,6 +932,7 @@ impl<B: Backend> Session<B> {
+             self.pending_metrics = None;
+             self.metrics_applied_at = Some(Instant::now());
+             self.metrics = Metrics::query()?;
++            crate::term::transport::origin_moved(true);
+             tracing::debug!(
+                 "applying resize after {:?}: {}x{} cells, {}x{} px",
+                 at.elapsed(),
+@@ -948,6 +949,12 @@ impl<B: Backend> Session<B> {
+             }
+         }
+ 
++        // The pane can move without changing size (a sibling was resized or closed),
++        // and tiles already placed would stay at the old address.
++        if self.pending_metrics.is_none() && crate::term::transport::origin_moved(false) {
++            self.relayout();
++        }
++
+         // With frames arriving unbidden there is no request to time, so ask for a
+         // round trip and measure that instead.
+         self.probe_round_trip().await?;
+@@ -1121,6 +1128,9 @@ impl<B: Backend> Session<B> {
      }
  
      fn draw_status(&mut self, buf: &mut Vec<u8>) {
@@ -37,9 +61,10 @@ diff --git a/src/session.rs b/src/session.rs
          // What this is connected to, which is the one thing on the left worth reading
          // without looking for it.
 diff --git a/src/term/caps.rs b/src/term/caps.rs
+index d7753ed..c39b40f 100644
 --- a/src/term/caps.rs
 +++ b/src/term/caps.rs
-@@ -83,10 +83,16 @@
+@@ -83,10 +83,16 @@ pub fn probe() -> Result<Caps> {
          )?;
      }
  
@@ -58,7 +83,7 @@ diff --git a/src/term/caps.rs b/src/term/caps.rs
      // The pool's own cleanup would unlink the object, but the terminal has
      // normally done that already.
      drop(pool);
-@@ -106,7 +112,7 @@
+@@ -106,7 +112,7 @@ pub fn query_pixel_geometry() -> Result<(u32, u32)> {
  /// primary-DA reply or the timeout, whichever comes first.
  fn round_trip(request: &[u8]) -> Result<Vec<u8>> {
      let mut out = io::stdout();
@@ -68,9 +93,10 @@ diff --git a/src/term/caps.rs b/src/term/caps.rs
      read_until_da1(PROBE_TIMEOUT)
  }
 diff --git a/src/term/mod.rs b/src/term/mod.rs
+index 891bc70..dacfc33 100644
 --- a/src/term/mod.rs
 +++ b/src/term/mod.rs
-@@ -5,6 +5,7 @@
+@@ -5,6 +5,7 @@ pub mod input;
  pub mod keysym;
  pub mod kitty;
  pub mod shm;
@@ -78,7 +104,7 @@ diff --git a/src/term/mod.rs b/src/term/mod.rs
  pub mod writer;
  
  use std::io::{self, IsTerminal, Write};
-@@ -90,7 +91,7 @@
+@@ -90,7 +91,7 @@ impl TerminalGuard {
      pub fn leave() {
          if FULL_SCREEN.swap(false, Ordering::SeqCst) {
              let mut out = io::stdout();
@@ -87,7 +113,7 @@ diff --git a/src/term/mod.rs b/src/term/mod.rs
              let _ = out.flush();
          }
          if RAW.swap(false, Ordering::SeqCst) {
-@@ -136,6 +137,16 @@
+@@ -136,6 +137,16 @@ pub struct Metrics {
      pub cell_h: u32,
  }
  
@@ -104,7 +130,7 @@ diff --git a/src/term/mod.rs b/src/term/mod.rs
  impl Metrics {
      /// Query the terminal, preferring `TIOCGWINSZ` because it costs no round
      /// trip, and falling back to `CSI 14 t` when the kernel reports no pixel
-@@ -171,6 +182,9 @@
+@@ -171,6 +182,9 @@ impl Metrics {
  
      /// Rows available to the remote framebuffer: everything but the status line.
      pub fn image_rows(&self) -> u16 {
@@ -115,9 +141,11 @@ diff --git a/src/term/mod.rs b/src/term/mod.rs
      }
  
 diff --git a/src/term/transport.rs b/src/term/transport.rs
---- a/src/term/transport.rs
+new file mode 100644
+index 0000000..ce31958
+--- /dev/null
 +++ b/src/term/transport.rs
-@@ -0,0 +1,254 @@
+@@ -0,0 +1,266 @@
 +//! Kitty APCs bypass tmux, while text and cursor addressing remain pane-local.
 +
 +use std::io::{self, Write};
@@ -155,16 +183,28 @@ diff --git a/src/term/transport.rs b/src/term/transport.rs
 +/// The pane moves when it is split, zoomed or the status line changes, so the
 +/// answer is refreshed once a second rather than cached for the whole run.
 +fn pane_origin() -> (u32, u32) {
++    refresh_origin(false).0
++}
++
++/// Re-ask tmux where the pane is (at most once a second unless `force`) and report
++/// whether it moved. Placed tiles stay where they were put, so a caller that sees
++/// `true` has to repaint everything.
++pub fn origin_moved(force: bool) -> bool {
++    in_tmux() && refresh_origin(force).1
++}
++
++fn refresh_origin(force: bool) -> ((u32, u32), bool) {
 +    static CACHE: Mutex<Option<(Instant, (u32, u32))>> = Mutex::new(None);
 +    let mut cache = CACHE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
 +    if let Some((at, origin)) = *cache {
-+        if at.elapsed() < Duration::from_secs(1) {
-+            return origin;
++        if !force && at.elapsed() < Duration::from_secs(1) {
++            return (origin, false);
 +        }
 +    }
-+    let origin = query_pane_origin().unwrap_or_else(|| cache.map_or((0, 0), |(_, known)| known));
++    let known = cache.map(|(_, known)| known);
++    let origin = query_pane_origin().unwrap_or_else(|| known.unwrap_or((0, 0)));
 +    *cache = Some((Instant::now(), origin));
-+    origin
++    (origin, known.is_some_and(|known| known != origin))
 +}
 +
 +fn query_pane_origin() -> Option<(u32, u32)> {
@@ -373,9 +413,10 @@ diff --git a/src/term/transport.rs b/src/term/transport.rs
 +    }
 +}
 diff --git a/src/term/writer.rs b/src/term/writer.rs
+index 39ecfe7..3769d95 100644
 --- a/src/term/writer.rs
 +++ b/src/term/writer.rs
-@@ -45,7 +45,7 @@
+@@ -45,7 +45,7 @@ impl FrameWriter {
                  while let Ok(mut buf) = frame_rx.recv() {
                      // A broken pipe means the terminal is gone; the session
                      // loop will notice through its own channels.

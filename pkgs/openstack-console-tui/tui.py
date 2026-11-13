@@ -5,6 +5,7 @@ import asyncio
 import contextlib
 import os
 import signal
+import subprocess
 import sys
 import termios
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
@@ -43,6 +44,41 @@ def websocket_target(url):
 
 # Ctrl+A is tmux's usual prefix and desktui would otherwise shadow it.
 DESKTUI_PREFIX = os.environ.get("OPENSTACK_CONSOLE_PREFIX", "b")[:1] or "b"
+
+
+def tmux_option(*args):
+    try:
+        done = subprocess.run(
+            ["tmux", *args], capture_output=True, text=True, timeout=5, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
+@contextlib.contextmanager
+def pinned_tmux_window_size():
+    """Stop another, smaller tmux client from resizing the window under the viewer.
+
+    The viewer's terminal queries go to every attached client and the replies count
+    as activity, so with window-size=latest the window jumps to whichever client
+    answered last.
+    """
+    pane = os.environ.get("TMUX_PANE")
+    if not os.environ.get("TMUX") or not pane or os.environ.get("OPENSTACK_CONSOLE_TMUX_SIZE") == "keep":
+        yield
+        return
+    previous = tmux_option("show-options", "-wv", "-t", pane, "window-size")
+    if tmux_option("set-option", "-w", "-t", pane, "window-size", "largest") is None:
+        yield
+        return
+    try:
+        yield
+    finally:
+        if previous:
+            tmux_option("set-option", "-w", "-t", pane, "window-size", previous)
+        else:
+            tmux_option("set-option", "-wu", "-t", pane, "window-size")
 
 
 def viewer_command(viewer, port, view_only, chrome=True):
@@ -232,7 +268,10 @@ def main():
         if args.viewer == "farsee" and os.environ.get("TMUX"):
             raise ValueError("farsee cannot run inside tmux")
         target, origin = websocket_target(sys.stdin.read(65536))
-        result = asyncio.run(run_viewer(target, origin, args.viewer, args.view_only, not args.no_chrome))
+        with pinned_tmux_window_size():
+            result = asyncio.run(
+                run_viewer(target, origin, args.viewer, args.view_only, not args.no_chrome)
+            )
         if result:
             print(
                 "Console connection or viewer failed (details suppressed).",
