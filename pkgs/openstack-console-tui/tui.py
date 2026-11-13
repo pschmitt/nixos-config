@@ -41,6 +41,10 @@ def websocket_target(url):
     return target, origin
 
 
+# Ctrl+A is tmux's usual prefix and desktui would otherwise shadow it.
+DESKTUI_PREFIX = os.environ.get("OPENSTACK_CONSOLE_PREFIX", "b")[:1] or "b"
+
+
 def viewer_command(viewer, port, view_only):
     if viewer == "desktui":
         command = [
@@ -51,6 +55,8 @@ def viewer_command(viewer, port, view_only):
             "--transfer",
             "direct",
             "--no-clipboard",
+            "--prefix",
+            DESKTUI_PREFIX,
         ]
         # tmux swallows the outer terminal's reply to the graphics probe, so
         # detection always fails there even when passthrough works.
@@ -165,7 +171,7 @@ async def run_viewer(target, origin, viewer, view_only):
                 command = viewer_command(viewer, port, view_only)
                 print(f"Opening {viewer}; clipboard disabled.", file=sys.stderr)
                 if viewer == "desktui":
-                    print("Disconnect with Ctrl+A, then q.", file=sys.stderr)
+                    print(f"Disconnect with Ctrl+{DESKTUI_PREFIX.upper()}, then q.", file=sys.stderr)
                 process = await asyncio.create_subprocess_exec(*command, stdin=terminal)
             waiter = asyncio.create_task(process.wait())
             done, _ = await asyncio.wait(

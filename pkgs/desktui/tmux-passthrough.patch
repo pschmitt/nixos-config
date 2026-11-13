@@ -56,7 +56,7 @@ new file mode 100644
 index 0000000..d313fde
 --- /dev/null
 +++ b/src/term/transport.rs
-@@ -0,0 +1,222 @@
+@@ -0,0 +1,254 @@
 +//! Kitty APCs bypass tmux, while text and cursor addressing remain pane-local.
 +
 +use std::io::{self, Write};
@@ -173,6 +173,7 @@ index 0000000..d313fde
 +        return out.write_all(bytes);
 +    }
 +    // Frame buffers contain complete APCs, including each 4096-byte image chunk.
++    let mut cursor: Option<(u32, u32)> = None;
 +    while let Some(start) = bytes.windows(3).position(|part| part == b"\x1b_G") {
 +        let Some(end) = bytes[start..].windows(2).position(|part| part == b"\x1b\\") else {
 +            return out.write_all(bytes);
@@ -183,15 +184,30 @@ index 0000000..d313fde
 +        // about. The cursor address that precedes a placement therefore travels
 +        // inside the same envelope, shifted by the pane's position, and the outer
 +        // cursor is put back so tmux's idea of it stays true.
-+        if let Some((keep, row, col)) = trailing_cup(&bytes[..start]) {
-+            out.write_all(&bytes[..keep])?;
++        //
++        // Chunked transmissions are placed when the last chunk arrives, and a delete
++        // may sit between the address and the placement, so a command that directly
++        // follows another one reuses that one's address.
++        let prefix = &bytes[..start];
++        let address = match trailing_cup(prefix) {
++            Some((keep, row, col)) => {
++                out.write_all(&prefix[..keep])?;
++                Some((row, col))
++            }
++            None if prefix.is_empty() => cursor,
++            None => {
++                out.write_all(prefix)?;
++                None
++            }
++        };
++        cursor = address;
++        if let Some((row, col)) = address {
 +            let mut payload = Vec::with_capacity(command.len() + 24);
 +            write!(payload, "\x1b7\x1b[{};{}H", row + origin.1, col + origin.0)?;
 +            payload.extend_from_slice(command);
 +            payload.extend_from_slice(b"\x1b8");
 +            wrap(out, &payload)?;
 +        } else {
-+            out.write_all(&bytes[..start])?;
 +            wrap(out, command)?;
 +        }
 +        bytes = &bytes[end..];
@@ -232,6 +248,22 @@ index 0000000..d313fde
 +        let mut output = Vec::new();
 +        write_with_tmux(&mut output, b"x\x1b_Ga=d,d=A\x1b\\y", true, (4, 1)).unwrap();
 +        assert_eq!(output, b"x\x1bPtmux;\x1b\x1b_Ga=d,d=A\x1b\x1b\\\x1b\\y");
++    }
++
++    #[test]
++    fn chunks_directly_after_a_placement_share_its_cursor_address() {
++        let mut output = Vec::new();
++        write_with_tmux(
++            &mut output,
++            b"\x1b[2;3H\x1b_Ga=T,m=1;AA\x1b\\\x1b_Gm=0;BB\x1b\\z",
++            true,
++            (4, 1),
++        )
++        .unwrap();
++        assert_eq!(
++            output,
++            b"\x1bPtmux;\x1b\x1b7\x1b\x1b[3;7H\x1b\x1b_Ga=T,m=1;AA\x1b\x1b\\\x1b\x1b8\x1b\\\x1bPtmux;\x1b\x1b7\x1b\x1b[3;7H\x1b\x1b_Gm=0;BB\x1b\x1b\\\x1b\x1b8\x1b\\z"
++        );
 +    }
 +
 +    #[test]
