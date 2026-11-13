@@ -559,6 +559,12 @@ paint_state() {
 # its text as is: green = good/running, yellow = in progress, red = bad.
 paint_value() {
   case "${1,,}" in
+    "exit 0")
+      printf '%s' "$1"
+      ;;
+    exit\ *)
+      paint '1;31' "$1"
+      ;;
     running|active|ready|succeeded|success|completed)
       paint 32 "$1"
       ;;
@@ -2303,7 +2309,10 @@ emit_event() {
   printf '%s %s %s' "$(date -u +%FT%TZ)" "$(paint "$color" "$kind")" "$(paint_event_target "$target")"
   if [[ -n "$details" ]]
   then
-    if [[ "$details" =~ ^([a-z_-]+=)(.*)$ ]]
+    if [[ "$details" == *" -> "* ]]
+    then
+      printf ' %s -> %s' "$(paint_value "${details%% -> *}")" "$(paint_value "${details#* -> }")"
+    elif [[ "$details" =~ ^([a-z_-]+=)(.*)$ ]]
     then
       # key=value: only the value is colored
       printf ' %s%s' "${BASH_REMATCH[1]}" "$(paint_value "${BASH_REMATCH[2]}")"
