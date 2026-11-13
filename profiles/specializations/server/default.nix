@@ -23,7 +23,6 @@
     ./btrfs-balance.nix
     ./boot.nix
     ./firewall.nix
-    ./interactive/browser.nix
     ./interactive/dotfiles.nix
     ./monit.nix
     ./monit-clock-watch.nix

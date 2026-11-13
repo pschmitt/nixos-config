@@ -1,5 +1,7 @@
 { config, pkgs, ... }:
 {
+  imports = [ ../../profiles/specializations/server/interactive/browser.nix ];
+
   home-manager.users.${config.mainUser.username} = {
     imports = [
       ../../modules/home-manager/claude-remote-control.nix
