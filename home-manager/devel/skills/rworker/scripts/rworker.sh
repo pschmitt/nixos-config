@@ -577,6 +577,11 @@ paint_value() {
   esac
 }
 
+# Current UTC time in gray, the prefix of every `logs -f` line.
+paint_timestamp() {
+  paint 90 "$(date -u +%FT%TZ)"
+}
+
 # Italic text that survives the resets of the paint calls nested inside it.
 italic() {
   local text="$*"
@@ -2052,7 +2057,7 @@ RUN_JOB
         done
         if [[ -z "$found_job" && ${#followed[@]} -eq 0 && -z "$reported_waiting" ]]
         then
-          printf '%s \033[3mwaiting for jobs...\033[0m\n' "$(date -u +%FT%TZ)" >&2
+          printf '\033[90m%s\033[0m \033[3mwaiting for jobs...\033[0m\n' "$(date -u +%FT%TZ)" >&2
           reported_waiting=1
         fi
         sleep 1
@@ -2301,7 +2306,7 @@ emit_status() {
   then
     summary=$(sed -E 's/[0-9]+/\x1b[36m&\x1b[0m/g' <<< "$summary")
   fi
-  printf '%s %s\n' "$(date -u +%FT%TZ)" "$(italic "status $summary")"
+  printf '%s %s\n' "$(paint_timestamp)" "$(italic "status $summary")"
   last_key="$key"
   last_at="$now"
 }
@@ -2336,7 +2341,7 @@ emit_event() {
       text+=" $(paint 33 "$details")"
     fi
   fi
-  printf '%s %s\n' "$(date -u +%FT%TZ)" "$(italic "$text")"
+  printf '%s %s\n' "$(paint_timestamp)" "$(italic "$text")"
 }
 
 cmd_events() {
