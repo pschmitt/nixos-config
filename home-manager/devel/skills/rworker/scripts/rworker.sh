@@ -2041,7 +2041,7 @@ RUN_JOB
         done
         if [[ -z "$found_job" && ${#followed[@]} -eq 0 && -z "$reported_waiting" ]]
         then
-          printf 'waiting for jobs...\n' >&2
+          printf '%s \033[3mwaiting for jobs...\033[0m\n' "$(date -u +%FT%TZ)" >&2
           reported_waiting=1
         fi
         sleep 1
