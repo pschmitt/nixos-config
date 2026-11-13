@@ -13,7 +13,7 @@
       pkgs.desktui
       # kitten icat for fzf-preview images (the outer terminal is a remote kitty)
       pkgs.kitty
-      pkgs.uv
+      pkgs.openstack-console-tui
     ];
 
     services.terminal-browser-headless.enable = true;
