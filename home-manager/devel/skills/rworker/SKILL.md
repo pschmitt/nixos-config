@@ -31,6 +31,8 @@ rworker ssh "$w" 'cd rbw && nix develop -c cargo build --release'
 rworker down "$w"
 ```
 
+`RWORKER_KEY` must name the **public** SSH key file (`.pub`), never the private key: `up` sends its contents to the worker-control command. `builder` strips `.pub` to find the private key; `ssh` and `sync` need it in the SSH agent or configuration.
+
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints a summary;
   `--profile browser-daemon` is the image for browser-daemon's ephemeral
   browser nodes (small `s1.medium.d`), not for building anything, browser-daemon
