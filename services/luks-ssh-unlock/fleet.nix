@@ -271,6 +271,8 @@ in
 
     services.luks-ssh-unlock = {
       enable = true;
+      # Console log of the selected target in the `luks-ssh-unlock tui` dashboard.
+      tui.extraCommands = [ "console=zsh -lc 'zhj openstack::console-log {host}'" ];
       instances = lib.listToAttrs (
         map (target: {
           inherit (target) name;
