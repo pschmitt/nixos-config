@@ -577,6 +577,17 @@ paint_value() {
   esac
 }
 
+# Italic text that survives the resets of the paint calls nested inside it.
+italic() {
+  local text="$*"
+  if [[ -n "$COLOR" ]]
+  then
+    printf '\e[3m%s\e[0m' "${text//$'\e[0m'/$'\e[0m\e[3m'}"
+  else
+    printf '%s' "$text"
+  fi
+}
+
 paint_event_target() {
   local target="$1"
   if [[ "$target" == */* ]]
@@ -2290,13 +2301,13 @@ emit_status() {
   then
     summary=$(sed -E 's/[0-9]+/\x1b[36m&\x1b[0m/g' <<< "$summary")
   fi
-  printf '%s status %s\n' "$(date -u +%FT%TZ)" "$summary"
+  printf '%s %s\n' "$(date -u +%FT%TZ)" "$(italic "status $summary")"
   last_key="$key"
   last_at="$now"
 }
 
 emit_event() {
-  local kind="$1" target="$2" details="${3:-}" color
+  local kind="$1" target="$2" details="${3:-}" color text
   case "$kind" in
     *-added)
       color=32
@@ -2311,21 +2322,21 @@ emit_event() {
       color=36
       ;;
   esac
-  printf '%s %s %s' "$(date -u +%FT%TZ)" "$(paint "$color" "$kind")" "$(paint_event_target "$target")"
+  text="$(paint "$color" "$kind") $(paint_event_target "$target")"
   if [[ -n "$details" ]]
   then
     if [[ "$details" == *" -> "* ]]
     then
-      printf ' %s -> %s' "$(paint_value "${details%% -> *}")" "$(paint_value "${details#* -> }")"
+      text+=" $(paint_value "${details%% -> *}") -> $(paint_value "${details#* -> }")"
     elif [[ "$details" =~ ^([a-z_-]+=)(.*)$ ]]
     then
       # key=value: only the value is colored
-      printf ' %s%s' "${BASH_REMATCH[1]}" "$(paint_value "${BASH_REMATCH[2]}")"
+      text+=" ${BASH_REMATCH[1]}$(paint_value "${BASH_REMATCH[2]}")"
     else
-      printf ' %s' "$(paint 33 "$details")"
+      text+=" $(paint 33 "$details")"
     fi
   fi
-  printf '\n'
+  printf '%s %s\n' "$(date -u +%FT%TZ)" "$(italic "$text")"
 }
 
 cmd_events() {
