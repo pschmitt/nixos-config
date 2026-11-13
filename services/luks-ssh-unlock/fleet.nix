@@ -16,6 +16,8 @@ let
     {
       name = "fnuc";
       hostname = "fnuc.lan";
+      # Not an OpenStack VM: no console log in the tui.
+      tuiCommands = [ "console=" ];
       hasInitrdCheck = true;
       # fnuc/lrz's dm-crypt mappers are named "encrypted"/"data-encrypted".
       healthcheckCmd = encryptedRootHealthcheck;
@@ -23,18 +25,24 @@ let
     {
       name = "ge2";
       hostname = "ge2.lan";
+      # Not an OpenStack VM: no console log in the tui.
+      tuiCommands = [ "console=" ];
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "gk4";
       hostname = "gk4.lan";
+      # Not an OpenStack VM: no console log in the tui.
+      tuiCommands = [ "console=" ];
       hasInitrdCheck = true;
       healthcheckCmd = "/run/current-system/sw/bin/findmnt -J / | /run/current-system/sw/bin/jq -er '.filesystems[] | select(.target == \"/\") | .source | test(\"luks-root\")'";
     }
     {
       name = "lrz";
       hostname = "lrz.lan";
+      # Not an OpenStack VM: no console log in the tui.
+      tuiCommands = [ "console=" ];
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
       dhcpListener = {
@@ -46,6 +54,8 @@ let
     {
       name = "oci-01";
       hostname = "oci-01.brkn.lol";
+      # Oracle Cloud, not OpenStack.
+      tuiCommands = [ "console=zsh -lc 'zhj oci::console {name}'" ];
       # oci-01 was migrated from Ubuntu to full NixOS; it now has its own
       # initrd SSH host keys and is unlockable like the rest of the fleet.
       hasInitrdCheck = true;
@@ -54,6 +64,8 @@ let
     {
       name = "oci-03";
       hostname = "oci-03.brkn.lol";
+      # Oracle Cloud, not OpenStack.
+      tuiCommands = [ "console=zsh -lc 'zhj oci::console {name}'" ];
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
@@ -196,6 +208,7 @@ let
   createInstance = target: {
     type = "systemd";
     inherit (target) hostname;
+    tuiCommands = target.tuiCommands or [ ];
     key = selfSshKey;
     passphraseFile = config.sops.secrets."luks/${target.name}/passphrase".path;
     sshKnownHostsFile = config.sops.templates."luks-ssh-unlock/${target.name}/known_hosts".path;
@@ -272,7 +285,7 @@ in
     services.luks-ssh-unlock = {
       enable = true;
       # Console log of the selected target in the `luks-ssh-unlock tui` dashboard.
-      tui.extraCommands = [ "console=zsh -lc 'zhj openstack::console-log {host}'" ];
+      tui.extraCommands = [ "console=zsh -lc 'zhj openstack::console-log {name}'" ];
       instances = lib.listToAttrs (
         map (target: {
           inherit (target) name;
