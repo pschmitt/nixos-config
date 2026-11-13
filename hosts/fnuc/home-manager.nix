@@ -9,8 +9,12 @@
       ./immich-mcp.nix
     ];
 
-    # kitten icat for fzf-preview images (the outer terminal is a remote kitty)
-    home.packages = [ pkgs.kitty ];
+    home.packages = [
+      pkgs.desktui
+      # kitten icat for fzf-preview images (the outer terminal is a remote kitty)
+      pkgs.kitty
+      pkgs.uv
+    ];
 
     services.terminal-browser-headless.enable = true;
   };
