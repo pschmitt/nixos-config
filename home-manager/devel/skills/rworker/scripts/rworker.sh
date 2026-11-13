@@ -577,9 +577,9 @@ paint_value() {
   esac
 }
 
-# Current UTC time in gray, the prefix of every `logs -f` line.
+# Current UTC time in gray italics, the prefix of every `logs -f` line.
 paint_timestamp() {
-  paint 90 "$(date -u +%FT%TZ)"
+  paint '3;90' "$(date -u +%FT%TZ)"
 }
 
 # Italic text that survives the resets of the paint calls nested inside it.
@@ -2057,7 +2057,7 @@ RUN_JOB
         done
         if [[ -z "$found_job" && ${#followed[@]} -eq 0 && -z "$reported_waiting" ]]
         then
-          printf '\033[90m%s\033[0m \033[3mwaiting for jobs...\033[0m\n' "$(date -u +%FT%TZ)" >&2
+          printf '\033[3;90m%s\033[0m \033[3mwaiting for jobs...\033[0m\n' "$(date -u +%FT%TZ)" >&2
           reported_waiting=1
         fi
         sleep 1
