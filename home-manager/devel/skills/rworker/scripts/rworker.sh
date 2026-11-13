@@ -599,7 +599,7 @@ italic() {
 # A status message: gray italic timestamp, then the italic text.
 status_msg() {
   [[ -z "$QUIET" ]] || return 0
-  printf '%s %s\n' "$(paint_timestamp)" "$(italic "$*")"
+  printf '%s %s\n' "$(paint_timestamp)" "$(italic "$*")" >&2
 }
 
 paint_event_target() {
@@ -718,7 +718,7 @@ adopt() {
   if [[ "$(jq -r '.ip // empty' <<< "$info")" == "" \
     || "$(jq -r '.host_key // empty' <<< "$info")" == "" ]]
   then
-    status_msg "$(paint_vm "$name") has no IP or host key yet (still booting?)" >&2
+    status_msg "$(paint_vm "$name") has no IP or host key yet (still booting?)"
     return 1
   fi
   # agent's keys are the creator's; everyone else logs in as themselves.
@@ -2256,7 +2256,8 @@ cmd_logs_all_follow() {
   fi
   if [[ -z "$no_events" ]]
   then
-    cmd_events --interval "$discovery_interval" &
+    # events are status messages here: stderr, keeping stdout for job logs
+    cmd_events --interval "$discovery_interval" >&2 &
     events_pid=$!
   fi
   while :
@@ -2326,7 +2327,7 @@ emit_status() {
   then
     summary=$(sed -E 's/[0-9]+/\x1b[36m&\x1b[0m/g' <<< "$summary")
   fi
-  printf '%s %s\n' "$(paint_timestamp)" "$(italic "status $summary")"
+  printf '%s %s\n' "$(paint_timestamp)" "$(italic "status $summary")" >&2
   last_key="$key"
   last_at="$now"
 }
