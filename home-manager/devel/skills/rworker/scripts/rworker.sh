@@ -52,10 +52,11 @@ Actions:
                        start a registered job
   jobs NAME            list registered jobs
   ps [NAME] [--long]   show processes of running jobs on one or all workers
-  logs [NAME [JOB]] [--lines N] [--follow] [--no-events] [--quiet] [--topic REGEX]
+  logs [NAME [JOB]] [--lines N] [--follow] [--no-events] [--quiet]
+       [--topic REGEX] [--agent REGEX]
                        show logs; follow includes lifecycle events and a worker
                        count status line (every 5 min, once when none) by default
-  events [--interval SECONDS] [--topic REGEX]
+  events [--interval SECONDS] [--topic REGEX] [--agent REGEX]
                        stream worker and job lifecycle events
   register NAME JOB --log PATH
                        register an existing log file
@@ -136,8 +137,10 @@ flag logs --follow follow all jobs on all workers
 flag logs --no-events suppress lifecycle events while following
 flag logs --quiet suppress all status messages (timestamped, italic) while following
 flag logs --topic=topic limit to workers whose topic matches this regex
+flag logs --agent=agent limit to workers whose creating agent matches this regex
 flag events --interval=interval event polling interval
 flag events --topic=topic limit to workers whose topic matches this regex
+flag events --agent=agent limit to workers whose creating agent matches this regex
 flag register --log=path absolute path to an existing log file
 values job
 values count 50 200 1000
@@ -189,6 +192,7 @@ values size 100 150 250 500
 values path
 values format json wide
 values topic
+values agent claude codex agy opencode gemini copilot shell nixbot
 values user agent pschmitt nix-remote-builder
 values interval 2 5 10 30
 worker down extend niks3-token ssh sync builder prune inspect nix-cache start jobs ps logs register
@@ -213,11 +217,11 @@ action_help() {
       printf '  --long shows full command lines, including arguments\n'
       ;;
     logs)
-      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events] [--quiet] [--topic REGEX]\n' "$me"
-      printf '       %s logs [-f] [--topic REGEX]  # follow jobs and events on all (or matching) workers\n' "$me"
+      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events] [--quiet] [--topic REGEX] [--agent REGEX]\n' "$me"
+      printf '       %s logs [-f] [--topic REGEX] [--agent REGEX]  # follow jobs and events on all (or matching) workers\n' "$me"
       ;;
     events)
-      printf 'Usage: %s events [--interval SECONDS] [--topic REGEX]\n' "$me"
+      printf 'Usage: %s events [--interval SECONDS] [--topic REGEX] [--agent REGEX]\n' "$me"
       ;;
     register)
       printf 'Usage: %s register WORKER JOB --log PATH\n' "$me"
@@ -2089,27 +2093,32 @@ esac
 REMOTE_JOBS
 }
 
-validate_topic_regex() {
-  local pattern="$1"
+validate_regex() {
+  local flag="$1" pattern="$2"
   if ! jq -n --arg re "$pattern" '"" | test($re)' >/dev/null 2>&1
   then
-    printf 'invalid --topic regex: %s\n' "$pattern" >&2
+    printf 'invalid %s regex: %s\n' "$flag" "$pattern" >&2
     return 2
   fi
 }
 
-filter_workers_by_topic() {
-  local workers="$1" pattern="$2"
-  if [[ -z "$pattern" ]]
+filter_workers() {
+  local workers="$1" topic="${2:-}" agent="${3:-}"
+  if [[ -z "$topic" && -z "$agent" ]]
   then
     printf '%s\n' "$workers"
     return 0
   fi
-  jq -c --arg re "$pattern" '[.[] | select((.topic // "") | test($re))]' <<< "$workers"
+  jq -c --arg topic_re "$topic" --arg agent_re "$agent" '
+    [.[] | select(
+      ($topic_re == "" or ((.topic // "") | test($topic_re))) and
+      ($agent_re == "" or ((.agent // "") | test($agent_re)))
+    )]
+  ' <<< "$workers"
 }
 
 cmd_logs() {
-  local lines=200 follow="" no_events="" quiet="" topic=""
+  local lines=200 follow="" no_events="" quiet="" topic="" agent=""
   if [[ -n "${1:-}" && "$1" != -* ]]
   then
     cmd_jobs_remote logs "$@"
@@ -2152,6 +2161,24 @@ cmd_logs() {
         fi
         shift
         ;;
+      --agent)
+        if [[ -z "${2:-}" ]]
+        then
+          printf -- '--agent requires a regex pattern\n' >&2
+          return 2
+        fi
+        agent="$2"
+        shift 2
+        ;;
+      --agent=*)
+        agent="${1#--agent=}"
+        if [[ -z "$agent" ]]
+        then
+          printf -- '--agent requires a regex pattern\n' >&2
+          return 2
+        fi
+        shift
+        ;;
       *)
         printf 'Unknown logs option: %s\n' "$1" >&2
         action_help logs >&2
@@ -2166,13 +2193,17 @@ cmd_logs() {
   fi
   if [[ -n "$topic" ]]
   then
-    validate_topic_regex "$topic" || return $?
+    validate_regex --topic "$topic" || return $?
+  fi
+  if [[ -n "$agent" ]]
+  then
+    validate_regex --agent "$agent" || return $?
   fi
   if [[ -n "$follow" ]]
   then
-    cmd_logs_all_follow "$lines" "$no_events" "$quiet" "$topic"
+    cmd_logs_all_follow "$lines" "$no_events" "$quiet" "$topic" "$agent"
   else
-    cmd_logs_all "$lines" "$topic"
+    cmd_logs_all "$lines" "$topic" "$agent"
   fi
 }
 
@@ -2248,9 +2279,9 @@ cmd_ps() {
 }
 
 cmd_logs_all() {
-  local lines="$1" topic="${2:-}" workers worker status=0
+  local lines="$1" topic="${2:-}" agent="${3:-}" workers worker status=0
   workers=$(remote_ls) || return 1
-  workers=$(filter_workers_by_topic "$workers" "$topic") || return 1
+  workers=$(filter_workers "$workers" "$topic" "$agent") || return 1
   while IFS= read -r worker
   do
     [[ -n "$worker" ]] || continue
@@ -2275,7 +2306,7 @@ kill_tree() {
 }
 
 cmd_logs_all_follow() {
-  local lines="$1" no_events="${2:-}" quiet="${3:-}" topic="${4:-}" workers worker pid ready_workers events_pid=""
+  local lines="$1" no_events="${2:-}" quiet="${3:-}" topic="${4:-}" agent="${5:-}" workers worker pid ready_workers events_pid=""
   # shellcheck disable=SC2034 # read and written through namerefs in emit_status
   local discovery_interval=5 status_interval=300 last_status_key="" last_status_at=0
   declare -A pids=() current=()
@@ -2306,6 +2337,10 @@ cmd_logs_all_follow() {
     then
       events_args+=(--topic "$topic")
     fi
+    if [[ -n "$agent" ]]
+    then
+      events_args+=(--agent "$agent")
+    fi
     cmd_events "${events_args[@]}" >&2 &
     events_pid=$!
   fi
@@ -2317,7 +2352,7 @@ cmd_logs_all_follow() {
       sleep "$discovery_interval"
       continue
     fi
-    workers=$(filter_workers_by_topic "$workers" "$topic") || {
+    workers=$(filter_workers "$workers" "$topic" "$agent") || {
       sleep "$discovery_interval"
       continue
     }
@@ -2419,7 +2454,7 @@ emit_event() {
 }
 
 cmd_events() {
-  local interval=2 topic="" workers worker ready_workers jobs job state started key previous initialized=""
+  local interval=2 topic="" agent="" workers worker ready_workers jobs job state started key previous initialized=""
   local -A previous_workers=() current_workers=() previous_jobs=() current_jobs=() polled_workers=()
   while [[ -n "${1:-}" ]]
   do
@@ -2446,6 +2481,24 @@ cmd_events() {
         fi
         shift
         ;;
+      --agent)
+        if [[ -z "${2:-}" ]]
+        then
+          printf -- '--agent requires a regex pattern\n' >&2
+          return 2
+        fi
+        agent="$2"
+        shift 2
+        ;;
+      --agent=*)
+        agent="${1#--agent=}"
+        if [[ -z "$agent" ]]
+        then
+          printf -- '--agent requires a regex pattern\n' >&2
+          return 2
+        fi
+        shift
+        ;;
       *)
         printf 'Unknown events option: %s\n' "$1" >&2
         action_help events >&2
@@ -2460,7 +2513,11 @@ cmd_events() {
   fi
   if [[ -n "$topic" ]]
   then
-    validate_topic_regex "$topic" || return $?
+    validate_regex --topic "$topic" || return $?
+  fi
+  if [[ -n "$agent" ]]
+  then
+    validate_regex --agent "$agent" || return $?
   fi
   while :
   do
@@ -2470,7 +2527,7 @@ cmd_events() {
       sleep "$interval"
       continue
     fi
-    workers=$(filter_workers_by_topic "$workers" "$topic") || {
+    workers=$(filter_workers "$workers" "$topic" "$agent") || {
       sleep "$interval"
       continue
     }
