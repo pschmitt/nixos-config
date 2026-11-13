@@ -43,6 +43,19 @@ in
       '';
     };
 
+    modelPoolsHideOriginals = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+      default = { };
+      example = {
+        claude-sonnet = [ "antigravity" ];
+      };
+      description = ''
+        Per pool, the providers whose upstream model name is replaced by the
+        pool alias instead of being listed next to it. Providers not named
+        here keep their original model name.
+      '';
+    };
+
     configFile = lib.mkOption {
       type = lib.types.str;
       default = toString (yaml.generate "cli-proxy-api.yaml" cfg.settings);
@@ -86,7 +99,7 @@ in
                   {
                     inherit name;
                     alias = pool;
-                    fork = true;
+                    fork = !(lib.elem provider (cfg.modelPoolsHideOriginals.${pool} or [ ]));
                   }
                 ];
               }
