@@ -107,7 +107,7 @@ in
   inherit msoutlook-mcp;
   nixpp-termux = pkgs.callPackage ./termux/nixpp { inherit inputs; };
   native-client = pkgs.callPackage ./native-client { };
-  openstack-console-tui = pkgs.callPackage ./openstack-console-tui { };
+  console-tui = pkgs.callPackage ./console-tui { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
   playconsole-cli = pkgs.callPackage ./playconsole-cli { };
   shellyctl = pkgs.callPackage ./shellyctl { };

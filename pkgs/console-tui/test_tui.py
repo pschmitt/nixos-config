@@ -206,7 +206,7 @@ class EndToEndTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory(prefix="console-wrapper-test-") as directory:
             root = Path(directory)
             for name, body in {
-                "openstack-console-tui": (
+                "console-tui": (
                     "import os, sys\n"
                     f"os.execv(sys.executable, [sys.executable, '-I', {str(Path(__file__).with_name('tui.py'))!r}, *sys.argv[1:]])\n"
                 ),
