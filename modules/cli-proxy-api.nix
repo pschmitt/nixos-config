@@ -7,6 +7,15 @@
 let
   cfg = config.services.cli-proxy-api;
   yaml = pkgs.formats.yaml { };
+
+  authCheck = pkgs.writeShellApplication {
+    name = "cli-proxy-api-auth-check";
+    runtimeInputs = [
+      pkgs.curl
+      pkgs.jq
+    ];
+    text = builtins.readFile ./scripts/cli-proxy-api-auth-check.sh;
+  };
 in
 {
   options.services.cli-proxy-api = {
@@ -40,6 +49,16 @@ in
       description = ''
         Runtime YAML configuration, including client authentication keys.
         Supply a secret path or SOPS template; never put credentials in the Nix store.
+      '';
+    };
+
+    managementKeyFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Runtime file holding the management key. When set, a Monit check
+        alerts if an enabled account needs a new login or has another
+        authentication problem.
       '';
     };
 
@@ -78,6 +97,18 @@ in
     };
 
     environment.systemPackages = [ cfg.package ];
+
+    services.monit.checks.cli-proxy-api-auth = lib.mkIf (cfg.managementKeyFile != null) {
+      type = "program";
+      path = lib.concatStringsSep " " [
+        (lib.getExe authCheck)
+        "http://127.0.0.1:${toString (cfg.settings.server.port or 8317)}"
+        cfg.managementKeyFile
+      ];
+      group = "cli-proxy-api";
+      every = 5;
+      conditions = "if status != 0 then alert";
+    };
 
     users = {
       users.cli-proxy-api = {
