@@ -2263,7 +2263,7 @@ emit_status() {
       | (group_by(.kind) | map("\(length) \(.[0].kind)") | join(", ")) as $k
       | "\($n) worker\(if $n == 1 then "" else "s" end) (\($k))"' <<< "$workers") || return 0
   fi
-  printf '%s %s %s\n' "$(date -u +%FT%TZ)" "$(paint 35 status)" "$(paint 35 "$summary")"
+  printf '%s %s %s\n' "$(date -u +%FT%TZ)" status "$(paint 35 "$summary")"
   last_key="$key"
   last_at="$now"
 }
