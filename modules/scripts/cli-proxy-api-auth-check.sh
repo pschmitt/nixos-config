@@ -19,6 +19,14 @@ if ! response=$(
   exit 1
 fi
 
+# A proxy upgrade that renames the sign-in fields must not silence the check.
+if ! jq -e '(.files | type == "array") and all(.files[]; has("requires_sign_in"))' \
+  <<<"$response" >/dev/null
+then
+  echo "🚨 Unexpected CLIProxyAPI credentials response: sign-in fields missing"
+  exit 1
+fi
+
 problems=$(
   jq -r '
     def sign_in:
