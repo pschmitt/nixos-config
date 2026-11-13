@@ -2285,7 +2285,12 @@ emit_status() {
       | (group_by(.kind) | map("\(length) \(.[0].kind)") | join(", ")) as $k
       | "\($n) worker\(if $n == 1 then "" else "s" end) (\($k))"' <<< "$workers") || return 0
   fi
-  printf '%s %s %s\n' "$(date -u +%FT%TZ)" status "$(paint_vm "$summary")"
+  # only the numbers are colored
+  if [[ -n "$COLOR" ]]
+  then
+    summary=$(sed -E 's/[0-9]+/\x1b[36m&\x1b[0m/g' <<< "$summary")
+  fi
+  printf '%s status %s\n' "$(date -u +%FT%TZ)" "$summary"
   last_key="$key"
   last_at="$now"
 }
