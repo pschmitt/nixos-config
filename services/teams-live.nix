@@ -24,6 +24,7 @@ in
     "teams-live/gitlab-token" = hostSecret;
     "teams-live/gitlab-url" = hostSecret;
     "teams-live/gitlab-group" = hostSecret;
+    "teams-live/gitlab-webhook-secret" = hostSecret;
     "teams-live/conversation-notes" = hostSecret;
     "teams-live/conversation-team" = hostSecret;
     "teams-live/jira-url" = hostSecret;
@@ -38,78 +39,110 @@ in
     "home-assistant/token" = serviceSecret { sopsFile = config.sops.defaultSopsFile; };
   };
 
-  services.teams-live = {
-    enable = true;
-    settings = {
-      teams = {
-        credentials_file = secrets."teams-live/credentials".path;
-        troll_user = secretValue "teams-live/troll-user";
-        edit_own_url_messages = true;
-      };
+  services = {
+    teams-live = {
+      enable = true;
+      settings = {
+        teams = {
+          credentials_file = secrets."teams-live/credentials".path;
+          troll_user = secretValue "teams-live/troll-user";
+          edit_own_url_messages = true;
+        };
 
-      browser_daemon = {
-        url = "https://browser.fnuc.nb.brkn.lol";
-        profile = "ha-msteams";
-        secret_file = secrets."browser-daemon/cluster-secret".path;
-      };
+        browser_daemon = {
+          url = "https://browser.fnuc.nb.brkn.lol";
+          profile = "ha-msteams";
+          secret_file = secrets."browser-daemon/cluster-secret".path;
+        };
 
-      gitlab = {
-        host = secretValue "teams-live/gitlab-url";
-        group = secretValue "teams-live/gitlab-group";
-        token_file = secrets."teams-live/gitlab-token".path;
-        history_max_age_minutes = 15;
-      };
+        gitlab = {
+          host = secretValue "teams-live/gitlab-url";
+          group = secretValue "teams-live/gitlab-group";
+          token_file = secrets."teams-live/gitlab-token".path;
+          history_max_age_minutes = 15;
+          webhook = {
+            enable = true;
+            port = 3005;
+            url = "https://teams-live.${config.domains.main}/webhook/gitlab";
+            secret_file = secrets."teams-live/gitlab-webhook-secret".path;
+            auto_setup = true;
+          };
+        };
 
-      jira = {
-        url = secretValue "teams-live/jira-url";
-        token_file = secrets."teams-live/jira-token".path;
-        board_id = secretValue "teams-live/jira-board-id";
-      };
+        jira = {
+          url = secretValue "teams-live/jira-url";
+          token_file = secrets."teams-live/jira-token".path;
+          board_id = secretValue "teams-live/jira-board-id";
+        };
 
-      confluence = {
-        url = "https://wiki.wiit.one";
-        token_file = secrets."teams-live/confluence-token".path;
-      };
+        confluence = {
+          url = "https://wiki.wiit.one";
+          token_file = secrets."teams-live/confluence-token".path;
+        };
 
-      opsgenie = {
-        on_call_key = secretValue "opsgenie/gksv3-on-call/api-key";
-        support_key = secretValue "opsgenie/gksv3-support-schedule/api-key";
-        edge_key = secretValue "opsgenie/edge-stack/api-key";
-      };
+        opsgenie = {
+          on_call_key = secretValue "opsgenie/gksv3-on-call/api-key";
+          support_key = secretValue "opsgenie/gksv3-support-schedule/api-key";
+          edge_key = secretValue "opsgenie/edge-stack/api-key";
+        };
 
-      home_assistant = {
-        # Straight over NetBird: the public vhost times out slow service calls
-        # (HR WORKS) after 60s and retries them through Nabu Casa.
-        url = "http://ha.${config.domains.netbird}:8123";
-        token_file = secrets."home-assistant/token".path;
-      };
+        home_assistant = {
+          # Straight over NetBird: the public vhost times out slow service calls
+          # (HR WORKS) after 60s and retries them through Nabu Casa.
+          url = "http://ha.${config.domains.netbird}:8123";
+          token_file = secrets."home-assistant/token".path;
+        };
 
-      conversations = [
-        {
-          id = secretValue "teams-live/conversation-notes";
-          name = "Notes (Self)";
-          gitlab = true;
-        }
-        {
-          id = secretValue "teams-live/conversation-team";
-          name = "Team";
-          gitlab = true;
-        }
-      ];
+        conversations = [
+          {
+            id = secretValue "teams-live/conversation-notes";
+            name = "Notes (Self)";
+            gitlab = true;
+          }
+          {
+            id = secretValue "teams-live/conversation-team";
+            name = "Team";
+            gitlab = true;
+          }
+        ];
+      };
     };
-  };
 
-  services.monit.checks.teams-live = {
-    type = "program";
-    path = cfg.healthCheck;
-    group = [
-      "services"
-      "teams"
-    ];
-    restartUnit = "teams-live.service";
-    conditions = ''
-      if status > 0 for 2 cycles then restart
-      if 3 restarts within 10 cycles then alert
-    '';
+    nginx.virtualHosts."teams-live.${config.domains.main}" = {
+      enableACME = true;
+      forceSSL = true;
+      authelia.enable = true;
+
+      locations = {
+        "^~ /webhook/" = {
+          proxyPass = "http://127.0.0.1:3005";
+          recommendedProxySettings = true;
+          authelia = false;
+        };
+        "= /healthz" = {
+          proxyPass = "http://127.0.0.1:3005";
+          recommendedProxySettings = true;
+          authelia = false;
+        };
+        "/" = {
+          proxyPass = "http://127.0.0.1:3005";
+          recommendedProxySettings = true;
+        };
+      };
+    };
+
+    monit.checks.teams-live = {
+      type = "program";
+      path = cfg.healthCheck;
+      group = [
+        "services"
+        "teams"
+      ];
+      restartUnit = "teams-live.service";
+      conditions = ''
+        if status > 0 for 2 cycles then restart
+        if 3 restarts within 10 cycles then alert
+      '';
+    };
   };
 }
