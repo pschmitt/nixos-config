@@ -593,6 +593,11 @@ italic() {
   fi
 }
 
+# A status message: gray italic timestamp, then the italic text.
+status_msg() {
+  printf '%s %s\n' "$(paint_timestamp)" "$(italic "$*")"
+}
+
 paint_event_target() {
   local target="$1"
   if [[ "$target" == */* ]]
@@ -709,7 +714,7 @@ adopt() {
   if [[ "$(jq -r '.ip // empty' <<< "$info")" == "" \
     || "$(jq -r '.host_key // empty' <<< "$info")" == "" ]]
   then
-    printf '%s has no IP or host key yet (still booting?)\n' "$(paint_vm "$name")" >&2
+    status_msg "$(paint_vm "$name") has no IP or host key yet (still booting?)" >&2
     return 1
   fi
   # agent's keys are the creator's; everyone else logs in as themselves.
