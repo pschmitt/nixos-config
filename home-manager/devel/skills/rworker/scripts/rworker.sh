@@ -2520,7 +2520,7 @@ cmd_sync() {
   user=$(target_user) || return 1
   mapfile -t opts < <(ssh_opts "$name")
   dest="${dest:-$(basename "$(realpath "$src")")}"
-  rsync -a --delete --exclude target/ --exclude .direnv/ --exclude result \
+  rsync -a --delete --exclude target/ --exclude .direnv/ --exclude /result \
     -e "ssh ${opts[*]}" "${src%/}/" "${user}@${ip}:${dest}/" || return 1
   if [[ -n "$JSON" ]]
   then

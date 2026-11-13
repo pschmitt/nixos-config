@@ -65,7 +65,7 @@ rworker down "$w"
 - On the worker, `rworker-metadata [--json]` shows what it is: name,
   owner, creator, current expiry and lifetime, CPUs, memory, disk.
 - `ssh NAME [CMD]` and `sync NAME SRC [DEST]` use the pinned host key.
-  `sync` mirrors with `--delete` and skips `target/`, `.direnv/`, `result`.
+  `sync` mirrors with `--delete` and skips `target/`, `.direnv/`, `/result`.
 - `cp NAME:REMOTE LOCAL` / `cp LOCAL NAME:REMOTE` copies files or
   directories (rsync, like scp). Mind rsync's trailing slash:
   `cp NAME:repo/src/ ./` drops the *contents* of `src` into `./`; to bring a
@@ -125,9 +125,10 @@ after its client restarts.
   If `target/` already exists, move it to that target directory first, then use
   the same `CARGO_TARGET_DIR` for subsequent commands. Refresh the source as
   usual when flake inputs or source files change.
-- **Android/Gradle:** `nix develop` needs the project's Android SDK shell;
-  give it `--disk 250` (Gradle caches are large) and a TTL that covers the
-  first, uncached build.
+- **Android/Gradle:** `nix develop` needs the project's Android SDK shell; give
+  it `--disk 250` (Gradle caches are large) and a TTL covering the first build.
+  Pass `-Pandroid.aapt2FromMavenOverride="$ANDROID_HOME/build-tools/<ver>/aapt2"`
+  to `./gradlew` so AGP uses the Nix-wrapped `aapt2` instead of Maven's binary.
 - **Nix evaluation:** Remote builders and `--eval-store` do not move evaluation.
   Sync the tree and run Nix on the worker for expensive evaluations. Follow
   the repository's workload policy for deciding when to offload.
@@ -137,16 +138,15 @@ after its client restarts.
   private S3 cache unless it was created with `--no-nix-cache`. Add
   `--option builders-use-substitutes true` so inputs are fetched on the
   worker instead of being copied up from here.
-- **Checking a flake on a worker:** sync the checkout to a run-specific
-  worker directory. `rworker sync` copies `.git`; remove only that directory's
-  `.git` before running Nix so it sees the synced working tree, including
-  uncommitted changes. For private inputs, see **Secrets and private inputs**.
-  Pass `--accept-flake-config` when the project
-  requires its configured substituters or other trusted settings. If updating
-  inputs there, review the resulting lockfile against the pre-update copy;
-  run the repository's checks and build its required outputs on the worker.
-  Copy back only the reviewed files, and remove the
-  auth file before deleting the worker.
+- **Checking a flake on a worker:** sync the checkout to a run-specific worker
+  directory. `rworker sync` copies `.git`; remove only that directory's `.git`
+  before running Nix so it sees the synced working tree, including uncommitted
+  changes. For private inputs, see **Secrets and private inputs**. Pass
+  `--accept-flake-config` when the project requires its configured substituters
+  or other trusted settings. If updating inputs there, review the resulting
+  lockfile against the pre-update copy; run the repository's checks and build
+  its required outputs on the worker. Copy back only the reviewed files, and
+  remove the auth file before deleting the worker.
 - **Whole host closures and big transfers:** build them on a `--profile
   large-builder` worker and keep the result off the home link; see
   [host-closures](references/host-closures.md).
