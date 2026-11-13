@@ -55,7 +55,7 @@ let
       name = "oci-01";
       hostname = "oci-01.brkn.lol";
       # Oracle Cloud, not OpenStack.
-      tuiCommands = [ "console=@zsh -lc 'zhj oci::console {name}'" ];
+      console.type = "oci";
       # oci-01 was migrated from Ubuntu to full NixOS; it now has its own
       # initrd SSH host keys and is unlockable like the rest of the fleet.
       hasInitrdCheck = true;
@@ -65,7 +65,7 @@ let
       name = "oci-03";
       hostname = "oci-03.brkn.lol";
       # Oracle Cloud, not OpenStack.
-      tuiCommands = [ "console=@zsh -lc 'zhj oci::console {name}'" ];
+      console.type = "oci";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
@@ -209,6 +209,7 @@ let
     type = "systemd";
     inherit (target) hostname;
     tuiCommands = target.tuiCommands or [ ];
+    console = target.console or null;
     key = selfSshKey;
     passphraseFile = config.sops.secrets."luks/${target.name}/passphrase".path;
     sshKnownHostsFile = config.sops.templates."luks-ssh-unlock/${target.name}/known_hosts".path;
