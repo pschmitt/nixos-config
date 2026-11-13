@@ -28,6 +28,15 @@ frame chunks and image deletion during teardown all use the same transport.
 The final probe sentinel also passes through tmux so the outer graphics reply
 arrives before capability collection ends.
 
+An image lands where the *outer* terminal's cursor is, which tmux does not track.
+The cursor address that precedes each placement therefore travels inside the same
+envelope, shifted by the pane's position in the client (`pane_left`, `pane_top`
+and a top status line, re-read about once a second), between a cursor save and
+restore so tmux's own idea of the cursor stays true.
+
+tmux never relays the outer terminal's reply to the graphics probe, so detection
+inside tmux always fails; pass `--force` there (the OpenStack bridge does).
+
 Shared-memory graphics are disabled under tmux: the server and attached terminal
 may be on different machines. Direct transfer works across SSH as well.
 

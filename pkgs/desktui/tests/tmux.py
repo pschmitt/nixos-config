@@ -101,6 +101,9 @@ def run_case(binary, root, mode):
         else:
             tiles = validate_tiles(output)
             assert tiles > 0, "No valid pixel tiles reached the outer terminal"
+            assert re.search(
+                rb"\x1b7\x1b\[\d+;\d+H\x1b_Ga=T", bytes(output)
+            ), "Placements did not carry their own cursor address through tmux"
             # The prefix exits locally; this case never connects to a VNC server.
             subprocess.run(
                 command + ["send-keys", "-t", "test", "C-a", "q"], check=True

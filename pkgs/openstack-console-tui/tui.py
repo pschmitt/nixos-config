@@ -196,6 +196,12 @@ async def run_viewer(target, origin, viewer, view_only):
                         b"\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1016l"
                         b"\x1b[?2004l\x1b[?2026l\x1b[?1049l\x1b[?25h\x1b[0m"
                     )
+                    # Kitty images live in the outer terminal and outlast the viewer.
+                    delete = b"\x1b_Ga=d,d=A,q=2\x1b\\"
+                    if os.environ.get("TMUX"):
+                        escaped = delete.replace(b"\x1b", b"\x1b\x1b")
+                        delete = b"\x1bPtmux;" + escaped + b"\x1b\\"
+                    terminal.write(delete)
         for task in list(handlers):
             task.cancel()
         await asyncio.gather(*handlers, return_exceptions=True)

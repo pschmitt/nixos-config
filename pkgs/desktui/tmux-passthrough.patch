@@ -5,12 +5,12 @@ index d7753ed..c39b40f 100644
 @@ -83,10 +83,16 @@ pub fn probe() -> Result<Caps> {
          )?;
      }
-
+ 
 -    req.extend_from_slice(b"\x1b[c"); // sentinel
 +    // The sentinel must reach the same terminal as the graphics query. A local
 +    // tmux DA reply can otherwise arrive before the outer graphics reply.
 +    super::transport::append_passthrough(&mut req, b"\x1b[c");
-
+ 
      let reply = round_trip(&req)?;
 -    let caps = parse_caps(&reply);
 +    let mut caps = parse_caps(&reply);
@@ -40,7 +40,7 @@ index 891bc70..542b6f2 100644
  pub mod shm;
 +pub mod transport;
  pub mod writer;
-
+ 
  use std::io::{self, IsTerminal, Write};
 @@ -90,7 +91,7 @@ impl TerminalGuard {
      pub fn leave() {
@@ -53,14 +53,16 @@ index 891bc70..542b6f2 100644
          if RAW.swap(false, Ordering::SeqCst) {
 diff --git a/src/term/transport.rs b/src/term/transport.rs
 new file mode 100644
-index 0000000..b473cdc
+index 0000000..d313fde
 --- /dev/null
 +++ b/src/term/transport.rs
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,222 @@
 +//! Kitty APCs bypass tmux, while text and cursor addressing remain pane-local.
 +
 +use std::io::{self, Write};
-+use std::sync::OnceLock;
++use std::process::Command;
++use std::sync::{Mutex, OnceLock};
++use std::time::{Duration, Instant};
 +
 +pub fn in_tmux() -> bool {
 +    static TMUX: OnceLock<bool> = OnceLock::new();
@@ -71,9 +73,74 @@ index 0000000..b473cdc
 +    if !in_tmux() {
 +        return out.write_all(bytes);
 +    }
++    let origin = if contains_placement(bytes) {
++        pane_origin()
++    } else {
++        (0, 0)
++    };
 +    let mut encoded = Vec::with_capacity(bytes.len());
-+    write_with_tmux(&mut encoded, bytes, true)?;
++    write_with_tmux(&mut encoded, bytes, true, origin)?;
 +    out.write_all(&encoded)
++}
++
++fn contains_placement(bytes: &[u8]) -> bool {
++    bytes.windows(3).any(|part| part == b"\x1b_G")
++}
++
++/// Where the pane's top-left cell sits in the outer terminal, as zero-based
++/// `(left, top)`. tmux positions text itself but forwards graphics untouched, so
++/// the outer terminal needs the translated cursor address.
++///
++/// The pane moves when it is split, zoomed or the status line changes, so the
++/// answer is refreshed once a second rather than cached for the whole run.
++fn pane_origin() -> (u32, u32) {
++    static CACHE: Mutex<Option<(Instant, (u32, u32))>> = Mutex::new(None);
++    let mut cache = CACHE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
++    if let Some((at, origin)) = *cache {
++        if at.elapsed() < Duration::from_secs(1) {
++            return origin;
++        }
++    }
++    let origin = query_pane_origin().unwrap_or_else(|| cache.map_or((0, 0), |(_, known)| known));
++    *cache = Some((Instant::now(), origin));
++    origin
++}
++
++fn query_pane_origin() -> Option<(u32, u32)> {
++    const FORMAT: &str = "#{pane_left} #{pane_top} #{?#{==:#{status-position},top},#{?#{==:#{status},off},0,#{?#{==:#{status},on},1,#{status}}},0}";
++    let mut command = Command::new("tmux");
++    command.args(["display-message", "-p"]);
++    if let Some(pane) = std::env::var_os("TMUX_PANE") {
++        command.arg("-t").arg(pane);
++    }
++    let output = command.arg(FORMAT).output().ok()?;
++    parse_origin(std::str::from_utf8(&output.stdout).ok()?)
++}
++
++fn parse_origin(text: &str) -> Option<(u32, u32)> {
++    let mut fields = text.split_whitespace().map(|field| field.parse::<u32>());
++    let left = fields.next()?.ok()?;
++    let top = fields.next()?.ok()?;
++    let status = fields.next().and_then(Result::ok).unwrap_or(0);
++    Some((left, top + status))
++}
++
++/// If `bytes` ends in an absolute cursor address, `(prefix length, row, col)`.
++fn trailing_cup(bytes: &[u8]) -> Option<(usize, u32, u32)> {
++    let body = bytes.strip_suffix(b"H")?;
++    let digits_start = body
++        .iter()
++        .rposition(|byte| !byte.is_ascii_digit())
++        .map_or(0, |index| index + 1);
++    let col: u32 = std::str::from_utf8(&body[digits_start..]).ok()?.parse().ok()?;
++    let body = body[..digits_start].strip_suffix(b";")?;
++    let digits_start = body
++        .iter()
++        .rposition(|byte| !byte.is_ascii_digit())
++        .map_or(0, |index| index + 1);
++    let row: u32 = std::str::from_utf8(&body[digits_start..]).ok()?.parse().ok()?;
++    let prefix = body[..digits_start].strip_suffix(b"\x1b[")?;
++    Some((prefix.len(), row, col))
 +}
 +
 +pub fn append_passthrough(out: &mut Vec<u8>, bytes: &[u8]) {
@@ -96,20 +163,38 @@ index 0000000..b473cdc
 +    out.write_all(b"\x1b\\")
 +}
 +
-+fn write_with_tmux(out: &mut impl Write, mut bytes: &[u8], tmux: bool) -> io::Result<()> {
++fn write_with_tmux(
++    out: &mut impl Write,
++    mut bytes: &[u8],
++    tmux: bool,
++    origin: (u32, u32),
++) -> io::Result<()> {
 +    if !tmux {
 +        return out.write_all(bytes);
 +    }
 +    // Frame buffers contain complete APCs, including each 4096-byte image chunk.
 +    while let Some(start) = bytes.windows(3).position(|part| part == b"\x1b_G") {
-+        out.write_all(&bytes[..start])?;
-+        bytes = &bytes[start..];
-+        let Some(end) = bytes.windows(2).position(|part| part == b"\x1b\\") else {
++        let Some(end) = bytes[start..].windows(2).position(|part| part == b"\x1b\\") else {
 +            return out.write_all(bytes);
 +        };
-+        let (command, rest) = bytes.split_at(end + 2);
-+        wrap(out, command)?;
-+        bytes = rest;
++        let end = start + end + 2;
++        let command = &bytes[start..end];
++        // An image lands at the outer terminal's cursor, which tmux knows nothing
++        // about. The cursor address that precedes a placement therefore travels
++        // inside the same envelope, shifted by the pane's position, and the outer
++        // cursor is put back so tmux's idea of it stays true.
++        if let Some((keep, row, col)) = trailing_cup(&bytes[..start]) {
++            out.write_all(&bytes[..keep])?;
++            let mut payload = Vec::with_capacity(command.len() + 24);
++            write!(payload, "\x1b7\x1b[{};{}H", row + origin.1, col + origin.0)?;
++            payload.extend_from_slice(command);
++            payload.extend_from_slice(b"\x1b8");
++            wrap(out, &payload)?;
++        } else {
++            out.write_all(&bytes[..start])?;
++            wrap(out, command)?;
++        }
++        bytes = &bytes[end..];
 +    }
 +    out.write_all(bytes)
 +}
@@ -122,18 +207,46 @@ index 0000000..b473cdc
 +    fn outside_tmux_is_byte_identical() {
 +        let input = b"\x1b[2;3H\x1b_Ga=T,m=0;AAAA\x1b\\text";
 +        let mut output = Vec::new();
-+        write_with_tmux(&mut output, input, false).unwrap();
++        write_with_tmux(&mut output, input, false, (4, 1)).unwrap();
 +        assert_eq!(output, input);
 +    }
 +
 +    #[test]
-+    fn graphics_are_wrapped_but_cursor_and_text_are_not() {
++    fn placement_carries_its_translated_cursor_and_restores_the_outer_one() {
 +        let mut output = Vec::new();
-+        write_with_tmux(&mut output, b"\x1b[2;3H\x1b_Ga=T;AAAA\x1b\\text", true).unwrap();
++        write_with_tmux(
++            &mut output,
++            b"hi\x1b[2;3H\x1b_Ga=T;AAAA\x1b\\text",
++            true,
++            (4, 1),
++        )
++        .unwrap();
 +        assert_eq!(
 +            output,
-+            b"\x1b[2;3H\x1bPtmux;\x1b\x1b_Ga=T;AAAA\x1b\x1b\\\x1b\\text"
++            b"hi\x1bPtmux;\x1b\x1b7\x1b\x1b[3;7H\x1b\x1b_Ga=T;AAAA\x1b\x1b\\\x1b\x1b8\x1b\\text"
 +        );
++    }
++
++    #[test]
++    fn graphics_without_a_cursor_address_are_only_wrapped() {
++        let mut output = Vec::new();
++        write_with_tmux(&mut output, b"x\x1b_Ga=d,d=A\x1b\\y", true, (4, 1)).unwrap();
++        assert_eq!(output, b"x\x1bPtmux;\x1b\x1b_Ga=d,d=A\x1b\x1b\\\x1b\\y");
++    }
++
++    #[test]
++    fn trailing_cursor_address_is_recognised() {
++        assert_eq!(trailing_cup(b"ab\x1b[12;345H"), Some((2, 12, 345)));
++        assert_eq!(trailing_cup(b"\x1b[;3H"), None);
++        assert_eq!(trailing_cup(b"\x1b[2;3"), None);
++        assert_eq!(trailing_cup(b"plain"), None);
++    }
++
++    #[test]
++    fn origin_adds_a_top_status_line() {
++        assert_eq!(parse_origin("5 2 1\n"), Some((5, 3)));
++        assert_eq!(parse_origin("0 0 0"), Some((0, 0)));
++        assert_eq!(parse_origin("garbage"), None);
 +    }
 +
 +    #[test]
@@ -148,7 +261,7 @@ index 0000000..b473cdc
 +            wrap(&mut expected, command).unwrap();
 +        }
 +        let mut output = Vec::new();
-+        write_with_tmux(&mut output, &commands.concat(), true).unwrap();
++        write_with_tmux(&mut output, &commands.concat(), true, (0, 0)).unwrap();
 +        assert_eq!(output, expected);
 +    }
 +
