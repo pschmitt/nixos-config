@@ -584,6 +584,10 @@ in
         # clients handle themselves (Claude Code: /mcp -> sentry -> Authenticate),
         # so it is a plain remote server rather than an mcp-proxy with a token.
         sentry.url = "https://mcp.sentry.dev/mcp";
+        # NetBird's MCP server is built into the management API (streamable
+        # HTTP, NetBird Cloud). Clients sign in with OAuth and the user picks
+        # read-only or read/write there (Claude Code: /mcp -> netbird).
+        netbird.url = "https://api.netbird.io/api/mcp";
         # Google Workspace MCP (Gmail, incl. send).
         google-workspace = mcpWorkspace {
           version = "2.3.0";
