@@ -13,7 +13,7 @@ dispatched() {
   awk '
     /^main\(\)/ { in_main = 1 }
     in_main && /^  shift$/ { after_shift = 1 }
-    in_main && after_shift && /^    [a-z][a-z-]*\)$/ { gsub(/[ )]/, ""); print }
+    in_main && after_shift && /^    [a-z][a-z0-9-]*\)$/ { gsub(/[ )]/, ""); print }
     in_main && /^}$/ { exit }
   ' "$1" | sort -u
 }
@@ -22,7 +22,7 @@ dispatched() {
 helped() {
   awk '
     /^action_help\(\)/ { in_help = 1 }
-    in_help && /^    [a-z][a-z-]*\)$/ { gsub(/[ )]/, ""); print }
+    in_help && /^    [a-z][a-z0-9-]*\)$/ { gsub(/[ )]/, ""); print }
     in_help && /^}$/ { exit }
   ' "$1" | sort -u
 }
