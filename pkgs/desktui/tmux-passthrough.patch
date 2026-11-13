@@ -1,8 +1,45 @@
+diff --git a/src/cli.rs b/src/cli.rs
+--- a/src/cli.rs
++++ b/src/cli.rs
+@@ -64,6 +64,10 @@
+     #[arg(long)]
+     pub reconnect: bool,
+ 
++    /// Hide the status line and give its row to the remote screen.
++    #[arg(long)]
++    pub no_status: bool,
++
+     /// Render even if the terminal does not answer the Kitty graphics probe.
+     #[arg(long)]
+     pub force: bool,
+diff --git a/src/main.rs b/src/main.rs
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -20,6 +20,7 @@
+ 
+ fn main() -> std::process::ExitCode {
+     let args = Args::parse();
++    term::set_status_hidden(args.no_status);
+     init_logging(&args);
+ 
+     match run(&args) {
+diff --git a/src/session.rs b/src/session.rs
+--- a/src/session.rs
++++ b/src/session.rs
+@@ -1121,6 +1121,9 @@
+     }
+ 
+     fn draw_status(&mut self, buf: &mut Vec<u8>) {
++        if crate::term::status_hidden() {
++            return;
++        }
+         let layout = *self.renderer.layout();
+         // What this is connected to, which is the one thing on the left worth reading
+         // without looking for it.
 diff --git a/src/term/caps.rs b/src/term/caps.rs
-index d7753ed..c39b40f 100644
 --- a/src/term/caps.rs
 +++ b/src/term/caps.rs
-@@ -83,10 +83,16 @@ pub fn probe() -> Result<Caps> {
+@@ -83,10 +83,16 @@
          )?;
      }
  
@@ -21,7 +58,7 @@ index d7753ed..c39b40f 100644
      // The pool's own cleanup would unlink the object, but the terminal has
      // normally done that already.
      drop(pool);
-@@ -106,7 +112,7 @@ pub fn query_pixel_geometry() -> Result<(u32, u32)> {
+@@ -106,7 +112,7 @@
  /// primary-DA reply or the timeout, whichever comes first.
  fn round_trip(request: &[u8]) -> Result<Vec<u8>> {
      let mut out = io::stdout();
@@ -31,10 +68,9 @@ index d7753ed..c39b40f 100644
      read_until_da1(PROBE_TIMEOUT)
  }
 diff --git a/src/term/mod.rs b/src/term/mod.rs
-index 891bc70..542b6f2 100644
 --- a/src/term/mod.rs
 +++ b/src/term/mod.rs
-@@ -5,6 +5,7 @@ pub mod input;
+@@ -5,6 +5,7 @@
  pub mod keysym;
  pub mod kitty;
  pub mod shm;
@@ -42,7 +78,7 @@ index 891bc70..542b6f2 100644
  pub mod writer;
  
  use std::io::{self, IsTerminal, Write};
-@@ -90,7 +91,7 @@ impl TerminalGuard {
+@@ -90,7 +91,7 @@
      pub fn leave() {
          if FULL_SCREEN.swap(false, Ordering::SeqCst) {
              let mut out = io::stdout();
@@ -51,10 +87,35 @@ index 891bc70..542b6f2 100644
              let _ = out.flush();
          }
          if RAW.swap(false, Ordering::SeqCst) {
+@@ -136,6 +137,16 @@
+     pub cell_h: u32,
+ }
+ 
++static STATUS_HIDDEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
++
++pub fn set_status_hidden(hidden: bool) {
++    STATUS_HIDDEN.store(hidden, std::sync::atomic::Ordering::Relaxed);
++}
++
++pub fn status_hidden() -> bool {
++    STATUS_HIDDEN.load(std::sync::atomic::Ordering::Relaxed)
++}
++
+ impl Metrics {
+     /// Query the terminal, preferring `TIOCGWINSZ` because it costs no round
+     /// trip, and falling back to `CSI 14 t` when the kernel reports no pixel
+@@ -171,6 +182,9 @@
+ 
+     /// Rows available to the remote framebuffer: everything but the status line.
+     pub fn image_rows(&self) -> u16 {
++        if status_hidden() {
++            return self.rows;
++        }
+         self.rows.saturating_sub(1)
+     }
+ 
 diff --git a/src/term/transport.rs b/src/term/transport.rs
-new file mode 100644
-index 0000000..d313fde
---- /dev/null
+--- a/src/term/transport.rs
 +++ b/src/term/transport.rs
 @@ -0,0 +1,254 @@
 +//! Kitty APCs bypass tmux, while text and cursor addressing remain pane-local.
@@ -312,10 +373,9 @@ index 0000000..d313fde
 +    }
 +}
 diff --git a/src/term/writer.rs b/src/term/writer.rs
-index 39ecfe7..3769d95 100644
 --- a/src/term/writer.rs
 +++ b/src/term/writer.rs
-@@ -45,7 +45,7 @@ impl FrameWriter {
+@@ -45,7 +45,7 @@
                  while let Ok(mut buf) = frame_rx.recv() {
                      // A broken pipe means the terminal is gone; the session
                      // loop will notice through its own channels.

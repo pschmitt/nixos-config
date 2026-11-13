@@ -67,6 +67,11 @@ class UrlTests(unittest.TestCase):
             self.assertNotIn("--view-only", tui.viewer_command(viewer, 43210, False))
             self.assertTrue("--no-clipboard" in command or "--clipboard" in command)
 
+    def test_no_chrome_hides_desktui_status(self):
+        self.assertNotIn("--no-status", tui.viewer_command("desktui", 1, False))
+        self.assertIn("--no-status", tui.viewer_command("desktui", 1, False, False))
+        self.assertNotIn("--no-status", tui.viewer_command("farsee", 1, False, False))
+
     def test_desktui_skips_probe_only_inside_tmux(self):
         with patch.dict(os.environ, {"TMUX": "/tmp/tmux-1/default,1,0"}):
             self.assertIn("--force", tui.viewer_command("desktui", 1, False))
@@ -79,8 +84,8 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
     async def run_bridge(self, handler, script):
         original_command = tui.viewer_command
 
-        def fake_viewer(viewer, port, view_only):
-            original_command(viewer, port, view_only)
+        def fake_viewer(viewer, port, view_only, chrome=True):
+            original_command(viewer, port, view_only, chrome)
             return [sys.executable, "-I", "-c", script, str(port)]
 
         async with serve(handler, "127.0.0.1", 0, subprotocols=["binary"]) as server:

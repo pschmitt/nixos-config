@@ -11,7 +11,8 @@ nix run '.#desktui' -- 127.0.0.1::5901 --scale fit --view-only --no-clipboard
 
 The double colon selects a TCP port rather than a VNC display number. The local
 command prefix is **Ctrl+A**; follow it with **q** to exit. Use `--prefix` when
-this conflicts with tmux's own prefix.
+this conflicts with tmux's own prefix. `--no-status` hides the bottom status
+line so the remote screen fills the whole terminal.
 
 ## tmux
 

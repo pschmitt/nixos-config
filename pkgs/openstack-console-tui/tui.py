@@ -45,7 +45,7 @@ def websocket_target(url):
 DESKTUI_PREFIX = os.environ.get("OPENSTACK_CONSOLE_PREFIX", "b")[:1] or "b"
 
 
-def viewer_command(viewer, port, view_only):
+def viewer_command(viewer, port, view_only, chrome=True):
     if viewer == "desktui":
         command = [
             viewer,
@@ -62,6 +62,8 @@ def viewer_command(viewer, port, view_only):
         # detection always fails there even when passthrough works.
         if os.environ.get("TMUX"):
             command.append("--force")
+        if not chrome:
+            command.append("--no-status")
     elif viewer == "farsee":
         command = [
             viewer,
@@ -115,7 +117,7 @@ async def stop_process(process):
             await process.wait()
 
 
-async def run_viewer(target, origin, viewer, view_only):
+async def run_viewer(target, origin, viewer, view_only, chrome=True):
     loop = asyncio.get_running_loop()
     ended = loop.create_future()
     handlers = set()
@@ -168,7 +170,7 @@ async def run_viewer(target, origin, viewer, view_only):
             with open("/dev/tty", "rb", buffering=0) as terminal:
                 if os.isatty(terminal.fileno()):
                     terminal_state = termios.tcgetattr(terminal.fileno())
-                command = viewer_command(viewer, port, view_only)
+                command = viewer_command(viewer, port, view_only, chrome)
                 print(f"Opening {viewer}; clipboard disabled.", file=sys.stderr)
                 if viewer == "desktui":
                     print(f"Disconnect with Ctrl+{DESKTUI_PREFIX.upper()}, then q.", file=sys.stderr)
@@ -219,12 +221,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--viewer", choices=("desktui", "farsee"), required=True)
     parser.add_argument("--view-only", action="store_true")
+    parser.add_argument(
+        "--no-chrome",
+        action="store_true",
+        default=os.environ.get("OPENSTACK_CONSOLE_CHROME") == "0",
+        help="hide the viewer's status line (desktui only)",
+    )
     args = parser.parse_args()
     try:
         if args.viewer == "farsee" and os.environ.get("TMUX"):
             raise ValueError("farsee cannot run inside tmux")
         target, origin = websocket_target(sys.stdin.read(65536))
-        result = asyncio.run(run_viewer(target, origin, args.viewer, args.view_only))
+        result = asyncio.run(run_viewer(target, origin, args.viewer, args.view_only, not args.no_chrome))
         if result:
             print(
                 "Console connection or viewer failed (details suppressed).",
