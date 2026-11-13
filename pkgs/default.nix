@@ -79,6 +79,7 @@ in
   bichon-mcp = pkgs.callPackage ./bichon-mcp { };
   browser-daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
   cdpcurl = pkgs.callPackage ./cdpcurl { };
+  desktui = pkgs.callPackage ./desktui { };
   inherit emoji-fzf;
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };

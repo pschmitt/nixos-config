@@ -1,0 +1,181 @@
+diff --git a/src/term/caps.rs b/src/term/caps.rs
+index d7753ed..c39b40f 100644
+--- a/src/term/caps.rs
++++ b/src/term/caps.rs
+@@ -83,10 +83,16 @@ pub fn probe() -> Result<Caps> {
+         )?;
+     }
+
+-    req.extend_from_slice(b"\x1b[c"); // sentinel
++    // The sentinel must reach the same terminal as the graphics query. A local
++    // tmux DA reply can otherwise arrive before the outer graphics reply.
++    super::transport::append_passthrough(&mut req, b"\x1b[c");
+
+     let reply = round_trip(&req)?;
+-    let caps = parse_caps(&reply);
++    let mut caps = parse_caps(&reply);
++    // A tmux server can live on a different machine from its attached terminal.
++    if super::transport::in_tmux() {
++        caps.shm_graphics = false;
++    }
+     // The pool's own cleanup would unlink the object, but the terminal has
+     // normally done that already.
+     drop(pool);
+@@ -106,7 +112,7 @@ pub fn query_pixel_geometry() -> Result<(u32, u32)> {
+ /// primary-DA reply or the timeout, whichever comes first.
+ fn round_trip(request: &[u8]) -> Result<Vec<u8>> {
+     let mut out = io::stdout();
+-    out.write_all(request)?;
++    super::transport::write(&mut out, request)?;
+     out.flush()?;
+     read_until_da1(PROBE_TIMEOUT)
+ }
+diff --git a/src/term/mod.rs b/src/term/mod.rs
+index 891bc70..542b6f2 100644
+--- a/src/term/mod.rs
++++ b/src/term/mod.rs
+@@ -5,6 +5,7 @@ pub mod input;
+ pub mod keysym;
+ pub mod kitty;
+ pub mod shm;
++pub mod transport;
+ pub mod writer;
+
+ use std::io::{self, IsTerminal, Write};
+@@ -90,7 +91,7 @@ impl TerminalGuard {
+     pub fn leave() {
+         if FULL_SCREEN.swap(false, Ordering::SeqCst) {
+             let mut out = io::stdout();
+-            let _ = out.write_all(TEARDOWN.as_bytes());
++            let _ = transport::write(&mut out, TEARDOWN.as_bytes());
+             let _ = out.flush();
+         }
+         if RAW.swap(false, Ordering::SeqCst) {
+diff --git a/src/term/transport.rs b/src/term/transport.rs
+new file mode 100644
+index 0000000..b473cdc
+--- /dev/null
++++ b/src/term/transport.rs
+@@ -0,0 +1,109 @@
++//! Kitty APCs bypass tmux, while text and cursor addressing remain pane-local.
++
++use std::io::{self, Write};
++use std::sync::OnceLock;
++
++pub fn in_tmux() -> bool {
++    static TMUX: OnceLock<bool> = OnceLock::new();
++    *TMUX.get_or_init(|| std::env::var_os("TMUX").is_some_and(|value| !value.is_empty()))
++}
++
++pub fn write(out: &mut impl Write, bytes: &[u8]) -> io::Result<()> {
++    if !in_tmux() {
++        return out.write_all(bytes);
++    }
++    let mut encoded = Vec::with_capacity(bytes.len());
++    write_with_tmux(&mut encoded, bytes, true)?;
++    out.write_all(&encoded)
++}
++
++pub fn append_passthrough(out: &mut Vec<u8>, bytes: &[u8]) {
++    if in_tmux() {
++        wrap(out, bytes).expect("writing into a Vec cannot fail");
++    } else {
++        out.extend_from_slice(bytes);
++    }
++}
++
++fn wrap(out: &mut impl Write, bytes: &[u8]) -> io::Result<()> {
++    out.write_all(b"\x1bPtmux;")?;
++    let mut rest = bytes;
++    while let Some(index) = rest.iter().position(|&byte| byte == 0x1b) {
++        out.write_all(&rest[..index])?;
++        out.write_all(b"\x1b\x1b")?;
++        rest = &rest[index + 1..];
++    }
++    out.write_all(rest)?;
++    out.write_all(b"\x1b\\")
++}
++
++fn write_with_tmux(out: &mut impl Write, mut bytes: &[u8], tmux: bool) -> io::Result<()> {
++    if !tmux {
++        return out.write_all(bytes);
++    }
++    // Frame buffers contain complete APCs, including each 4096-byte image chunk.
++    while let Some(start) = bytes.windows(3).position(|part| part == b"\x1b_G") {
++        out.write_all(&bytes[..start])?;
++        bytes = &bytes[start..];
++        let Some(end) = bytes.windows(2).position(|part| part == b"\x1b\\") else {
++            return out.write_all(bytes);
++        };
++        let (command, rest) = bytes.split_at(end + 2);
++        wrap(out, command)?;
++        bytes = rest;
++    }
++    out.write_all(bytes)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn outside_tmux_is_byte_identical() {
++        let input = b"\x1b[2;3H\x1b_Ga=T,m=0;AAAA\x1b\\text";
++        let mut output = Vec::new();
++        write_with_tmux(&mut output, input, false).unwrap();
++        assert_eq!(output, input);
++    }
++
++    #[test]
++    fn graphics_are_wrapped_but_cursor_and_text_are_not() {
++        let mut output = Vec::new();
++        write_with_tmux(&mut output, b"\x1b[2;3H\x1b_Ga=T;AAAA\x1b\\text", true).unwrap();
++        assert_eq!(
++            output,
++            b"\x1b[2;3H\x1bPtmux;\x1b\x1b_Ga=T;AAAA\x1b\x1b\\\x1b\\text"
++        );
++    }
++
++    #[test]
++    fn each_chunk_and_delete_gets_its_own_envelope() {
++        let commands: &[&[u8]] = &[
++            b"\x1b_Ga=T,m=1;AAAA\x1b\\",
++            b"\x1b_Gm=0;AAAA\x1b\\",
++            b"\x1b_Ga=d,d=A,q=2\x1b\\",
++        ];
++        let mut expected = Vec::new();
++        for command in commands {
++            wrap(&mut expected, command).unwrap();
++        }
++        let mut output = Vec::new();
++        write_with_tmux(&mut output, &commands.concat(), true).unwrap();
++        assert_eq!(output, expected);
++    }
++
++    #[test]
++    fn passthrough_escapes_every_embedded_escape() {
++        let mut output = Vec::new();
++        wrap(&mut output, b"\x1b_Ga=q;\x1bX\x1b\\").unwrap();
++        assert_eq!(output, b"\x1bPtmux;\x1b\x1b_Ga=q;\x1b\x1bX\x1b\x1b\\\x1b\\");
++    }
++
++    #[test]
++    fn sentinel_can_follow_the_outer_graphics_query() {
++        let mut output = Vec::new();
++        wrap(&mut output, b"\x1b[c").unwrap();
++        assert_eq!(output, b"\x1bPtmux;\x1b\x1b[c\x1b\\");
++    }
++}
+diff --git a/src/term/writer.rs b/src/term/writer.rs
+index 39ecfe7..3769d95 100644
+--- a/src/term/writer.rs
++++ b/src/term/writer.rs
+@@ -45,7 +45,7 @@ impl FrameWriter {
+                 while let Ok(mut buf) = frame_rx.recv() {
+                     // A broken pipe means the terminal is gone; the session
+                     // loop will notice through its own channels.
+-                    if out.write_all(&buf).is_err() || out.flush().is_err() {
++                    if super::transport::write(&mut out, &buf).is_err() || out.flush().is_err() {
+                         break;
+                     }
+                     buf.clear();
