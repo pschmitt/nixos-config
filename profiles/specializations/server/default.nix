@@ -20,6 +20,7 @@
 
     ./ansible.nix
     ./audit.nix
+    ./btrfs-balance.nix
     ./boot.nix
     ./firewall.nix
     ./interactive/dotfiles.nix
