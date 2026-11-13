@@ -52,10 +52,10 @@ Actions:
                        start a registered job
   jobs NAME            list registered jobs
   ps [NAME] [--long]   show processes of running jobs on one or all workers
-  logs [NAME [JOB]] [--lines N] [--follow] [--no-events] [--quiet]
+  logs [NAME [JOB]] [--lines N] [--follow] [--no-events] [--quiet] [--topic REGEX]
                        show logs; follow includes lifecycle events and a worker
                        count status line (every 5 min, once when none) by default
-  events [--interval SECONDS]
+  events [--interval SECONDS] [--topic REGEX]
                        stream worker and job lifecycle events
   register NAME JOB --log PATH
                        register an existing log file
@@ -135,7 +135,9 @@ flag logs --lines=count number of lines per job
 flag logs --follow follow all jobs on all workers
 flag logs --no-events suppress lifecycle events while following
 flag logs --quiet suppress all status messages (timestamped, italic) while following
+flag logs --topic=topic limit to workers whose topic matches this regex
 flag events --interval=interval event polling interval
+flag events --topic=topic limit to workers whose topic matches this regex
 flag register --log=path absolute path to an existing log file
 values job
 values count 50 200 1000
@@ -211,11 +213,11 @@ action_help() {
       printf '  --long shows full command lines, including arguments\n'
       ;;
     logs)
-      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events] [--quiet]\n' "$me"
-      printf '       %s logs [-f]  # follow jobs and events on all workers\n' "$me"
+      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events] [--quiet] [--topic REGEX]\n' "$me"
+      printf '       %s logs [-f] [--topic REGEX]  # follow jobs and events on all (or matching) workers\n' "$me"
       ;;
     events)
-      printf 'Usage: %s events [--interval SECONDS]\n' "$me"
+      printf 'Usage: %s events [--interval SECONDS] [--topic REGEX]\n' "$me"
       ;;
     register)
       printf 'Usage: %s register WORKER JOB --log PATH\n' "$me"
@@ -2087,8 +2089,27 @@ esac
 REMOTE_JOBS
 }
 
+validate_topic_regex() {
+  local pattern="$1"
+  if ! jq -n --arg re "$pattern" '"" | test($re)' >/dev/null 2>&1
+  then
+    printf 'invalid --topic regex: %s\n' "$pattern" >&2
+    return 2
+  fi
+}
+
+filter_workers_by_topic() {
+  local workers="$1" pattern="$2"
+  if [[ -z "$pattern" ]]
+  then
+    printf '%s\n' "$workers"
+    return 0
+  fi
+  jq -c --arg re "$pattern" '[.[] | select((.topic // "") | test($re))]' <<< "$workers"
+}
+
 cmd_logs() {
-  local lines=200 follow="" no_events="" quiet="" arg
+  local lines=200 follow="" no_events="" quiet="" topic=""
   if [[ -n "${1:-}" && "$1" != -* ]]
   then
     cmd_jobs_remote logs "$@"
@@ -2113,6 +2134,24 @@ cmd_logs() {
         quiet=1
         shift
         ;;
+      --topic)
+        if [[ -z "${2:-}" ]]
+        then
+          printf -- '--topic requires a regex pattern\n' >&2
+          return 2
+        fi
+        topic="$2"
+        shift 2
+        ;;
+      --topic=*)
+        topic="${1#--topic=}"
+        if [[ -z "$topic" ]]
+        then
+          printf -- '--topic requires a regex pattern\n' >&2
+          return 2
+        fi
+        shift
+        ;;
       *)
         printf 'Unknown logs option: %s\n' "$1" >&2
         action_help logs >&2
@@ -2125,11 +2164,15 @@ cmd_logs() {
     printf 'invalid line count\n' >&2
     return 2
   fi
+  if [[ -n "$topic" ]]
+  then
+    validate_topic_regex "$topic" || return $?
+  fi
   if [[ -n "$follow" ]]
   then
-    cmd_logs_all_follow "$lines" "$no_events" "$quiet"
+    cmd_logs_all_follow "$lines" "$no_events" "$quiet" "$topic"
   else
-    cmd_logs_all "$lines"
+    cmd_logs_all "$lines" "$topic"
   fi
 }
 
@@ -2205,8 +2248,9 @@ cmd_ps() {
 }
 
 cmd_logs_all() {
-  local lines="$1" workers worker status=0
+  local lines="$1" topic="${2:-}" workers worker status=0
   workers=$(remote_ls) || return 1
+  workers=$(filter_workers_by_topic "$workers" "$topic") || return 1
   while IFS= read -r worker
   do
     [[ -n "$worker" ]] || continue
@@ -2231,7 +2275,7 @@ kill_tree() {
 }
 
 cmd_logs_all_follow() {
-  local lines="$1" no_events="${2:-}" quiet="${3:-}" workers worker pid ready_workers events_pid=""
+  local lines="$1" no_events="${2:-}" quiet="${3:-}" topic="${4:-}" workers worker pid ready_workers events_pid=""
   # shellcheck disable=SC2034 # read and written through namerefs in emit_status
   local discovery_interval=5 status_interval=300 last_status_key="" last_status_at=0
   declare -A pids=() current=()
@@ -2257,7 +2301,12 @@ cmd_logs_all_follow() {
   if [[ -z "$no_events" ]]
   then
     # events are status messages here: stderr, keeping stdout for job logs
-    cmd_events --interval "$discovery_interval" >&2 &
+    local -a events_args=(--interval "$discovery_interval")
+    if [[ -n "$topic" ]]
+    then
+      events_args+=(--topic "$topic")
+    fi
+    cmd_events "${events_args[@]}" >&2 &
     events_pid=$!
   fi
   while :
@@ -2268,6 +2317,10 @@ cmd_logs_all_follow() {
       sleep "$discovery_interval"
       continue
     fi
+    workers=$(filter_workers_by_topic "$workers" "$topic") || {
+      sleep "$discovery_interval"
+      continue
+    }
     [[ -n "$no_events" ]] || {
       emit_status "$workers" "$status_interval" last_status_key last_status_at
     }
@@ -2366,7 +2419,7 @@ emit_event() {
 }
 
 cmd_events() {
-  local interval=2 workers worker ready_workers jobs job state started key previous initialized=""
+  local interval=2 topic="" workers worker ready_workers jobs job state started key previous initialized=""
   local -A previous_workers=() current_workers=() previous_jobs=() current_jobs=() polled_workers=()
   while [[ -n "${1:-}" ]]
   do
@@ -2374,6 +2427,24 @@ cmd_events() {
       --interval)
         interval="${2:-}"
         shift 2
+        ;;
+      --topic)
+        if [[ -z "${2:-}" ]]
+        then
+          printf -- '--topic requires a regex pattern\n' >&2
+          return 2
+        fi
+        topic="$2"
+        shift 2
+        ;;
+      --topic=*)
+        topic="${1#--topic=}"
+        if [[ -z "$topic" ]]
+        then
+          printf -- '--topic requires a regex pattern\n' >&2
+          return 2
+        fi
+        shift
         ;;
       *)
         printf 'Unknown events option: %s\n' "$1" >&2
@@ -2387,6 +2458,10 @@ cmd_events() {
     printf 'interval must be a positive whole number of seconds\n' >&2
     return 2
   fi
+  if [[ -n "$topic" ]]
+  then
+    validate_topic_regex "$topic" || return $?
+  fi
   while :
   do
     if ! workers=$(remote_ls)
@@ -2395,6 +2470,10 @@ cmd_events() {
       sleep "$interval"
       continue
     fi
+    workers=$(filter_workers_by_topic "$workers" "$topic") || {
+      sleep "$interval"
+      continue
+    }
     current_workers=()
     current_jobs=()
     polled_workers=()

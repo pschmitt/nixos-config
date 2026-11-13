@@ -162,8 +162,8 @@ after its client restarts.
   `start`, and short jobs with MCP `exec` when available. These register the
   job and capture combined output. Use `rworker jobs "$w"`, `rworker logs
   `"$w" [JOB] [--lines N]` to inspect one worker, or `rworker logs [--lines N]`
-  to inspect all workers. `rworker logs -f` follows all jobs across all workers,
-  with colored `WORKER/JOB` prefixes. It discovers new jobs within about one
+  to inspect all workers. `rworker logs -f` follows all jobs across all workers
+  (`--topic REGEX` filters `logs`/`events` by topic), with colored `WORKER/JOB` prefixes. It discovers new jobs within about one
   second and rescans the worker list every five seconds, attaching to new workers
   and stopping when workers disappear. `rworker events` emits only lifecycle
   changes after its initial snapshot: workers added or deleted, jobs added or
