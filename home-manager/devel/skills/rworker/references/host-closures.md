@@ -28,20 +28,25 @@ the `niks3` AWS profile that `nix-cache` copies to a worker is read-only, so a
 raw `nix copy` fails with HTTP 403 `AccessDenied`, and it would bypass signing
 and the server's garbage-collection bookkeeping.
 
-1. Read the server's API token on its host (`sudo -n cat
-   /run/secrets/niks3/api-token`) and pipe it over SSH into the *same*
-   `rworker ssh` session that consumes it (the worker may delete `/dev/shm`
-   files when the last login ends). Never print it or put it in arguments.
-2. Run the client from nixpkgs with `--auth-token-path` (`--auth-token` takes
-   the token itself and is deprecated):
+Every ad-hoc worker gets its own short-lived niks3 token (see below), and the
+`niks3` command on the worker already knows the server and the token, so just
+push:
 
 ```bash
-ssh <niks3-host> 'sudo -n cat /run/secrets/niks3/api-token' \
-  | rworker ssh "$w" 'umask 077; d=$(mktemp -d /dev/shm/rworker-secret.XXXXXXXX); trap "rm -rf $d" EXIT; cat > $d/token; nix shell nixpkgs#niks3 -c niks3 push --server-url https://niks3.<main domain> --auth-token-path $d/token ~/<host>-system; echo PUSH_RC=$?'
+rworker ssh "$w" 'niks3 push ~/<host>-system; echo PUSH_RC=$?'
 ```
 
    `All N paths already cached` means there is nothing to do: targets can
    substitute the closure. After a successful push the targets fetch it from
    S3 (`nixos-upgrade` or `just deploy`), so nothing travels over the home
-   link. The token is the server's admin token: it is fine on the private,
-   temporary worker, but `down` the worker afterwards.
+   link.
+
+The token is an OIDC JWT that the control host signs when the worker is
+created. It expires with the worker, `extend` replaces it with one for the new
+lifetime, and it may only write pins named `rworker-*` (plain pushes need no
+pin). `rworker niks3-token NAME` (MCP `niks3_token`) reissues it, for example
+for a worker created with `--no-niks3-token` (MCP `up(niks3_token=false)`),
+which is also the default for the browser-daemon profile. Workers from an image
+that predates the feature have no `niks3` command and no token directory: use
+`nix shell nixpkgs#niks3 -c niks3 push` and ask the user for a token, or build
+a new worker.

@@ -193,6 +193,9 @@
     "d /nix/.rw-store/tmp 1777 root root -"
     "d /nix/.rw-store/var-tmp 1777 root root -"
     "d /run/rworker-nix 0700 agent users -"
+    # rworker's control host writes the worker's own niks3 push token here
+    # (as nix-remote-builder); agent reads it.
+    "d /run/rworker-niks3 2750 nix-remote-builder users -"
   ];
 
   # The main user's sudo; there are no passwords to ask for.
@@ -206,6 +209,11 @@
     systemPackages = [
       pkgs.curl
       pkgs.jq
+      (pkgs.writeShellApplication {
+        name = "niks3";
+        runtimeInputs = [ pkgs.niks3 ];
+        text = builtins.readFile ./scripts/niks3.sh;
+      })
       (pkgs.writeShellApplication {
         name = "rworker-metadata";
         runtimeInputs = [

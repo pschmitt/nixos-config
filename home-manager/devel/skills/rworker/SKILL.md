@@ -94,6 +94,9 @@ rworker down "$w"
   own profile is acceptable. Re-run it
   after the key is rotated.
   Workers created before the feature get nothing and the command says so.
+- Every worker gets its own short-lived niks3 push token (`niks3 push PATH`
+  on the worker; `--no-niks3-token` or MCP `up(niks3_token=false)` opts out,
+  `niks3-token NAME` reissues): see [host-closures](references/host-closures.md).
 
 MCP: the `rworker` MCP server offers the same as tools (`profiles` lists the
 available configurations; `up` accepts `profile`
@@ -147,17 +150,14 @@ after its client restarts.
 - **Whole host closures and big transfers:** build them on a `--profile
   large-builder` worker and keep the result off the home link; see
   [host-closures](references/host-closures.md).
-- **Pushing to the S3 cache is fine, with the local credentials.** Workers
-  are private and temporary, so the user allows using the S3 credentials of
-  the agent's own host on a worker, without asking each time: the same AWS
-  profile the host's `s3://` substituter names, as `nix-cache` already
-  transfers it, or as a mode-0600 file (see **Secrets and private inputs**).
-  Never copy the whole credentials file, never put the key in arguments or
-  the Nix store, and `down` the worker when done. Use the host's existing
-  cache signing key the same way. This covers the cache only: it does not
-  loosen the rules for other credentials. If the local profile cannot write
-  to the bucket, copy the closure back and push from the agent's host, or
-  build on the target; ask before a large upload over the home link.
+- **Pushing to the S3 cache:** use the worker's own niks3 token (`niks3 push
+  PATH`). Only for what niks3 cannot do may you put the S3 credentials of the
+  agent's own host on a worker without asking: the AWS profile the host's
+  `s3://` substituter names, as `nix-cache` transfers it or as a mode-0600
+  file (see **Secrets and private inputs**), never the whole credentials file,
+  never in arguments or the Nix store, and `down` the worker when done. If
+  that profile cannot write, build on the target or ask before a large
+  upload over the home link.
 - Agents must run long jobs with `rworker start "$w" -- 'command'` or MCP
   `start`, and short jobs with MCP `exec` when available. These register the
   job and capture combined output. Use `rworker jobs "$w"`, `rworker logs

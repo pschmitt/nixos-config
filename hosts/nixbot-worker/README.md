@@ -139,3 +139,13 @@ policy lets read (see the private repository's niks3 notes). Nothing on a
 worker needs write access: nixbot pushes finished builds through the niks3
 API.
 
+Pushing from a worker is the exception that goes through the API, with the
+worker's own token: unless `--no-niks3-token` was given (or the profile opts
+out), `rworker up` has the control host sign a short-lived niks3 token that
+expires with the worker and install it in `/run/rworker-niks3` (tmpfs,
+written by `nix-remote-builder`, readable by `agent`). Every `extend`
+replaces it with one for the new lifetime. The `niks3` command on the worker
+picks the token and server URL up from there, so `niks3 push PATH` just
+works. The token only lets the worker write `rworker-*` pins. Workers from
+an older image lack the directory and are skipped.
+

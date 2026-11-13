@@ -34,6 +34,25 @@ class ProfileTest(unittest.TestCase):
             self.assertEqual(module.profiles(), [{"name": "standard"}])
             run.assert_called_once_with("profiles", "--json", timeout=120)
 
+    def test_niks3_token_is_default_and_optional(self):
+        modules = {name: ModuleType(name) for name in ("mcp", "mcp.server", "mcp.server.mcpserver")}
+        modules["mcp.server.mcpserver"].MCPServer = FakeServer
+        spec = importlib.util.spec_from_file_location("worker_mcp", Path(__file__).with_name("rworker-mcp.py"))
+        module = importlib.util.module_from_spec(spec)
+        with patch.dict(sys.modules, modules), patch.object(sys, "argv", ["rworker-mcp", "--rworker", "rworker"]):
+            spec.loader.exec_module(module)
+        with patch.object(module, "run", return_value="{}") as run:
+            module.up()
+            self.assertNotIn("--no-niks3-token", run.call_args.args)
+            module.up(niks3_token=False)
+            self.assertIn("--no-niks3-token", run.call_args.args)
+            module.extend("w", "2h")
+            self.assertNotIn("--no-niks3-token", run.call_args.args)
+            module.extend("w", "2h", niks3_token=False)
+            self.assertIn("--no-niks3-token", run.call_args.args)
+            module.niks3_token("w")
+            self.assertEqual(run.call_args.args[:2], ("niks3-token", "w"))
+
     def test_exec_uses_registered_job_and_returns_exit_status(self):
         modules = {name: ModuleType(name) for name in ("mcp", "mcp.server", "mcp.server.mcpserver")}
         modules["mcp.server.mcpserver"].MCPServer = FakeServer

@@ -59,7 +59,7 @@ Actions:
                        register an existing log file
   profiles             list available worker profiles
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--topic TEXT]
-     [--no-nix-cache] [--ssh [-l USER]]
+     [--no-nix-cache] [--no-niks3-token] [--ssh [-l USER]]
                        create a worker and wait until it is ready
   ls [-o json|wide] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
@@ -71,6 +71,7 @@ Actions:
   prune [NAME...] [--all] [-y] [-n]
                        delete several ad-hoc workers (default: your own)
   extend NAME --ttl D  move the expiry to now + D (max 24h)
+  niks3-token NAME     (re)issue the worker's niks3 push token
   ssh [-l USER | USER@]NAME [SSH_ARGS...]
                        ssh to the worker (pinned host key); options such as
                        -L/-A and a command go straight to ssh
@@ -117,6 +118,7 @@ action exec create a worker, run a command on it, delete it
 action down delete an ad-hoc worker
 action prune delete several ad-hoc workers (default: your own)
 action extend move the expiry of an ad-hoc worker
+action niks3-token (re)issue a worker's short-lived niks3 push token
 action ssh ssh to a worker (pinned host key)
 action sync rsync a directory to a worker
 action builder print a Nix builders line for a worker
@@ -144,6 +146,10 @@ flag up --nix-cache push this host's S3 cache settings (default when it has any)
 flag up --no-nix-cache keep the S3 cache credentials off the worker
 flag exec --nix-cache push this host's S3 cache settings (default when it has any)
 flag exec --no-nix-cache keep the S3 cache credentials off the worker
+flag up --no-niks3-token do not give the worker a niks3 push token
+flag exec --no-niks3-token do not give the worker a niks3 push token
+flag extend --no-niks3-token extend without renewing the niks3 token
+flag niks3-token --force reissue the token of someone else's worker
 flag nix-cache --dry-run only show what would be pushed
 flag up -l=user log in as this user (with --ssh; default agent)
 flag up --topic=topic what the worker is for (none unless given)
@@ -180,7 +186,7 @@ values format json wide
 values topic
 values user agent pschmitt nix-remote-builder
 values interval 2 5 10 30
-worker down extend ssh sync builder prune inspect nix-cache start jobs ps logs register
+worker down extend niks3-token ssh sync builder prune inspect nix-cache start jobs ps logs register
 global --json force JSON output
 global -j short for --json
 SPEC
@@ -217,7 +223,7 @@ action_help() {
     up)
       cat <<EOF
 Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--profile PROFILE] [--scratch] [--ssh]
-          [--nix-cache|--no-nix-cache] [--topic TEXT] [-l USER]
+          [--nix-cache|--no-nix-cache] [--no-niks3-token] [--topic TEXT] [-l USER]
 
 Create an ad-hoc worker, wait until it is reachable (usually 1-4 min) and
 print it as JSON (name, ip, host_key, user, expires_at, builder).
@@ -235,6 +241,11 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
   --no-nix-cache   do not give the worker this host's S3 cache settings and
                    read-only key (see: $me help nix-cache). Without it they
                    are pushed whenever this host's Nix has an s3:// cache.
+  --no-niks3-token do not give the worker a niks3 push token. By default it
+                   gets its own, valid as long as the worker is (renewed by
+                   extend); the \`niks3\` command on the worker uses it
+                   (see: $me help niks3-token). The browser-daemon profile
+                   has none.
   --ssh            log in (as agent) as soon as it is ready
   -l USER          with --ssh: log in as USER (pschmitt, nix-remote-builder)
   --topic TEXT     what it is for (shown by ls and inspect; none unless
@@ -277,7 +288,7 @@ run CMD there as agent (live output; its exit code becomes ours), copy
 results back and delete the worker again - also on errors and Ctrl-C.
 Status messages go to stderr, the command's output to stdout.
 
-  --ttl, --flavor, --disk, --profile, --scratch, --topic, --nix-cache, --no-nix-cache   as for up
+  --ttl, --flavor, --disk, --profile, --scratch, --topic, --nix-cache, --no-nix-cache, --no-niks3-token   as for up
   --sync SRC[:DEST]      rsync SRC to the worker before running (DEST
                          defaults to SRC's basename); repeatable
   --fetch REMOTE[:LOCAL] rsync REMOTE (relative to agent's home) back
@@ -323,6 +334,23 @@ Usage: $me extend NAME --ttl DURATION [--force]
 Set the expiry of an ad-hoc worker to now + DURATION (e.g. 2h), capped at
 its maximum lifetime (24 h, or 7 days for --scratch workers). Workers of
 another owner are refused unless --force.
+
+A worker that has a niks3 push token gets a new one for the new expiry;
+--no-niks3-token skips that (the old token then runs out with the old expiry).
+EOF
+      ;;
+    niks3-token)
+      cat <<EOF
+Usage: $me niks3-token NAME [--force]
+
+Give an ad-hoc worker a fresh niks3 push token for the rest of its lifetime,
+or retry one that failed. up does this by default, extend renews it, and the
+reaper renews it for a worker it keeps alive past its expiry.
+
+The control host signs the token (an OIDC JWT, subject rworker:NAME) and
+writes it to /run/rworker-niks3 on the worker, where the \`niks3\` command
+finds it: \`niks3 push /nix/store/...\`. It may write \`rworker-*\` pins
+only. Workers from an image without /run/rworker-niks3 are skipped.
 EOF
       ;;
     ssh)
@@ -966,6 +994,7 @@ cmd_up() {
     fi
     info=$(jq -c --argjson c "$cache_info" '. + {nix_cache: $c}' <<< "$info")
   fi
+  warn_niks3_token "$name" "$info"
   if [[ -n "$JSON" ]]
   then
     printf '%s\n' "$info"
@@ -1543,7 +1572,7 @@ cmd_exec() {
         up_args+=("$1" "$2")
         shift
         ;;
-      --scratch|--nix-cache|--no-nix-cache)
+      --scratch|--nix-cache|--no-nix-cache|--no-niks3-token)
         up_args+=("$1")
         ;;
       --topic)
@@ -1677,6 +1706,22 @@ exec_cleanup() {
   return "$rc"
 }
 
+# Warn when the niks3 token the control host reported (key niks3_token of
+# INFO) could not be installed. The worker itself is fine.
+warn_niks3_token() {
+  local name="$1" info="$2" err
+  [[ $(jq -r '.niks3_token.ok' <<< "$info") == false ]] || return 0
+  err=$(jq -r '.niks3_token.error // "unknown error"' <<< "$info")
+  if [[ "$err" == image-too-old ]]
+  then
+    printf '%s image predates niks3 tokens: none given to %s\n' \
+      "$(paint 33 '!')" "$(paint_vm "$name")" >&2
+  else
+    printf '%s could not give %s a niks3 token (the worker is fine): %s; retry: %s niks3-token %s\n' \
+      "$(paint 33 '!')" "$(paint_vm "$name")" "$err" "$(basename "$0")" "$name" >&2
+  fi
+}
+
 cmd_extend() {
   local out name
   out=$(remote extend "$@" --owner "${USER}@$(hostname)") || return 1
@@ -1687,6 +1732,30 @@ cmd_extend() {
   fi
   name=$(jq -r .name <<< "$out") || return 1
   ok "$(paint_vm "$name") now expires $(fmt_expiry "$(jq -r .expires_at <<< "$out")"), at most until $(date -d "@$(jq -r .max_lifetime_end <<< "$out")" '+%a %H:%M')"
+  warn_niks3_token "$name" "$out"
+}
+
+cmd_niks3_token() {
+  local out name
+  if [[ -z "${1:-}" ]]
+  then
+    show_help niks3-token >&2
+    return 2
+  fi
+  out=$(remote niks3-token "$@" --owner "${USER}@$(hostname)") || return 1
+  if [[ -n "$JSON" ]]
+  then
+    printf '%s\n' "$out"
+    return 0
+  fi
+  name=$(jq -r .name <<< "$out") || return 1
+  if [[ $(jq -r '.niks3_token.ok' <<< "$out") == true ]]
+  then
+    ok "$(paint_vm "$name") has a niks3 token until $(fmt_expiry "$(jq -r .niks3_token.expires_at <<< "$out")")"
+  else
+    warn_niks3_token "$name" "$out"
+    return 1
+  fi
 }
 
 cmd_down() {
@@ -2788,6 +2857,9 @@ main() {
       ;;
     extend)
       cmd_extend "$@"
+      ;;
+    niks3-token)
+      cmd_niks3_token "$@"
       ;;
     ssh)
       if [[ "${1:-}" == --create ]]

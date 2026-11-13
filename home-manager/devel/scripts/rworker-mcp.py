@@ -52,6 +52,7 @@ def up(
     topic: str | None = None,
     nix_cache: bool = True,
     profile: str | None = None,
+    niks3_token: bool = True,
 ) -> dict:
     """Create an ad-hoc build worker and wait until it is ready (2-4 min).
 
@@ -67,6 +68,11 @@ def up(
     host's read-only credentials (pushed over SSH, only if this host has an
     s3:// substituter); pass False to keep the key off the worker. The result
     then has a nix_cache object, ok=false if it did not work.
+    niks3_token (default True) gives the worker its own short-lived niks3
+    push token, valid as long as the worker (extend() renews it), which the
+    `niks3` command on the worker uses (`niks3 push PATH`); the result has a
+    niks3_token object, ok=false if it did not work. Pass False to keep it
+    off the worker. The browser-daemon profile never gets one.
     Returns name, ip, host_key, user and expires_at. Always call down() when
     the task is done.
     """
@@ -83,6 +89,8 @@ def up(
         argv += ["--topic", topic]
     if not nix_cache:
         argv.append("--no-nix-cache")
+    if not niks3_token:
+        argv.append("--no-niks3-token")
     return json.loads(run(*argv, timeout=1200))
 
 
@@ -110,9 +118,23 @@ def inspect(name: str, boot: bool = False) -> dict:
 
 
 @mcp.tool()
-def extend(name: str, ttl: str) -> dict:
-    """Move a worker's expiry to now + ttl (capped at its maximum lifetime)."""
-    return json.loads(run("extend", name, "--ttl", ttl, "--json", timeout=120))
+def extend(name: str, ttl: str, niks3_token: bool = True) -> dict:
+    """Move a worker's expiry to now + ttl (capped at its maximum lifetime).
+    A worker that has a niks3 push token gets a new one for the new expiry
+    (the result's niks3_token object); niks3_token=False skips that."""
+    argv = ["extend", name, "--ttl", ttl, "--json"]
+    if not niks3_token:
+        argv.append("--no-niks3-token")
+    return json.loads(run(*argv, timeout=120))
+
+
+@mcp.tool()
+def niks3_token(name: str) -> dict:
+    """(Re)issue a worker's short-lived niks3 push token for the rest of its
+    lifetime: for a worker created with niks3_token=False, or to retry a
+    failed install. The `niks3` command on the worker then pushes to the
+    cache (`niks3 push PATH`, pins limited to rworker-*)."""
+    return json.loads(run("niks3-token", name, "--json", timeout=180))
 
 
 @mcp.tool()
