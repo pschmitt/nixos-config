@@ -1,3 +1,17 @@
+diff --git a/src/app.rs b/src/app.rs
+index ead47ff..1c84ce8 100644
+--- a/src/app.rs
++++ b/src/app.rs
+@@ -194,6 +194,9 @@ pub fn run_test_pattern(args: &Args, caps: &Caps, guard: &TerminalGuard) -> Resu
+             next_frame = now + frame_time;
+         }
+
++        if crate::term::transport::viewers_changed() {
++            renderer.mark_all();
++        }
+         damage.clear();
+         pattern.step(&mut fb, &mut damage);
+         for r in &damage {
 diff --git a/src/cli.rs b/src/cli.rs
 index df701f4..b2d168a 100644
 --- a/src/cli.rs
@@ -5,7 +19,7 @@ index df701f4..b2d168a 100644
 @@ -64,6 +64,10 @@ pub struct Args {
      #[arg(long)]
      pub reconnect: bool,
- 
+
 +    /// Hide the status line and give its row to the remote screen.
 +    #[arg(long)]
 +    pub no_status: bool,
@@ -18,41 +32,31 @@ index b3610db..a1139c1 100644
 --- a/src/main.rs
 +++ b/src/main.rs
 @@ -20,6 +20,7 @@ use term::{Metrics, TerminalGuard, caps};
- 
+
  fn main() -> std::process::ExitCode {
      let args = Args::parse();
 +    term::set_status_hidden(args.no_status);
      init_logging(&args);
- 
+
      match run(&args) {
 diff --git a/src/session.rs b/src/session.rs
-index c91da0a..c727949 100644
+index c91da0a..dd17c37 100644
 --- a/src/session.rs
 +++ b/src/session.rs
-@@ -932,6 +932,7 @@ impl<B: Backend> Session<B> {
-             self.pending_metrics = None;
-             self.metrics_applied_at = Some(Instant::now());
-             self.metrics = Metrics::query()?;
-+            crate::term::transport::origin_moved(true);
-             tracing::debug!(
-                 "applying resize after {:?}: {}x{} cells, {}x{} px",
-                 at.elapsed(),
-@@ -948,6 +949,12 @@ impl<B: Backend> Session<B> {
+@@ -948,6 +948,10 @@ impl<B: Backend> Session<B> {
              }
          }
- 
-+        // The pane can move without changing size (a sibling was resized or closed),
-+        // and tiles already placed would stay at the old address.
-+        if self.pending_metrics.is_none() && crate::term::transport::origin_moved(false) {
-+            self.relayout();
+
++        if crate::term::transport::viewers_changed() {
++            self.renderer.mark_all();
 +        }
 +
          // With frames arriving unbidden there is no request to time, so ask for a
          // round trip and measure that instead.
          self.probe_round_trip().await?;
-@@ -1121,6 +1128,9 @@ impl<B: Backend> Session<B> {
+@@ -1121,6 +1125,9 @@ impl<B: Backend> Session<B> {
      }
- 
+
      fn draw_status(&mut self, buf: &mut Vec<u8>) {
 +        if crate::term::status_hidden() {
 +            return;
@@ -67,12 +71,12 @@ index d7753ed..c39b40f 100644
 @@ -83,10 +83,16 @@ pub fn probe() -> Result<Caps> {
          )?;
      }
- 
+
 -    req.extend_from_slice(b"\x1b[c"); // sentinel
 +    // The sentinel must reach the same terminal as the graphics query. A local
 +    // tmux DA reply can otherwise arrive before the outer graphics reply.
 +    super::transport::append_passthrough(&mut req, b"\x1b[c");
- 
+
      let reply = round_trip(&req)?;
 -    let caps = parse_caps(&reply);
 +    let mut caps = parse_caps(&reply);
@@ -92,31 +96,76 @@ index d7753ed..c39b40f 100644
      out.flush()?;
      read_until_da1(PROBE_TIMEOUT)
  }
+diff --git a/src/term/kitty.rs b/src/term/kitty.rs
+index c16f3d5..ceefaa4 100644
+--- a/src/term/kitty.rs
++++ b/src/term/kitty.rs
+@@ -117,6 +117,11 @@ impl KittyEncoder {
+             return;
+         }
+
++        if super::transport::in_tmux() {
++            super::placeholder::place_rgb(out, at, rgb, self.compress);
++            return;
++        }
++
+         // Destructured so the compression buffer and the base64 buffer are
+         // borrowed independently.
+         let Self {
+@@ -201,6 +206,7 @@ impl KittyEncoder {
+     /// the same command out by hand, because it has to work from a panic handler
+     /// where there is no encoder to call.
+     pub fn delete_all(out: &mut Vec<u8>) {
++        super::placeholder::delete_all(out);
+         out.extend_from_slice(b"\x1b_Ga=d,d=A,q=2\x1b\\");
+     }
+ }
+@@ -243,6 +249,15 @@ pub fn place_solid(
+     if cols == 0 || rows == 0 {
+         return;
+     }
++    if super::transport::in_tmux() {
++        let _ = write!(out, "\x1b[0;48;2;{};{};{}m", rgb.0, rgb.1, rgb.2);
++        for y in 0..rows {
++            let _ = write!(out, "\x1b[{};{col}H", row + y);
++            out.extend(std::iter::repeat_n(b' ', cols));
++        }
++        out.extend_from_slice(b"\x1b[0m");
++        return;
++    }
+     let pixels = [rgb.0, rgb.1, rgb.2].repeat(4);
+     let mut b64 = String::new();
+     BASE64.encode_string(&pixels, &mut b64);
 diff --git a/src/term/mod.rs b/src/term/mod.rs
-index 891bc70..dacfc33 100644
+index 891bc70..99af2a2 100644
 --- a/src/term/mod.rs
 +++ b/src/term/mod.rs
-@@ -5,6 +5,7 @@ pub mod input;
+@@ -4,7 +4,9 @@ pub mod caps;
+ pub mod input;
  pub mod keysym;
  pub mod kitty;
++pub mod placeholder;
  pub mod shm;
 +pub mod transport;
  pub mod writer;
- 
+
  use std::io::{self, IsTerminal, Write};
-@@ -90,7 +91,7 @@ impl TerminalGuard {
+@@ -90,7 +92,10 @@ impl TerminalGuard {
      pub fn leave() {
          if FULL_SCREEN.swap(false, Ordering::SeqCst) {
              let mut out = io::stdout();
 -            let _ = out.write_all(TEARDOWN.as_bytes());
++            let mut cleanup = Vec::new();
++            placeholder::delete_all(&mut cleanup);
++            let _ = transport::write(&mut out, &cleanup);
 +            let _ = transport::write(&mut out, TEARDOWN.as_bytes());
              let _ = out.flush();
          }
          if RAW.swap(false, Ordering::SeqCst) {
-@@ -136,6 +137,16 @@ pub struct Metrics {
+@@ -136,6 +141,16 @@ pub struct Metrics {
      pub cell_h: u32,
  }
- 
+
 +static STATUS_HIDDEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 +
 +pub fn set_status_hidden(hidden: bool) {
@@ -130,8 +179,19 @@ index 891bc70..dacfc33 100644
  impl Metrics {
      /// Query the terminal, preferring `TIOCGWINSZ` because it costs no round
      /// trip, and falling back to `CSI 14 t` when the kernel reports no pixel
-@@ -171,6 +182,9 @@ impl Metrics {
- 
+@@ -159,6 +174,10 @@ impl Metrics {
+              client cannot work without"
+         );
+
++        placeholder::set_cell_size(
++            (px_w / u32::from(cols)).max(1),
++            (px_h / u32::from(rows)).max(1),
++        );
+         Ok(Self {
+             cols,
+             rows,
+@@ -171,6 +190,9 @@ impl Metrics {
+
      /// Rows available to the remote framebuffer: everything but the status line.
      pub fn image_rows(&self) -> u16 {
 +        if status_hidden() {
@@ -139,14 +199,215 @@ index 891bc70..dacfc33 100644
 +        }
          self.rows.saturating_sub(1)
      }
- 
+
+diff --git a/src/term/placeholder.rs b/src/term/placeholder.rs
+new file mode 100644
+index 0000000..eaed5df
+--- /dev/null
++++ b/src/term/placeholder.rs
+@@ -0,0 +1,195 @@
++//! Virtual images are painted only where tmux renders their placeholder cells.
++
++use super::kitty::Placement;
++use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
++use flate2::{Compression, write::ZlibEncoder};
++use std::collections::BTreeSet;
++use std::io::Write;
++use std::sync::{
++    Mutex,
++    atomic::{AtomicU64, Ordering},
++};
++
++static CELL_SIZE: AtomicU64 = AtomicU64::new((8 << 32) | 16);
++static IMAGES: Mutex<BTreeSet<u32>> = Mutex::new(BTreeSet::new());
++
++pub fn set_cell_size(width: u32, height: u32) {
++    CELL_SIZE.store(
++        (u64::from(width.max(1)) << 32) | u64::from(height.max(1)),
++        Ordering::Relaxed,
++    );
++}
++
++pub fn place_rgb(out: &mut Vec<u8>, at: Placement, rgb: &[u8], compress: bool) {
++    let size = CELL_SIZE.load(Ordering::Relaxed);
++    encode(out, at, rgb, compress, ((size >> 32) as u32, size as u32));
++    IMAGES
++        .lock()
++        .unwrap_or_else(|p| p.into_inner())
++        .insert(at.id);
++}
++
++fn encode(out: &mut Vec<u8>, at: Placement, rgb: &[u8], compress: bool, cell: (u32, u32)) {
++    let cols = at.w.div_ceil(cell.0);
++    let rows = at.h.div_ceil(cell.1);
++    let width = cols * cell.0;
++    let height = rows * cell.1;
++    // Virtual placements fit to a cell rectangle. Transparent padding preserves
++    // partial edge tiles at their original scale rather than stretching them.
++    let mut rgba = vec![0; (width * height * 4) as usize];
++    for y in 0..at.h {
++        for x in 0..at.w {
++            let src = ((y * at.w + x) * 3) as usize;
++            let dst = ((y * width + x) * 4) as usize;
++            rgba[dst..dst + 3].copy_from_slice(&rgb[src..src + 3]);
++            rgba[dst + 3] = 255;
++        }
++    }
++    let mut compressed = Vec::new();
++    let pixels = if compress {
++        let mut z = ZlibEncoder::new(&mut compressed, Compression::fast());
++        z.write_all(&rgba).expect("zlib write to Vec");
++        z.finish().expect("zlib finish to Vec");
++        &compressed
++    } else {
++        &rgba
++    };
++    let payload = BASE64.encode(pixels);
++    // No delete-before-upload: virtual placements have no screen pins to leak.
++    let _ = write!(
++        out,
++        "\x1b_Ga=T,U=1,q=2,f=32,i={},p=1,s={width},v={height},c={cols},r={rows}",
++        at.id
++    );
++    if compress {
++        out.extend_from_slice(b",o=z");
++    }
++    let count = payload.len().div_ceil(4096);
++    for (index, chunk) in payload.as_bytes().chunks(4096).enumerate() {
++        let more = u8::from(index + 1 < count);
++        if index == 0 {
++            let _ = write!(out, ",m={more};");
++        } else {
++            let _ = write!(out, "\x1b_Gm={more},q=2;");
++        }
++        out.extend_from_slice(chunk);
++        out.extend_from_slice(b"\x1b\\");
++    }
++    cells(out, at, cols, rows);
++}
++
++fn cells(out: &mut Vec<u8>, at: Placement, cols: u32, rows: u32) {
++    let id = at.id;
++    let _ = write!(
++        out,
++        "\x1b[0;38;2;{};{};{}m",
++        (id >> 16) & 255,
++        (id >> 8) & 255,
++        id & 255
++    );
++    for y in 0..rows {
++        let _ = write!(
++            out,
++            "\x1b[{};{}H",
++            u32::from(at.row) + y + 1,
++            u32::from(at.col) + 1
++        );
++        for x in 0..cols {
++            let _ = write!(
++                out,
++                "\u{10eeee}{}{}{}",
++                DIACRITICS[y as usize],
++                DIACRITICS[x as usize],
++                DIACRITICS[(id >> 24) as usize]
++            );
++        }
++    }
++    out.extend_from_slice(b"\x1b[0m");
++}
++
++pub fn delete_all(out: &mut Vec<u8>) {
++    // d=A excludes virtual placements; free the IDs explicitly on relayout/exit.
++    let mut images = IMAGES.lock().unwrap_or_else(|p| p.into_inner());
++    for id in images.iter() {
++        let _ = write!(out, "\x1b_Ga=d,d=I,i={id},q=2\x1b\\");
++    }
++    images.clear();
++}
++
++// Kitty rowcolumn-diacritics.txt, in protocol order. Tiles span at most 128 cells.
++const DIACRITICS: [char; 128] = [
++    '\u{305}', '\u{30d}', '\u{30e}', '\u{310}', '\u{312}', '\u{33d}', '\u{33e}', '\u{33f}',
++    '\u{346}', '\u{34a}', '\u{34b}', '\u{34c}', '\u{350}', '\u{351}', '\u{352}', '\u{357}',
++    '\u{35b}', '\u{363}', '\u{364}', '\u{365}', '\u{366}', '\u{367}', '\u{368}', '\u{369}',
++    '\u{36a}', '\u{36b}', '\u{36c}', '\u{36d}', '\u{36e}', '\u{36f}', '\u{483}', '\u{484}',
++    '\u{485}', '\u{486}', '\u{487}', '\u{592}', '\u{593}', '\u{594}', '\u{595}', '\u{597}',
++    '\u{598}', '\u{599}', '\u{59c}', '\u{59d}', '\u{59e}', '\u{59f}', '\u{5a0}', '\u{5a1}',
++    '\u{5a8}', '\u{5a9}', '\u{5ab}', '\u{5ac}', '\u{5af}', '\u{5c4}', '\u{610}', '\u{611}',
++    '\u{612}', '\u{613}', '\u{614}', '\u{615}', '\u{616}', '\u{617}', '\u{657}', '\u{658}',
++    '\u{659}', '\u{65a}', '\u{65b}', '\u{65d}', '\u{65e}', '\u{6d6}', '\u{6d7}', '\u{6d8}',
++    '\u{6d9}', '\u{6da}', '\u{6db}', '\u{6dc}', '\u{6df}', '\u{6e0}', '\u{6e1}', '\u{6e2}',
++    '\u{6e4}', '\u{6e7}', '\u{6e8}', '\u{6eb}', '\u{6ec}', '\u{730}', '\u{732}', '\u{733}',
++    '\u{735}', '\u{736}', '\u{73a}', '\u{73d}', '\u{73f}', '\u{740}', '\u{741}', '\u{743}',
++    '\u{745}', '\u{747}', '\u{749}', '\u{74a}', '\u{7eb}', '\u{7ec}', '\u{7ed}', '\u{7ee}',
++    '\u{7ef}', '\u{7f0}', '\u{7f1}', '\u{7f3}', '\u{816}', '\u{817}', '\u{818}', '\u{819}',
++    '\u{81b}', '\u{81c}', '\u{81d}', '\u{81e}', '\u{81f}', '\u{820}', '\u{821}', '\u{822}',
++    '\u{823}', '\u{825}', '\u{826}', '\u{827}', '\u{829}', '\u{82a}', '\u{82b}', '\u{82c}',
++];
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn virtual_tile_has_no_visible_placement_or_delete_and_uses_local_cells() {
++        let mut out = Vec::new();
++        encode(
++            &mut out,
++            Placement {
++                id: 0x7600,
++                col: 7,
++                row: 3,
++                w: 2,
++                h: 2,
++            },
++            &[9; 12],
++            false,
++            (1, 1),
++        );
++        let text = String::from_utf8(out).unwrap();
++        assert!(text.contains("a=T,U=1,q=2,f=32,i=30208,p=1,s=2,v=2,c=2,r=2"));
++        assert!(!text.contains("a=d"));
++        assert!(text.contains("\x1b[4;8H\u{10eeee}\u{305}\u{305}\u{305}"));
++        assert!(text.contains("\x1b[5;8H\u{10eeee}\u{30d}\u{305}\u{305}"));
++        assert_eq!(text.matches('\u{10eeee}').count(), 4);
++    }
++
++    #[test]
++    fn partial_cell_is_padded_not_scaled() {
++        let mut out = Vec::new();
++        encode(
++            &mut out,
++            Placement {
++                id: 0x7601,
++                col: 0,
++                row: 0,
++                w: 1,
++                h: 1,
++            },
++            &[1, 2, 3],
++            false,
++            (2, 2),
++        );
++        let text = String::from_utf8(out).unwrap();
++        let payload = text
++            .split_once(';')
++            .unwrap()
++            .1
++            .split("\x1b\\")
++            .next()
++            .unwrap();
++        let rgba = BASE64.decode(payload).unwrap();
++        assert_eq!(rgba, [1, 2, 3, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
++        assert!(text.contains("s=2,v=2,c=1,r=1"));
++    }
++}
 diff --git a/src/term/transport.rs b/src/term/transport.rs
 new file mode 100644
-index 0000000..ce31958
+index 0000000..44d9317
 --- /dev/null
 +++ b/src/term/transport.rs
-@@ -0,0 +1,266 @@
-+//! Kitty APCs bypass tmux, while text and cursor addressing remain pane-local.
+@@ -0,0 +1,161 @@
++//! Graphics data bypasses tmux; Unicode placeholder cells remain pane-local.
 +
 +use std::io::{self, Write};
 +use std::process::Command;
@@ -162,86 +423,9 @@ index 0000000..ce31958
 +    if !in_tmux() {
 +        return out.write_all(bytes);
 +    }
-+    let origin = if contains_placement(bytes) {
-+        pane_origin()
-+    } else {
-+        (0, 0)
-+    };
-+    let mut encoded = Vec::with_capacity(bytes.len());
-+    write_with_tmux(&mut encoded, bytes, true, origin)?;
++    let mut encoded = Vec::with_capacity(bytes.len() + 64);
++    write_with_tmux(&mut encoded, bytes)?;
 +    out.write_all(&encoded)
-+}
-+
-+fn contains_placement(bytes: &[u8]) -> bool {
-+    bytes.windows(3).any(|part| part == b"\x1b_G")
-+}
-+
-+/// Where the pane's top-left cell sits in the outer terminal, as zero-based
-+/// `(left, top)`. tmux positions text itself but forwards graphics untouched, so
-+/// the outer terminal needs the translated cursor address.
-+///
-+/// The pane moves when it is split, zoomed or the status line changes, so the
-+/// answer is refreshed once a second rather than cached for the whole run.
-+fn pane_origin() -> (u32, u32) {
-+    refresh_origin(false).0
-+}
-+
-+/// Re-ask tmux where the pane is (at most once a second unless `force`) and report
-+/// whether it moved. Placed tiles stay where they were put, so a caller that sees
-+/// `true` has to repaint everything.
-+pub fn origin_moved(force: bool) -> bool {
-+    in_tmux() && refresh_origin(force).1
-+}
-+
-+fn refresh_origin(force: bool) -> ((u32, u32), bool) {
-+    static CACHE: Mutex<Option<(Instant, (u32, u32))>> = Mutex::new(None);
-+    let mut cache = CACHE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-+    if let Some((at, origin)) = *cache {
-+        if !force && at.elapsed() < Duration::from_secs(1) {
-+            return (origin, false);
-+        }
-+    }
-+    let known = cache.map(|(_, known)| known);
-+    let origin = query_pane_origin().unwrap_or_else(|| known.unwrap_or((0, 0)));
-+    *cache = Some((Instant::now(), origin));
-+    (origin, known.is_some_and(|known| known != origin))
-+}
-+
-+fn query_pane_origin() -> Option<(u32, u32)> {
-+    const FORMAT: &str = "#{pane_left} #{pane_top} #{?#{==:#{status-position},top},#{?#{==:#{status},off},0,#{?#{==:#{status},on},1,#{status}}},0}";
-+    let mut command = Command::new("tmux");
-+    command.args(["display-message", "-p"]);
-+    if let Some(pane) = std::env::var_os("TMUX_PANE") {
-+        command.arg("-t").arg(pane);
-+    }
-+    let output = command.arg(FORMAT).output().ok()?;
-+    parse_origin(std::str::from_utf8(&output.stdout).ok()?)
-+}
-+
-+fn parse_origin(text: &str) -> Option<(u32, u32)> {
-+    let mut fields = text.split_whitespace().map(|field| field.parse::<u32>());
-+    let left = fields.next()?.ok()?;
-+    let top = fields.next()?.ok()?;
-+    let status = fields.next().and_then(Result::ok).unwrap_or(0);
-+    Some((left, top + status))
-+}
-+
-+/// If `bytes` ends in an absolute cursor address, `(prefix length, row, col)`.
-+fn trailing_cup(bytes: &[u8]) -> Option<(usize, u32, u32)> {
-+    let body = bytes.strip_suffix(b"H")?;
-+    let digits_start = body
-+        .iter()
-+        .rposition(|byte| !byte.is_ascii_digit())
-+        .map_or(0, |index| index + 1);
-+    let col: u32 = std::str::from_utf8(&body[digits_start..]).ok()?.parse().ok()?;
-+    let body = body[..digits_start].strip_suffix(b";")?;
-+    let digits_start = body
-+        .iter()
-+        .rposition(|byte| !byte.is_ascii_digit())
-+        .map_or(0, |index| index + 1);
-+    let row: u32 = std::str::from_utf8(&body[digits_start..]).ok()?.parse().ok()?;
-+    let prefix = body[..digits_start].strip_suffix(b"\x1b[")?;
-+    Some((prefix.len(), row, col))
 +}
 +
 +pub fn append_passthrough(out: &mut Vec<u8>, bytes: &[u8]) {
@@ -254,66 +438,95 @@ index 0000000..ce31958
 +
 +fn wrap(out: &mut impl Write, bytes: &[u8]) -> io::Result<()> {
 +    out.write_all(b"\x1bPtmux;")?;
-+    let mut rest = bytes;
-+    while let Some(index) = rest.iter().position(|&byte| byte == 0x1b) {
-+        out.write_all(&rest[..index])?;
-+        out.write_all(b"\x1b\x1b")?;
-+        rest = &rest[index + 1..];
++    for byte in bytes {
++        out.write_all(std::slice::from_ref(byte))?;
++        if *byte == 0x1b {
++            out.write_all(b"\x1b")?;
++        }
 +    }
-+    out.write_all(rest)?;
 +    out.write_all(b"\x1b\\")
 +}
 +
-+fn write_with_tmux(
-+    out: &mut impl Write,
-+    mut bytes: &[u8],
-+    tmux: bool,
-+    origin: (u32, u32),
-+) -> io::Result<()> {
-+    if !tmux {
-+        return out.write_all(bytes);
-+    }
-+    // Frame buffers contain complete APCs, including each 4096-byte image chunk.
-+    let mut cursor: Option<(u32, u32)> = None;
++fn write_with_tmux(out: &mut impl Write, mut bytes: &[u8]) -> io::Result<()> {
++    // tmux consumes pane-local synchronization, but the image data bypasses it.
++    wrap(out, b"\x1b[?2026h")?;
 +    while let Some(start) = bytes.windows(3).position(|part| part == b"\x1b_G") {
 +        let Some(end) = bytes[start..].windows(2).position(|part| part == b"\x1b\\") else {
-+            return out.write_all(bytes);
++            break;
 +        };
 +        let end = start + end + 2;
-+        let command = &bytes[start..end];
-+        // An image lands at the outer terminal's cursor, which tmux knows nothing
-+        // about. The cursor address that precedes a placement therefore travels
-+        // inside the same envelope, shifted by the pane's position, and the outer
-+        // cursor is put back so tmux's idea of it stays true.
-+        //
-+        // Chunked transmissions are placed when the last chunk arrives, and a delete
-+        // may sit between the address and the placement, so a command that directly
-+        // follows another one reuses that one's address.
-+        let prefix = &bytes[..start];
-+        let address = match trailing_cup(prefix) {
-+            Some((keep, row, col)) => {
-+                out.write_all(&prefix[..keep])?;
-+                Some((row, col))
-+            }
-+            None if prefix.is_empty() => cursor,
-+            None => {
-+                out.write_all(prefix)?;
-+                None
-+            }
-+        };
-+        cursor = address;
-+        if let Some((row, col)) = address {
-+            let mut payload = Vec::with_capacity(command.len() + 24);
-+            write!(payload, "\x1b7\x1b[{};{}H", row + origin.1, col + origin.0)?;
-+            payload.extend_from_slice(command);
-+            payload.extend_from_slice(b"\x1b8");
-+            wrap(out, &payload)?;
-+        } else {
-+            wrap(out, command)?;
-+        }
++        out.write_all(&bytes[..start])?;
++        wrap(out, &bytes[start..end])?;
 +        bytes = &bytes[end..];
 +    }
-+    out.write_all(bytes)
++    out.write_all(bytes)?;
++    wrap(out, b"\x1b[?2026l")
++}
++
++/// A client newly showing this pane needs every image, not just dirty tiles.
++/// Placeholder cells themselves are hidden/restored by tmux, independently per client.
++pub fn viewers_changed() -> bool {
++    type Snapshot = (Instant, Vec<String>);
++    static CACHE: Mutex<Option<Snapshot>> = Mutex::new(None);
++    if !in_tmux() {
++        return false;
++    }
++    let mut cache = CACHE
++        .lock()
++        .unwrap_or_else(|poisoned| poisoned.into_inner());
++    if cache
++        .as_ref()
++        .is_some_and(|(at, _)| at.elapsed() < Duration::from_millis(100))
++    {
++        return false;
++    }
++    let Some(viewers) = query_viewers() else {
++        return false;
++    };
++    let changed = cache
++        .as_ref()
++        .is_none_or(|(_, previous)| *previous != viewers);
++    *cache = Some((Instant::now(), viewers));
++    changed
++}
++
++fn query_viewers() -> Option<Vec<String>> {
++    let pane = std::env::var_os("TMUX_PANE")?;
++    let output = Command::new("tmux")
++        .args(["display-message", "-p", "-t"])
++        .arg(pane)
++        .arg("#{window_id} #{?window_zoomed_flag,#{pane_active},1}")
++        .output()
++        .ok()?;
++    if !output.status.success() {
++        return None;
++    }
++    let pane_state = std::str::from_utf8(&output.stdout).ok()?;
++    let mut fields = pane_state.split_whitespace();
++    let window = fields.next()?;
++    let visible = fields.next()? == "1";
++    let output = Command::new("tmux")
++        .args(["list-clients", "-F", "#{client_tty} #{window_id}"])
++        .output()
++        .ok()?;
++    if !output.status.success() {
++        return None;
++    }
++    Some(visible_viewers(
++        window,
++        visible,
++        std::str::from_utf8(&output.stdout).ok()?,
++    ))
++}
++
++fn visible_viewers(window: &str, visible: bool, clients: &str) -> Vec<String> {
++    let mut viewers: Vec<_> = clients
++        .lines()
++        .filter(|line| visible && line.split_whitespace().nth(1) == Some(window))
++        .map(str::to_owned)
++        .collect();
++    viewers.sort();
++    viewers
 +}
 +
 +#[cfg(test)]
@@ -321,95 +534,38 @@ index 0000000..ce31958
 +    use super::*;
 +
 +    #[test]
-+    fn outside_tmux_is_byte_identical() {
-+        let input = b"\x1b[2;3H\x1b_Ga=T,m=0;AAAA\x1b\\text";
-+        let mut output = Vec::new();
-+        write_with_tmux(&mut output, input, false, (4, 1)).unwrap();
-+        assert_eq!(output, input);
-+    }
-+
-+    #[test]
-+    fn placement_carries_its_translated_cursor_and_restores_the_outer_one() {
-+        let mut output = Vec::new();
-+        write_with_tmux(
-+            &mut output,
-+            b"hi\x1b[2;3H\x1b_Ga=T;AAAA\x1b\\text",
-+            true,
-+            (4, 1),
-+        )
-+        .unwrap();
++    fn clients_viewing_other_windows_and_zoom_hidden_panes_are_excluded() {
++        let clients = "/dev/pts/2 @7\n/dev/pts/3 @8\n/dev/pts/4 @7\n";
 +        assert_eq!(
-+            output,
-+            b"hi\x1bPtmux;\x1b\x1b7\x1b\x1b[3;7H\x1b\x1b_Ga=T;AAAA\x1b\x1b\\\x1b\x1b8\x1b\\text"
++            visible_viewers("@7", true, clients),
++            ["/dev/pts/2 @7", "/dev/pts/4 @7"]
++        );
++        assert!(visible_viewers("@7", false, clients).is_empty());
++        assert!(visible_viewers("@9", true, clients).is_empty());
++        let switched = "/dev/pts/2 @8\n/dev/pts/3 @8\n/dev/pts/4 @7\n";
++        assert_ne!(
++            visible_viewers("@7", true, clients),
++            visible_viewers("@7", true, switched)
 +        );
 +    }
 +
 +    #[test]
-+    fn graphics_without_a_cursor_address_are_only_wrapped() {
++    fn graphics_and_sync_reach_outer_terminal_but_cells_stay_local() {
++        let input = b"\x1b[2;3H\x1b_Ga=T,U=1;AAAA\x1b\\placeholder";
 +        let mut output = Vec::new();
-+        write_with_tmux(&mut output, b"x\x1b_Ga=d,d=A\x1b\\y", true, (4, 1)).unwrap();
-+        assert_eq!(output, b"x\x1bPtmux;\x1b\x1b_Ga=d,d=A\x1b\x1b\\\x1b\\y");
++        write_with_tmux(&mut output, input).unwrap();
++        assert_eq!(output, b"\x1bPtmux;\x1b\x1b[?2026h\x1b\\\x1b[2;3H\x1bPtmux;\x1b\x1b_Ga=T,U=1;AAAA\x1b\x1b\\\x1b\\placeholder\x1bPtmux;\x1b\x1b[?2026l\x1b\\");
++        assert!(!output.windows(2).any(|part| part == b"\x1b7"));
 +    }
 +
 +    #[test]
-+    fn chunks_directly_after_a_placement_share_its_cursor_address() {
++    fn each_chunk_gets_its_own_envelope_inside_one_sync() {
 +        let mut output = Vec::new();
-+        write_with_tmux(
-+            &mut output,
-+            b"\x1b[2;3H\x1b_Ga=T,m=1;AA\x1b\\\x1b_Gm=0;BB\x1b\\z",
-+            true,
-+            (4, 1),
-+        )
-+        .unwrap();
-+        assert_eq!(
-+            output,
-+            b"\x1bPtmux;\x1b\x1b7\x1b\x1b[3;7H\x1b\x1b_Ga=T,m=1;AA\x1b\x1b\\\x1b\x1b8\x1b\\\x1bPtmux;\x1b\x1b7\x1b\x1b[3;7H\x1b\x1b_Gm=0;BB\x1b\x1b\\\x1b\x1b8\x1b\\z"
-+        );
-+    }
-+
-+    #[test]
-+    fn trailing_cursor_address_is_recognised() {
-+        assert_eq!(trailing_cup(b"ab\x1b[12;345H"), Some((2, 12, 345)));
-+        assert_eq!(trailing_cup(b"\x1b[;3H"), None);
-+        assert_eq!(trailing_cup(b"\x1b[2;3"), None);
-+        assert_eq!(trailing_cup(b"plain"), None);
-+    }
-+
-+    #[test]
-+    fn origin_adds_a_top_status_line() {
-+        assert_eq!(parse_origin("5 2 1\n"), Some((5, 3)));
-+        assert_eq!(parse_origin("0 0 0"), Some((0, 0)));
-+        assert_eq!(parse_origin("garbage"), None);
-+    }
-+
-+    #[test]
-+    fn each_chunk_and_delete_gets_its_own_envelope() {
-+        let commands: &[&[u8]] = &[
-+            b"\x1b_Ga=T,m=1;AAAA\x1b\\",
-+            b"\x1b_Gm=0;AAAA\x1b\\",
-+            b"\x1b_Ga=d,d=A,q=2\x1b\\",
-+        ];
-+        let mut expected = Vec::new();
-+        for command in commands {
-+            wrap(&mut expected, command).unwrap();
-+        }
-+        let mut output = Vec::new();
-+        write_with_tmux(&mut output, &commands.concat(), true, (0, 0)).unwrap();
-+        assert_eq!(output, expected);
-+    }
-+
-+    #[test]
-+    fn passthrough_escapes_every_embedded_escape() {
-+        let mut output = Vec::new();
-+        wrap(&mut output, b"\x1b_Ga=q;\x1bX\x1b\\").unwrap();
-+        assert_eq!(output, b"\x1bPtmux;\x1b\x1b_Ga=q;\x1b\x1bX\x1b\x1b\\\x1b\\");
-+    }
-+
-+    #[test]
-+    fn sentinel_can_follow_the_outer_graphics_query() {
-+        let mut output = Vec::new();
-+        wrap(&mut output, b"\x1b[c").unwrap();
-+        assert_eq!(output, b"\x1bPtmux;\x1b\x1b[c\x1b\\");
++        write_with_tmux(&mut output, b"\x1b_Ga=T,m=1;AAAA\x1b\\\x1b_Gm=0;BBBB\x1b\\").unwrap();
++        let text = String::from_utf8(output).unwrap();
++        assert_eq!(text.matches("\x1bPtmux;").count(), 4);
++        assert_eq!(text.matches("?2026h").count(), 1);
++        assert_eq!(text.matches("?2026l").count(), 1);
 +    }
 +}
 diff --git a/src/term/writer.rs b/src/term/writer.rs

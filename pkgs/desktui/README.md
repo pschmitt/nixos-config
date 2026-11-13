@@ -16,7 +16,8 @@ line so the remote screen fills the whole terminal.
 
 ## tmux
 
-The outer terminal must support Kitty graphics. Enable passthrough in tmux:
+The outer terminal must support Kitty graphics **and Unicode image placeholders**
+(Kitty 0.28 or newer). Enable passthrough in tmux:
 
 ```tmux
 set -g allow-passthrough on
@@ -29,11 +30,18 @@ frame chunks and image deletion during teardown all use the same transport.
 The final probe sentinel also passes through tmux so the outer graphics reply
 arrives before capability collection ends.
 
-An image lands where the *outer* terminal's cursor is, which tmux does not track.
-The cursor address that precedes each placement therefore travels inside the same
-envelope, shifted by the pane's position in the client (`pane_left`, `pane_top`
-and a top status line, re-read about once a second), between a cursor save and
-restore so tmux's own idea of the cursor stays true.
+Under tmux, images use virtual placements (`U=1`), displayed through Unicode
+placeholder cells. The cells remain pane-local: tmux owns their position and
+visibility, so changing windows, moving panes and zooming no longer leave real
+placements behind in the outer terminal. Tile updates do not delete the previous
+image first, and synchronized-output boundaries reach the outer terminal along
+with the image data. Partial edge tiles are padded transparently to whole cells
+rather than stretched.
+
+The viewer checks which attached clients show its window. When that set changes,
+it retransmits every tile so a returning or newly attached client receives the
+image data even if the guest screen has not changed. Normal tmux passthrough
+policy suppresses image transfers to clients that are not viewing the pane.
 
 tmux never relays the outer terminal's reply to the graphics probe, so detection
 inside tmux always fails; pass `--force` there (the OpenStack bridge does).
@@ -41,9 +49,8 @@ inside tmux always fails; pass `--force` there (the OpenStack bridge does).
 Shared-memory graphics are disabled under tmux: the server and attached terminal
 may be on different machines. Direct transfer works across SSH as well.
 
-Start in a zoomed pane. Passthrough does not give tmux ownership of graphics;
-arbitrary split-pane placement, window switching, nested tmux sessions and
-multiple attached clients are not guaranteed by this patch.
+Nested tmux sessions and terminals without Unicode placeholder support are not
+supported by this path. Each attached graphical client needs placeholder support.
 
 ## Checks
 
@@ -56,7 +63,8 @@ Run builds on a worker as required by the repository guidelines. The package run
 upstream Rust tests, including byte-level transport regressions. The separate
 tmux check creates an isolated server attached to a pseudo-terminal that emulates
 Kitty graphics replies. It checks capability discovery without `--force`, decodes
-RGB tiles from the synthetic test pattern after they pass through tmux, and
+RGBA tiles from the synthetic test pattern after they pass through tmux, verifies
+virtual placements and complete retransmission after switching windows, and
 checks clean exit using the local command prefix. It needs no cloud credentials
 and sends no input to a VM. This validates protocol transport, not a human visual
 inspection in a real graphical terminal.

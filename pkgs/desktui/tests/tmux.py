@@ -48,8 +48,27 @@ def run_case(binary, root, mode):
     pending = bytearray()
     replies = 0
     start = time.monotonic()
+    switched_away = False
+    switched_back = False
+    restored_at = None
     try:
         while time.monotonic() - start < 5:
+            elapsed = time.monotonic() - start
+            if mode != "--print-caps" and elapsed > 2 and not switched_away:
+                original = subprocess.check_output(
+                    command + ["capture-pane", "-p", "-t", "test:0"], text=True
+                )
+                assert "\U0010eeee" in original, "tmux did not retain image placeholder cells"
+                subprocess.run(command + ["new-window", "-t", "test:1"], check=True)
+                other = subprocess.check_output(
+                    command + ["capture-pane", "-p", "-t", "test:1"], text=True
+                )
+                assert "\U0010eeee" not in other, "Images leaked into the other window"
+                switched_away = True
+            if switched_away and not switched_back and elapsed > 3:
+                restored_at = len(output)
+                subprocess.run(command + ["select-window", "-t", "test:0"], check=True)
+                switched_back = True
             if not select.select([fd], [], [], 0.1)[0]:
                 continue
             try:
@@ -101,9 +120,22 @@ def run_case(binary, root, mode):
         else:
             tiles = validate_tiles(output)
             assert tiles > 0, "No valid pixel tiles reached the outer terminal"
-            assert re.search(
-                rb"\x1b7\x1b\[\d+;\d+H\x1b_Ga=T", bytes(output)
-            ), "Placements did not carry their own cursor address through tmux"
+            transmits = re.findall(rb"\x1b_Ga=T,([^;]+);", output)
+            assert transmits and all(b"U=1" in header for header in transmits), (
+                "tmux images must use invisible virtual placements"
+            )
+            assert not re.search(rb"\x1b_Ga=d,d=i,i=30\d+", output), (
+                "Tile updates must not delete the previous image first"
+            )
+            assert b"\x1b[?2026h" in output and b"\x1b[?2026l" in output, (
+                "Synchronized updates did not reach the outer terminal"
+            )
+            assert switched_back and restored_at is not None
+            restored = bytes(output[restored_at:])
+            restored_ids = set(re.findall(rb"a=T,U=1,[^;]*,i=(\d+)", restored))
+            original_ids = set(re.findall(rb"a=T,U=1,[^;]*,i=(\d+)", bytes(output[:restored_at])))
+            assert original_ids <= restored_ids, "Returning client did not receive all tile images"
+            assert "\U0010eeee" in pane, "tmux did not restore placeholder cells"
             # The prefix exits locally; this case never connects to a VNC server.
             subprocess.run(
                 command + ["send-keys", "-t", "test", "C-a", "q"], check=True
