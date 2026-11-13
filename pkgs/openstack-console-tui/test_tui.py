@@ -67,6 +67,13 @@ class UrlTests(unittest.TestCase):
             self.assertNotIn("--view-only", tui.viewer_command(viewer, 43210, False))
             self.assertTrue("--no-clipboard" in command or "--clipboard" in command)
 
+    def test_desktui_skips_probe_only_inside_tmux(self):
+        with patch.dict(os.environ, {"TMUX": "/tmp/tmux-1/default,1,0"}):
+            self.assertIn("--force", tui.viewer_command("desktui", 1, False))
+            self.assertNotIn("--force", tui.viewer_command("farsee", 1, False))
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertNotIn("--force", tui.viewer_command("desktui", 1, False))
+
 
 class BridgeTests(unittest.IsolatedAsyncioTestCase):
     async def run_bridge(self, handler, script):

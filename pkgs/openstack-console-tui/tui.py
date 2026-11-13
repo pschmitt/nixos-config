@@ -52,6 +52,10 @@ def viewer_command(viewer, port, view_only):
             "direct",
             "--no-clipboard",
         ]
+        # tmux swallows the outer terminal's reply to the graphics probe, so
+        # detection always fails there even when passthrough works.
+        if os.environ.get("TMUX"):
+            command.append("--force")
     elif viewer == "farsee":
         command = [
             viewer,
