@@ -555,6 +555,22 @@ paint_state() {
   fi
 }
 
+# Colors a state-like value by meaning (same palette as paint_state), keeping
+# its text as is: green = good/running, yellow = in progress, red = bad.
+paint_value() {
+  case "${1,,}" in
+    running|active|ready|succeeded|success|completed)
+      paint 32 "$1"
+      ;;
+    error|failed|failure|shutoff|deleted)
+      paint 31 "$1"
+      ;;
+    *)
+      paint 33 "$1"
+      ;;
+  esac
+}
+
 paint_event_target() {
   local target="$1"
   if [[ "$target" == */* ]]
@@ -2263,7 +2279,7 @@ emit_status() {
       | (group_by(.kind) | map("\(length) \(.[0].kind)") | join(", ")) as $k
       | "\($n) worker\(if $n == 1 then "" else "s" end) (\($k))"' <<< "$workers") || return 0
   fi
-  printf '%s %s %s\n' "$(date -u +%FT%TZ)" status "$(paint 35 "$summary")"
+  printf '%s %s %s\n' "$(date -u +%FT%TZ)" status "$(paint_vm "$summary")"
   last_key="$key"
   last_at="$now"
 }
@@ -2290,7 +2306,7 @@ emit_event() {
     if [[ "$details" =~ ^([a-z_-]+=)(.*)$ ]]
     then
       # key=value: only the value is colored
-      printf ' %s%s' "${BASH_REMATCH[1]}" "$(paint 33 "${BASH_REMATCH[2]}")"
+      printf ' %s%s' "${BASH_REMATCH[1]}" "$(paint_value "${BASH_REMATCH[2]}")"
     else
       printf ' %s' "$(paint 33 "$details")"
     fi
