@@ -16,6 +16,7 @@
       pkgs.openstack-console-tui
     ];
 
+    programs.ssh-client-browser.enable = true;
     services.terminal-browser-headless.enable = true;
   };
 }

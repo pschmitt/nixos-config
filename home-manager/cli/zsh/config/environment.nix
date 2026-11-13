@@ -20,7 +20,13 @@ let
       ]
   );
   shellSessionVariables = {
-    BROWSER = if (config.termux.enable or false) then "termux-open" else "firefox";
+    BROWSER =
+      if (config.termux.enable or false) then
+        "termux-open"
+      else if (config.programs.ssh-client-browser.enable or false) then
+        lib.getExe config.programs.ssh-client-browser.package
+      else
+        "firefox";
     EDITOR = "nvim";
     VISUAL = "nvim";
     SYSTEMD_EDITOR = "nvim";
@@ -89,6 +95,8 @@ let
   );
 in
 {
+  imports = [ ../../../../modules/home-manager/ssh-client-browser.nix ];
+
   programs.zsh = {
     shellAliases = {
       irssi = "irssi --config=$XDG_CONFIG_HOME/irssi/config --home=$XDG_DATA_HOME/irssi";
