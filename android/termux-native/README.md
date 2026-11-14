@@ -153,6 +153,11 @@ bash bootstrap.sh install environment.tar.gz TRUSTED_SHA256
 termux-native-status
 ```
 
+`bash bootstrap.sh preflight environment.tar.gz TRUSTED_SHA256` verifies and
+extracts the bundle and runs its generation checks without installing APT
+packages or activating a generation; run it with a temporary `HOME` to leave
+the installed generations untouched. `nixpp upgrade --dry-run` uses it.
+
 Use the digest obtained directly from the trusted builder. The adjacent
 `SHA256SUMS` file is useful for checking accidental corruption, but is not a
 signature. To roll back, run `nixpp rollback NUMBER` or pass a generation number

@@ -65,6 +65,7 @@ action=$1
 generation=$3
 case "$action" in
   preflight)
+    printf 'preflight %s %s HOME=%s\n' "$2" "$3" "$HOME" >> "$PREFLIGHT_LOG"
     exit 0
     ;;
   install)
@@ -94,6 +95,8 @@ MOCK_ACTIVATE
   export MOCK_INSTALLED_FILE="$temporary/installed-packages.txt"
   export MOCK_APT_LOG="$temporary/apt.log"
   export ACTIVATION_ATTEMPTS="$temporary/activation-attempts"
+  export PREFLIGHT_LOG="$temporary/preflight.log"
+  : > "$PREFLIGHT_LOG"
   export PATH="$temporary/mock-bin:$PATH"
   export HOME="$home"
   export PREFIX="$prefix"
@@ -112,6 +115,39 @@ MOCK_ACTIVATE
   [[ "$(wc -l < "$MOCK_INSTALLED_FILE")" -eq 1 ]]
   grep -Fxq newly-installed-package "$root/apt-owned-packages.txt"
   [[ "$(wc -l < "$root/generation-index.tsv")" -eq 1 ]]
+
+  # nixpp upgrade --dry-run runs `bootstrap.sh preflight ARCHIVE SHA256` in a
+  # temporary HOME. It must be accepted and must not change APT packages, the
+  # real home, the prefix, or any APT command at all.
+  local preview_home="$temporary/preview-home" apt_lines installed_before
+  tar -cf - -C "$temporary" home prefix | sha256sum > "$temporary/state-before"
+  apt_lines=$(wc -l < "$MOCK_APT_LOG")
+  installed_before=$(sha256sum < "$MOCK_INSTALLED_FILE")
+  mkdir -p "$preview_home"
+  : > "$PREFLIGHT_LOG"
+  HOME="$preview_home" bash "$temporary/bootstrap.sh" preflight "$bundle" "$generation"
+  grep -Fq "preflight $bundle $generation HOME=$preview_home" "$PREFLIGHT_LOG"
+  [[ "$(wc -l < "$PREFLIGHT_LOG")" -eq 1 ]]
+  tar -cf - -C "$temporary" home prefix | sha256sum > "$temporary/state-after"
+  cmp -s "$temporary/state-before" "$temporary/state-after"
+  [[ "$(wc -l < "$MOCK_APT_LOG")" -eq "$apt_lines" ]]
+  [[ "$(sha256sum < "$MOCK_INSTALLED_FILE")" == "$installed_before" ]]
+  [[ ! -e "$preview_home/.termux/shell" && ! -e "$preview_home/.local/share/termux-native/current" ]]
+  [[ ! -e "$preview_home/.local/share/termux-native/.lock" ]]
+  # A checksum mismatch must fail the preview before activate.sh runs.
+  : > "$PREFLIGHT_LOG"
+  if HOME="$preview_home" bash "$temporary/bootstrap.sh" preflight "$bundle" "$(printf '%064d' 9)" 2>/dev/null
+  then
+    printf 'preflight accepted a mismatched checksum.\n' >&2
+    return 1
+  fi
+  [[ ! -s "$PREFLIGHT_LOG" ]]
+  # preflight takes exactly ARCHIVE and TRUSTED_SHA256.
+  if HOME="$preview_home" bash "$temporary/bootstrap.sh" preflight "$bundle" 2>/dev/null
+  then
+    printf 'preflight accepted a missing checksum.\n' >&2
+    return 1
+  fi
 
   # shellcheck disable=SC1091
   source "$script_dir/activate.sh"

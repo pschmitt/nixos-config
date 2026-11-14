@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  printf 'Usage: %s [install] ARCHIVE TRUSTED_SHA256 | restore | gc [--keep COUNT] [--dry-run] | pin|unpin GENERATION_ID\n' "$(basename "$0")"
+  printf 'Usage: %s [install] ARCHIVE TRUSTED_SHA256 | preflight ARCHIVE TRUSTED_SHA256 | restore | gc [--keep COUNT] [--dry-run] | pin|unpin GENERATION_ID\n' "$(basename "$0")"
 }
 
 restore_startup() {
@@ -613,7 +613,7 @@ run_generation_gc() {
 
 main() {
   local installer root backup temporary shell_file generation archive checksum
-  local keep_count=3 dry_run=0
+  local keep_count=3 dry_run=0 preflight=0
 
   if [[ "${1:-}" == gc ]]
   then
@@ -685,6 +685,10 @@ main() {
       restore_startup
       return
       ;;
+    preflight)
+      shift
+      preflight=1
+      ;;
     install)
       shift
       ;;
@@ -721,6 +725,12 @@ main() {
     return 1
   fi
   TERMUX_NATIVE_LOCK_HELD=1 bash "$installer" preflight "$archive" "$generation" || return
+  if ((preflight))
+  then
+    # Preview only: never touch APT packages, the active generation, the
+    # login shell or the zshenv. The caller supplies a temporary HOME.
+    return 0
+  fi
   install_apt_packages "$root" "$generation" || return
   TERMUX_NATIVE_LOCK_HELD=1 bash "$installer" install "$archive" "$generation" || return
   remove_obsolete_apt_packages "$root" || return

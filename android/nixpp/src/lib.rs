@@ -1838,9 +1838,7 @@ fn switch_profile_with_source(
             ui.stage("Preflight the bundle without activating", || {
                 let status = Command::new("bash")
                     .arg(&bootstrap_path)
-                    .arg("preflight")
-                    .arg(&archive_path)
-                    .arg(&digest)
+                    .args(bootstrap_preflight_args(&archive_path, &digest))
                     .env("HOME", &preview_home)
                     .status()
                     .context("start upgrade preflight")?;
@@ -1882,7 +1880,7 @@ fn switch_profile_with_source(
             Ok(())
         })
     })();
-    let cleanup = fs::remove_dir_all(&stage)
+    let cleanup = remove_tree(&stage)
         .with_context(|| format!("remove local staging directory {}", stage.display()));
     let result = result.and(cleanup);
     if let Some(path) = remote_temp
@@ -2566,6 +2564,42 @@ fn hex(value: &[u8]) -> String {
         output.push(DIGITS[(byte & 0x0f) as usize] as char);
     }
     output
+}
+
+/// Arguments of the bundle's `bootstrap.sh` read-only preview action. The
+/// contract is `bootstrap.sh preflight ARCHIVE TRUSTED_SHA256`; it never
+/// installs APT packages or activates a generation.
+fn bootstrap_preflight_args(archive: &Path, digest: &str) -> Vec<std::ffi::OsString> {
+    vec![
+        "preflight".into(),
+        archive.as_os_str().to_owned(),
+        digest.into(),
+    ]
+}
+
+/// Remove a directory tree that may contain read-only directories, such as an
+/// extracted Nix-built generation.
+fn remove_tree(path: &Path) -> io::Result<()> {
+    fn make_writable(path: &Path) -> io::Result<()> {
+        let metadata = fs::symlink_metadata(path)?;
+        if !metadata.is_dir() {
+            return Ok(());
+        }
+        let mut mode = metadata.permissions().mode();
+        if mode & 0o700 != 0o700 {
+            mode |= 0o700;
+            fs::set_permissions(path, fs::Permissions::from_mode(mode))?;
+        }
+        for entry in fs::read_dir(path)? {
+            make_writable(&entry?.path())?;
+        }
+        Ok(())
+    }
+    match make_writable(path) {
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
+        result => result?,
+    }
+    fs::remove_dir_all(path)
 }
 
 fn make_staging_directory(prefix: &str) -> Result<PathBuf> {
@@ -3446,6 +3480,43 @@ mod tests {
         nar_string(&mut symlink, b")");
         assert!(extract_nar(&mut symlink.as_slice(), &destination).is_err());
         fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn preflight_arguments_match_the_bootstrap_contract() {
+        let archive = Path::new("/stage/bundle/environment.tar.gz");
+        let digest = "a".repeat(64);
+        let args = bootstrap_preflight_args(archive, &digest);
+        assert_eq!(
+            args,
+            vec![
+                std::ffi::OsString::from("preflight"),
+                archive.as_os_str().to_owned(),
+                digest.clone().into(),
+            ]
+        );
+        // The bundle's bootstrap.sh must advertise exactly this action.
+        let bootstrap = include_str!("../../termux-native/bootstrap.sh");
+        assert!(bootstrap.contains("preflight ARCHIVE TRUSTED_SHA256"));
+        assert!(bootstrap.contains("\n    preflight)\n"));
+    }
+
+    #[test]
+    fn removes_trees_with_read_only_directories() {
+        let root = temp_dir("readonly-tree");
+        let nested = root.join("generation/bin/tools");
+        fs::create_dir_all(&nested).unwrap();
+        fs::write(nested.join("tool"), b"x").unwrap();
+        for directory in [
+            &nested,
+            &root.join("generation/bin"),
+            &root.join("generation"),
+        ] {
+            fs::set_permissions(directory, fs::Permissions::from_mode(0o555)).unwrap();
+        }
+        remove_tree(&root).unwrap();
+        assert!(!root.exists());
+        remove_tree(&root).unwrap();
     }
 
     #[test]
