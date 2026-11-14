@@ -91,7 +91,7 @@ only in the kernel's device-mapper table. Check it on a worker with
 
 `/run/rworker/metadata.json` (world-readable) holds what the worker knew at
 boot: its name, UUID and availability zone, the boot time, its NixOS system
-path, and the server metadata from its creation (`rworker` kind,
+path, and the server metadata from its creation (`nixbot-worker` kind,
 `owner`, `created_at`, `expires_at`, `max_lifetime` and the creator:
 `agent`, `agent_pid`, `agent_session`, `topic`, `cwd`; ad-hoc workers only
 for the latter ones). It is written once (`"source": "initial"`); a later

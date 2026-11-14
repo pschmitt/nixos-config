@@ -55,7 +55,7 @@ in
     script = ''
       # nixbot-worker.metadata=URL on the kernel command line points
       # elsewhere (the boot test's fake metadata service).
-      metadata=$(sed -n 's/.*rworker\.metadata=\([^ ]*\).*/\1/p' /proc/cmdline)
+      metadata=$(sed -n 's/.*nixbot-worker\.metadata=\([^ ]*\).*/\1/p' /proc/cmdline)
       metadata="''${metadata:-http://169.254.169.254/openstack/latest}"
       fetch() {
         curl -fsS --retry 30 --retry-delay 2 --retry-connrefused "$metadata/$1"
