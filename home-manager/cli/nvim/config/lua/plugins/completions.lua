@@ -27,6 +27,14 @@ return {
 
       signature = { enabled = true },
 
+      -- There is no prebuilt Android/Bionic fuzzy library to download, so use
+      -- the Lua matcher instead of warning about the failed download on every
+      -- start.
+      fuzzy = require("utils").is_termux() and {
+        implementation = "lua",
+        prebuilt_binaries = { download = false },
+      } or nil,
+
       -- Cmdline completions (:, /, ?, :!)
       cmdline = {
         enabled = true,

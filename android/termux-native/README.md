@@ -808,6 +808,20 @@ TERMUX_GENERATION=... XDG_CONFIG_HOME=$TERMUX_GENERATION/home/.config \
   nvim --headless "+luafile $TERMUX_GENERATION/shell/check-nvim-plugins.lua"
 ```
 
+The script also checks that `require()` reaches every plugin, and that
+lualine's trouble statusline builds. Lazy maps a module path back to its plugin
+by the basename of the plugin directory, which never equals the plugin name
+inside an `<owner>--<repo>` dev directory. A plugin that is only `require()`d
+(trouble.nvim, from lualine's spec) was therefore neither loaded nor added to
+the runtimepath, its sources under `lua/trouble/sources` were missing, and
+startup showed "Failed to run `config` for lualine.nvim"
+(`trouble/sources/init.lua:41: attempt to index local 'source' (a nil value)`).
+`config/lazy-dev-find.lua` falls back to matching by directory. The same
+startup also warned that blink.cmp could not download a prebuilt fuzzy library
+(none exists for Android), so `plugins/completions.lua` selects the Lua matcher
+on Termux. A session started before an upgrade keeps its old
+`TERMUX_GENERATION`; open a new session to pick up the current generation.
+
 The Termux profile now declares APT-owned language servers for Lua, Go,
 Python (`ty` and Ruff), TOML, and Markdown. The Zenfone's generation 64
 attached each server to a matching scratch buffer; Python also returned Ruff

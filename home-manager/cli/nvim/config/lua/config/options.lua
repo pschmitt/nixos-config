@@ -27,6 +27,10 @@ vim.g.maplocalleader = ","
 
 require("config.clipboard")
 
+-- Let lazy.nvim lazy-load require()d plugins from lazyvim-nix's
+-- "<owner>--<repo>" dev dirs (otherwise lualine's trouble statusline fails)
+require("config.lazy-dev-find")
+
 -- These used to be required from init.lua, which lazyvim-nix generates
 require("config.usercmds")
 require("config.vimwikisync")

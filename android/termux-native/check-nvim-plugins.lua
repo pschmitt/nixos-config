@@ -1,5 +1,7 @@
 -- Regression check for the Termux Neovim generation: every plugin Lazy resolves
--- must exist in the bundled lazy-dev tree, and Lazy must not have cloned any.
+-- must exist in the bundled lazy-dev tree, Lazy must not have cloned any, a
+-- require() of a not yet loaded plugin must map back to that plugin (so Lazy
+-- loads it), and the lualine trouble statusline must build.
 --
 -- Run it with the generation's own launcher so the managed config is used:
 --   TERMUX_GENERATION=... XDG_CONFIG_HOME=$TERMUX_GENERATION/home/.config \
@@ -27,13 +29,51 @@ if uv.fs_stat(root) then
   end
 end
 
+-- lazy.core.plugin.find must map "<dev dir>/lua/..." back to the plugin even
+-- though the dev dirs are named "<owner>--<repo>"; otherwise a require()d lazy
+-- plugin (trouble.nvim) is not loaded and lualine's config fails.
+local Plugin = require("lazy.core.plugin")
+local unmapped = {}
+for name, plugin in pairs(Config.plugins) do
+  local found = Plugin.find(plugin.dir .. "/lua/x.lua")
+  if not found or found.dir ~= plugin.dir then
+    table.insert(unmapped, name)
+  end
+end
+table.sort(unmapped)
+
+-- The statusline lualine builds from LazyVim's ui spec (the actual startup
+-- error was "Failed to run `config` for lualine.nvim").
+local statusline_error
+if Config.plugins["trouble.nvim"] and Config.plugins["lualine.nvim"] then
+  local ok, err = pcall(function()
+    return require("trouble").statusline({ mode = "symbols", groups = {}, title = false })
+  end)
+  if not ok then
+    statusline_error = tostring(err)
+  end
+end
+
 local function finish(code, message)
   io.stdout:write(message .. "\n")
   vim.cmd(code == 0 and "qall!" or "cquit " .. code)
 end
 
-if #missing > 0 or #cloned > 0 then
-  local lines = { ("FAIL: %d of %d plugins unresolved, %d cloned"):format(#missing, total, #cloned) }
+if #missing > 0 or #cloned > 0 or #unmapped > 0 or statusline_error then
+  local lines = {
+    ("FAIL: %d of %d plugins unresolved, %d cloned, %d not mapped by require"):format(
+      #missing,
+      total,
+      #cloned,
+      #unmapped
+    ),
+  }
+  if statusline_error then
+    table.insert(lines, "  trouble statusline: " .. statusline_error)
+  end
+  vim.list_extend(lines, vim.tbl_map(function(name)
+    return "  unmapped " .. name
+  end, unmapped))
   vim.list_extend(lines, vim.tbl_map(function(line)
     return "  missing " .. line
   end, missing))
@@ -42,5 +82,5 @@ if #missing > 0 or #cloned > 0 then
   end, cloned))
   finish(1, table.concat(lines, "\n"))
 else
-  finish(0, ("PASS: all %d Lazy plugins resolve to bundled sources, none cloned"):format(total))
+  finish(0, ("PASS: all %d Lazy plugins resolve to bundled sources, none cloned, require() loads them"):format(total))
 end
