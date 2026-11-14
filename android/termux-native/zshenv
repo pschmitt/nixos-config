@@ -2,9 +2,9 @@ export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 export TMPDIR="${TMPDIR:-$PREFIX/tmp}"
 export LD_PRELOAD="${LD_PRELOAD:-$PREFIX/lib/libtermux-exec.so}"
 
-# Termux's zsh seeds its initial logical $PWD from a compiled-in home,
-# /data/data/com.termux/files/home, whenever that path is the current
-# directory. Forked app IDs reach it through the prefix redirect, so a new
+# Termux's zsh seeds its initial logical $PWD from a compiled-in stock home
+# (files/home below the stock app data directory) whenever that path is the
+# current directory. Forked app IDs reach it through the prefix redirect, so a new
 # shell started in the fork's home would report the stock path while the kernel
 # is in the fork's directory. Respell exactly that artifact with the fork's own
 # home. Any other directory, an unset or stock app data directory, or a $PWD
