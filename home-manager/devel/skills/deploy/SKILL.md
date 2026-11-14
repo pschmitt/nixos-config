@@ -49,7 +49,12 @@ gotchas). This skill is the order of steps.
    (then compare `config.system.build.toplevel.drvPath` per host before and after the bump on the
    worker and deploy to the hosts whose derivation changed).
 6. **Claim, then deploy, host by host.** Concord `start_work` with `modules: ["deploy:<host>"]`
-   (look at `inspect_work` first). A claim whose holder is `agent-away` for hours is dead:
+   (look at `inspect_work` first). When the session started in the project's repository, the
+   claim must still go to the `nixos-config` workspace: pass its `workspace_id` to
+   `start_work`, `inspect_work` and `finish_work` every time (a `cwd` alone does not
+   select it). Without it, the claim lands in the project's workspace, and a later
+   `finish_work` with the same task id can close the wrong task. Give the deploy claim a task id
+   of its own, not the project task's. A claim whose holder is `agent-away` for hours is dead:
    check the host is idle (`systemctl is-active nixos-upgrade.service`, nothing mid-reboot), then
    clear it with `concord -C <repo> release <task> --close -r "<why>"` and go on. Then restart
    the unit:
