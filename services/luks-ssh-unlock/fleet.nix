@@ -72,42 +72,56 @@ let
     {
       name = "rofl-10";
       hostname = "rofl-10.brkn.lol";
+      # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD).
+      vnc.type = "openstack";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-11";
       hostname = "rofl-11.brkn.lol";
+      # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD).
+      vnc.type = "openstack";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-12";
       hostname = "rofl-12.brkn.lol";
+      # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD).
+      vnc.type = "openstack";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-13";
       hostname = "rofl-13.brkn.lol";
+      # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD).
+      vnc.type = "openstack";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-14";
       hostname = "rofl-14.brkn.lol";
+      # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD).
+      vnc.type = "openstack";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-15";
       hostname = "rofl-15.brkn.lol";
+      # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD).
+      vnc.type = "openstack";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-16";
       hostname = "rofl-16.brkn.lol";
+      # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD).
+      vnc.type = "openstack";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
@@ -210,6 +224,7 @@ let
     inherit (target) hostname;
     tuiCommands = target.tuiCommands or [ ];
     console = target.console or null;
+    vnc = target.vnc or null;
     key = selfSshKey;
     passphraseFile = config.sops.secrets."luks/${target.name}/passphrase".path;
     sshKnownHostsFile = config.sops.templates."luks-ssh-unlock/${target.name}/known_hosts".path;
@@ -287,6 +302,8 @@ in
       enable = true;
       # Console log of the selected target in the `luks-ssh-unlock tui` dashboard.
       tui.extraCommands = [ "console=zsh -lc 'zhj openstack::console-log {name}'" ];
+      # Open the graphical console of the targets that have one.
+      tui.defaultView = "vnc";
       instances = lib.listToAttrs (
         map (target: {
           inherit (target) name;
