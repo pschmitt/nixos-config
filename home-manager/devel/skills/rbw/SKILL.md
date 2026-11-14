@@ -28,6 +28,14 @@ actual permanent delete (plain `remove` is a safe soft-delete-to-trash),
 (`~/devel/private/pschmitt/rbw.git`) rather than assuming upstream
 `doy/rbw` documentation applies.
 
+## Configuration changes stop the agent
+
+`rbw config set` and `rbw config unset` stop the running agent so it reloads
+configuration. An unlocked vault therefore becomes locked again. Finish any
+configuration changes before unlocking. If a provisioning flow temporarily
+changes pinentry, remove its secret input files immediately after use, but
+restore the setting only after the commands needing the unlocked agent finish.
+
 ## Prefer the `rbw` MCP server
 
 When the `rbw` MCP tools are available (`mcp__rbw__*`, or `rbw_*` in other
