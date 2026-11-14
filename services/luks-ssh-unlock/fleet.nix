@@ -54,8 +54,12 @@ let
     {
       name = "oci-01";
       hostname = "oci-01.brkn.lol";
-      # Oracle Cloud, not OpenStack.
+      # Oracle Cloud, not OpenStack: the serial console first, the graphical
+      # one as the second view (LSU closes the other view's connection; OCI
+      # allows one per instance).
       console.type = "oci";
+      vnc.type = "oci";
+      defaultView = "console";
       # oci-01 was migrated from Ubuntu to full NixOS; it now has its own
       # initrd SSH host keys and is unlockable like the rest of the fleet.
       hasInitrdCheck = true;
@@ -64,8 +68,12 @@ let
     {
       name = "oci-03";
       hostname = "oci-03.brkn.lol";
-      # Oracle Cloud, not OpenStack.
+      # Oracle Cloud, not OpenStack: the serial console first, the graphical
+      # one as the second view (LSU closes the other view's connection; OCI
+      # allows one per instance).
       console.type = "oci";
+      vnc.type = "oci";
+      defaultView = "console";
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
@@ -260,6 +268,7 @@ let
     tuiCommands = target.tuiCommands or [ ];
     console = target.console or null;
     vnc = target.vnc or null;
+    defaultView = target.defaultView or config.services.luks-ssh-unlock.tui.defaultView;
     key = selfSshKey;
     passphraseFile = config.sops.secrets."luks/${target.name}/passphrase".path;
     sshKnownHostsFile = config.sops.templates."luks-ssh-unlock/${target.name}/known_hosts".path;
