@@ -31,7 +31,7 @@ behavior.
 ## First install or clean reinstall
 
 Termux uses nixpp by default. Run the initializer in the visible Termux app
-after the official app has completed first-run setup:
+after the selected app has completed first-run setup:
 
 ```sh
 curl -fsSL https://yadm.brkn.lol | bash
@@ -40,7 +40,15 @@ curl -fsSL https://yadm.brkn.lol | bash
 Use `--legacy` only when the user explicitly requests the original non-nixpp
 setup. Do not use `--archive-only` as a complete setup; it intentionally skips
 yadm initialization. `--yes` skips the prefix replacement confirmation and is
-appropriate only after the user has authorized replacing that prefix.
+appropriate only after the user has authorized the selected installation mode.
+
+Stock Termux replaces its prefix. TermuxPP (`dev.pschmitt.termux`) instead keeps
+its existing prefix and installs the managed generation in place, using the
+separate `termuxpp-nix-cache-aarch64-<profile>-latest.manifest` channel and
+`termuxpp-native-<profile>-bundle` output. Do not spoof the stock prefix or
+rewrite a downloaded signed archive. Fork text paths are relocated at build
+time before hashing and signing; native binaries use the core's prefix redirect.
+Preserve the fork helper package holds and the retained package-state snapshot.
 
 Keep Termux foregrounded while the initializer needs `/dev/tty`, and let the
 whole command finish. If it reports that the environment was installed but
