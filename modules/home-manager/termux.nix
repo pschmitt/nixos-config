@@ -162,6 +162,7 @@ in
           "coreutils"
           "gnupg"
           "curl"
+          "dnsutils"
           "diff-so-fancy"
           "git"
           "grep"
