@@ -86,6 +86,12 @@
     authorizedKeysFiles = [ "/run/ssh-authorized-keys/%u" ];
   };
 
+  # Cross-arch builds (e.g. the aarch64 oci-* hosts) through qemu-user. This
+  # also registers aarch64-linux in nix's extra-platforms, so the worker
+  # accepts such derivations. Emulation is slow; it is for closures that are
+  # not in any cache, not for routine builds.
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
   nix.settings = {
     experimental-features = [
       "nix-command"

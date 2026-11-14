@@ -149,3 +149,11 @@ picks the token and server URL up from there, so `niks3 push PATH` just
 works. The token only lets the worker write `rworker-*` pins. Workers from
 an older image lack the directory and are skipped.
 
+
+## Cross-architecture builds
+
+The image registers `aarch64-linux` through qemu-user (`boot.binfmt`
+in `builder.nix`), so a worker can build derivations for the aarch64 hosts
+(for example `nixosConfigurations.oci-01`). Emulation is several times slower
+than a native build; use it for closures that no cache holds. Workers created
+from an older image lack the registration and fail with `platform mismatch`.
