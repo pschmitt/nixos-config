@@ -1748,8 +1748,11 @@ fn switch_profile_with_source(
         );
     }
     ensure!(
-        env::var("PREFIX").as_deref() == Ok("/data/data/com.termux/files/usr"),
-        "switch must run inside the standard Termux app shell"
+        matches!(
+            env::var("PREFIX").as_deref(),
+            Ok("/data/data/com.termux/files/usr" | "/data/data/dev.pschmitt.termux/files/usr")
+        ),
+        "switch must run inside a supported Termux app shell"
     );
     ensure!(
         Command::new("bash")

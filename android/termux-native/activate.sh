@@ -78,7 +78,7 @@ acquire_activation_lock() {
 check_host() {
   if [[ "${PREFIX:-}" != /data/data/com.termux/files/usr || "$(uname -m)" != aarch64 ]]
   then
-    printf 'This prototype requires standard com.termux on aarch64.\n' >&2
+    printf 'This bundle requires its matching Termux app prefix on aarch64.\n' >&2
     return 1
   fi
   local api
@@ -270,8 +270,8 @@ switch_generation() {
   while IFS= read -r package
   do
     # shellcheck disable=SC2016
-    installed=$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null)
-    if [[ "$installed" != 'install ok installed' ]]
+    installed=$(dpkg-query -W -f='${db:Status-Status}' "$package" 2>/dev/null)
+    if [[ "$installed" != installed ]]
     then
       printf 'Missing base package: %s. Run bootstrap.sh first.\n' "$package" >&2
       return 1

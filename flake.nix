@@ -670,8 +670,24 @@
               hostBundlePackages = nixpkgs.lib.mapAttrs' (
                 hostname: bundle: nixpkgs.lib.nameValuePair "termux-native-${hostname}-bundle" bundle.bundle
               ) termuxHostBundles;
+              forkBundlePackages =
+                nixpkgs.lib.mapAttrs'
+                  (
+                    hostname: hostModule:
+                    nixpkgs.lib.nameValuePair "termuxpp-native-${hostname}-bundle"
+                      (termuxNative.mkTermuxBundle {
+                        modules = [ hostModule ];
+                        extraSpecialArgs = { inherit hostname; };
+                        termuxpp = true;
+                      }).bundle
+                  )
+                  {
+                    mp4 = ./hosts/mp4;
+                    p11 = ./hosts/p11;
+                    zf10 = ./hosts/zf10;
+                  };
             in
-            hostBundlePackages
+            hostBundlePackages // forkBundlePackages
           );
         in
         customPackages // termuxNativePackages

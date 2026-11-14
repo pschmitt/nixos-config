@@ -3,6 +3,7 @@
   inputs,
   modules ? [ ],
   extraSpecialArgs ? { },
+  termuxpp ? false,
 }:
 let
   inherit (pkgs) lib;
@@ -256,7 +257,7 @@ let
     libgit2Source = pkgs.gitstatus.romkatv_libgit2.src;
     allowedReferences = [ ];
   } "bash ${../../../android/termux-native/build-gitstatus.sh}";
-  environment =
+  upstreamEnvironment =
     pkgs.runCommand "termux-native-environment"
       {
         nativeBuildInputs = [
@@ -419,15 +420,27 @@ let
           ${elfCleaner}/bin/termux-elf-cleaner \
           ${toString apiLevel}
       '';
-  bundle = pkgs.runCommand "termux-native-bundle" { allowedReferences = [ ]; } ''
-    mkdir -p "$out"
-    tar --hard-dereference --sort=name --mtime=@1 --owner=0 --group=0 --numeric-owner \
-      -C ${environment} -cf - . | gzip -n > "$out/environment.tar.gz"
-    cd "$out"
-    sha256sum environment.tar.gz > SHA256SUMS
-    cp ${environment}/activate.sh ${environment}/bootstrap.sh "$out/"
-    cp ${manifest} "$out/manifest.json"
-  '';
+  environment =
+    if termuxpp then
+      pkgs.runCommand "termuxpp-native-environment" { allowedReferences = [ ]; } ''
+        cp -a ${upstreamEnvironment} "$out"
+        chmod -R u+w "$out"
+        ${pkgs.python3}/bin/python3 -I ${../../../android/termux-native/relocate-termuxpp.py} "$out"
+      ''
+    else
+      upstreamEnvironment;
+  bundle =
+    pkgs.runCommand "${if termuxpp then "termuxpp" else "termux"}-native-bundle"
+      { allowedReferences = [ ]; }
+      ''
+        mkdir -p "$out"
+        tar --hard-dereference --sort=name --mtime=@1 --owner=0 --group=0 --numeric-owner \
+          -C ${environment} -cf - . | gzip -n > "$out/environment.tar.gz"
+        cd "$out"
+        sha256sum environment.tar.gz > SHA256SUMS
+        cp ${environment}/activate.sh ${environment}/bootstrap.sh "$out/"
+        cp ${environment}/manifest.json "$out/manifest.json"
+      '';
 in
 {
   inherit bundle environment gitstatus;

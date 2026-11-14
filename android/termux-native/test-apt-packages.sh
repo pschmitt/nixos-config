@@ -29,7 +29,8 @@ main() (
 package=${!#}
 if grep -Fxq -- "$package" "$MOCK_INSTALLED_FILE"
 then
-  printf 'install ok installed\n'
+  [[ "$2" == '-f=${db:Status-Status}' ]] || exit 2
+  printf 'installed\n'
 else
   exit 1
 fi

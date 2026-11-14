@@ -139,7 +139,7 @@ acquire_bootstrap_lock() {
 }
 
 apt_package_installed() {
-  [[ "$(dpkg-query -W -f='${Status}' "$1" 2>/dev/null)" == 'install ok installed' ]]
+  [[ "$(dpkg-query -W -f='${db:Status-Status}' "$1" 2>/dev/null)" == installed ]]
 }
 
 package_list_contains() {
