@@ -64,7 +64,12 @@ in
     imports = [
       ../../../home-manager/ssh-clipboard-peers.nix
     ];
-    home.packages = [ hyprRdp ];
+    home.packages = [
+      hyprRdp
+      # VNC consoles in the terminal (openstack::console --tui).
+      pkgs.desktui
+      pkgs.console-tui
+    ];
     services.go-hass-agent.enableWorkstationCommands = true;
   };
 
