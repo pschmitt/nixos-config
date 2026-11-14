@@ -1,7 +1,8 @@
 # desktui
 
 A VNC viewer that draws the remote framebuffer inside a Kitty-graphics-capable
-terminal. This package builds upstream v0.4.0 with a tmux passthrough patch.
+terminal. This package builds [our fork](https://github.com/pschmitt/desktui)
+(upstream v0.4.0 plus tmux passthrough and the fixes below).
 
 ```sh
 nix run '.#desktui' -- --print-caps
@@ -23,7 +24,7 @@ The outer terminal must support Kitty graphics **and Unicode image placeholders*
 set -g allow-passthrough on
 ```
 
-The patch detects `$TMUX` and wraps each Kitty graphics APC in its own tmux DCS
+The fork detects `$TMUX` and wraps each Kitty graphics APC in its own tmux DCS
 envelope, doubling embedded escape bytes. Regular text, cursor positioning,
 geometry queries and input-mode negotiation remain pane-local. Graphics probes,
 frame chunks and image deletion during teardown all use the same transport.
@@ -52,6 +53,15 @@ may be on different machines. Direct transfer works across SSH as well.
 Nested tmux sessions and terminals without Unicode placeholder support are not
 supported by this path. Each attached graphical client needs placeholder support.
 
+## Terminal replies
+
+Answers to terminal queries arrive on stdin like typing. The fork keeps them out
+of the remote desktop: a resize does not query the terminal while the input
+reader runs, the startup probe drains late replies, and input that still looks
+like a reply (`ESC _ G`, `ESC P`, `ESC ]` arriving as one burst) is dropped up to
+its terminator. Before, a slow reply showed up in the console as text such as
+`_Gi=31;OK`.
+
 ## Checks
 
 ```sh
@@ -60,7 +70,7 @@ nix build '.#desktui.tests.tmux'
 ```
 
 Run builds on a worker as required by the repository guidelines. The package runs
-upstream Rust tests, including byte-level transport regressions. The separate
+the fork's Rust tests, including byte-level transport regressions. The separate
 tmux check creates an isolated server attached to a pseudo-terminal that emulates
 Kitty graphics replies. It checks capability discovery without `--force`, decodes
 RGBA tiles from the synthetic test pattern after they pass through tmux, verifies
