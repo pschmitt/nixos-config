@@ -1,6 +1,25 @@
 export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 export TMPDIR="${TMPDIR:-$PREFIX/tmp}"
 export LD_PRELOAD="${LD_PRELOAD:-$PREFIX/lib/libtermux-exec.so}"
+
+# Termux's zsh seeds its initial logical $PWD from a compiled-in home,
+# /data/data/com.termux/files/home, whenever that path is the current
+# directory. Forked app IDs reach it through the prefix redirect, so a new
+# shell started in the fork's home would report the stock path while the kernel
+# is in the fork's directory. Respell exactly that artifact with the fork's own
+# home. Any other directory, an unset or stock app data directory, or a $PWD
+# that is not the current directory is left alone.
+# The stock path is assembled so build-time relocation cannot rewrite it.
+typeset -g _termux_stock_data="${TERMUX_NATIVE_STOCK_DATA_DIR:-/data/data/com.""termux}"
+if [[ -n "${TERMUX_APP__DATA_DIR:-}" &&
+      "$TERMUX_APP__DATA_DIR" != "$_termux_stock_data" &&
+      "$PWD" == "$_termux_stock_data/files/home" &&
+      "$TERMUX_APP__DATA_DIR/files/home" -ef . ]]
+then
+  builtin cd -q -- "$TERMUX_APP__DATA_DIR/files/home" && OLDPWD="$PWD"
+fi
+unset _termux_stock_data
+
 # Resolve the mutable `current` symlink once, so this shell keeps using the
 # same immutable generation after a later activation switches `current`.
 if [[ -n "${TERMUX_NATIVE_GENERATION_OVERRIDE:-}" ]]

@@ -517,7 +517,13 @@ generation path, ignoring a stale generation inherited from the previous
 shell. It also refreshes Home Manager session variables when that generation
 changes, without resetting overrides in same-generation nested shells. An
 already-running shell keeps using the generation it started with after a later
-activation. Powerlevel10k's instant prompt loads early and
+activation. Termux's zsh binary seeds its initial `$PWD` from a compiled-in
+stock home, so a forked app starting in its own home would print the stock
+path while the kernel is already in the fork's directory. `zshenv` respells
+exactly that case with the fork's home (`TERMUX_APP__DATA_DIR`); any other
+directory, an inherited or Tasker-provided working directory, an unset
+`TERMUX_APP__DATA_DIR`, and stock Termux are left alone.
+`test-zshenv-pwd.zsh` covers these cases. Powerlevel10k's instant prompt loads early and
 respects the existing prompt-plugin skip flags. User-specific OS plugin files
 remain outside the bundle. The native shell sources the regular yadm aliases,
 helper library, named directories, and interactive startup snippet directly
