@@ -82,7 +82,7 @@
     };
     # Keys handed over in the user-data, written at boot (netbird.nix).
     # sshd reads them as the target user, so every path component must be
-    # traversable by it (not /run/nixbot-worker, which holds the LUKS key).
+    # traversable by it (not /run/rworker, which holds the LUKS key).
     authorizedKeysFiles = [ "/run/ssh-authorized-keys/%u" ];
   };
 
@@ -154,7 +154,7 @@
   # Print the SSH host key to the serial console. The autoscaler fetches it
   # through the OpenStack API (console log), so it never has to trust a key
   # on first use.
-  systemd.services.nixbot-worker-announce-host-key = {
+  systemd.services.rworker-announce-host-key = {
     description = "Print the SSH host key to the serial console";
     wantedBy = [ "multi-user.target" ];
     after = [ "sshd.service" ];

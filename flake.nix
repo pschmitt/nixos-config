@@ -811,7 +811,7 @@
         }
         // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
           # Boots the nixbot worker image and checks its encrypted disk.
-          nixbot-worker-boot = self.nixosConfigurations.nixbot-worker.config.system.build.bootTest;
+          rworker-boot = self.nixosConfigurations.rworker.config.system.build.bootTest;
         }
       );
 
@@ -896,7 +896,7 @@
                 "iso-private-legacy"
               ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage)
               // {
-                nixbot-worker = self.nixosConfigurations.nixbot-worker.config.image.repart.image;
+                rworker = self.nixosConfigurations.rworker.config.image.repart.image;
                 browser-worker = self.nixosConfigurations.browser-worker.config.image.repart.image;
               };
           };
@@ -1070,7 +1070,7 @@
 
           # Disposable nixbot build worker (OpenStack image). Not a mkHost
           # host: no sops, no private modules, no profiles/base.
-          nixbot-worker = nixpkgs.lib.nixosSystem {
+          rworker = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             specialArgs = {
               inherit inputs outputs;
@@ -1078,7 +1078,7 @@
             };
             modules = [
               ./modules
-              ./hosts/nixbot-worker
+              ./hosts/rworker
               { hardware.type = "server"; }
             ];
           };

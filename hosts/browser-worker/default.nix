@@ -11,7 +11,7 @@ let
   daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
-  imports = [ ../nixbot-worker ];
+  imports = [ ../rworker ];
 
   environment.systemPackages = [
     daemon

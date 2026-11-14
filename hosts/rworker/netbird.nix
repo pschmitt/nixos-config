@@ -27,7 +27,7 @@ in
     };
   };
 
-  systemd.services.nixbot-worker-netbird-up = {
+  systemd.services.rworker-netbird-up = {
     description = "Register this worker with NetBird using the user-data setup key";
     wantedBy = [ "multi-user.target" ];
     after = [
@@ -49,20 +49,20 @@ in
       # Without NetBird nobody can log in: show failures in the serial
       # console log (`openstack console log show`).
       StandardError = "journal+console";
-      RuntimeDirectory = "nixbot-worker-netbird";
+      RuntimeDirectory = "rworker-netbird";
       RuntimeDirectoryMode = "0700";
     };
     script = ''
       # nixbot-worker.metadata=URL on the kernel command line points
       # elsewhere (the boot test's fake metadata service).
-      metadata=$(sed -n 's/.*nixbot-worker\.metadata=\([^ ]*\).*/\1/p' /proc/cmdline)
+      metadata=$(sed -n 's/.*rworker\.metadata=\([^ ]*\).*/\1/p' /proc/cmdline)
       metadata="''${metadata:-http://169.254.169.254/openstack/latest}"
       fetch() {
         curl -fsS --retry 30 --retry-delay 2 --retry-connrefused "$metadata/$1"
       }
       fetch meta_data.json > "$RUNTIME_DIRECTORY/meta_data.json"
       name=$(jq -er '.name' "$RUNTIME_DIRECTORY/meta_data.json")
-      # The OpenStack name (adhoc-..., nixbot-worker-...) as hostname, for
+      # The OpenStack name (adhoc-..., rworker-...) as hostname, for
       # prompts, logs and NetBird. Transient only: the static hostname lives
       # in the read-only /etc, and failing here must not stop the join.
       hostnamectl hostname --transient "$name" \
@@ -81,7 +81,7 @@ in
         }' "$RUNTIME_DIRECTORY/meta_data.json" > /run/rworker/metadata.json
       chmod 0644 /run/rworker/metadata.json
       # Progress marker for the console log (and the boot test).
-      echo "nixbot-worker: named $name, metadata in /run/rworker/metadata.json" >&2
+      echo "rworker: named $name, metadata in /run/rworker/metadata.json" >&2
       user_data=$RUNTIME_DIRECTORY/user-data
       fetch user_data > "$user_data"
 

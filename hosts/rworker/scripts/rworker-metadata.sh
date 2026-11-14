@@ -21,7 +21,7 @@ EOF
 }
 
 # The metadata service URL; the boot test points it elsewhere through
-# the kernel command line, like nixbot-worker-netbird-up does.
+# the kernel command line, like rworker-netbird-up does.
 metadata_url() {
   local arg url="http://169.254.169.254/openstack/latest"
   for arg in $(< /proc/cmdline)

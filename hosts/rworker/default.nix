@@ -1,4 +1,4 @@
-# nixbot-worker: a disposable Nix remote builder for nixbot, booted from an
+# rworker: a disposable Nix remote builder for nixbot, booted from an
 # OpenStack image and created/deleted on demand by the autoscaler on the
 # nixbot host. See README.md.
 #

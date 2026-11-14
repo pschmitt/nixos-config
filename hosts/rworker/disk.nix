@@ -11,7 +11,7 @@
   ...
 }:
 let
-  keyDir = "/run/nixbot-worker";
+  keyDir = "/run/rworker";
   keyFile = "${keyDir}/luks.key";
   mapperName = "workerdata";
 in
@@ -46,7 +46,7 @@ in
       };
 
       services = {
-        nixbot-worker-luks-key = {
+        rworker-luks-key = {
           description = "Generate this boot's key for the worker data partition";
           unitConfig.DefaultDependencies = false;
           before = [ "systemd-repart.service" ];
@@ -66,7 +66,7 @@ in
         # generated unit binds to the by-partlabel device, which on every
         # boot after the first already exists (the old partition) and
         # vanishes when repart replaces it, failing the unit.
-        nixbot-worker-open-data = {
+        rworker-open-data = {
           description = "Open this boot's encrypted worker data partition";
           unitConfig.DefaultDependencies = false;
           # Ordering only: repart is stopped before switch-root, and a
@@ -116,7 +116,7 @@ in
     tmpfiles.rules = [ "d /nix/.rw-store/builds 0755 root root -" ];
 
     # The key is no longer needed once the partition is open.
-    services.nixbot-worker-forget-luks-key = {
+    services.rworker-forget-luks-key = {
       description = "Remove the worker data partition key from /run";
       wantedBy = [ "multi-user.target" ];
       unitConfig.RequiresMountsFor = [ "/nix/.rw-store" ];

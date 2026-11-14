@@ -1,4 +1,4 @@
-# Boot the nixbot-worker disk image twice in QEMU (UEFI) and check, from
+# Boot the rworker disk image twice in QEMU (UEFI) and check, from
 # the outside, that each boot encrypts a fresh data partition.
 # usage: boot-test.sh IMAGE OVMF_CODE OVMF_VARS OUT
 
@@ -20,7 +20,7 @@ cp --no-preserve=mode "$ovmf_vars" "$vars"
 # QEMU's guestfwd cannot use 169.254.169.254: point the worker at the fake
 # metadata service on 10.0.2.100 (this copy of the disk only).
 esp_offset=$(( $(sfdisk --json "$disk" | jq -er '.partitiontable.partitions[0].start') * 512 ))
-entry=::/loader/entries/nixbot-worker.conf
+entry=::/loader/entries/rworker.conf
 mtype -i "${disk}@@${esp_offset}" "$entry" \
   | sed 's|^options |options nixbot-worker.metadata=http://10.0.2.100/openstack/latest |' \
   > "${work}/entry.conf"
@@ -67,12 +67,12 @@ boot() {
     fi
     sleep 2
   done
-  # nixbot-worker-netbird-up got its name and wrote the metadata (joining
+  # rworker-netbird-up got its name and wrote the metadata (joining
   # NetBird itself cannot work without internet).
   local named=""
   for _ in $(seq 1 60)
   do
-    if grep -a -q 'nixbot-worker: named test-worker' "$log"
+    if grep -a -q 'rworker: named test-worker' "$log"
     then
       named=1
       break

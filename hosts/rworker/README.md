@@ -1,4 +1,4 @@
-# nixbot-worker
+# rworker
 
 A disposable, encrypted build VM on OpenStack. The nixbot host creates them
 from one image for two uses: as Nix remote builders for nixbot (autoscaled by
@@ -9,13 +9,13 @@ except the read-only S3 cache key `rworker` pushes unless told not to
 
 ## Boot
 
-- The image (`images.nixbot-worker` in nixbot's jobs) is a GPT disk with only
+- The image (`images.rworker` in nixbot's jobs) is a GPT disk with only
   an ESP: systemd-boot, the kernel, and the netboot initrd that carries the
   whole system as squashfs. That is the only unencrypted part of the disk.
-- In the initrd, `nixbot-worker-luks-key` writes a random 64-byte key to
+- In the initrd, `rworker-luks-key` writes a random 64-byte key to
   `/run`. `systemd-repart` then deletes the previous boot's data partition
   (factory reset), creates a new LUKS2 partition with that key and formats it.
-  `nixbot-worker-open-data` opens it after repart. The key is removed from
+  `rworker-open-data` opens it after repart. The key is removed from
   `/run` once the system is up; it never touches a disk.
 - The encrypted partition is the writable layer of `/nix/store` and holds
   the build directory. A reboot makes it unreadable; the next boot replaces it.
@@ -30,10 +30,10 @@ for ad-hoc workers), booted with `hw_firmware_type=uefi`, `q35` and
 vda                      volume (deleted with the server)
 ├─vda1   2 GiB   vfat    ESP, the only unencrypted part, from the image:
 │                          EFI/BOOT/BOOTX64.EFI            systemd-boot
-│                          EFI/nixbot-worker/kernel
-│                          EFI/nixbot-worker/initrd        incl. the system
+│                          EFI/rworker/kernel
+│                          EFI/rworker/initrd        incl. the system
 │                                                          as squashfs
-│                          loader/entries/nixbot-worker.conf
+│                          loader/entries/rworker.conf
 └─vda2   rest    LUKS2   created by systemd-repart on every boot,
                          random 64-byte key in RAM only
   └─workerdata   ext4    /nix/.rw-store
@@ -58,19 +58,19 @@ Only `/` itself (16 GiB, half the RAM) is a tmpfs: work trees, caches
 (`~/.cargo`, Gradle) and temporary files of compilers and linkers all land
 on the volume.
 
-Every boot runs, in the initrd: `nixbot-worker-luks-key` (key to
-`/run/nixbot-worker/luks.key`), `systemd-repart --factory-reset=yes`
+Every boot runs, in the initrd: `rworker-luks-key` (key to
+`/run/rworker/luks.key`), `systemd-repart --factory-reset=yes`
 (drops the old `worker-data` partition, creates and encrypts a new one,
-formats it), `nixbot-worker-open-data` (`systemd-cryptsetup attach` after
+formats it), `rworker-open-data` (`systemd-cryptsetup attach` after
 repart; not a crypttab entry, which would bind to the old partition's
 device) and the mounts above. Once the system is up,
-`nixbot-worker-forget-luks-key` removes the key file; the volume key stays
+`rworker-forget-luks-key` removes the key file; the volume key stays
 only in the kernel's device-mapper table. Check it on a worker with
 `lsblk -o NAME,TYPE,SIZE,FSTYPE,MOUNTPOINTS` and `findmnt /nix/.rw-store`.
 
 ## Joining nixbot
 
-- `nixbot-worker-netbird-up` reads the instance name (and sets it as the
+- `rworker-netbird-up` reads the instance name (and sets it as the
   hostname) and a one-off NetBird setup key (`{"netbird_setup_key": "..."}` in the user-data) from the
   OpenStack metadata service and registers with NetBird.
 - SSH listens on the NetBird interface only. Three accounts can log in, all
@@ -91,7 +91,7 @@ only in the kernel's device-mapper table. Check it on a worker with
 
 `/run/rworker/metadata.json` (world-readable) holds what the worker knew at
 boot: its name, UUID and availability zone, the boot time, its NixOS system
-path, and the server metadata from its creation (`nixbot-worker` kind,
+path, and the server metadata from its creation (`rworker` kind,
 `owner`, `created_at`, `expires_at`, `max_lifetime` and the creator:
 `agent`, `agent_pid`, `agent_session`, `topic`, `cwd`; ad-hoc workers only
 for the latter ones). It is written once (`"source": "initial"`); a later
@@ -104,7 +104,7 @@ JSON, `--initial` skips the metadata service.
 
 ## Test
 
-`checks.x86_64-linux.nixbot-worker-boot` boots the image twice in QEMU (UEFI)
+`checks.x86_64-linux.rworker-boot` boots the image twice in QEMU (UEFI)
 and checks from the outside that each boot creates a new LUKS2 volume and a
 new host key.
 

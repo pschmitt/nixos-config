@@ -13,7 +13,7 @@
 let
   inherit (pkgs.stdenv.hostPlatform) efiArch;
   inherit (config.system) build;
-  entry = "nixbot-worker";
+  entry = "rworker";
 in
 {
   imports = [
@@ -32,7 +32,7 @@ in
 
     repart = {
       enable = true;
-      name = "nixbot-worker";
+      name = "rworker";
       partitions."00-esp" = {
         contents = {
           "/EFI/BOOT/BOOT${lib.toUpper efiArch}.EFI".source =
@@ -62,9 +62,9 @@ in
 
   # Boots the image twice (with a fake metadata service) and checks the
   # encrypted data partition, the host key and the name from the outside
-  # (flake check nixbot-worker-boot).
+  # (flake check rworker-boot).
   system.build.bootTest =
-    pkgs.runCommand "nixbot-worker-boot-test"
+    pkgs.runCommand "rworker-boot-test"
       {
         nativeBuildInputs = [
           (pkgs.writeShellApplication {

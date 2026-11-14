@@ -149,7 +149,7 @@ after its client restarts.
   remove the auth file before deleting the worker.
 - **Whole host closures and big transfers:** build them on a `--profile
   large-builder` worker and keep the result off the home link; see
-  [host-closures](references/host-closures.md).
+  [host-closures](references/host-closures.md); aarch64 targets: [cross-arch](references/cross-arch.md).
 - **Pushing to the S3 cache:** use the worker's own niks3 token (`niks3 push
   PATH`). Only for what niks3 cannot do may you put the S3 credentials of the
   agent's own host on a worker without asking: the AWS profile the host's
