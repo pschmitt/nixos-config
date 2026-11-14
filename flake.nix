@@ -897,7 +897,7 @@
               ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage)
               // {
                 rworker = self.nixosConfigurations.rworker.config.image.repart.image;
-                browser-worker = self.nixosConfigurations.browser-worker.config.image.repart.image;
+                rworker-browser-daemon = self.nixosConfigurations.rworker-browser-daemon.config.image.repart.image;
               };
           };
           # nixbot.toml selects default.outputs as the build job set. Keep
@@ -1083,7 +1083,7 @@
             ];
           };
 
-          browser-worker = nixpkgs.lib.nixosSystem {
+          rworker-browser-daemon = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             specialArgs = {
               inherit inputs outputs;
@@ -1091,7 +1091,7 @@
             };
             modules = [
               ./modules
-              ./hosts/browser-worker
+              ./hosts/rworker-browser-daemon
               { hardware.type = "server"; }
             ];
           };
