@@ -99,22 +99,30 @@ in
     nginx.virtualHosts.${mailHost} = {
       authelia.enable = true;
       root = "${roundcubePackage}/public_html";
-      locations."/" = {
-        index = "index.php";
-        priority = 1100;
-        extraConfig = ''
-          add_header Cache-Control 'public, max-age=604800, must-revalidate';
-        '';
-      };
-      locations."~* \\.php(/|$)" = {
-        priority = 3130;
-        extraConfig = ''
-          fastcgi_pass unix:${config.services.phpfpm.pools.roundcube.socket};
-          fastcgi_param PATH_INFO $fastcgi_path_info;
-          fastcgi_param HTTPS on;
-          fastcgi_split_path_info ^(.+\\.php)(/.+)$;
-          include ${config.services.nginx.package}/conf/fastcgi.conf;
-        '';
+      locations = {
+        "/" = {
+          index = "index.php";
+          priority = 1100;
+        };
+        # Cache static assets only: a Cache-Control header on "/" also lands
+        # on the 302 to Authelia, which browsers then cache for a week,
+        # causing a redirect loop after login.
+        "~* \\.(css|js|png|jpe?g|gif|svg|ico|woff2?|ttf|eot)$" = {
+          priority = 3120;
+          extraConfig = ''
+            add_header Cache-Control 'public, max-age=604800, must-revalidate';
+          '';
+        };
+        "~* \\.php(/|$)" = {
+          priority = 3130;
+          extraConfig = ''
+            fastcgi_pass unix:${config.services.phpfpm.pools.roundcube.socket};
+            fastcgi_param PATH_INFO $fastcgi_path_info;
+            fastcgi_param HTTPS on;
+            fastcgi_split_path_info ^(.+\\.php)(/.+)$;
+            include ${config.services.nginx.package}/conf/fastcgi.conf;
+          '';
+        };
       };
       extraConfig = ''
         client_max_body_size 25M;
