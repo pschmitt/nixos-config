@@ -1846,7 +1846,12 @@ fn switch_profile_with_source(
                 Ok(())
             })?;
             let preview_root = preview_home.join(".local/share/termux-native");
-            if let Some(previous) = previous_generation.as_deref() {
+            if generation_already_active(previous_generation.as_deref(), &digest) {
+                println!(
+                    "Generation {} is already active; nothing to upgrade.",
+                    &digest[..12]
+                );
+            } else if let Some(previous) = previous_generation.as_deref() {
                 let installed = generation_root.join("generations").join(previous);
                 ensure!(installed.is_dir(), "active generation directory is missing");
                 let old_numbers = generation_numbers(&generation_root)?;
@@ -2575,6 +2580,12 @@ fn bootstrap_preflight_args(archive: &Path, digest: &str) -> Vec<std::ffi::OsStr
         archive.as_os_str().to_owned(),
         digest.into(),
     ]
+}
+
+/// A dry run against the generation that is already active has nothing to
+/// diff; the preflight passing is the whole result.
+fn generation_already_active(previous: Option<&str>, digest: &str) -> bool {
+    previous == Some(digest)
 }
 
 /// Remove a directory tree that may contain read-only directories, such as an
@@ -3480,6 +3491,14 @@ mod tests {
         nar_string(&mut symlink, b")");
         assert!(extract_nar(&mut symlink.as_slice(), &destination).is_err());
         fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn dry_run_detects_the_already_active_generation() {
+        let digest = "b".repeat(64);
+        assert!(generation_already_active(Some(&digest), &digest));
+        assert!(!generation_already_active(Some(&"c".repeat(64)), &digest));
+        assert!(!generation_already_active(None, &digest));
     }
 
     #[test]
