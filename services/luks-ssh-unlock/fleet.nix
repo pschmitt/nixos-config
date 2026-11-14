@@ -81,11 +81,11 @@ let
       name = "rofl-10";
       hostname = "rofl-10.brkn.lol";
       # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD), and
-      # its serial console, or its console log when it has none.
+      # its console log (the cloud has no serial consoles).
       vnc.type = "openstack";
       console = {
         type = "openstack";
-        parameters.mode = "auto";
+        parameters.mode = "log";
       };
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
@@ -94,11 +94,11 @@ let
       name = "rofl-11";
       hostname = "rofl-11.brkn.lol";
       # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD), and
-      # its serial console, or its console log when it has none.
+      # its console log (the cloud has no serial consoles).
       vnc.type = "openstack";
       console = {
         type = "openstack";
-        parameters.mode = "auto";
+        parameters.mode = "log";
       };
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
@@ -107,11 +107,11 @@ let
       name = "rofl-12";
       hostname = "rofl-12.brkn.lol";
       # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD), and
-      # its serial console, or its console log when it has none.
+      # its console log (the cloud has no serial consoles).
       vnc.type = "openstack";
       console = {
         type = "openstack";
-        parameters.mode = "auto";
+        parameters.mode = "log";
       };
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
@@ -120,11 +120,11 @@ let
       name = "rofl-13";
       hostname = "rofl-13.brkn.lol";
       # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD), and
-      # its serial console, or its console log when it has none.
+      # its console log (the cloud has no serial consoles).
       vnc.type = "openstack";
       console = {
         type = "openstack";
-        parameters.mode = "auto";
+        parameters.mode = "log";
       };
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
@@ -133,11 +133,11 @@ let
       name = "rofl-14";
       hostname = "rofl-14.brkn.lol";
       # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD), and
-      # its serial console, or its console log when it has none.
+      # its console log (the cloud has no serial consoles).
       vnc.type = "openstack";
       console = {
         type = "openstack";
-        parameters.mode = "auto";
+        parameters.mode = "log";
       };
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
@@ -146,11 +146,11 @@ let
       name = "rofl-15";
       hostname = "rofl-15.brkn.lol";
       # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD), and
-      # its serial console, or its console log when it has none.
+      # its console log (the cloud has no serial consoles).
       vnc.type = "openstack";
       console = {
         type = "openstack";
-        parameters.mode = "auto";
+        parameters.mode = "log";
       };
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
@@ -159,11 +159,11 @@ let
       name = "rofl-16";
       hostname = "rofl-16.brkn.lol";
       # OpenStack: its noVNC console in the tui (the CLI uses $OS_CLOUD), and
-      # its serial console, or its console log when it has none.
+      # its console log (the cloud has no serial consoles).
       vnc.type = "openstack";
       console = {
         type = "openstack";
-        parameters.mode = "auto";
+        parameters.mode = "log";
       };
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
