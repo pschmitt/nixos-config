@@ -788,6 +788,21 @@ legacy yadm `init.lua` was temporarily moved aside; a fresh headless start
 reported zero plugin clones, missing sources, or errors, and an interactive
 app launch used the Nix config with an empty Lazy data directory.
 
+Lazy's generated dev-path function resolves every plugin to
+`lazy-dev/<owner>--<repo>`, so the extra plugin sources the bundle adds on top
+of the LazyVim farm are keyed by `owner/repo` and copied to that directory name
+(`mkTermuxBundle.nix` asserts the key shape and, at build time, fails if any
+generated `dev = true` spec lacks its directory). Previously they were copied
+under the bare repository name, which Lazy did not find: 47 of 79 plugins failed
+to load. Each generation ships `shell/check-nvim-plugins.lua`; run it on a
+device with the generation launcher's environment to verify that every plugin
+resolves and that nothing was cloned:
+
+```sh
+TERMUX_GENERATION=... XDG_CONFIG_HOME=$TERMUX_GENERATION/home/.config \
+  nvim --headless "+luafile $TERMUX_GENERATION/shell/check-nvim-plugins.lua"
+```
+
 The Termux profile now declares APT-owned language servers for Lua, Go,
 Python (`ty` and Ruff), TOML, and Markdown. The Zenfone's generation 64
 attached each server to a matching scratch buffer; Python also returned Ruff

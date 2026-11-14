@@ -50,105 +50,113 @@ let
   nvimLazyAssignment = lib.head (
     lib.filter (line: lib.hasPrefix "local lazypath = " line) (lib.splitString "\n" nvimInitLua)
   );
+  # Extra plugin sources, keyed by the "owner/repo" spelled in the Lazy specs.
+  # LazyVim's dev path function resolves a plugin by its repository URL to
+  # "<owner>--<repo>"; the plugin name (which a spec may override) is not used.
   termuxNvimPlugins = {
-    "vimwiki" = pkgs.vimPlugins.vimwiki.src;
-    "b64.nvim" = pkgs.vimPlugins.b64-nvim.src;
-    "nvim-sops" = pkgs.vimPlugins.nvim-sops.src;
-    "catppuccin" = pkgs.vimPlugins.catppuccin-nvim.src;
-    "baleia.nvim" = pkgs.vimPlugins.baleia-nvim.src;
-    "nvim-colorizer.lua" = pkgs.vimPlugins.nvim-colorizer-lua.src;
-    "gitsigns-yadm.nvim" = pkgs.fetchFromGitHub {
+    "vimwiki/vimwiki" = pkgs.vimPlugins.vimwiki.src;
+    "taybart/b64.nvim" = pkgs.vimPlugins.b64-nvim.src;
+    "lucidph3nx/nvim-sops" = pkgs.vimPlugins.nvim-sops.src;
+    "m00qek/baleia.nvim" = pkgs.vimPlugins.baleia-nvim.src;
+    "norcalli/nvim-colorizer.lua" = pkgs.vimPlugins.nvim-colorizer-lua.src;
+    "purarue/gitsigns-yadm.nvim" = pkgs.fetchFromGitHub {
       owner = "purarue";
       repo = "gitsigns-yadm.nvim";
       rev = "55575b2af68c0c6c73b1c1f8fe7c54e1e7fe8480";
       hash = "sha256-molMbuW1DD+9xCWLY9IQPxow6c8445tumsoUZYXuitw=";
     };
-    "blink-cmp-dictionary" = pkgs.vimPlugins.blink-cmp-dictionary.src;
-    "blink-emoji.nvim" = pkgs.vimPlugins.blink-emoji-nvim.src;
-    "cmp-tmux" = pkgs.vimPlugins.cmp-tmux.src;
-    "cmp-nerdfont" = pkgs.fetchFromGitHub {
+    "Kaiser-Yang/blink-cmp-dictionary" = pkgs.vimPlugins.blink-cmp-dictionary.src;
+    "moyiz/blink-emoji.nvim" = pkgs.vimPlugins.blink-emoji-nvim.src;
+    "andersevenrud/cmp-tmux" = pkgs.vimPlugins.cmp-tmux.src;
+    "chrisgrieser/cmp-nerdfont" = pkgs.fetchFromGitHub {
       owner = "chrisgrieser";
       repo = "cmp-nerdfont";
       rev = "e97482344ebed29093015a18c155057adf5c842b";
       hash = "sha256-alHMwjzYZO5rCgQUUUEcGNkW3PuYJFfGyo531wNw7p4=";
     };
-    "cmp-digraphs" = pkgs.vimPlugins.cmp-digraphs.src;
-    "indent-blankline.nvim" = pkgs.vimPlugins.indent-blankline-nvim.src;
-    "obsidian.nvim" = pkgs.vimPlugins.obsidian-nvim.src;
-    "trim.nvim" = pkgs.vimPlugins.trim-nvim.src;
-    "vim-relativize" = pkgs.fetchFromGitHub {
+    "dmitmel/cmp-digraphs" = pkgs.vimPlugins.cmp-digraphs.src;
+    "lukas-reineke/indent-blankline.nvim" = pkgs.vimPlugins.indent-blankline-nvim.src;
+    "obsidian-nvim/obsidian.nvim" = pkgs.vimPlugins.obsidian-nvim.src;
+    "cappyzawa/trim.nvim" = pkgs.vimPlugins.trim-nvim.src;
+    "ericbn/vim-relativize" = pkgs.fetchFromGitHub {
       owner = "ericbn";
       repo = "vim-relativize";
       rev = "0555753e13d995cdfda2acef015a6ab9c0d81a5f";
       hash = "sha256-0dXHYJlk3fLXVJ0SkkPZNwh4+Vp4SOmS6IS/DOn37h0=";
     };
-    "vim-jsonpath" = pkgs.vimPlugins.vim-jsonpath.src;
-    "nvim-web-devicons" = pkgs.vimPlugins.nvim-web-devicons.src;
-    "yaml.nvim" = pkgs.fetchFromGitHub {
+    "mogelbrod/vim-jsonpath" = pkgs.vimPlugins.vim-jsonpath.src;
+    "nvim-tree/nvim-web-devicons" = pkgs.vimPlugins.nvim-web-devicons.src;
+    "cuducos/yaml.nvim" = pkgs.fetchFromGitHub {
       owner = "cuducos";
       repo = "yaml.nvim";
       rev = "43ddedd0f3b060b4475e19e762b1796fce1b23be";
       hash = "sha256-2fDNV0usUsGN45igalfVpZ1AXzerwUAOWcXU2/OIgbQ=";
     };
-    "numb.nvim" = pkgs.vimPlugins.numb-nvim.src;
-    "fzf-lua" = pkgs.vimPlugins.fzf-lua.src;
-    "DidYouMean" = pkgs.fetchFromGitHub {
+    "nacro90/numb.nvim" = pkgs.vimPlugins.numb-nvim.src;
+    "ibhagwan/fzf-lua" = pkgs.vimPlugins.fzf-lua.src;
+    "EinfachToll/DidYouMean" = pkgs.fetchFromGitHub {
       owner = "EinfachToll";
       repo = "DidYouMean";
       rev = "a98fb17ba16aa2eb69b3f9cc7a70e8a736890e4e";
       hash = "sha256-lOGxMpIky9+MhRTYxy4EV125ZSmZx/tZpoH58mXBcZ8=";
     };
-    "vim-abolish" = pkgs.vimPlugins.vim-abolish.src;
-    "vim-bling" = pkgs.fetchFromGitHub {
+    "tpope/vim-abolish" = pkgs.vimPlugins.vim-abolish.src;
+    "ivyl/vim-bling" = pkgs.fetchFromGitHub {
       owner = "ivyl";
       repo = "vim-bling";
       rev = "5e59a06d14dfc7b44f3d8af109d0a71a107060be";
       hash = "sha256-iJ/uaoq71IM1hQSrnZ86MBlpUWRp9vs1Grd1+9C1QFM=";
     };
-    "LuaSnip" = pkgs.vimPlugins.luasnip.src;
-    "img-clip.nvim" = pkgs.vimPlugins.img-clip-nvim.src;
-    "vim-cool" = pkgs.vimPlugins.vim-cool.src;
-    "yaml-companion.nvim" = pkgs.vimPlugins.yaml-companion-nvim.src;
-    "onedark.nvim" = pkgs.vimPlugins.onedark-nvim.src;
-    "vim-automkdir" = pkgs.vimPlugins.vim-automkdir.src;
-    "suda.vim" = pkgs.vimPlugins.vim-suda.src;
-    "vim-eunuch" = pkgs.vimPlugins.vim-eunuch.src;
-    "vim-lengthmatters" = pkgs.fetchFromGitHub {
+    "L3MON4D3/LuaSnip" = pkgs.vimPlugins.luasnip.src;
+    "HakonHarnes/img-clip.nvim" = pkgs.vimPlugins.img-clip-nvim.src;
+    "romainl/vim-cool" = pkgs.vimPlugins.vim-cool.src;
+    "someone-stole-my-name/yaml-companion.nvim" = pkgs.vimPlugins.yaml-companion-nvim.src;
+    "navarasu/onedark.nvim" = pkgs.vimPlugins.onedark-nvim.src;
+    "benizi/vim-automkdir" = pkgs.vimPlugins.vim-automkdir.src;
+    "lambdalisue/suda.vim" = pkgs.vimPlugins.vim-suda.src;
+    "tpope/vim-eunuch" = pkgs.vimPlugins.vim-eunuch.src;
+    "whatyouhide/vim-lengthmatters" = pkgs.fetchFromGitHub {
       owner = "whatyouhide";
       repo = "vim-lengthmatters";
       rev = "1c4df3b98e4ce7f3f59b76a8fb9d51a12de6f3cc";
       hash = "sha256-UkRrB6A+s5pv+aVxUUT7f2p0FMpPD9VZ+0tP8IMS/xM=";
     };
-    "barbecue.nvim" = pkgs.vimPlugins.barbecue-nvim.src;
-    "telescope.nvim" = pkgs.vimPlugins.telescope-nvim.src;
-    "visual-whitespace.nvim" = pkgs.vimPlugins.visual-whitespace-nvim.src;
-    "nvim-navic" = pkgs.vimPlugins.nvim-navic.src;
-    "fileline.nvim" = pkgs.vimPlugins.fileline-nvim.src;
-    "vim-jsonnet" = pkgs.vimPlugins.vim-jsonnet.src;
-    "blink.compat" = pkgs.vimPlugins.blink-compat.src;
-    "nvim-lastplace" = pkgs.vimPlugins.nvim-lastplace.src;
-    "nvim-surround" = pkgs.vimPlugins.nvim-surround.src;
-    "blink.cmp" = pkgs.vimPlugins.blink-cmp.src;
-    "blink.lib" = pkgs.vimPlugins.blink-lib.src;
-    "friendly-snippets" = pkgs.vimPlugins.friendly-snippets.src;
-    "sidekick.nvim" = pkgs.vimPlugins.sidekick-nvim.src;
-    "yanky.nvim" = pkgs.vimPlugins.yanky-nvim.src;
-    "telescope-terraform.nvim" = pkgs.fetchFromGitHub {
+    "utilyre/barbecue.nvim" = pkgs.vimPlugins.barbecue-nvim.src;
+    "nvim-telescope/telescope.nvim" = pkgs.vimPlugins.telescope-nvim.src;
+    "mcauley-penney/visual-whitespace.nvim" = pkgs.vimPlugins.visual-whitespace-nvim.src;
+    "SmiteshP/nvim-navic" = pkgs.vimPlugins.nvim-navic.src;
+    "lewis6991/fileline.nvim" = pkgs.vimPlugins.fileline-nvim.src;
+    "google/vim-jsonnet" = pkgs.vimPlugins.vim-jsonnet.src;
+    "saghen/blink.compat" = pkgs.vimPlugins.blink-compat.src;
+    "ethanholz/nvim-lastplace" = pkgs.vimPlugins.nvim-lastplace.src;
+    "kylechui/nvim-surround" = pkgs.vimPlugins.nvim-surround.src;
+    "saghen/blink.cmp" = pkgs.vimPlugins.blink-cmp.src;
+    "saghen/blink.lib" = pkgs.vimPlugins.blink-lib.src;
+    "rafamadriz/friendly-snippets" = pkgs.vimPlugins.friendly-snippets.src;
+    "folke/sidekick.nvim" = pkgs.vimPlugins.sidekick-nvim.src;
+    "gbprod/yanky.nvim" = pkgs.vimPlugins.yanky-nvim.src;
+    "cappyzawa/telescope-terraform.nvim" = pkgs.fetchFromGitHub {
       owner = "cappyzawa";
       repo = "telescope-terraform.nvim";
       rev = "072c97023797ca1a874668aaa6ae0b74425335df";
       hash = "sha256-uXWW7ewAHZlTF1BDpwgCkB4969PD6K1T5kLte5CJvTg=";
     };
-    "telescope-terraform-doc.nvim" = pkgs.fetchFromGitHub {
+    "ANGkeith/telescope-terraform-doc.nvim" = pkgs.fetchFromGitHub {
       owner = "ANGkeith";
       repo = "telescope-terraform-doc.nvim";
       rev = "66987fac94d12704fdfd90b857f4f648e31251c9";
       hash = "sha256-yv+/pabR/Reaj5+DSmHhW/viPdqLlq58bekY1lKVGhE=";
     };
   };
-  termuxNvimPluginSpecs = lib.concatStringsSep "\n" (
-    lib.mapAttrsToList (name: _source: "    { \"${name}\", dev = true, pin = true },") termuxNvimPlugins
-  );
+  nvimDevDirName =
+    repo: if nvimDevPathFunction then lib.replaceStrings [ "/" ] [ "--" ] repo else baseNameOf repo;
+  termuxNvimPluginSpecs =
+    assert lib.assertMsg (lib.all (repo: builtins.match "[^/:]+/[^/]+" repo != null) (
+      builtins.attrNames termuxNvimPlugins
+    )) "termuxNvimPlugins keys must be \"owner/repo\", as in the Lazy specs.";
+    lib.concatStringsSep "\n" (
+      lib.mapAttrsToList (repo: _source: "    { \"${repo}\", dev = true, pin = true },") termuxNvimPlugins
+    );
   termuxHomeFiles = homeManagerProfile.config.termux.homeFiles;
   exportedHomeFiles = lib.unique (termuxHomeFiles ++ [ ".local/share/nvim/lazy-dev" ]);
   homeFileSources = map (
@@ -304,6 +312,7 @@ let
         cp ${../../../android/termux-native/smoke-test.zsh} "$out/shell/smoke-test.zsh"
         cp ${../../../android/termux-native/check-pty.zsh} "$out/shell/check-pty.zsh"
         cp ${../../../android/termux-native/prompt.zsh} "$out/shell/prompt.zsh"
+        cp ${../../../android/termux-native/check-nvim-plugins.lua} "$out/shell/check-nvim-plugins.lua"
         cp ${gitstatus}/bin/gitstatusd "$out/bin/gitstatusd"
         chmod u+w "$out/bin/gitstatusd"
         ${elfCleaner}/bin/termux-elf-cleaner --api-level ${toString apiLevel} \
@@ -323,12 +332,12 @@ let
         # Validate the generated plugin tree during the build, not evaluation.
         test -d ${lib.escapeShellArg nvimLazyPath}
         cp -RL ${nvimDevPath}/. "$out/home/.local/share/nvim/lazy-dev/"
-        ${lib.concatMapStringsSep "\n" (name: ''
-          mkdir -p "$out/home/.local/share/nvim/lazy-dev/${name}"
-          cp -RL ${termuxNvimPlugins.${name}}/. "$out/home/.local/share/nvim/lazy-dev/${name}/"
+        ${lib.concatMapStringsSep "\n" (repo: ''
+          mkdir -p "$out/home/.local/share/nvim/lazy-dev/${nvimDevDirName repo}"
+          cp -RL ${termuxNvimPlugins.${repo}}/. "$out/home/.local/share/nvim/lazy-dev/${nvimDevDirName repo}/"
         '') (builtins.attrNames termuxNvimPlugins)}
         chmod -R u+w "$out/home/.local/share/nvim/lazy-dev"
-        rm -rf "$out/home/.local/share/nvim/lazy-dev/LuaSnip/tests"
+        rm -rf "$out/home/.local/share/nvim/lazy-dev/${nvimDevDirName "L3MON4D3/LuaSnip"}/tests"
         find "$out/home/.local/share/nvim/lazy-dev" -type d -name nix-support -prune -exec rm -rf {} +
         while IFS= read -r -d $'\0' plugin_file; do
           if ! grep -Iq '/nix/store/' "$plugin_file"; then
@@ -382,6 +391,21 @@ let
           ${lib.escapeShellArg "  lockfile = vim.fn.stdpath(\"state\") .. \"/lazy-lock.json\",\n  install = { missing = false, colorscheme = { \"tokyonight\", \"habamax\" } },"} \
           --replace-fail ${lib.escapeShellArg "  performance = {"} \
           ${lib.escapeShellArg "  performance = {\n    cache = { enabled = false },"}
+        # Every dev spec must resolve to a bundled source, using the directory
+        # name Lazy's dev path function derives from the repository.
+        spec_count=0
+        while IFS= read -r repo; do
+          spec_count=$((spec_count + 1))
+          ${if nvimDevPathFunction then ''dir="''${repo//\//--}"'' else ''dir="''${repo##*/}"''}
+          if [ ! -d "$out/home/.local/share/nvim/lazy-dev/$dir" ]; then
+            echo "Neovim dev spec $repo has no bundled source: lazy-dev/$dir" >&2
+            exit 1
+          fi
+        done < <(sed -nE 's|^[[:space:]]*\{ "([^"/:]+/[^"]+)", (import = "[^"]+", )?dev = true.*|\1|p' "$out/home/.config/nvim/init.lua")
+        if [ "$spec_count" -lt ${toString (builtins.length (builtins.attrNames termuxNvimPlugins))} ]; then
+          echo "Neovim init.lua lists too few dev specs ($spec_count)." >&2
+          exit 1
+        fi
         while IFS= read -r -d $'\0' plugin_file; do
           if ${target.readelf} -h "$plugin_file" >/dev/null 2>&1; then
             echo "Neovim plugin bundle contains a non-Termux ELF: $plugin_file" >&2
