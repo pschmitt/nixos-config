@@ -60,6 +60,13 @@ in
     ./syncthing.nix
   ];
 
+  services.luks-ssh-unlock.helper = {
+    enable = true;
+    adminUsers = [ config.mainUser.username ];
+  };
+
+  programs.zsh.shellAliases.lsu = "luks-ssh-unlock tui";
+
   services.containerServices = {
     enable = true;
     defaultEnableACMEForDefaultHosts = false;
