@@ -3323,13 +3323,8 @@ mod tests {
             config.defaults.configured_builders(),
             ["builder", "backup-builder"]
         );
-        let credentials_command: Vec<_> = config
-            .defaults
-            .aws_credentials_command
-            .unwrap()
-            .iter()
-            .map(String::as_str)
-            .collect();
+        let credentials_owned = config.defaults.aws_credentials_command.unwrap();
+        let credentials_command: Vec<_> = credentials_owned.iter().map(String::as_str).collect();
         assert_eq!(
             credentials_command,
             ["rbw", "get", "--raw", "--exact", "nixpp Niks3 cache"]
