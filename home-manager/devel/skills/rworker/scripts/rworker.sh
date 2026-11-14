@@ -2119,9 +2119,23 @@ filter_workers() {
 
 cmd_logs() {
   local lines=200 follow="" no_events="" quiet="" topic="" agent=""
-  if [[ -n "${1:-}" && "$1" != -* ]]
+  local -a positional=() opts=()
+  while [[ $# -gt 0 ]]
+  do
+    case "$1" in
+      --lines|--topic|--agent)
+        opts+=("$1" "${2:-}")
+        shift "$(( $# > 1 ? 2 : 1 ))"
+        ;;
+      -*) opts+=("$1"); shift ;;
+      *) positional+=("$1"); shift ;;
+    esac
+  done
+  # Options may come before or after WORKER [JOB]: `logs -f WORKER` works too.
+  set -- ${opts[@]+"${opts[@]}"}
+  if [[ ${#positional[@]} -gt 0 ]]
   then
-    cmd_jobs_remote logs "$@"
+    cmd_jobs_remote logs "${positional[0]}" "${positional[@]:1}" "$@"
     return
   fi
   while [[ -n "${1:-}" ]]
