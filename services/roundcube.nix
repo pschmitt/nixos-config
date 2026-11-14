@@ -108,13 +108,15 @@ in
         # on the 302 to Authelia, which browsers then cache for a week,
         # causing a redirect loop after login.
         "~* \\.(css|js|png|jpe?g|gif|svg|ico|woff2?|ttf|eot)$" = {
-          priority = 3120;
+          priority = 3125;
           extraConfig = ''
             add_header Cache-Control 'public, max-age=604800, must-revalidate';
           '';
         };
+        # Must be matched before the static regex: assets are served through
+        # static.php/... and end in .js/.css, so they need PHP, not the file root.
         "~* \\.php(/|$)" = {
-          priority = 3130;
+          priority = 3120;
           extraConfig = ''
             fastcgi_pass unix:${config.services.phpfpm.pools.roundcube.socket};
             fastcgi_param PATH_INFO $fastcgi_path_info;
