@@ -7,7 +7,7 @@
 
 buildNpmPackage {
   pname = "tasker-mcp";
-  version = "0.1.1-unstable-2026-11-15";
+  version = "0.1.7-unstable-2026-11-09";
   src = fetchFromGitHub {
     owner = "pmaxhogan";
     repo = "tasker-mcp";
