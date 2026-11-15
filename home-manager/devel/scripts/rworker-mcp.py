@@ -129,6 +129,15 @@ def extend(name: str, ttl: str, niks3_token: bool = True) -> dict:
 
 
 @mcp.tool()
+def topic(name: str, text: str) -> dict:
+    """Change what an ad-hoc worker is for (the topic `ls` shows). Call it
+    when you reuse a worker for different work, so `ls` stays truthful for
+    everyone sharing the pool; keep it short ("rbw release build"). An empty
+    text clears it. Refused for another owner's worker."""
+    return json.loads(run("topic", name, text, "--json", timeout=120))
+
+
+@mcp.tool()
 def niks3_token(name: str) -> dict:
     """(Re)issue a worker's short-lived niks3 push token for the rest of its
     lifetime: for a worker created with niks3_token=False, or to retry a
@@ -139,7 +148,7 @@ def niks3_token(name: str) -> dict:
 
 @mcp.tool()
 def down(name: str) -> dict:
-    """Delete a worker (server, volume, NetBird peer). Nothing survives."""
+    """Delete a worker (server, volume, NetBird and Tailscale peers). Nothing survives."""
     return json.loads(run("down", name, "--json", timeout=300))
 
 

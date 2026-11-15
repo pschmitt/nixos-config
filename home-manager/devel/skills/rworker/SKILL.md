@@ -45,12 +45,13 @@ rworker down "$w"
   logs you in right away (interactive use); `ssh --create [up options]` is
   the same. **Always** pass `--topic "what it is for"` (also with `exec` and
   `ssh --create`; MCP `up(topic=...)`): without it `ls` shows `-` and nobody
-  can tell whose worker it is or whether it is safe to delete;
-  the agent (claude, codex, agy, opencode, ...), its PID, session
-  and the cwd are recorded on their own. Ask for a bigger flavor only for
+  can tell whose worker it is or whether it is safe to delete. **Keep it
+  current**: when you reuse a worker for other work, `topic NAME "new topic"`
+  (MCP `topic(name, text)`; ad-hoc only, empty clears it). Agent, PID, session
+  and cwd are recorded on their own. Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
-- `profiles [--json]` lists the configured profiles with effective flavor,
-  disk size and image tags; use `up --profile NAME` to select one.
+- `profiles [--json]` lists the profiles (flavor, disk, image tags); select
+  one with `up --profile NAME`.
 - `prune [NAME...] [--all] [--yes] [--dry-run]` deletes several ad-hoc
   workers: the named ones, else all of yours; `--all` every ad-hoc worker.
   It asks first; pass `--yes` in scripts. Pool workers are never pruned.
@@ -60,8 +61,7 @@ rworker down "$w"
   everything about one worker; `ls --watch` redraws it in place and marks
   new (`+`), changed (`~`) and gone (`-`) workers; `extend NAME --ttl 2h`
   moves the expiry; `down NAME` deletes the worker and its overlay peers
-  (a pool worker only with `--force`: builds running on it fail
-  and the autoscaler replaces it from the current image).
+  (a pool worker only with `--force`: its builds fail, the autoscaler replaces it).
 - On the worker, `rworker-metadata [--json]` shows what it is: name,
   owner, creator, current expiry and lifetime, CPUs, memory, disk.
 - `ssh NAME [CMD]` and `sync NAME SRC [DEST]` use the pinned host key.

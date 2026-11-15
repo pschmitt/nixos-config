@@ -79,6 +79,7 @@ Actions:
   prune [NAME...] [--all] [-y] [-n]
                        delete several ad-hoc workers (default: your own)
   extend NAME --ttl D  move the expiry to now + D (max 24h)
+  topic NAME TEXT...   change what the worker is for (shown by ls)
   niks3-token NAME     (re)issue the worker's niks3 push token
   ssh [-l USER | USER@]NAME [SSH_ARGS...]
                        ssh to the worker (pinned host key); options such as
@@ -126,6 +127,7 @@ action exec create a worker, run a command on it, delete it
 action down delete an ad-hoc worker
 action prune delete several ad-hoc workers (default: your own)
 action extend move the expiry of an ad-hoc worker
+action topic change what an ad-hoc worker is for
 action niks3-token (re)issue a worker's short-lived niks3 push token
 action ssh ssh to a worker (pinned host key)
 action sync rsync a directory to a worker
@@ -188,6 +190,7 @@ flag extend --ttl=duration new lifetime from now
 flag prune --all every ad-hoc worker, whoever owns it
 flag down --force delete someone else's worker or a pool worker
 flag extend --force extend someone else's worker
+flag topic --force change the topic of someone else's worker
 flag prune --yes do not ask
 flag prune --dry-run only show what would be deleted
 values duration 30m 1h 2h 4h 8h 24h
@@ -200,7 +203,7 @@ values topic
 values agent claude codex agy opencode gemini copilot shell nixbot
 values user agent pschmitt nix-remote-builder
 values interval 2 5 10 30
-worker down extend niks3-token ssh sync builder prune inspect nix-cache start jobs ps logs register
+worker down extend topic niks3-token ssh sync builder prune inspect nix-cache start jobs ps logs register
 global --json force JSON output
 global -j short for --json
 SPEC
@@ -351,6 +354,16 @@ another owner are refused unless --force.
 
 A worker that has a niks3 push token gets a new one for the new expiry;
 --no-niks3-token skips that (the old token then runs out with the old expiry).
+EOF
+      ;;
+    topic)
+      cat <<EOF
+Usage: $me topic NAME TEXT... [--force]
+
+Change what an ad-hoc worker is for: the topic that ls shows, set with --topic
+when the worker was created. Update it when you reuse a worker for other
+work, so ls stays truthful. An empty TEXT clears it. Workers of another owner
+are refused unless --force.
 EOF
       ;;
     niks3-token)
@@ -695,7 +708,7 @@ cmd_workers() {
       elif s < 86400 then "\(s / 3600 | floor)h\(s % 3600 / 60 | floor)m"
       else "\(s / 86400 | floor)d\(s % 86400 / 3600 | floor)h" end;
     .[]
-    | select(($action != "extend" and $action != "prune") or .kind == "adhoc")
+    | select(($action != "extend" and $action != "prune" and $action != "topic") or .kind == "adhoc")
     | [ .kind,
         (if .agent then agent_label(.agent) else null end),
         .topic,
@@ -1832,6 +1845,41 @@ cmd_extend() {
   name=$(jq -r .name <<< "$out") || return 1
   ok "$(paint_vm "$name") now expires $(fmt_expiry "$(jq -r .expires_at <<< "$out")"), at most until $(date -d "@$(jq -r .max_lifetime_end <<< "$out")" '+%a %H:%M')"
   warn_niks3_token "$name" "$out"
+}
+
+cmd_topic() {
+  local name="" arg out topic
+  local -a text=() force=()
+  for arg in "$@"
+  do
+    case "$arg" in
+      --force)
+        force=(--force)
+        ;;
+      *)
+        if [[ -z "$name" ]]
+        then
+          name="$arg"
+        else
+          text+=("$arg")
+        fi
+        ;;
+    esac
+  done
+  if [[ -z "$name" ]]
+  then
+    show_help topic >&2
+    return 2
+  fi
+  out=$(remote topic "$name" "${text[*]:-}" "${force[@]}" \
+    --owner "${USER}@$(hostname)") || return 1
+  if [[ -n "$JSON" ]]
+  then
+    printf '%s\n' "$out"
+    return 0
+  fi
+  topic=$(jq -r '.topic // "-"' <<< "$out") || return 1
+  ok "$(paint_vm "$name") topic: ${topic}"
 }
 
 cmd_niks3_token() {
@@ -3126,6 +3174,9 @@ main() {
       ;;
     extend)
       cmd_extend "$@"
+      ;;
+    topic)
+      cmd_topic "$@"
       ;;
     niks3-token)
       cmd_niks3_token "$@"

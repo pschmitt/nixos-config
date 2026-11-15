@@ -52,6 +52,9 @@ class ProfileTest(unittest.TestCase):
             self.assertIn("--no-niks3-token", run.call_args.args)
             module.niks3_token("w")
             self.assertEqual(run.call_args.args[:2], ("niks3-token", "w"))
+            module.topic("w", "rbw release build")
+            self.assertEqual(
+                run.call_args.args[:4], ("topic", "w", "rbw release build", "--json"))
 
     def test_exec_uses_registered_job_and_returns_exit_status(self):
         modules = {name: ModuleType(name) for name in ("mcp", "mcp.server", "mcp.server.mcpserver")}
