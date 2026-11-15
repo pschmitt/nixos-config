@@ -754,6 +754,7 @@ in
           check_for_update_on_startup = false;
           model = "gpt-6-luna";
           model_reasoning_effort = "high";
+          agents.default_subagent_model = "gpt-6-luna";
           notice.model_migrations = {
             "gpt-5.4" = "gpt-5.5";
           };
