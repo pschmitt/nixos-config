@@ -9,6 +9,7 @@
       ../../services/agy-warmup.nix
       ../../services/terminal-browser-headless.nix
       ./immich-mcp.nix
+      ./tasker-mcp.nix
     ];
 
     home.packages = [
