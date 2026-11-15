@@ -133,7 +133,7 @@ in
       (execBind "SUPER + ALT + j" "walker-menu meetings")
       (execBind "SUPER + ALT + s" "walker -m menus:soundboard -p '🎹 Soundboard'")
       (execBind "SUPER + SHIFT + s" "walker-menu soundboard stop")
-      (execBind "SUPER + SHIFT + H" "noctalia msg panel-open pschmitt/ha:panel")
+      (execBind "SUPER + SHIFT + H" "noctalia msg panel-toggle pschmitt/ha:panel")
 
       (execBind "SUPER + numbersign" "waypoint")
       (bind "SUPER + ALT + R" ''hl.dsp.submap("${resizeSubmap}")'')
