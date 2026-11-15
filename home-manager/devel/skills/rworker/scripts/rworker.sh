@@ -781,10 +781,22 @@ worker_field() {
 # that answers. Falls back to the recorded address, so ssh reports its own
 # error when nothing answers.
 worker_ip() {
-  local name="$1" file ip
+  local name="$1" file ip ips
   local -a candidates
   worker_field "$name" ip > /dev/null || return 1
   file=$(state_file "$name")
+  # A state file from before the overlays (or from an older client) has no
+  # addresses but the recorded one: ask the control host once.
+  if ! jq -e '.ips' "$file" > /dev/null 2>&1
+  then
+    ips=$(remote_ls 2> /dev/null \
+      | jq -c --arg n "$name" '.[] | select(.name == $n) | .ips // empty') || ips=""
+    if [[ -n "$ips" ]]
+    then
+      jq -c --argjson ips "$ips" '.ips = $ips' "$file" > "${file}.tmp" \
+        && mv -f "${file}.tmp" "$file"
+    fi
+  fi
   mapfile -t candidates < <(jq -r '
     [.ip, (.ips.netbird // empty), (.ips.tailscale // empty)]
     | map(select(. != null and . != ""))
