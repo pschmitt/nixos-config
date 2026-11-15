@@ -13,7 +13,8 @@ if [[ "${RWORKER_ICONS:-1}" == 0 ]]
 then
   ICONS=""
 fi
-# jq: agent_label(a) is "<glyph> a" (just a without icons or agent).
+# jq: ips_label is the worker's overlay addresses (NetBird, Tailscale);
+# agent_label(a) is "<glyph> a" (just a without icons or agent).
 # shellcheck disable=SC2016 # jq code, not shell
 JQ_AGENT='def agent_label($a):
   if ($a // "") == "" then "-"
@@ -21,7 +22,11 @@ JQ_AGENT='def agent_label($a):
     ({claude: "", codex: "", shell: "", nixbot: "",
       copilot: "", gemini: "", agy: "", "browser-daemon": "󰊠",
       antigravity: ""}[$a] // "") + " " + $a
-  else $a end;'
+  else $a end;
+def ips_label:
+  . as $w
+  | [($w.ips.netbird // empty), ($w.ips.tailscale // empty)] | join(" ")
+  | if . == "" then ($w.ip // null) else . end;'
 # Last `ls` answer of the control host, for the completions.
 LS_CACHE="${STATE_DIR}/.ls.json"
 KNOWN_HOSTS="${STATE_DIR}/known_hosts"
@@ -736,7 +741,7 @@ adopt() {
     user=agent
   fi
   mkdir -p "$STATE_DIR" || return 1
-  jq -c --arg u "$user" '{name, ip, host_key, user: $u, kind}' <<< "$info" \
+  jq -c --arg u "$user" '{name, ip, ips, host_key, user: $u, kind}' <<< "$info" \
     > "$(state_file "$name")" || return 1
   printf '%s %s\n' "$(jq -r .ip <<< "$info")" "$(jq -r .host_key <<< "$info")" \
     >> "$KNOWN_HOSTS"
@@ -755,6 +760,47 @@ worker_field() {
     adopt "$name" || return 1
   fi
   jq -er --arg f "$field" '.[$f]' "$file"
+}
+
+# The address to reach a worker at. Workers join NetBird and Tailscale; one
+# overlay (or its coordination service) can be down while the other works, so
+# probe SSH on each known address (the recorded one first) and use the first
+# that answers. Falls back to the recorded address, so ssh reports its own
+# error when nothing answers.
+worker_ip() {
+  local name="$1" file ip
+  local -a candidates
+  worker_field "$name" ip > /dev/null || return 1
+  file=$(state_file "$name")
+  mapfile -t candidates < <(jq -r '
+    [.ip, (.ips.netbird // empty), (.ips.tailscale // empty)]
+    | map(select(. != null and . != ""))
+    | reduce .[] as $i ([]; if index($i) then . else . + [$i] end)
+    | .[]' "$file")
+  if [[ ${#candidates[@]} -eq 0 ]]
+  then
+    return 1
+  fi
+  if [[ ${#candidates[@]} -gt 1 ]]
+  then
+    for ip in "${candidates[@]}"
+    do
+      # shellcheck disable=SC2016 # $1 expands in the inner bash
+      if timeout "${RWORKER_PROBE_TIMEOUT:-4}" bash -c ': < "/dev/tcp/$1/22"' _ "$ip" 2> /dev/null
+      then
+        # Remember the address that works: the next call tries it first and
+        # does not wait for the dead overlay again.
+        if [[ "$ip" != "${candidates[0]}" ]]
+        then
+          jq -c --arg ip "$ip" '.ip = $ip' "$file" > "${file}.tmp" \
+            && mv -f "${file}.tmp" "$file"
+        fi
+        printf '%s\n' "$ip"
+        return 0
+      fi
+    done
+  fi
+  printf '%s\n' "${candidates[0]}"
 }
 
 # SSH options for a worker. Host keys are pinned per worker *name*
@@ -1079,7 +1125,7 @@ EOF
 # fresh peer, so retry the connection for a little while.
 connect() {
   local name="$1" user="${2:-agent}" ip opts i
-  ip=$(worker_field "$name" ip) || return 1
+  ip=$(worker_ip "$name") || return 1
   mapfile -t opts < <(ssh_opts "$name")
   for i in $(seq 1 10)
   do
@@ -1124,7 +1170,7 @@ table_plain() {
       opt(.topic), expiry,
       (created as $c | if $c then dur($now - $c) else "-" end)
     ] + (if $wide then [
-      (.flavor // "-"), (.ip // "<none>"), opt(.cwd)
+      (.flavor // "-"), (ips_label // "<none>"), opt(.cwd)
     ] else [] end)) | @tsv') || return 1
   if [[ $(wc -l <<< "$rows") -le 1 ]]
   then
@@ -1431,7 +1477,7 @@ cmd_inspect() {
   fi
   if [[ -n "$boot" ]]
   then
-    ip=$(worker_field "$name" ip) || return 1
+    ip=$(worker_ip "$name") || return 1
     mapfile -t opts < <(ssh_opts "$name")
     boot_meta=$(ssh "${opts[@]}" -o ConnectTimeout=10 \
       "$(worker_field "$name" user)@${ip}" cat /run/rworker/metadata.json) \
@@ -1450,7 +1496,7 @@ cmd_inspect() {
     --argjson icons "$( [[ -n "$ICONS" ]] && echo true || echo false )" "$JQ_AGENT"'
     .name, .kind, .status, (.owner // "-"), agent_label(.agent),
     (.agent_pid // "-"), (.agent_session // "-"), (.topic // "-"),
-    (.cwd // "-"), (.flavor // "-"), (.ip // "-"), (.connected | tostring),
+    (.cwd // "-"), (.flavor // "-"), (ips_label // "-"), (.connected | tostring),
     (.created_at // "-"), (.expires_at // 0), (.grace_until // 0),
     (.last_active // 0), (.max_lifetime_end // 0), (.host_key // "-"),
     (.availability_zone // "-"), (.pool_state // ""),
@@ -2650,7 +2696,7 @@ cmd_ssh() {
   then
     TARGET_USER="$login_user"
   fi
-  ip=$(worker_field "$name" ip) || return 1
+  ip=$(worker_ip "$name") || return 1
   user=$(target_user) || return 1
   mapfile -t opts < <(ssh_opts "$name")
   # shellcheck disable=SC2029 # the command is the caller's, run as given
@@ -2666,7 +2712,7 @@ cmd_sync() {
   fi
   split_target "$1" || return 2
   name="$TARGET_NAME"
-  ip=$(worker_field "$name" ip) || return 1
+  ip=$(worker_ip "$name") || return 1
   user=$(target_user) || return 1
   mapfile -t opts < <(ssh_opts "$name")
   dest="${dest:-$(basename "$(realpath "$src")")}"
@@ -2711,7 +2757,7 @@ cmd_cp() {
   fi
   target="${remote%%:*}"
   split_target "$target" || return 2
-  ip=$(worker_field "$TARGET_NAME" ip) || return 1
+  ip=$(worker_ip "$TARGET_NAME") || return 1
   user=$(target_user) || return 1
   mapfile -t opts < <(ssh_opts "$TARGET_NAME")
   local spec="${user}@${ip}:${remote#*:}"
@@ -2793,7 +2839,7 @@ push_nix_cache() {
     return 0
   fi
 
-  ip=$(worker_field "$name" ip) || return 1
+  ip=$(worker_ip "$name") || return 1
   mapfile -t opts < <(ssh_opts "$name")
   # NetBird may still be setting up the route to a fresh worker.
   for i in $(seq 1 10)
@@ -2926,7 +2972,7 @@ cmd_builder() {
     show_help builder >&2
     return 2
   fi
-  ip=$(worker_field "$name" ip) || return 1
+  ip=$(worker_ip "$name") || return 1
   key=$(worker_field "$name" host_key | base64 -w0) || return 1
   # The Nix daemon opens builder connections as root, without the user's SSH
   # agent or config, so the line names the private half of the key that `up`

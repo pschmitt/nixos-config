@@ -4,13 +4,15 @@
 #
 # Not built with mkHost: it carries no secrets and no sops age key, so it
 # must not import profiles/base. Everything it needs at runtime (the NetBird
-# setup key) arrives once through the OpenStack user-data.
+# setup key and the Tailscale auth key) arrives once through the OpenStack
+# user-data.
 {
   imports = [
     ./builder.nix
     ./disk.nix
     ./image.nix
     ./netbird.nix
+    ./tailscale.nix
   ];
 
   # Pinned per host: bumping it changes stateful service defaults.

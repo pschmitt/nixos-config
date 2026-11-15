@@ -12,7 +12,7 @@ Usage: $(basename "$0") [-j|--json] [--initial]
 
 Show this worker's metadata: name, kind, owner, creator (agent, PID,
 session, topic, cwd), expiry and lifetime, boot time, system, CPUs, memory,
-disk and NetBird IP.
+disk and overlay IPs (NetBird, Tailscale).
 
   -j, --json   print JSON
   --initial    only the snapshot from boot ($SNAPSHOT),
@@ -43,20 +43,23 @@ live_meta() {
 
 # Facts about the machine right now.
 host_facts() {
-  local ip disk
+  local ip tsip disk
   ip=$(ip -4 -o addr show dev wt0 2>/dev/null | awk '{ sub("/.*", "", $4); print $4; exit }')
+  tsip=$(ip -4 -o addr show dev tailscale0 2>/dev/null | awk '{ sub("/.*", "", $4); print $4; exit }')
   # The encrypted data partition (store upper layer, builds, /home).
   disk=$(df -B1 --output=size,avail /nix/.rw-store 2>/dev/null \
     | awk 'NR == 2 { printf "{\"size\": %s, \"avail\": %s}", $1, $2 }')
   jq -n \
     --arg hostname "$(uname -n)" \
     --arg ip "$ip" \
+    --arg tsip "$tsip" \
     --argjson cpus "$(nproc)" \
     --argjson mem "$(awk '/^MemTotal:/ { print $2 * 1024 }' /proc/meminfo)" \
     --argjson uptime "$(cut -d. -f1 /proc/uptime)" \
     --arg load "$(cut -d' ' -f1-3 /proc/loadavg)" \
     --argjson disk "${disk:-null}" \
     '{hostname: $hostname, netbird_ip: (if $ip == "" then null else $ip end),
+      tailscale_ip: (if $tsip == "" then null else $tsip end),
       cpus: $cpus, memory_bytes: $mem, uptime_seconds: $uptime,
       load: $load, disk: $disk}'
 }
@@ -130,7 +133,8 @@ human() {
     s(.booted), s(.system), s(.host.netbird_ip), s(.host.cpus),
     (.host.memory_bytes // 0 | tostring), s(.host.load),
     (.host.disk.avail // 0 | tostring), (.host.disk.size // 0 | tostring),
-    (.host.uptime_seconds // 0 | tostring), s(.source)' <<< "$info")
+    (.host.uptime_seconds // 0 | tostring), s(.source),
+    s(.host.tailscale_ip)' <<< "$info")
   local agent="${f[3]}"
   if [[ "${f[4]}" != - ]]
   then
@@ -162,6 +166,7 @@ human() {
   line Booted "${f[14]} (up $(( f[22] / 3600 ))h $(( f[22] % 3600 / 60 ))m)"
   line System "${f[15]}"
   line "NetBird IP" "${f[16]}"
+  line "Tailscale IP" "${f[24]}"
   line CPUs "${f[17]} (load ${f[19]})"
   line Memory "$(( f[18] / 1024 / 1024 / 1024 )) GiB"
   if [[ "${f[21]}" != 0 ]]

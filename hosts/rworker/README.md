@@ -73,7 +73,14 @@ only in the kernel's device-mapper table. Check it on a worker with
 - `rworker-netbird-up` reads the instance name (and sets it as the
   hostname) and a one-off NetBird setup key (`{"netbird_setup_key": "..."}` in the user-data) from the
   OpenStack metadata service and registers with NetBird.
-- SSH listens on the NetBird interface only. Three accounts can log in, all
+- `rworker-tailscale-up` registers with Tailscale next to it, with a one-off,
+  ephemeral auth key tagged `tag:rworker` (`{"tailscale_auth_key": "..."}` in
+  the user-data). It does not depend on the NetBird unit: when one overlay or
+  its coordination service is down, the other still gets the worker
+  reachable. A missing key (older control host) or a failed join is only
+  logged. The control host and the client pick whichever overlay answers on
+  SSH (NetBird first).
+- SSH listens on the NetBird and Tailscale interfaces only. Three accounts can log in, all
   with keys only (there are no passwords), and nobody on the console. The
   main user's keys (`mainUser.authorizedKeys`) work for all three:
   - the main user (with passwordless sudo), for debugging;
@@ -99,7 +106,7 @@ for the latter ones). It is written once (`"source": "initial"`); a later
 
 `rworker-metadata` pretty-prints it, with the current server metadata from
 the metadata service (expiry, `last_active` set by the reaper) and the
-machine's CPUs, memory, free disk, load and NetBird IP; `--json` prints
+machine's CPUs, memory, free disk, load and overlay IPs (NetBird, Tailscale); `--json` prints
 JSON, `--initial` skips the metadata service.
 
 ## Test

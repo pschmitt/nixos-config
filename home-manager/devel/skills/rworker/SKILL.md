@@ -14,7 +14,7 @@ still in use at expiry (SSH sessions, builds, load) is kept until it has
 been idle for 1 h, never past its maximum lifetime. At
 most 10 exist at a time, sharing a quota with nixbot's own build pool.
 
-Workers are reached over NetBird from servers and laptops. You log in as
+Workers are reached over NetBird or Tailscale (both joined; the client uses whichever answers). You log in as
 `agent` with your own SSH key (handed over at creation); the worker's host
 key is pinned on creation, never trusted on first use.
 
@@ -59,7 +59,7 @@ rworker down "$w"
   agent's PID, flavor, IP and cwd); `inspect NAME [--boot]` shows
   everything about one worker; `ls --watch` redraws it in place and marks
   new (`+`), changed (`~`) and gone (`-`) workers; `extend NAME --ttl 2h`
-  moves the expiry; `down NAME` deletes the worker and its NetBird peer
+  moves the expiry; `down NAME` deletes the worker and its overlay peers
   (a pool worker only with `--force`: builds running on it fail
   and the autoscaler replaces it from the current image).
 - On the worker, `rworker-metadata [--json]` shows what it is: name,
