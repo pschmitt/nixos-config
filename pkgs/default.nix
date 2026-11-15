@@ -74,7 +74,6 @@ in
   walker-menu = pkgs.callPackage ./local/walker-menu {
     inherit emoji-fzf soundboard;
   };
-  ha-walker = pkgs.callPackage ./local/ha-walker { };
 
   bichon-mcp = pkgs.callPackage ./bichon-mcp { };
   tasker-mcp = pkgs.callPackage ./tasker-mcp { };
