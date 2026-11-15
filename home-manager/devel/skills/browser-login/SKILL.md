@@ -6,7 +6,8 @@ description: >-
   browser_fill_secret, sign passkeys from the vault with browser_passkey, and
   hand a CAPTCHA, device approval or login to the user with browser_ask_human,
   and use a signed-in session's cookies or tokens elsewhere with browser_fetch
-  and browser_export_auth. Use whenever an automated browser task hits a login
+  and browser_export_auth, and take a secret a page shows into a file with
+  browser_secret_to_file. Use whenever an automated browser task hits a login
   form, a passkey/WebAuthn/FIDO2 challenge, a CAPTCHA or a 2FA prompt, or a
   task needs a browser session's login for an API, curl or a CLI.
 ---
@@ -61,6 +62,18 @@ Both work on your own page or on a shared browser's tab (`browser`, `tab`,
 `daemon` from `browser_shared_nodes`, shared with control), on the sites their
 tool description lists. An exported session cookie is the account: if one
 ever shows up in output, it is a leaked credential.
+
+## A secret a page shows
+
+A console that shows a secret once (OAuth client secret, API key, recovery
+code) must not reach the transcript: never read it with `browser_snapshot`,
+`browser_evaluate`, a screenshot or `browser_run_code_unsafe` (no file access
+there anyway). Use `browser_secret_to_file target=<ref or selector>
+[regex=...] [expect_prefix=...]`: it writes the value to a private file in
+`$XDG_RUNTIME_DIR` (deleted after `minutes`) and answers with the path, length
+and a short hash only. Use the file by path from the shell (`"$(cat FILE)"`
+into a secrets tool such as `sops set`), never print it. Only on the sites the
+tool description lists (`--allow-export`).
 
 ## Rules
 
