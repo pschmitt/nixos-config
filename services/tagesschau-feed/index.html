@@ -49,8 +49,39 @@
   .brand img { width: 2.25rem; height: 2.25rem; border-radius: 7px; display: block; }
   .brand b { font-weight: 800; }
   .brand span { color: var(--mist); font-stretch: 85%; margin-left: -0.3rem; }
-  .bar a { color: var(--mist); font-size: 0.9rem; text-decoration-color: var(--rule); text-underline-offset: 3px; }
-  .bar a:hover { color: var(--ink); }
+  .subscribe {
+    background: none; border: 1px solid var(--rule); border-radius: 999px; cursor: pointer;
+    color: var(--ink); font-size: 0.9rem; font-weight: 600; padding: 0.45rem 0.95rem;
+  }
+  .subscribe:hover { background: var(--deep); }
+
+  /* Subscribe dialog */
+  dialog.sub {
+    width: min(30rem, calc(100vw - 32px)); padding: 1.5rem; border: 1px solid var(--rule); border-radius: 10px;
+    background: var(--deep); color: var(--ink);
+  }
+  dialog.sub::backdrop { background: rgba(4, 16, 38, 0.7); }
+  .sub h2 { margin: 0 0 0.35rem; font-size: 1.35rem; font-weight: 700; font-stretch: 112%; letter-spacing: -0.01em; }
+  .sub p { margin: 0 0 1rem; color: var(--mist); }
+  .copy { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+  .copy input {
+    flex: 1; min-width: 0; font: inherit; font-size: 0.9rem; color: var(--ink); background: var(--studio);
+    border: 1px solid var(--rule); border-radius: 6px; padding: 0.55rem 0.7rem;
+  }
+  .pill {
+    border: 0; border-radius: 6px; background: var(--signal); color: #1A1100; font-weight: 700;
+    padding: 0.55rem 0.95rem; cursor: pointer; white-space: nowrap;
+  }
+  .pill.quiet { background: var(--panel); color: var(--ink); }
+  .apps { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .apps a {
+    display: block; padding: 0.6rem 0.8rem; border-radius: 6px; background: var(--studio);
+    color: var(--ink); text-decoration: none; font-weight: 600;
+  }
+  .apps a:hover { background: var(--panel); }
+  .sub .note { font-size: 0.85rem; margin: 0; }
+  .sub .close { position: absolute; top: 0.75rem; right: 0.75rem; }
+  @media (max-width: 420px) { .apps { grid-template-columns: 1fr; } }
 
   /* Player: picture and transport form one block */
   .stage { min-width: 0; }
@@ -204,8 +235,21 @@
 <div class="shell">
   <header class="bar">
     <p class="brand"><img src="/mark.jpg" alt=""><b>tagesschau</b><span>alle Ausgaben</span></p>
-    <a href="/feed.xml">Als Podcast abonnieren</a>
+    <button class="subscribe" id="subscribe">Als Podcast abonnieren</button>
   </header>
+
+  <dialog class="sub" id="subdialog" aria-labelledby="subtitle">
+    <button class="ctl close" id="subclose" aria-label="Schließen"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 id="subtitle">Als Podcast abonnieren</h2>
+    <p>Alle tagesschau-Ausgaben der letzten 48 Stunden, neueste zuerst.</p>
+    <div class="copy">
+      <input id="feedurl" readonly aria-label="Feed-Adresse">
+      <button class="pill" id="copy">Kopieren</button>
+      <button class="pill quiet" id="share" hidden>Teilen</button>
+    </div>
+    <ul class="apps" id="apps"></ul>
+    <p class="note">Spotify und YouTube Music können keine eigenen Feeds abonnieren. Jede andere Podcast-App nimmt die Adresse oben.</p>
+  </dialog>
 
   <main class="stage">
     <div class="player" id="player">
@@ -577,7 +621,7 @@
   $("full").addEventListener("click", fullscreen);
 
   document.addEventListener("keydown", ev => {
-    if (ev.target.closest("input, textarea") || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, dialog") || ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const onButton = ev.target.closest("button");
     switch (ev.key) {
       case " ": if (onButton) return; toggle(); break;
@@ -651,6 +695,43 @@
         render();
       } catch (_) {}
     }, 120e3);
+  }
+
+  /* Subscribe dialog */
+  const feed = location.origin + "/feed.xml";
+  const bare = feed.replace(/^https?:\/\//, "");
+  const enc = encodeURIComponent(feed);
+  const apps = [
+    ["Pocket Casts", "pktc://subscribe/" + bare],
+    ["Apple Podcasts", "podcast://" + bare],
+    ["Overcast", "overcast://x-callback-url/add?url=" + enc],
+    ["AntennaPod", "https://antennapod.org/deeplink/subscribe?url=" + enc + "&title=" + encodeURIComponent("tagesschau (alle Ausgaben)")],
+    ["Podcast Addict", "podcastaddict://" + bare],
+    ["Feed im Browser", feed],
+  ];
+  const dlg = $("subdialog");
+  $("feedurl").value = feed;
+  for (const [name, href] of apps) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = href;
+    a.textContent = name;
+    li.append(a);
+    $("apps").append(li);
+  }
+  $("subscribe").addEventListener("click", () => dlg.showModal());
+  $("subclose").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", ev => { if (ev.target === dlg) dlg.close(); });
+  $("feedurl").addEventListener("focus", ev => ev.target.select());
+  $("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(feed); }
+    catch (_) { $("feedurl").select(); document.execCommand("copy"); }
+    $("copy").textContent = "Kopiert";
+    setTimeout(() => { $("copy").textContent = "Kopieren"; }, 2000);
+  });
+  if (navigator.share) {
+    $("share").hidden = false;
+    $("share").addEventListener("click", () => navigator.share({ title: "tagesschau (alle Ausgaben)", url: feed }).catch(() => {}));
   }
 
   init();
