@@ -228,7 +228,9 @@
   function play(it, userGesture) {
     current = it.id;
     if (hls) { hls.destroy(); hls = null; }
-    if (it.url.endsWith(".m3u8") && !video.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()) {
+    // hls.js wherever it works; Chrome's native HLS claims support but fails
+    // on separate audio renditions. Native HLS only where hls.js cannot run (iOS).
+    if (it.url.endsWith(".m3u8") && window.Hls && Hls.isSupported()) {
       hls = new Hls();
       hls.loadSource(it.url);
       hls.attachMedia(video);
