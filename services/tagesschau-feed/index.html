@@ -76,11 +76,23 @@
   .pill.quiet { background: var(--panel); color: var(--ink); }
   .apps { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
   .apps a {
-    display: block; padding: 0.6rem 0.8rem; border-radius: 6px; background: var(--studio);
-    color: var(--ink); text-decoration: none; font-weight: 600;
+    display: flex; align-items: center; gap: 0.65rem; padding: 0.5rem 0.7rem; border-radius: 6px;
+    background: var(--studio); color: var(--ink); text-decoration: none; font-weight: 600;
   }
+  .appicon { flex: none; width: 1.75rem; height: 1.75rem; border-radius: 6px; display: grid; place-items: center; }
+  .appicon svg { width: 1.1rem; height: 1.1rem; fill: #fff; }
   .apps a:hover { background: var(--panel); }
   .sub .note { font-size: 0.85rem; margin: 0; }
+  #sharedlg { width: min(36rem, calc(100vw - 32px)); }
+  .preview { aspect-ratio: 16 / 9; background: var(--studio); border-radius: 6px; overflow: hidden; margin-bottom: 1rem; }
+  .preview video { width: 100%; height: 100%; display: block; }
+  .pick { display: grid; gap: 0.6rem; margin-bottom: 1.1rem; }
+  .stime { font-size: 2.6rem; font-weight: 750; font-stretch: 112%; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+  .pick input[type=range] { width: 100%; accent-color: var(--signal); }
+  .nudge { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .nudge .pill { padding: 0.4rem 0.75rem; font-variant-numeric: tabular-nums; }
+  .from { display: flex; align-items: center; gap: 0.5rem; color: var(--ink); }
+  .from input { accent-color: var(--signal); width: 1.1rem; height: 1.1rem; }
   .sub .close { position: absolute; top: 0.75rem; right: 0.75rem; }
   @media (max-width: 420px) { .apps { grid-template-columns: 1fr; } }
 
@@ -168,7 +180,7 @@
   .track .tip[hidden] { display: none; }
 
   /* The clock: playhead as broadcast time */
-  .now { margin-top: 1.25rem; display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  .now { margin-top: 1.25rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
   .clock {
     font-size: clamp(3rem, 7vw, 5.5rem); font-weight: 750; font-stretch: 112%;
     font-variant-numeric: tabular-nums; line-height: 0.9; letter-spacing: -0.03em;
@@ -251,6 +263,7 @@
   <symbol id="i-fwd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4"/><text x="12" y="15.5" font-size="7.5" font-weight="700" text-anchor="middle" fill="currentColor" font-family="Archivo, sans-serif">30</text></symbol>
   <symbol id="i-vol" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></symbol>
   <symbol id="i-mute" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9l5 6M21 9l-5 6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/></symbol>
   <symbol id="i-full" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
 </svg>
 
@@ -299,6 +312,7 @@
         <div class="group">
           <button class="ctl opt" id="back" aria-label="10 Sekunden zurück" title="10 Sekunden zurück (J)"><svg><use href="#i-back"/></svg></button>
           <button class="ctl opt" id="fwd" aria-label="30 Sekunden vor" title="30 Sekunden vor (L)"><svg><use href="#i-fwd"/></svg></button>
+          <button class="ctl" id="sharebtn" aria-label="Diese Stelle teilen" title="Diese Stelle teilen (S)"><svg><use href="#i-share"/></svg></button>
           <button class="ctl text" id="speed" aria-label="Geschwindigkeit" title="Geschwindigkeit">1×</button>
           <button class="ctl" id="mute" aria-label="Ton aus" title="Ton aus (M)"><svg><use href="#i-vol"/></svg></button>
           <button class="ctl" id="full" aria-label="Vollbild" title="Vollbild (F)"><svg><use href="#i-full"/></svg></button>
@@ -309,6 +323,29 @@
     <div class="now" id="now" aria-live="polite"></div>
     <p class="notice" id="notice" hidden></p>
   </main>
+
+  <dialog class="sub" id="sharedlg" aria-labelledby="sharetitle">
+    <button class="ctl close" id="shareclose" aria-label="Schließen"><svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <h2 id="sharetitle">Diese Stelle teilen</h2>
+    <p id="shareedition"></p>
+    <div class="preview"><video id="pv" muted playsinline preload="auto"></video></div>
+    <div class="pick">
+      <span class="stime" id="stime">--:--:--</span>
+      <input type="range" id="srange" step="1" aria-label="Zeitpunkt">
+      <div class="nudge">
+        <button class="pill quiet" data-n="-5">−5 s</button>
+        <button class="pill quiet" data-n="-1">−1 s</button>
+        <button class="pill quiet" data-n="1">+1 s</button>
+        <button class="pill quiet" data-n="5">+5 s</button>
+      </div>
+      <label class="from"><input type="checkbox" id="sfrom" checked> Ab dieser Stelle starten</label>
+    </div>
+    <div class="copy">
+      <input id="surl" readonly aria-label="Link">
+      <button class="pill" id="scopy">Kopieren</button>
+      <button class="pill quiet" id="sshare" hidden>Teilen</button>
+    </div>
+  </dialog>
 
   <nav class="rundown" id="rundown" aria-label="Ausgaben"></nav>
 
@@ -441,7 +478,7 @@
     const w = document.createElement("span");
     w.className = "when";
     const s = document.createElement("strong");
-    s.textContent = "Uhr, " + longDay(it.date);
+    s.textContent = longDay(it.date);
     w.append(s);
     if (it.live) {
       const o = document.createElement("span");
@@ -469,22 +506,24 @@
     }
   }
 
-  function play(it, userGesture) {
+  function play(it, userGesture, startAt) {
     save();
     current = it;
     if (hls) { hls.destroy(); hls = null; }
     if (it.url.endsWith(".m3u8") && window.Hls && Hls.isSupported()) {
       // hls.js wherever it works; Chrome's native HLS claims support but fails on
       // separate audio renditions. Native HLS only where hls.js cannot run (iOS).
-      hls = new Hls({ startPosition: 0 });
+      hls = new Hls({ startPosition: startAt || 0 });
       hls.loadSource(it.url);
       hls.attachMedia(video);
     } else {
       video.src = it.url;
     }
     const mem = !it.live && store.get(it.id);
-    if (mem && mem.pos > 5 && (!mem.dur || mem.pos / mem.dur < 0.95)) {
-      video.addEventListener("loadedmetadata", () => { video.currentTime = mem.pos; }, { once: true });
+    const resume = startAt != null ? (hls ? null : startAt)
+      : (mem && mem.pos > 5 && (!mem.dur || mem.pos / mem.dur < 0.95)) ? mem.pos : null;
+    if (resume != null) {
+      video.addEventListener("loadedmetadata", () => { video.currentTime = resume; }, { once: true });
     }
     caption(it);
     render();
@@ -688,6 +727,7 @@
       case "j": case "ArrowLeft": if (ev.target === track) return; seekBy(-10); break;
       case "l": case "ArrowRight": if (ev.target === track) return; seekBy(30); break;
       case "f": fullscreen(); break;
+      case "s": openShare(); break;
       case "m": video.muted = !video.muted; break;
       case "n": step(1); break;
       case "p": step(-1); break;
@@ -740,7 +780,18 @@
       notice.textContent = "In den letzten 48 Stunden ist keine Ausgabe erschienen.";
       return;
     }
-    play(items[0], false);
+    // A shared link (?at=<unix seconds>) opens the edition with that moment.
+    const at = Number(new URLSearchParams(location.search).get("at")) * 1000;
+    const hit = at ? items.filter(it => it.date.getTime() <= at + 1000).sort((a, b) => b.date - a.date)[0] : null;
+    if (hit && at - hit.date.getTime() < 3 * 3600e3) {
+      play(hit, false, Math.max(0, (at - hit.date.getTime()) / 1000));
+    } else {
+      if (at) {
+        notice.hidden = false;
+        notice.textContent = "Die geteilte Ausgabe ist nicht mehr verfügbar; hier gibt es nur die letzten 48 Stunden.";
+      }
+      play(items[0], false);
+    }
     syncButtons();
     // Pick up new editions without interrupting playback.
     setInterval(async () => {
@@ -760,21 +811,33 @@
   const feed = location.origin + "/feed.xml";
   const bare = feed.replace(/^https?:\/\//, "");
   const enc = encodeURIComponent(feed);
+  // Icons: Simple Icons (CC0), in each app's brand colour.
   const apps = [
-    ["Pocket Casts", "pktc://subscribe/" + bare],
-    ["Apple Podcasts", "podcast://" + bare],
-    ["Overcast", "overcast://x-callback-url/add?url=" + enc],
-    ["AntennaPod", "https://antennapod.org/deeplink/subscribe?url=" + enc + "&title=" + encodeURIComponent("tagesschau (alle Ausgaben)")],
-    ["Podcast Addict", "podcastaddict://" + bare],
-    ["Feed im Browser", feed],
+    ["Pocket Casts", "pktc://subscribe/" + bare, "#F43E37", "M12,0C5.372,0,0,5.372,0,12c0,6.628,5.372,12,12,12c6.628,0,12-5.372,12-12 C24,5.372,18.628,0,12,0z M15.564,12c0-1.968-1.596-3.564-3.564-3.564c-1.968,0-3.564,1.595-3.564,3.564 c0,1.968,1.595,3.564,3.564,3.564V17.6c-3.093,0-5.6-2.507-5.6-5.6c0-3.093,2.507-5.6,5.6-5.6c3.093,0,5.6,2.507,5.6,5.6H15.564z M19,12c0-3.866-3.134-7-7-7c-3.866,0-7,3.134-7,7c0,3.866,3.134,7,7,7v2.333c-5.155,0-9.333-4.179-9.333-9.333 c0-5.155,4.179-9.333,9.333-9.333c5.155,0,9.333,4.179,9.333,9.333H19z"],
+    ["Apple Podcasts", "podcast://" + bare, "#9933CC", "M5.34 0A5.328 5.328 0 000 5.34v13.32A5.328 5.328 0 005.34 24h13.32A5.328 5.328 0 0024 18.66V5.34A5.328 5.328 0 0018.66 0zm6.525 2.568c2.336 0 4.448.902 6.056 2.587 1.224 1.272 1.912 2.619 2.264 4.392.12.59.12 2.2.007 2.864a8.506 8.506 0 01-3.24 5.296c-.608.46-2.096 1.261-2.336 1.261-.088 0-.096-.091-.056-.46.072-.592.144-.715.48-.856.536-.224 1.448-.874 2.008-1.435a7.644 7.644 0 002.008-3.536c.208-.824.184-2.656-.048-3.504-.728-2.696-2.928-4.792-5.624-5.352-.784-.16-2.208-.16-3 0-2.728.56-4.984 2.76-5.672 5.528-.184.752-.184 2.584 0 3.336.456 1.832 1.64 3.512 3.192 4.512.304.2.672.408.824.472.336.144.408.264.472.856.04.36.03.464-.056.464-.056 0-.464-.176-.896-.384l-.04-.03c-2.472-1.216-4.056-3.274-4.632-6.012-.144-.706-.168-2.392-.03-3.04.36-1.74 1.048-3.1 2.192-4.304 1.648-1.737 3.768-2.656 6.128-2.656zm.134 2.81c.409.004.803.04 1.106.106 2.784.62 4.76 3.408 4.376 6.174-.152 1.114-.536 2.03-1.216 2.88-.336.43-1.152 1.15-1.296 1.15-.023 0-.048-.272-.048-.603v-.605l.416-.496c1.568-1.878 1.456-4.502-.256-6.224-.664-.67-1.432-1.064-2.424-1.246-.64-.118-.776-.118-1.448-.008-1.02.167-1.81.562-2.512 1.256-1.72 1.704-1.832 4.342-.264 6.222l.413.496v.608c0 .336-.027.608-.06.608-.03 0-.264-.16-.512-.36l-.034-.011c-.832-.664-1.568-1.842-1.872-2.997-.184-.698-.184-2.024.008-2.72.504-1.878 1.888-3.335 3.808-4.019.41-.145 1.133-.22 1.814-.211zm-.13 2.99c.31 0 .62.06.844.178.488.253.888.745 1.04 1.259.464 1.578-1.208 2.96-2.72 2.254h-.015c-.712-.331-1.096-.956-1.104-1.77 0-.733.408-1.371 1.112-1.745.224-.117.534-.176.844-.176zm-.011 4.728c.988-.004 1.706.349 1.97.97.198.464.124 1.932-.218 4.302-.232 1.656-.36 2.074-.68 2.356-.44.39-1.064.498-1.656.288h-.003c-.716-.257-.87-.605-1.164-2.644-.341-2.37-.416-3.838-.218-4.302.262-.616.974-.966 1.97-.97z"],
+    ["Overcast", "overcast://x-callback-url/add?url=" + enc, "#FC7E0F", "M12 24C5.389 24.018.017 18.671 0 12.061V12C0 5.35 5.351 0 12 0s12 5.35 12 12c0 6.649-5.351 12-12 12zm0-4.751l.9-.899-.9-3.45-.9 3.45.9.899zm-1.15-.05L10.4 20.9l1.05-1.052-.6-.649zm2.3 0l-.6.601 1.05 1.051-.45-1.652zm.85 3.102L12 20.3l-2 2.001c.65.1 1.3.199 2 .199s1.35-.05 2-.199zM12 1.5C6.201 1.5 1.5 6.201 1.5 12c-.008 4.468 2.825 8.446 7.051 9.899l2.25-8.35c-.511-.372-.809-.968-.801-1.6 0-1.101.9-2.001 2-2.001s2 .9 2 2.001c0 .649-.301 1.2-.801 1.6l2.25 8.35c4.227-1.453 7.06-5.432 7.051-9.899 0-5.799-4.701-10.5-10.5-10.5zm6.85 15.7c-.255.319-.714.385-1.049.15-.313-.207-.4-.628-.194-.941.014-.021.028-.04.044-.06 0 0 1.35-1.799 1.35-4.35s-1.35-4.35-1.35-4.35c-.239-.289-.198-.719.091-.957.02-.016.039-.031.06-.044.335-.235.794-.169 1.049.15.1.101 1.65 2.15 1.65 5.2S18.949 17.1 18.85 17.2zm-3.651-1.95c-.3-.3-.249-.85.051-1.15 0 0 .75-.799.75-2.1s-.75-2.051-.75-2.1c-.3-.301-.3-.801-.051-1.15.232-.303.666-.357.969-.125.029.022.056.047.082.074C16.301 8.75 17.5 10 17.5 12s-1.199 3.25-1.25 3.301c-.301.299-.75.25-1.051-.051zm-6.398 0c-.301.301-.75.35-1.051.051C7.699 15.199 6.5 14 6.5 12s1.199-3.199 1.25-3.301c.301-.299.801-.299 1.051.051.3.3.249.85-.051 1.15 0 .049-.75.799-.75 2.1s.75 2.1.75 2.1c.3.3.351.799.051 1.15zm-2.602 2.101c-.335.234-.794.169-1.05-.15C5.051 17.1 3.5 15.05 3.5 12s1.551-5.1 1.649-5.2c.256-.319.715-.386 1.05-.15.313.206.4.628.194.941-.013.02-.028.04-.043.059C6.35 7.65 5 9.449 5 12s1.35 4.35 1.35 4.35c.25.3.15.75-.151 1.001z"],
+    ["AntennaPod", "https://antennapod.org/deeplink/subscribe?url=" + enc + "&title=" + encodeURIComponent("tagesschau (alle Ausgaben)"), "#364FF3", "M12 0A12 12 0 0 0 0 12a12 12 0 0 0 7.188 10.98l3.339-9.459a2.118 2.118 0 1 1 2.946 0l3.339 9.46A12 12 0 0 0 24 12 12 12 0 0 0 12 0m0 2.824a9.177 9.177 0 0 1 4.969 16.892l-.486-1.376a7.765 7.765 0 1 0-8.967 0l-.485 1.376A9.177 9.177 0 0 1 12 2.824m0 3.529a5.647 5.647 0 0 1 3.739 9.879l-.521-1.478a4.235 4.235 0 1 0-6.436 0l-.522 1.478A5.647 5.647 0 0 1 12 6.353m0 8.298-1.618 4.584a7.4 7.4 0 0 0 3.236 0zm-2.21 6.258-.937 2.656A12 12 0 0 0 12 24a12 12 0 0 0 3.146-.435l-.937-2.656a9.2 9.2 0 0 1-2.209.267 9.2 9.2 0 0 1-2.21-.267"],
+    ["Podcast Addict", "podcastaddict://" + bare, "#F4842D", "M5.36.037C2.41.037 0 2.447 0 5.397v13.207c0 2.95 2.41 5.36 5.36 5.36h13.28c2.945 0 5.36-2.41 5.36-5.36V5.396c0-2.95-2.415-5.36-5.36-5.36zm6.585 4.285a7.72 7.72 0 017.717 7.544l.005 7.896h-3.39v-1.326a7.68 7.68 0 01-4.327 1.326 7.777 7.777 0 01-2.384-.378v-4.63a3.647 3.647 0 002.416.91 3.666 3.666 0 003.599-2.97h-1.284a2.416 2.416 0 01-4.73-.66v-.031c0-1.095.728-2.023 1.728-2.316V8.403a3.67 3.67 0 00-2.975 3.6v6.852a7.72 7.72 0 013.625-14.533zm.031 1.87V7.43h.006a4.575 4.575 0 014.573 4.574v.01h1.237v-.01a5.81 5.81 0 00-5.81-5.81zm0 2.149v1.246h.006a2.413 2.413 0 012.415 2.416v.01h1.247v-.01a3.662 3.662 0 00-3.662-3.662zm0 2.252c-.78 0-1.409.629-1.409 1.41 0 .78.629 1.409 1.41 1.409.78 0 1.409-.629 1.409-1.41 0-.78-.629-1.409-1.41-1.409z"],
+    ["Feed im Browser", feed, "#10356F", "M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19 7.38 20 6.18 20 5 20 4 19 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44m0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93V10.1z"],
   ];
   const dlg = $("subdialog");
   $("feedurl").value = feed;
-  for (const [name, href] of apps) {
+  const SVGNS = "http://www.w3.org/2000/svg";
+  for (const [name, href, color, d] of apps) {
     const li = document.createElement("li");
     const a = document.createElement("a");
     a.href = href;
-    a.textContent = name;
+    const tile = document.createElement("span");
+    tile.className = "appicon";
+    tile.style.background = color;
+    const svg = document.createElementNS(SVGNS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS(SVGNS, "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+    tile.append(svg);
+    a.append(tile, name);
     li.append(a);
     $("apps").append(li);
   }
@@ -791,6 +854,79 @@
   if (navigator.share) {
     $("share").hidden = false;
     $("share").addEventListener("click", () => navigator.share({ title: "tagesschau (alle Ausgaben)", url: feed }).catch(() => {}));
+  }
+
+  /* Share a moment: a link to a broadcast time, picked with a preview */
+  const sdlg = $("sharedlg"), pv = $("pv"), srange = $("srange");
+  let phls = null, sItem = null;
+  function shareUrl() {
+    const ms = $("sfrom").checked ? Number(srange.value) : sItem.date.getTime();
+    return location.origin + "/?at=" + Math.floor(ms / 1000);
+  }
+  function shareUpdate(seekPreview) {
+    const ms = Number(srange.value);
+    $("stime").textContent = hms(new Date(ms));
+    $("surl").value = shareUrl();
+    if (seekPreview && sItem) {
+      const t = (ms - sItem.date.getTime()) / 1000;
+      if (isFinite(t)) pv.currentTime = Math.max(0, t);
+    }
+  }
+  function openShare() {
+    if (!current) return;
+    sItem = current;
+    const sp = span();
+    const nowAt = airAt(video.currentTime) || current.date;
+    const start = current.date.getTime();
+    let end = sp ? sp[1] : nowAt.getTime();
+    if (current.live) end = Math.min(end, (airAt(range()[1]) || nowAt).getTime());
+    srange.min = start;
+    srange.max = Math.max(end, start + 1000);
+    srange.value = Math.min(Math.max(nowAt.getTime(), start), Number(srange.max));
+    $("shareedition").textContent = "tagesschau " + hm(current.date) + " Uhr, " + longDay(current.date);
+    if (phls) { phls.destroy(); phls = null; }
+    const offset = (Number(srange.value) - start) / 1000;
+    if (current.url.endsWith(".m3u8") && window.Hls && Hls.isSupported()) {
+      phls = new Hls({ startPosition: offset });
+      phls.loadSource(current.url);
+      phls.attachMedia(pv);
+    } else {
+      pv.src = current.url;
+      pv.addEventListener("loadedmetadata", () => { pv.currentTime = offset; }, { once: true });
+    }
+    shareUpdate(false);
+    sdlg.showModal();
+  }
+  function closeShare() {
+    if (phls) { phls.destroy(); phls = null; }
+    pv.removeAttribute("src");
+    pv.load();
+  }
+  $("sharebtn").addEventListener("click", openShare);
+  $("shareclose").addEventListener("click", () => sdlg.close());
+  sdlg.addEventListener("close", closeShare);
+  sdlg.addEventListener("click", ev => { if (ev.target === sdlg) sdlg.close(); });
+  srange.addEventListener("input", () => shareUpdate(true));
+  $("sfrom").addEventListener("change", () => shareUpdate(false));
+  for (const b of sdlg.querySelectorAll(".nudge .pill")) {
+    b.addEventListener("click", () => {
+      srange.value = Math.min(Number(srange.max), Math.max(Number(srange.min), Number(srange.value) + Number(b.dataset.n) * 1000));
+      shareUpdate(true);
+    });
+  }
+  $("surl").addEventListener("focus", ev => ev.target.select());
+  $("scopy").addEventListener("click", async () => {
+    const url = shareUrl();
+    try { await navigator.clipboard.writeText(url); }
+    catch (_) { $("surl").select(); document.execCommand("copy"); }
+    $("scopy").textContent = "Kopiert";
+    setTimeout(() => { $("scopy").textContent = "Kopieren"; }, 2000);
+  });
+  if (navigator.share) {
+    $("sshare").hidden = false;
+    $("sshare").addEventListener("click", () => navigator.share({
+      title: $("shareedition").textContent, url: shareUrl(),
+    }).catch(() => {}));
   }
 
   init();
