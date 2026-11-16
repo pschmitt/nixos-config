@@ -289,6 +289,26 @@ def live_session(now):
     return "%s/live/%d-%d-%d/" % (BASE, start.timestamp(), end.timestamp(), now.timestamp())
 
 
+PLAYER = os.environ.get("TAGESSCHAU_PLAYER_HTML", os.path.join(os.path.dirname(__file__), "index.html"))
+_episodes = {"at": 0.0, "list": []}
+
+
+def episodes_json(now):
+    """Editions for the web player, plus the edition on air if it is not published yet."""
+    with _lock:
+        if time.time() - _episodes["at"] > CACHE_TTL or not _episodes["list"]:
+            _episodes.update(at=time.time(), list=editions())
+        found = _episodes["list"]
+    data = {
+        "editions": [{"id": ts_id, "date": ts.isoformat(), "url": url} for ts, ts_id, url in found],
+        "live": None,
+    }
+    edition = current_edition(now)
+    if edition and not any(ts == edition[0] for ts, _, _ in found):
+        data["live"] = {"date": edition[0].isoformat(), "url": live_session(now) + "index.m3u8"}
+    return json.dumps(data)
+
+
 class Handler(BaseHTTPRequestHandler):
     def send_text(self, body, ctype, cache="no-cache"):
         body = body.encode()
@@ -308,7 +328,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_error(404, "no tagesschau edition on air")
                     return
                 name = "audio.m3u8" if path == "/live/audio" else "index.m3u8"
-                self.send_text(url + name + "\n", "text/plain; charset=utf-8")
+                self.send_text(url + name, "text/plain; charset=utf-8")
                 return
             m = SESSION_RE.match(path)
             if not m:
@@ -327,6 +347,19 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path.startswith("/live"):
             self.do_live(path)
+            return
+        if path == "/episodes.json":
+            try:
+                body = episodes_json(datetime.now(timezone.utc))
+            except Exception as exc:
+                self.send_error(502, str(exc)[:100])
+                return
+            self.send_text(body, "application/json")
+            return
+        # Browsers get the player on /; podcast apps and monitoring get the feed.
+        if path == "/player" or (path == "/" and "text/html" in self.headers.get("Accept", "")):
+            with open(PLAYER, encoding="utf-8") as f:
+                self.send_text(f.read(), "text/html; charset=utf-8")
             return
         if path in ("/", "/feed.xml", "/feed"):
             try:

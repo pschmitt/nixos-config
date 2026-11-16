@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tagesschau, alle Ausgaben</title>
+<link rel="icon" href="/cover.jpg">
+<link rel="alternate" type="application/rss+xml" title="tagesschau (alle Ausgaben)" href="/feed.xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<style>
+  :root {
+    --studio: #0B2A5B;   /* page */
+    --deep: #071D40;     /* player well, list hover */
+    --panel: #10356F;    /* selected row */
+    --ink: #F2F6FC;      /* text */
+    --mist: #9FB4D6;     /* secondary text */
+    --signal: #FF8A00;   /* now playing, on air */
+    --rule: rgba(159, 180, 214, 0.22);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--studio);
+    color: var(--ink);
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    min-height: 100vh;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
+
+  .shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    gap: 2.5rem;
+    max-width: 92rem;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3rem;
+  }
+  header.bar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .brand { font-size: 1.25rem; font-weight: 400; letter-spacing: -0.01em; margin: 0; }
+  .brand b { font-weight: 800; }
+  .brand span { color: var(--mist); font-stretch: 85%; margin-left: 0.4rem; }
+  .bar a { color: var(--mist); font-size: 0.9rem; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  .bar a:hover { color: var(--ink); }
+
+  /* Player */
+  .stage { min-width: 0; }
+  .well { position: relative; background: var(--deep); aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; }
+  video { display: block; width: 100%; height: 100%; background: var(--deep); }
+  .unmute {
+    position: absolute; left: 1rem; bottom: 4.5rem;
+    background: var(--signal); color: #1A1100; border: 0; border-radius: 999px;
+    padding: 0.55rem 1.1rem; font-weight: 700; cursor: pointer;
+  }
+  .unmute[hidden] { display: none; }
+  .now { margin-top: 1.25rem; display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  .now .clock {
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 750; font-stretch: 112%;
+    font-variant-numeric: tabular-nums;
+    line-height: 0.9; letter-spacing: -0.03em;
+  }
+  .now .when { color: var(--mist); font-size: 1.05rem; }
+  .now .when strong { color: var(--ink); font-weight: 600; }
+  .onair { color: var(--signal); font-weight: 700; }
+  .notice { color: var(--mist); margin-top: 1rem; max-width: 60ch; }
+
+  /* Rundown */
+  .rundown { min-width: 0; }
+  .day { margin: 0 0 1.75rem; }
+  .day h2 {
+    font-size: 0.95rem; font-weight: 600; color: var(--mist);
+    margin: 0 0 0.35rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--rule);
+  }
+  .day ol { list-style: none; margin: 0; padding: 0; }
+  .item {
+    width: 100%; display: grid; grid-template-columns: 5.5rem 1fr; align-items: baseline;
+    gap: 0.75rem; text-align: left; background: none; border: 0; cursor: pointer;
+    padding: 0.55rem 0.75rem; border-radius: 4px; border-left: 3px solid transparent;
+  }
+  .item:hover { background: var(--deep); }
+  .item .t {
+    font-size: 1.6rem; font-weight: 700; font-stretch: 112%;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
+  }
+  .item .d { color: var(--mist); font-size: 0.9rem; }
+  .item[aria-current="true"] { background: var(--panel); border-left-color: var(--signal); }
+  .item[aria-current="true"] .d { color: var(--ink); }
+  .dot {
+    display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%;
+    background: var(--signal); margin-right: 0.4rem; vertical-align: 0.05em;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; gap: 1.75rem; padding: 1rem 16px 2.5rem; }
+    .well { border-radius: 0; margin: 0 -16px; }
+    .unmute { bottom: 4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="bar">
+    <p class="brand"><b>tagesschau</b><span>alle Ausgaben</span></p>
+    <a href="/feed.xml">Als Podcast abonnieren</a>
+  </header>
+
+  <main class="stage">
+    <div class="well">
+      <video id="video" controls playsinline preload="auto" poster="/cover.jpg"></video>
+      <button class="unmute" id="unmute" hidden>Ton einschalten</button>
+    </div>
+    <div class="now" id="now" aria-live="polite"></div>
+    <p class="notice" id="notice" hidden></p>
+  </main>
+
+  <nav class="rundown" id="rundown" aria-label="Ausgaben"></nav>
+</div>
+
+<script>
+(() => {
+  const video = document.getElementById("video");
+  const unmute = document.getElementById("unmute");
+  const now = document.getElementById("now");
+  const notice = document.getElementById("notice");
+  const rundown = document.getElementById("rundown");
+  let items = [];      // newest first; a live edition, if any, comes first
+  let current = null;  // id of the item playing
+  let hls = null;
+
+  const tz = "Europe/Berlin";
+  const fmtTime = d => d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+  const fmtDay = d => d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", timeZone: tz });
+  const dayKey = d => d.toLocaleDateString("sv-SE", { timeZone: tz });
+  function dayLabel(d) {
+    const today = dayKey(new Date());
+    const yesterday = dayKey(new Date(Date.now() - 864e5));
+    const k = dayKey(d);
+    if (k === today) return "Heute";
+    if (k === yesterday) return "Gestern";
+    return fmtDay(d);
+  }
+
+  function render() {
+    rundown.replaceChildren();
+    let group = null, list = null;
+    for (const it of items) {
+      const label = dayLabel(it.date);
+      if (label !== group) {
+        group = label;
+        const sec = document.createElement("section");
+        sec.className = "day";
+        const h = document.createElement("h2");
+        h.textContent = label;
+        list = document.createElement("ol");
+        sec.append(h, list);
+        rundown.append(sec);
+      }
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.className = "item";
+      b.setAttribute("aria-current", it.id === current ? "true" : "false");
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = fmtTime(it.date);
+      const d = document.createElement("span");
+      d.className = "d";
+      if (it.live) {
+        const dot = document.createElement("span");
+        dot.className = "dot";
+        d.append(dot, "läuft gerade, ab Beginn");
+      } else {
+        d.textContent = it.id === current ? "spielt" : "tagesschau";
+      }
+      b.append(t, d);
+      b.addEventListener("click", () => play(it, true));
+      li.append(b);
+      list.append(li);
+    }
+  }
+
+  function caption(it) {
+    now.replaceChildren();
+    const c = document.createElement("span");
+    c.className = "clock";
+    c.textContent = fmtTime(it.date);
+    const w = document.createElement("span");
+    w.className = "when";
+    const s = document.createElement("strong");
+    s.textContent = "Uhr, " + fmtDay(it.date);
+    w.append(s);
+    if (it.live) {
+      const o = document.createElement("span");
+      o.className = "onair";
+      o.textContent = " läuft gerade";
+      w.append(o);
+    }
+    now.append(c, w);
+  }
+
+  async function start(userGesture) {
+    try {
+      await video.play();
+      unmute.hidden = true;
+    } catch (e) {
+      if (userGesture) return;
+      // Browsers block autoplay with sound: start muted and offer the sound.
+      video.muted = true;
+      try { await video.play(); } catch (_) {}
+      unmute.hidden = false;
+    }
+  }
+
+  function play(it, userGesture) {
+    current = it.id;
+    if (hls) { hls.destroy(); hls = null; }
+    if (it.url.endsWith(".m3u8") && !video.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()) {
+      hls = new Hls();
+      hls.loadSource(it.url);
+      hls.attachMedia(video);
+    } else {
+      video.src = it.url;
+    }
+    caption(it);
+    render();
+    start(userGesture);
+  }
+
+  unmute.addEventListener("click", () => {
+    video.muted = false;
+    unmute.hidden = true;
+    video.play();
+  });
+
+  // When an edition ends, the next older one starts.
+  video.addEventListener("ended", () => {
+    const i = items.findIndex(it => it.id === current);
+    if (i >= 0 && i + 1 < items.length) play(items[i + 1], true);
+  });
+
+  async function load() {
+    const r = await fetch("/episodes.json", { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    const list = data.editions.map(e => ({ id: e.id, url: e.url, date: new Date(e.date) }));
+    if (data.live) list.unshift({ id: "live-" + data.live.date, url: data.live.url, date: new Date(data.live.date), live: true });
+    return list;
+  }
+
+  async function init() {
+    try {
+      items = await load();
+    } catch (e) {
+      notice.hidden = false;
+      notice.textContent = "Die Ausgaben konnten nicht geladen werden (" + e.message + "). Die Seite versucht es in einer Minute erneut.";
+      setTimeout(init, 60e3);
+      return;
+    }
+    notice.hidden = true;
+    if (!items.length) {
+      notice.hidden = false;
+      notice.textContent = "In den letzten 48 Stunden ist keine Ausgabe erschienen.";
+      return;
+    }
+    play(items[0], false);
+    // Pick up new editions without interrupting playback.
+    setInterval(async () => {
+      try { items = await load(); render(); } catch (_) {}
+    }, 120e3);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

@@ -1,4 +1,5 @@
-# Podcast feed of the latest tagesschau editions (tagesschau.de), for Pocket Casts.
+# Podcast feed and web player of the latest tagesschau editions (tagesschau.de),
+# plus a time-shifted live stream of the edition on air.
 { config, pkgs, ... }:
 let
   domain = config.domains.main;
@@ -14,6 +15,7 @@ in
     environment = {
       PORT = toString port;
       TAGESSCHAU_BASE_URL = "https://${host}";
+      TAGESSCHAU_PLAYER_HTML = "${./tagesschau-feed/index.html}";
     };
     serviceConfig = {
       ExecStart = "${pkgs.python3}/bin/python3 -I ${./tagesschau-feed/server.py}";
