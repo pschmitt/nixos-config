@@ -14,4 +14,14 @@ in
     command = "${taskerMcp}/bin/tasker-mcp-local";
     env.TASKER_MCP_CONFIG_DIR = "${config.xdg.configHome}/tasker-mcp";
   };
+
+  # Second phone (Zenfone 10). adb-serial and token live in the config dir.
+  programs.mcp.servers.tasker-zf10 = {
+    command = "${taskerMcp}/bin/tasker-mcp-local";
+    env = {
+      TASKER_MCP_CONFIG_DIR = "${config.xdg.configHome}/tasker-mcp-zf10";
+      TASKER_MCP_HOME = "${config.home.homeDirectory}/.tasker-mcp-zf10";
+      TASKER_MCP_LOCAL_PORT = "18211";
+    };
+  };
 }
