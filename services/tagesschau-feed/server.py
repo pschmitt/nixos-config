@@ -305,7 +305,8 @@ def episodes_json(now):
     }
     edition = current_edition(now)
     if edition and not any(ts == edition[0] for ts, _, _ in found):
-        data["live"] = {"date": edition[0].isoformat(), "url": live_session(now) + "index.m3u8"}
+        data["live"] = {"date": edition[0].isoformat(), "end": edition[1].isoformat(),
+                        "url": live_session(now) + "index.m3u8"}
     return json.dumps(data)
 
 

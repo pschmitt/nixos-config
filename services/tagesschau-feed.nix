@@ -32,11 +32,15 @@ in
   services.nginx.virtualHosts.${host} = {
     forceSSL = true;
     useACMEHost = "wildcard.${domain}";
-    # ARD's tagesschau podcast cover with an "ALLE AUSGABEN" badge.
-    locations."= /cover.jpg".alias = ./tagesschau-feed/cover.jpg;
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString port}";
-      recommendedProxySettings = true;
+    locations = {
+      # ARD's tagesschau podcast cover with an "ALLE" badge.
+      "= /cover.jpg".alias = ./tagesschau-feed/cover.jpg;
+      # The ARD "1" from the same cover, for the web player's header and favicon.
+      "= /mark.jpg".alias = ./tagesschau-feed/mark.jpg;
+      "/" = {
+        proxyPass = "http://127.0.0.1:${toString port}";
+        recommendedProxySettings = true;
+      };
     };
   };
 
