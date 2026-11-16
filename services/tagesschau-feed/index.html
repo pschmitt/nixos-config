@@ -178,6 +178,17 @@
     padding: 0.1rem 0.4rem; border-radius: 3px; font-variant-numeric: tabular-nums; pointer-events: none;
   }
   .track .tip[hidden] { display: none; }
+  .thumb {
+    position: absolute; bottom: 100%; margin-bottom: 0.6rem; width: 11rem; pointer-events: none;
+    border-radius: 5px; overflow: hidden; background: var(--deep); box-shadow: 0 0 0 2px var(--ink);
+  }
+  .thumb[hidden] { display: none; }
+  .thumb video { display: block; width: 100%; aspect-ratio: 16 / 9; background: var(--deep); }
+  .thumb span {
+    display: block; text-align: center; font-weight: 700; font-size: 0.85rem; padding: 0.15rem 0;
+    font-variant-numeric: tabular-nums; background: var(--ink); color: var(--deep);
+  }
+  @media (max-width: 640px) { .thumb { width: 8.5rem; } }
 
   /* The clock: playhead as broadcast time */
   .now { margin-top: 1.25rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
@@ -306,6 +317,7 @@
           <div class="track" id="track" role="slider" tabindex="0" aria-label="Position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
             <div class="rail"></div><div class="buf" id="buf"></div><div class="fill" id="fill"></div>
             <div class="knob" id="knob"></div><div class="tip" id="tip" hidden></div>
+            <div class="thumb" id="thumb" hidden><video id="tv" muted playsinline preload="none"></video><span id="ttime"></span></div>
           </div>
           <span class="edge" id="to">--:--</span>
         </div>
@@ -611,14 +623,41 @@
     track.setPointerCapture(ev.pointerId);
     seekTo(mediaAt(ms));
   });
+  // Thumbnails while scrubbing: a hidden low-quality copy of the published MP4
+  // (ARD's "webs" file) seeks along. Live editions only get the time label.
+  const thumb = $("thumb"), tv = $("tv");
+  let thumbFor = null, thumbPending = null;
+  const thumbUrl = it => it && !it.live ? it.url.replace(/\.web[a-z]+\.h264\.mp4$/, ".webs.h264.mp4") : null;
+  function thumbSeek(t) {
+    if (tv.seeking || tv.readyState < 1) { thumbPending = t; return; }
+    thumbPending = null;
+    if (tv.fastSeek) tv.fastSeek(t); else tv.currentTime = t;
+  }
+  tv.addEventListener("seeked", () => { if (thumbPending != null) thumbSeek(thumbPending); });
+  tv.addEventListener("loadedmetadata", () => { if (thumbPending != null) thumbSeek(thumbPending); });
+  function showThumb(p, ms) {
+    const url = thumbUrl(current);
+    if (!url) { thumb.hidden = true; return false; }
+    if (thumbFor !== url) { thumbFor = url; tv.src = url; tv.preload = "auto"; }
+    $("ttime").textContent = hms(new Date(ms));
+    thumb.hidden = false;
+    const tw = thumb.offsetWidth, w = track.offsetWidth;
+    thumb.style.left = Math.max(-tw / 2 + 8, Math.min(w - tw / 2 - 8, p * w - tw / 2)) + "px";
+    thumbSeek(Math.max(0, (ms - current.date.getTime()) / 1000));
+    return true;
+  }
+  function hideScrub() { tip.hidden = true; thumb.hidden = true; }
   track.addEventListener("pointermove", ev => {
     const [p, ms] = posAt(ev);
     if (ms === null) return;
-    tip.hidden = false; tip.style.left = (p * 100) + "%"; tip.textContent = hms(new Date(ms));
+    if (ev.pointerType === "touch" && !dragging) return;
+    if (showThumb(p, ms)) tip.hidden = true;
+    else { tip.hidden = false; tip.style.left = (p * 100) + "%"; tip.textContent = hms(new Date(ms)); }
     if (dragging) seekTo(mediaAt(ms));
   });
-  track.addEventListener("pointerup", () => { dragging = false; });
-  track.addEventListener("pointerleave", () => { if (!dragging) tip.hidden = true; });
+  track.addEventListener("pointerup", ev => { dragging = false; if (ev.pointerType !== "mouse") hideScrub(); });
+  track.addEventListener("pointercancel", () => { dragging = false; hideScrub(); });
+  track.addEventListener("pointerleave", () => { if (!dragging) hideScrub(); });
   track.addEventListener("keydown", ev => {
     if (ev.key === "ArrowLeft") { seekBy(-10); ev.preventDefault(); }
     if (ev.key === "ArrowRight") { seekBy(10); ev.preventDefault(); }
