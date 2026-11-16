@@ -2810,11 +2810,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794827579,
-        "narHash": "sha256-zE9ZSyduTqK3jLuHPKnzOCLqxVL95mgvwH/k8hFBEKw=",
+        "lastModified": 1794828442,
+        "narHash": "sha256-gFccY75lP3YRb6w5fxbT3PamTnRRxj6QtK0KFI4YB2M=",
         "owner": "pschmitt",
         "repo": "tasker-mcp",
-        "rev": "4d8c30a492c238dbb93aca56fe9ad0852f889810",
+        "rev": "b3610b7a0412d9bcd3180e03261eb90729d5bbb8",
         "type": "github"
       },
       "original": {
