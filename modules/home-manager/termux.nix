@@ -128,6 +128,9 @@ in
       ++ lib.optionals (config.termux.sshd.ports != [ ]) [
         ".config/termux-native/sshd-ports.conf"
       ]
+      ++ lib.optionals (config.termux.cache.credentialsSopsFile != null) [
+        ".local/share/termux-native/cache-credentials.sops.yaml"
+      ]
       ++ lib.optionals (config.termux.gpg.sopsFile != null) [
         ".local/share/termux-native/gpg.sops.yaml"
       ];
@@ -135,6 +138,12 @@ in
         Relative Home Manager output files copied into a Termux generation.
         This allowlist keeps unrelated home and private dotfiles out of bundles.
       '';
+    };
+
+    cache.credentialsSopsFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Encrypted read-only cache credentials decrypted with the Termux SSH identity at activation.";
     };
 
     ssh.hostKeysSopsFile = lib.mkOption {
@@ -218,10 +227,15 @@ in
                 "rofl-15"
                 "rofl-16"
               ];
+              # nixbot publishes every flake package, including the TermuxPP fork's
+              # `termuxpp-native-*-bundle` variants, under this pin prefix. The fork
+              # relocation rewrites `termux-native-` to `termuxpp-native-` in this
+              # file, so the pin names stay correct for both variants. GitHub CI
+              # (`gh-main-packages...-0`) publishes the stock bundles only.
               cache_pins = {
-                mp4 = "gh-main-packages.x86_64-linux.termux-native-mp4-bundle-0";
-                p11 = "gh-main-packages.x86_64-linux.termux-native-p11-bundle-0";
-                zf10 = "gh-main-packages.x86_64-linux.termux-native-zf10-bundle-0";
+                mp4 = "nixbot-pschmitt-nixos-config-packages.x86_64-linux.termux-native-mp4-bundle";
+                p11 = "nixbot-pschmitt-nixos-config-packages.x86_64-linux.termux-native-p11-bundle";
+                zf10 = "nixbot-pschmitt-nixos-config-packages.x86_64-linux.termux-native-zf10-bundle";
               };
               public_keys = [
                 "rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0="
@@ -231,13 +245,12 @@ in
                 "rofl-16:DB8WQ415B8v3P9r1R8U4pO1iKrOAldbBHbSz+chryXI="
                 "gh-actions:x+pfxw4yRpZbonnjaCR0nIm5eN1wOGAki0soDQyFjJQ="
               ];
-              aws_credentials_command = [
-                "rbw"
-                "get"
-                "--raw"
-                "--exact"
-                "nixpp Niks3 cache"
-              ];
+              # `nixpp upgrade --from-cache` installs this pin; it needs only the
+              # read-only [niks3] profile in ~/.aws/credentials, no vault and no SSH.
+              cache_profile = hostname;
+            }
+            // lib.optionalAttrs (config.termux.cache.credentialsSopsFile != null) {
+              aws_credentials_file = "~/.config/nixpp/cache-credentials";
             };
           };
           "termuxpp/bin/termux-file-editor" = {
@@ -279,6 +292,11 @@ in
           '';
         };
         dataFile = {
+          "termux-native/cache-credentials.sops.yaml" =
+            lib.mkIf (config.termux.cache.credentialsSopsFile != null)
+              {
+                source = config.termux.cache.credentialsSopsFile;
+              };
           "termux-native/ssh-host-keys.sops.yaml" = lib.mkIf (config.termux.ssh.hostKeysSopsFile != null) {
             source = config.termux.ssh.hostKeysSopsFile;
           };

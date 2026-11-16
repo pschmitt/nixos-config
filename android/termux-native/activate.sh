@@ -349,6 +349,11 @@ switch_generation() (
       "$PREFIX/bin/bash" "$root/generations/$generation/setup-known-hosts.sh" \
       "$root/generations/$generation" || return
   fi
+  if [[ "${TERMUX_NATIVE_SKIP_SOPS_SETUP:-}" != 1 && -f "$root/generations/$generation/setup-cache-credentials.sh" ]]
+  then
+    "$PREFIX/bin/bash" "$root/generations/$generation/setup-cache-credentials.sh" \
+      "$root/generations/$generation" || return
+  fi
   link_termuxpp_motd "$root/generations/$generation" || return
   ensure_generation_number "$root" "$generation" "$action" || return
   ln -s "generations/$generation" "$root/.next" || return

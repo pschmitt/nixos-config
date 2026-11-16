@@ -313,6 +313,8 @@ let
         ${target.readelf} -h -l -d "$out/libexec/termux-native-launcher"
         cp ${../../../android/termux-native/plugin.zsh} "$out/shell/plugins/example.zsh"
         cp ${../../../android/termux-native/activate.sh} "$out/activate.sh"
+        cp ${../../../android/termux-native/setup-cache-credentials.sh} "$out/setup-cache-credentials.sh"
+        chmod 755 "$out/setup-cache-credentials.sh"
         cp ${../../../android/termux-native/setup-known-hosts.sh} "$out/setup-known-hosts.sh"
         chmod 755 "$out/setup-known-hosts.sh"
         cp ${../../../android/termux-native/setup-sshd.sh} "$out/setup-sshd.sh"
