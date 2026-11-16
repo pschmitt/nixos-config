@@ -392,7 +392,11 @@
       $("unmute").hidden = true;
     } catch (e) {
       if (userGesture) return;
-      video.muted = true; // browsers block autoplay with sound
+      // Browsers block autoplay with sound. ?ton=1 (or ?sound=1) waits for a tap
+      // instead of starting muted; otherwise start muted and offer the sound.
+      const q = new URLSearchParams(location.search);
+      if (["ton", "sound"].some(k => q.has(k) && q.get(k) !== "0")) { $("bigplay").hidden = false; return; }
+      video.muted = true;
       try { await video.play(); $("unmute").hidden = false; } catch (_) { $("bigplay").hidden = false; }
     }
   }
