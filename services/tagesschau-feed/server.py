@@ -16,8 +16,9 @@ import os
 import re
 import threading
 import time
+import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from xml.sax.saxutils import escape
@@ -160,9 +161,174 @@ def feed():
         return _feed["xml"]
 
 
+# --- Time-shifted live stream -------------------------------------------------
+# Das Erste's live HLS keeps the last 2 hours, every segment stamped with
+# EXT-X-PROGRAM-DATE-TIME. /live hands out a session URL for the edition on air
+# (or aired within LIVE_MAX); its playlists replay the stream from the edition's
+# start, delayed by however late the session began, and end after the edition.
+# Any HLS player starts at the live edge, which is then the edition's start.
+
+EPG = "https://programm-api.ard.de/program/api/program?day={}&channelIds=daserste&channelType=ARD"
+LIVE_MASTER = os.environ.get(
+    "TAGESSCHAU_LIVE_URL", "https://daserste-live.ard-mcdn.de/daserste/live/hls/de/master.m3u8")
+LIVE_MAX = timedelta(minutes=int(os.environ.get("TAGESSCHAU_LIVE_MINUTES", "90")))
+MIN_EDITION = timedelta(seconds=270)  # skips the 2-minute night summaries
+END_MARGIN = timedelta(seconds=60)
+MIN_DELAY = timedelta(seconds=15)  # segments must exist upstream before we list them
+SESSION_RE = re.compile(r"^/live/(\d+)-(\d+)-(\d+)/(index|video|audio)\.m3u8$")
+
+_epg = {}  # day -> (fetched at, [(start, end)])
+_upstream = {}  # url -> (fetched at, text)
+
+
+def schedule(day):
+    cached = _epg.get(day)
+    if cached and time.time() - cached[0] < 600:
+        return cached[1]
+    data = json.load(get(EPG.format(day)))
+    slots = []
+    for ch in data.get("channels", []):
+        for slot in ch.get("timeSlots", []):
+            for e in slot:
+                if (e.get("title") or "").strip().lower() != "tagesschau":
+                    continue
+                start = datetime.fromisoformat(e["broadcastedOn"])
+                end = datetime.fromisoformat(e["broadcastEnd"])
+                if end - start >= MIN_EDITION:
+                    slots.append((start, end))
+    _epg[day] = (time.time(), slots)
+    return slots
+
+
+def current_edition(now):
+    slots = set()
+    for d in (-1, 0, 1):
+        try:
+            slots.update(schedule((now + timedelta(days=d)).strftime("%Y-%m-%d")))
+        except Exception:
+            pass
+    started = [s for s in slots if s[0] <= now]
+    if not started:
+        return None
+    start, end = max(started)
+    return (start, end) if now - start < LIVE_MAX else None
+
+
+def upstream(url):
+    cached = _upstream.get(url)
+    if cached and time.time() - cached[0] < 1:
+        return cached[1]
+    text = get(url).read().decode()
+    _upstream[url] = (time.time(), text)
+    return text
+
+
+def renditions():
+    """Best video variant and default audio rendition of the live master."""
+    best, video, audio = -1, None, None
+    lines = upstream(LIVE_MASTER).splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("#EXT-X-STREAM-INF"):
+            bw = int(re.search(r"[:,]BANDWIDTH=(\d+)", line).group(1))
+            if bw > best and i + 1 < len(lines):
+                best, video = bw, (line, lines[i + 1])
+        elif line.startswith("#EXT-X-MEDIA:TYPE=AUDIO") and "DEFAULT=YES" in line:
+            audio = line
+    return video, audio
+
+
+def master_playlist():
+    (inf, _), audio = renditions()
+    group = re.search(r'GROUP-ID="([^"]+)"', audio).group(1)
+    audio = re.sub(r'URI="[^"]*"', 'URI="audio.m3u8"', audio)
+    inf = re.sub(r",SUBTITLES=\"[^\"]*\"", "", inf)
+    inf = re.sub(r'AUDIO="[^"]*"', 'AUDIO="%s"' % group, inf)
+    return "#EXTM3U\n#EXT-X-VERSION:4\n#EXT-X-INDEPENDENT-SEGMENTS\n%s\n%s\nvideo.m3u8\n" % (audio, inf)
+
+
+def shifted_playlist(kind, start, end, began, now):
+    video, audio = renditions()
+    if kind == "video":
+        url = urllib.parse.urljoin(LIVE_MASTER, video[1])
+    else:
+        url = urllib.parse.urljoin(LIVE_MASTER, re.search(r'URI="([^"]+)"', audio).group(1))
+    text = upstream(url)
+    target = int(re.search(r"#EXT-X-TARGETDURATION:(\d+)", text).group(1))
+    seq = int(re.search(r"#EXT-X-MEDIA-SEQUENCE:(\d+)", text).group(1))
+    delay = max(began - start, MIN_DELAY)
+    lead = timedelta(seconds=3 * target)  # players start 3 segments before the edge
+    cutoff = end + END_MARGIN
+    horizon = min(now - delay + lead, cutoff)
+    out, first, pdt, dur = [], None, None, None
+    for line in text.splitlines():
+        if line.startswith("#EXT-X-PROGRAM-DATE-TIME:"):
+            pdt = datetime.fromisoformat(line.split(":", 1)[1])
+        elif line.startswith("#EXTINF:"):
+            dur = timedelta(seconds=float(line[8:].split(",")[0]))
+        elif line and not line.startswith("#"):
+            if pdt and dur and pdt + dur > start and pdt < horizon:
+                if first is None:
+                    first = seq
+                out.append("#EXT-X-PROGRAM-DATE-TIME:%s\n#EXTINF:%s,\n%s"
+                           % (pdt.isoformat(timespec="milliseconds"), dur.total_seconds(),
+                              urllib.parse.urljoin(url, line)))
+            seq += 1
+            pdt = dur = None
+    head = ["#EXTM3U", "#EXT-X-VERSION:4", "#EXT-X-TARGETDURATION:%d" % target,
+            "#EXT-X-MEDIA-SEQUENCE:%d" % (first or seq), "#EXT-X-PLAYLIST-TYPE:EVENT",
+            "#EXT-X-START:TIME-OFFSET=0,PRECISE=YES"]
+    tail = ["#EXT-X-ENDLIST"] if now - delay + lead >= cutoff else []
+    return "\n".join(head + out + tail) + "\n"
+
+
+def live_session(now):
+    edition = current_edition(now)
+    if not edition:
+        return None
+    start, end = edition
+    return "%s/live/%d-%d-%d/" % (BASE, start.timestamp(), end.timestamp(), now.timestamp())
+
+
 class Handler(BaseHTTPRequestHandler):
+    def send_text(self, body, ctype, cache="no-cache"):
+        body = body.encode()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Cache-Control", cache)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_live(self, path):
+        now = datetime.now(timezone.utc)
+        try:
+            if path in ("/live", "/live/audio"):
+                url = live_session(now)
+                if not url:
+                    self.send_error(404, "no tagesschau edition on air")
+                    return
+                name = "audio.m3u8" if path == "/live/audio" else "index.m3u8"
+                self.send_text(url + name + "\n", "text/plain; charset=utf-8")
+                return
+            m = SESSION_RE.match(path)
+            if not m:
+                self.send_error(404)
+                return
+            start, end, began = (datetime.fromtimestamp(int(x), timezone.utc) for x in m.groups()[:3])
+            if m.group(4) == "index":
+                body = master_playlist()
+            else:
+                body = shifted_playlist(m.group(4), start, end, began, now)
+            self.send_text(body, "application/vnd.apple.mpegurl")
+        except Exception as exc:
+            self.send_error(502, str(exc)[:100])
+
     def do_GET(self):
-        if self.path.split("?")[0] in ("/", "/feed.xml", "/feed"):
+        path = self.path.split("?")[0]
+        if path.startswith("/live"):
+            self.do_live(path)
+            return
+        if path in ("/", "/feed.xml", "/feed"):
             try:
                 body = feed()
             except Exception as exc:
