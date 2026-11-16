@@ -21,7 +21,8 @@ in
     env = {
       TASKER_MCP_CONFIG_DIR = "${config.xdg.configHome}/tasker-mcp-zf10";
       TASKER_MCP_HOME = "${config.xdg.stateHome}/tasker-mcp-zf10";
-      TASKER_MCP_LOCAL_PORT = "18211";
+      # Own local adb forward port: tasker-mcp would otherwise use 1821 for both phones.
+      TASKER_FORWARD_PORT = "18211";
     };
   };
 }
