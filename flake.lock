@@ -2479,6 +2479,7 @@
         "srvos": "srvos",
         "stricknani": "stricknani",
         "systems": "systems_5",
+        "tagesschau": "tagesschau",
         "tasker-mcp": "tasker-mcp",
         "tdc": "tdc",
         "teams-auth-source": "teams-auth-source",
@@ -2800,6 +2801,26 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "tagesschau": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794840275,
+        "narHash": "sha256-qMgyCJv+ZMIx3OBjWMLVxFAV0eBlcO4Hqhj8X9TudQ4=",
+        "owner": "pschmitt",
+        "repo": "tagesschau",
+        "rev": "de93df2c2f2f55ad737bb1e8fe0aa04dbceded71",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "tagesschau",
         "type": "github"
       }
     },

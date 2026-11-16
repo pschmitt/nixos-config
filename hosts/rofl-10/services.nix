@@ -46,7 +46,7 @@ in
     ../../services/rofl-10-container-networks.nix
     ../../services/searxng.nix
     ../../services/stricknani.nix
-    ../../services/tagesschau-feed.nix
+    ../../services/tagesschau.nix
     ../../services/taskwarrior
     ../../services/teams-live.nix
     ../../services/trek.nix
