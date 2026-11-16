@@ -621,40 +621,48 @@
   const toggle = () => (video.paused ? video.play() : video.pause());
   $("toggle").addEventListener("click", toggle);
   $("bigplay").addEventListener("click", ev => { ev.stopPropagation(); video.play(); });
-  // Touch: double-tap the left or right third to jump 20 s; each further tap adds 20 s.
+  // Touch: double-tap the left or right third to jump 20 s. That starts a seek mode
+  // on that side: every further tap within 700 ms adds 20 s, as on modern players.
   // A single tap toggles playback, a moment later so it can tell the two apart.
-  const SKIP = 20;
-  let tapTimer = null, lastTap = 0, lastSide = 0, skipTotal = 0;
+  // Touch is recognised on pointerdown (reliable everywhere, unlike click.pointerType)
+  // and handled on pointerup; click and dblclick only serve mouse users.
+  const SKIP = 20, DOUBLE = 300, KEEP = 700;
+  let lastPointer = "mouse", tapTimer = null, lastTap = 0, lastSide = 0;
+  let seekSide = 0, seekUntil = 0, skipTotal = 0;
+  well.addEventListener("pointerdown", ev => { lastPointer = ev.pointerType || "mouse"; }, true);
+  const isTouch = () => lastPointer === "touch" || lastPointer === "pen";
   function skipHint(side) {
     const el = side < 0 ? $("skipback") : $("skipahead");
-    el.textContent = (side < 0 ? "\u2212" : "+") + skipTotal + " s";
+    el.textContent = (side < 0 ? "−" : "+") + skipTotal + " s";
     el.classList.remove("go");
     void el.offsetWidth;
     el.classList.add("go");
   }
-  well.addEventListener("click", ev => {
-    if (ev.target !== video) return;
-    if (ev.pointerType !== "touch") { toggle(); return; }
+  function skip(side, t) {
+    clearTimeout(tapTimer);
+    if (seekSide !== side) skipTotal = 0;
+    seekSide = side;
+    seekUntil = t + KEEP;
+    skipTotal += SKIP;
+    seekBy(side * SKIP);
+    skipHint(side);
+  }
+  well.addEventListener("pointerup", ev => {
+    if (!isTouch() || ev.target !== video) return;
     const r = well.getBoundingClientRect();
     const x = (ev.clientX - r.left) / r.width;
     const side = x < 1 / 3 ? -1 : x > 2 / 3 ? 1 : 0;
     const t = performance.now();
-    if (side && side === lastSide && t - lastTap < 350) {
-      clearTimeout(tapTimer);
-      skipTotal += SKIP;
-      seekBy(side * SKIP);
-      skipHint(side);
-      lastTap = t;
-      return;
-    }
-    lastTap = t; lastSide = side; skipTotal = 0;
+    if (side && side === seekSide && t < seekUntil) { skip(side, t); return; }
+    if (side && side === lastSide && t - lastTap < DOUBLE) { skip(side, t); lastTap = 0; return; }
+    seekSide = 0;
+    lastTap = t; lastSide = side;
     clearTimeout(tapTimer);
     const wasIdle = idleAtTap;
-    tapTimer = setTimeout(() => { if (!wasIdle) toggle(); }, side ? 300 : 0);
+    tapTimer = setTimeout(() => { if (!wasIdle) toggle(); }, side ? DOUBLE : 0);
   });
-  well.addEventListener("dblclick", ev => {
-    if (ev.target === video && !(ev.sourceCapabilities && ev.sourceCapabilities.firesTouchEvents)) fullscreen();
-  });
+  well.addEventListener("click", ev => { if (ev.target === video && !isTouch()) toggle(); });
+  well.addEventListener("dblclick", ev => { if (ev.target === video && !isTouch()) fullscreen(); });
   $("prev").addEventListener("click", () => step(-1));
   $("next").addEventListener("click", () => step(1));
   $("back").addEventListener("click", () => seekBy(-10));
