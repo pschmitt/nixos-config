@@ -24,6 +24,11 @@ behavior.
   `mp4`, or `zf10`.
 - Inspect the existing Termux and generation state before modifying it. A
   successful shell prompt alone does not prove yadm bootstrap completed.
+- After a TermuxPP APK update, an existing SSH daemon can retain a deleted APK's
+  prefix-redirect library and close new SSH connections despite still listening.
+  Check the daemon's library mappings and coordinate with any agent installing
+  APKs before restarting it with the current app environment. Do not disable
+  host-key checking, clear app data, or reinstall the prefix to fix this.
 - Clearing Termux app data removes its private prefix, home, nixpp generations,
   and installer recovery files. Do this only when the user explicitly requests
   a clean reinstall. Check the backup before replacing or removing the prefix.
@@ -106,8 +111,12 @@ After setup or recovery, verify independently:
 
 1. `nixpp status --json` reports a current generation and no invalid
    generations.
-2. The yadm checkout exists, `yadm status` works, the `termux` and `nixpp`
-   local classes are configured, and yadm bootstrap completed.
+2. The yadm checkout exists, `yadm status` works, and yadm bootstrap completed.
+   Check classes against the app: stock Termux uses `termux`; TermuxPP uses
+   `termuxpp` instead, alongside `nixpp` and `impure`. yadm owns class selection;
+   do not add a second class-management hook to the Home Manager shell. Open
+   several fresh shells and confirm classes stay unchanged and alternates are
+   not relinked on every startup.
 3. `command -v yadm` and `command -v zhj` resolve; a simple `zhj` command
    works with the managed Zsh configuration.
 4. Relaunch Termux and confirm it starts the managed shell.
