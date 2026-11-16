@@ -2811,11 +2811,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794845039,
-        "narHash": "sha256-Wei+DjfwSGpiT7Utt3krg1VepSf34yHL55Hd2b8r3Nk=",
+        "lastModified": 1794848879,
+        "narHash": "sha256-nWw8jP4vq8/cRBfbifwyZRQssUhHBeF85QO8C5/KI34=",
         "owner": "pschmitt",
         "repo": "tagesschau",
-        "rev": "78f155596041592675b4f47261b6c5525ed54e2c",
+        "rev": "1655ce5c85879f77585523fae2a3cb35a1993ff5",
         "type": "github"
       },
       "original": {
