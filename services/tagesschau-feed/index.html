@@ -87,7 +87,16 @@
   /* Player: picture and transport form one block */
   .stage { min-width: 0; }
   .player { position: relative; border-radius: 6px; overflow: hidden; background: var(--deep); }
-  .well { position: relative; aspect-ratio: 16 / 9; background: var(--deep); cursor: pointer; }
+  .well { position: relative; aspect-ratio: 16 / 9; background: var(--deep); cursor: pointer; touch-action: manipulation; }
+  .skip {
+    position: absolute; top: 0; bottom: 0; width: 38%; display: grid; place-items: center;
+    pointer-events: none; opacity: 0; color: var(--ink); font-weight: 700; font-size: 1.15rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .skip.back { left: 0; background: radial-gradient(ellipse at 0% 50%, rgba(7, 29, 64, 0.65), transparent 70%); }
+  .skip.ahead { right: 0; background: radial-gradient(ellipse at 100% 50%, rgba(7, 29, 64, 0.65), transparent 70%); }
+  .skip.go { animation: skip 0.7s ease-out; }
+  @keyframes skip { 0%, 40% { opacity: 1; } 100% { opacity: 0; } }
   .player.idle, .player.idle .well { cursor: none; }
   video { display: block; width: 100%; height: 100%; background: var(--deep); }
   .big-play {
@@ -270,6 +279,8 @@
         <video id="video" playsinline preload="auto" poster="/cover.jpg"></video>
         <button class="big-play" id="bigplay" aria-label="Abspielen" hidden><svg><use href="#i-play"/></svg></button>
         <div class="flash" id="flash" aria-hidden="true"><svg><use href="#i-play"/></svg></div>
+        <div class="skip back" id="skipback" aria-hidden="true"></div>
+        <div class="skip ahead" id="skipahead" aria-hidden="true"></div>
         <button class="unmute" id="unmute" hidden>Ton einschalten</button>
       <div class="transport" id="transport">
         <div class="group">
@@ -610,13 +621,40 @@
   const toggle = () => (video.paused ? video.play() : video.pause());
   $("toggle").addEventListener("click", toggle);
   $("bigplay").addEventListener("click", ev => { ev.stopPropagation(); video.play(); });
+  // Touch: double-tap the left or right third to jump 20 s; each further tap adds 20 s.
+  // A single tap toggles playback, a moment later so it can tell the two apart.
+  const SKIP = 20;
+  let tapTimer = null, lastTap = 0, lastSide = 0, skipTotal = 0;
+  function skipHint(side) {
+    const el = side < 0 ? $("skipback") : $("skipahead");
+    el.textContent = (side < 0 ? "\u2212" : "+") + skipTotal + " s";
+    el.classList.remove("go");
+    void el.offsetWidth;
+    el.classList.add("go");
+  }
   well.addEventListener("click", ev => {
     if (ev.target !== video) return;
-    // On touch, a tap on hidden controls only brings them back.
-    if (ev.pointerType === "touch" && idleAtTap) return;
-    toggle();
+    if (ev.pointerType !== "touch") { toggle(); return; }
+    const r = well.getBoundingClientRect();
+    const x = (ev.clientX - r.left) / r.width;
+    const side = x < 1 / 3 ? -1 : x > 2 / 3 ? 1 : 0;
+    const t = performance.now();
+    if (side && side === lastSide && t - lastTap < 350) {
+      clearTimeout(tapTimer);
+      skipTotal += SKIP;
+      seekBy(side * SKIP);
+      skipHint(side);
+      lastTap = t;
+      return;
+    }
+    lastTap = t; lastSide = side; skipTotal = 0;
+    clearTimeout(tapTimer);
+    const wasIdle = idleAtTap;
+    tapTimer = setTimeout(() => { if (!wasIdle) toggle(); }, side ? 300 : 0);
   });
-  well.addEventListener("dblclick", ev => { if (ev.target === video) fullscreen(); });
+  well.addEventListener("dblclick", ev => {
+    if (ev.target === video && !(ev.sourceCapabilities && ev.sourceCapabilities.firesTouchEvents)) fullscreen();
+  });
   $("prev").addEventListener("click", () => step(-1));
   $("next").addEventListener("click", () => step(1));
   $("back").addEventListener("click", () => seekBy(-10));
