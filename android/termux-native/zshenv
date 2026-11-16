@@ -42,6 +42,26 @@ fi
 export TERMUX_GENERATION
 export ZDOTDIR
 
+# PID start times distinguish live shells from stale records after PID reuse.
+if [[ "$TERMUX_GENERATION" == "$HOME/.local/share/termux-native/generations/"* &&
+      -r /proc/$$/stat ]]
+then
+  typeset -g _termux_native_session_dir="$HOME/.local/share/termux-native/sessions"
+  typeset -g _termux_native_process_stat
+  typeset -ga _termux_native_process_fields
+  IFS= read -r _termux_native_process_stat < /proc/$$/stat
+  _termux_native_process_stat="${_termux_native_process_stat##*\) }"
+  _termux_native_process_fields=( ${=_termux_native_process_stat} )
+  if [[ "${_termux_native_process_fields[20]:-}" == <-> ]] &&
+      mkdir -p -- "$_termux_native_session_dir"
+  then
+    print -r -- "${_termux_native_process_fields[20]} ${TERMUX_GENERATION:t}" \
+      > "$_termux_native_session_dir/$$.next" &&
+      mv -f -- "$_termux_native_session_dir/$$.next" "$_termux_native_session_dir/$$"
+  fi
+  unset _termux_native_session_dir _termux_native_process_stat _termux_native_process_fields
+fi
+
 # Older global zshenv files update TERMUX_NATIVE_SESSION_VARS_GENERATION before
 # clearing both Home Manager guards. Use a separate marker for this protocol.
 if [[ "${TERMUX_NATIVE_HM_SESSION_GENERATION:-}" != "$TERMUX_GENERATION" ]]

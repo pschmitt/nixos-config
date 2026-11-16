@@ -255,8 +255,46 @@ ensure_generation_number() {
   rm -f -- "$temporary"
 }
 
-switch_generation() {
+switch_generation() (
   local root=$1 generation=$2 action=$3 package installed
+  local backup='' switched=0
+
+  # shellcheck disable=SC2329 # Invoked by the EXIT trap.
+  cleanup_activation() {
+    local name path
+    if [[ -n "$backup" ]]
+    then
+      if (( ! switched ))
+      then
+        for name in known-hosts config
+        do
+          if [[ "$name" == known-hosts ]]
+          then
+            path="$PREFIX/etc/ssh/ssh_known_hosts.d/nixpp"
+          else
+            path="$PREFIX/etc/ssh/ssh_config.d/nixpp.conf"
+          fi
+          if [[ -e "$backup/$name" || -L "$backup/$name" ]]
+          then
+            if ! cp -a --remove-destination -- "$backup/$name" "$path"
+            then
+              printf 'Could not restore SSH client state; recovery files retained at %s\n' "$backup" >&2
+              return 1
+            fi
+          elif [[ -f "$backup/$name.absent" ]]
+          then
+            if ! rm -f -- "$path"
+            then
+              printf 'Could not restore SSH client state; recovery files retained at %s\n' "$backup" >&2
+              return 1
+            fi
+          fi
+        done
+      fi
+      rm -rf -- "$backup"
+    fi
+  }
+  trap cleanup_activation EXIT
   if [[ "$generation" =~ ^[1-9][0-9]*$ ]]
   then
     generation=$(generation_id_for_number "$root" "$generation") || {
@@ -288,13 +326,27 @@ switch_generation() {
     "$root/generations/$generation" || return
   if [[ "${TERMUX_NATIVE_SKIP_SOPS_SETUP:-}" != 1 ]]
   then
+    local name path
+    backup=$(mktemp -d "$root/.activation.XXXXXXXX") || return
+    for name in known-hosts config
+    do
+      if [[ "$name" == known-hosts ]]
+      then
+        path="$PREFIX/etc/ssh/ssh_known_hosts.d/nixpp"
+      else
+        path="$PREFIX/etc/ssh/ssh_config.d/nixpp.conf"
+      fi
+      if [[ -e "$path" || -L "$path" ]]
+      then
+        cp -a -- "$path" "$backup/$name.next" || return
+        mv -- "$backup/$name.next" "$backup/$name" || return
+      else
+        touch "$backup/$name.absent" || return
+      fi
+    done
     TERMUX_GENERATION="$root/generations/$generation" \
       PATH="$root/generations/$generation/bin:$PATH" \
       "$PREFIX/bin/bash" "$root/generations/$generation/setup-known-hosts.sh" \
-      "$root/generations/$generation" || return
-    TERMUX_GENERATION="$root/generations/$generation" \
-      PATH="$root/generations/$generation/bin:$PATH" \
-      "$PREFIX/bin/bash" "$root/generations/$generation/setup-gpg-keys.sh" \
       "$root/generations/$generation" || return
   fi
   link_termuxpp_motd "$root/generations/$generation" || return
@@ -307,10 +359,22 @@ switch_generation() {
   else
     mv -Tf "$root/.next" "$root/current" || return
   fi
+  switched=1
   link_nixpp_config || return
   printf 'Activated %s. Start the managed shell with:\n  exec "%s/bin/zsh" -l\n' \
     "$generation" "$PREFIX"
-}
+  # Key imports are additive shared state, not part of generation rollback.
+  if [[ "${TERMUX_NATIVE_SKIP_SOPS_SETUP:-}" != 1 ]]
+  then
+    if ! TERMUX_GENERATION="$root/generations/$generation" \
+      PATH="$root/generations/$generation/bin:$PATH" \
+      "$PREFIX/bin/bash" "$root/generations/$generation/setup-gpg-keys.sh" \
+      "$root/generations/$generation"
+    then
+      printf 'Warning: generation activated, but GPG key provisioning failed. Retry setup-gpg-keys.sh for the active generation.\n' >&2
+    fi
+  fi
+)
 
 link_termuxpp_motd() {
   local generation=$1 config_dir="$HOME/.config/termuxpp"

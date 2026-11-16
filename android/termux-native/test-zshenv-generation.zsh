@@ -34,6 +34,7 @@ unset LD_PRELOAD
 
 [[ "$TERMUX_GENERATION" == "$root/generations/$first" ]]
 [[ "$ZDOTDIR" == "$TERMUX_GENERATION/home/.config/zsh" ]]
+[[ "$(<"$root/sessions/$$")" == <->" $first" ]]
 (( ${path[(Ie)$root/generations/$first/bin]} > 0 ))
 (( ${path[(Ie)$root/generations/$legacy/bin]} == 0 ))
 (( ${fpath[(Ie)$root/generations/$legacy/shell/plugins/completions]} == 0 ))

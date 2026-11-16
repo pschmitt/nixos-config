@@ -561,8 +561,12 @@ The installer trusts a digest obtained from the builder; it does not verify a
 release signature or enforce an anti-downgrade policy. Operation locks record
 their owner and recover stale directories left by interrupted processes, while
 still refusing a lock held by a live bootstrap or activation. `nixpp gc` prunes
-old generations after a dry-run preview while preserving the active and
-configured rollback generations.
+old generations after a dry-run preview while preserving the active,
+configured rollback, pinned, and live-shell generations. Managed Zsh startup
+records its generation with the process ID and Linux process start time;
+GC discards stale records and protects matching live processes and their APT
+requirements. Shells started before this tracking was installed must be
+restarted, or their generation explicitly pinned, before running GC.
 If the generation index is missing or does not include an installed generation,
 GC assigns stable numbers to those generations. When an index already exists,
 unindexed directories are treated as older than indexed generations, so GC can
@@ -583,6 +587,12 @@ rollback does not undo APT changes; packages needed by any retained generation
 remain installed. The first bootstrap after this tracking is introduced does
 not claim packages installed by older bootstrap runs, because their original
 ownership cannot be established safely.
+Activation restores the previous managed SSH client known-hosts files if a
+later pre-switch step fails. GPG key imports run only after a successful switch;
+they are additive shared state, not rolled back with a generation. A failed
+import reports a warning without presenting the completed switch as a failed
+activation. Retry the active generation's `setup-gpg-keys.sh` to provision keys.
+
 The bootstrap saves the existing `$PREFIX/etc/zshenv` and Termux login shell
 before selecting the managed Zsh configuration. A cold app launch then starts
 the managed shell directly. `bash bootstrap.sh restore` restores both saved

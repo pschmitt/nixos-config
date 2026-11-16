@@ -706,15 +706,7 @@ pub fn doctor() -> Result<()> {
                 scope.spawn(move || {
                     let started = Instant::now();
                     let result = (|| {
-                        let output = Command::new("ssh")
-                            .args([
-                                "-o",
-                                "BatchMode=yes",
-                                "-o",
-                                "ConnectTimeout=10",
-                                builder,
-                                "command -v nix >/dev/null",
-                            ])
+                        let output = ssh_command(builder, "command -v nix >/dev/null")
                             .output()
                             .context("start SSH check")?;
                         ensure!(
@@ -1968,13 +1960,14 @@ fn remote_output_cache(builder: &str, store_path: &str) -> Result<String> {
 fn remote_nar(builder: &str, store_path: &str, destination: &Path, maximum: u64) -> Result<()> {
     let mut file = create_temp_file(destination)?;
     let temp_path = file.path.clone();
-    let mut child = Command::new("ssh")
-        .args(["-T", "--", builder])
-        .arg(format!("nix nar pack {}", shell_quote(store_path)))
-        .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .with_context(|| format!("start NAR transfer from {builder}"))?;
+    let mut child = ssh_command(
+        builder,
+        &format!("nix nar pack {}", shell_quote(store_path)),
+    )
+    .stdout(Stdio::piped())
+    .stderr(Stdio::inherit())
+    .spawn()
+    .with_context(|| format!("start NAR transfer from {builder}"))?;
     let mut stdout = child
         .stdout
         .take()
@@ -2005,14 +1998,37 @@ fn remote_nar(builder: &str, store_path: &str, destination: &Path, maximum: u64)
     Ok(())
 }
 
+const SSH_OPTIONS: [&str; 8] = [
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    "ConnectTimeout=10",
+    "-o",
+    "ServerAliveInterval=15",
+    "-o",
+    "ServerAliveCountMax=3",
+];
+
+fn ssh_args(builder: &str, remote_command: &str) -> Vec<String> {
+    SSH_OPTIONS
+        .iter()
+        .copied()
+        .chain(["-T", "--", builder, remote_command])
+        .map(str::to_owned)
+        .collect()
+}
+
+fn ssh_command(builder: &str, remote_command: &str) -> Command {
+    let mut command = Command::new("ssh");
+    command.args(ssh_args(builder, remote_command));
+    command
+}
+
 fn remote_output(builder: &str, remote_command: &str) -> Result<String> {
-    let output = Command::new("ssh")
-        .args(["-T", "--", builder, remote_command])
+    let output = ssh_command(builder, remote_command)
+        .stderr(Stdio::inherit())
         .output()
         .with_context(|| format!("start ssh to {builder}"))?;
-    io::stderr()
-        .write_all(&output.stderr)
-        .context("write SSH diagnostics")?;
     ensure!(
         output.status.success(),
         "ssh {builder} exited with {}",
@@ -2200,12 +2216,17 @@ fn curl_args(auth: &CacheAuth, progress: bool) -> Vec<String> {
     let mut arguments = vec![
         "--fail".to_owned(),
         "--show-error".to_owned(),
-        "--location".to_owned(),
         "--proto".to_owned(),
         "=https,http".to_owned(),
         "--max-time".to_owned(),
         "7200".to_owned(),
     ];
+    // Authenticated requests carry credentials or custom S3 token headers that
+    // must never be replayed to another origin, so only anonymous requests may
+    // follow redirects.
+    if auth.netrc.is_none() && auth.curl_config.is_none() {
+        arguments.push("--location".to_owned());
+    }
     if progress && io::stderr().is_terminal() {
         arguments.push("--progress-bar".to_owned());
     } else {
@@ -3389,6 +3410,56 @@ mod tests {
         std::os::unix::fs::symlink(directory.join("external"), &path).unwrap();
         assert!(validate_netrc(&path).is_err());
         fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn authenticated_curl_requests_do_not_follow_redirects() {
+        let anonymous = CacheAuth {
+            netrc: None,
+            curl_config: None,
+        };
+        assert!(curl_args(&anonymous, false).contains(&"--location".to_owned()));
+        let netrc = CacheAuth {
+            netrc: Some(PathBuf::from("/tmp/netrc")),
+            curl_config: None,
+        };
+        assert!(!curl_args(&netrc, false).contains(&"--location".to_owned()));
+        let s3 = CacheAuth {
+            netrc: None,
+            curl_config: Some("header = \"x-amz-security-token: t\"\n".to_owned()),
+        };
+        let arguments = curl_args(&s3, true);
+        assert!(!arguments.contains(&"--location".to_owned()));
+        assert!(arguments.contains(&"--config".to_owned()));
+    }
+
+    #[test]
+    fn ssh_commands_share_non_interactive_timeout_options() {
+        let arguments = ssh_args("builder", "echo ok");
+        assert_eq!(
+            arguments,
+            [
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "ConnectTimeout=10",
+                "-o",
+                "ServerAliveInterval=15",
+                "-o",
+                "ServerAliveCountMax=3",
+                "-T",
+                "--",
+                "builder",
+                "echo ok",
+            ]
+        );
+        let command = ssh_command("builder", "echo ok");
+        assert_eq!(command.get_program(), "ssh");
+        let command_arguments: Vec<_> = command
+            .get_args()
+            .map(|argument| argument.to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(command_arguments, arguments);
     }
 
     #[test]
