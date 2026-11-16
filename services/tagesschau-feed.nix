@@ -30,6 +30,8 @@ in
   services.nginx.virtualHosts.${host} = {
     forceSSL = true;
     useACMEHost = "wildcard.${domain}";
+    # ARD's tagesschau podcast cover with an "ALLE AUSGABEN" badge.
+    locations."= /cover.jpg".alias = ./tagesschau-feed/cover.jpg;
     locations."/" = {
       proxyPass = "http://127.0.0.1:${toString port}";
       recommendedProxySettings = true;

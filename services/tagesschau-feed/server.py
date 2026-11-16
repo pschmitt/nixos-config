@@ -31,6 +31,8 @@ PREFERRED = os.environ.get("TAGESSCHAU_QUALITY", "webxxl")
 KEEP = int(os.environ.get("TAGESSCHAU_ITEMS", "12"))
 MAX_AGE = timedelta(hours=int(os.environ.get("TAGESSCHAU_MAX_AGE_HOURS", "48")))
 CACHE_TTL = int(os.environ.get("TAGESSCHAU_CACHE_SECONDS", "60"))
+BASE = os.environ.get("TAGESSCHAU_BASE_URL", "https://tagesschau.brkn.lol")
+COVER = escape(BASE + "/cover.jpg")
 REMEMBER = 100  # editions kept in memory between polls
 
 _lock = threading.Lock()
@@ -138,6 +140,8 @@ def build():
         "<rss version=\"2.0\" xmlns:itunes=\"http://www.itunes.com/dtds/podcast-1.0.dtd\"><channel>"
         "<title>tagesschau (alle Ausgaben)</title><link>https://www.tagesschau.de</link>"
         "<language>de</language>"
+        "<image><url>" + COVER + "</url><title>tagesschau (alle Ausgaben)</title>"
+        "<link>https://www.tagesschau.de</link></image><itunes:image href=\"" + COVER + "\"/>"
         "<description>Die jeweils neuesten tagesschau-Ausgaben von tagesschau.de.</description>"
         "<itunes:author>ARD</itunes:author><itunes:explicit>false</itunes:explicit>"
         + "".join(items) + "</channel></rss>"
