@@ -1,4 +1,4 @@
-# Podcast feed of the latest tagesschau editions (ARD Mediathek), for Pocket Casts.
+# Podcast feed of the latest tagesschau editions (tagesschau.de), for Pocket Casts.
 { config, pkgs, ... }:
 let
   domain = config.domains.main;

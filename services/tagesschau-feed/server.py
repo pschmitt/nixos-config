@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Podcast feed of the latest tagesschau editions, as published in the ARD Mediathek.
+"""Podcast feed of the latest tagesschau editions, as published on tagesschau.de.
 
-The official tagesschau podcasts only carry the 20:00 edition (and late). This
-feed lists every regular edition that has already aired (09:00, 12:00, 15:00,
-...), newest first, so a podcast app always has the most recent one.
+The official tagesschau podcasts only carry the 20:00 edition. tagesschau.de
+publishes every regular edition (12:00, 14:00, 15:00, 17:00, ..., 20:00) as an
+MP4 about 15-20 minutes after it aired. This feed lists them newest first, so
+a podcast app always has the most recent one.
+
+Discovery: the "letzte Sendung" pages link the newest editions (ts-N.html), and
+every edition page links the previous ones. Each edition's JSON
+(api2u/<section>/ts-N.json) carries its air time and MP4 URLs.
 """
 
 import json
@@ -12,99 +17,118 @@ import re
 import threading
 import time
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 from email.utils import format_datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from xml.sax.saxutils import escape
 
-GROUPING = (
-    "https://api.ardmediathek.de/page-gateway/pages/ard/grouping/"
-    "Y3JpZDovL2Rhc2Vyc3RlLmRlL3RhZ2Vzc2NoYXU?embedded=true"
-)
-ITEM = "https://api.ardmediathek.de/page-gateway/pages/ard/item/{}?devicetype=pc&embedded=true"
-TITLE_RE = re.compile(r"^tagesschau \d\d:\d\d Uhr")
-SKIP_RE = re.compile(r"Gebärden|einfacher Sprache|Audiodeskription", re.I)
-QUALITIES = ["webm", "webl", "webs", "webxl", "webxxl"]  # preference order
+SITE = "https://www.tagesschau.de"
+LISTING_PAGES = [SITE + "/multimedia/letzte_sendung", SITE + "/multimedia"]
+EDITION_RE = re.compile(r"/(tagesschau|tagesschau_20_uhr)/ts-(\d+)\.html")
+STREAMS = {"webs": "h264s", "webm": "h264m", "webxl": "h264xl"}
+QUALITIES = ["webm", "webxl", "webs"]  # fallback order
 PREFERRED = os.environ.get("TAGESSCHAU_QUALITY", "webm")
 KEEP = int(os.environ.get("TAGESSCHAU_ITEMS", "12"))
+MAX_AGE = timedelta(hours=int(os.environ.get("TAGESSCHAU_MAX_AGE_HOURS", "48")))
 CACHE_TTL = int(os.environ.get("TAGESSCHAU_CACHE_SECONDS", "60"))
-BASE = os.environ.get("TAGESSCHAU_BASE_URL", "https://tagesschau.brkn.lol")
+REMEMBER = 100  # editions kept in memory between polls
 
 _lock = threading.Lock()
-_listing = {"at": 0.0, "teasers": []}
-_media = {}  # item id -> (url, length) ; immutable once published
+_known = {}  # ts id -> section, accumulated across polls
+_editions = {}  # ts id -> (datetime, url) ; immutable once published
+_lengths = {}  # url -> content length
 _feed = {"at": 0.0, "xml": b""}
 
 
 def get(url, method="GET"):
-    req = urllib.request.Request(url, method=method, headers={"User-Agent": "tagesschau-feed/1"})
+    req = urllib.request.Request(url, method=method, headers={"User-Agent": "tagesschau-feed/2"})
     return urllib.request.urlopen(req, timeout=20)
 
 
-def parse_ts(value):
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+def links(url):
+    html = get(url).read().decode("utf-8", "replace")
+    return {"ts-" + n: section for section, n in EDITION_RE.findall(html)}
+
+
+def discover():
+    found = {}
+    for page in LISTING_PAGES:
+        try:
+            found.update(links(page))
+        except Exception:
+            pass
+    if not found and not _known:
+        raise RuntimeError("no editions found on tagesschau.de")
+    # The newest edition page of each section lists the previous editions.
+    for section in set(found.values()):
+        newest = max((i for i, s in found.items() if s == section), key=lambda i: int(i[3:]))
+        try:
+            found.update(links("%s/%s/%s.html" % (SITE, section, newest)))
+        except Exception:
+            pass
+    _known.update(found)
+    for old in sorted(_known, key=lambda i: int(i[3:]))[:-REMEMBER]:
+        del _known[old]
+
+
+def edition(ts_id):
+    if ts_id in _editions:
+        return _editions[ts_id]
+    data = json.load(get("%s/api2u/%s/%s.json" % (SITE, _known[ts_id], ts_id)))
+    if (data.get("title") or "").strip().lower() != "tagesschau":
+        return None
+    streams = data.get("streams") or {}
+    order = [PREFERRED] + [q for q in QUALITIES if q != PREFERRED]
+    url = next((streams[STREAMS[q]] for q in order if streams.get(STREAMS.get(q))), None)
+    if not url or not data.get("date"):
+        return None  # not published yet; retry on the next poll
+    _editions[ts_id] = (datetime.fromisoformat(data["date"]), url)
+    return _editions[ts_id]
 
 
 def editions():
-    if time.time() - _listing["at"] > CACHE_TTL:
-        data = json.load(get(GROUPING))
-        teasers = []
-        for widget in data.get("widgets", []):
-            teasers.extend(widget.get("teasers", []))
-        _listing.update(at=time.time(), teasers=teasers)
-    now = datetime.now(timezone.utc)
+    discover()
+    now = datetime.now().astimezone()
     found = []
-    for t in _listing["teasers"]:
-        title = t.get("longTitle") or t.get("title") or ""
-        when = t.get("broadcastedOn")
-        if not when or not TITLE_RE.match(title) or SKIP_RE.search(title):
-            continue
-        ts = parse_ts(when)
-        if ts <= now:
-            found.append((ts, title, t["id"]))
+    for ts_id in _known:
+        try:
+            e = edition(ts_id)
+        except Exception:
+            e = None
+        if e and now - MAX_AGE <= e[0] <= now:
+            found.append((e[0], ts_id, e[1]))
     found.sort(reverse=True)
     return found[:KEEP]
 
 
-def media(item_id):
-    if item_id in _media:
-        return _media[item_id]
-    raw = get(ITEM.format(item_id)).read().decode()
-    urls = set(re.findall(r"https://[^\"\\ ]+\.web[a-z]+\.h264\.mp4", raw))
-    by_q = {re.search(r"\.(web[a-z]+)\.h264", u).group(1): u for u in urls}
-    order = [PREFERRED] + [q for q in QUALITIES if q != PREFERRED]
-    url = next((by_q[q] for q in order if q in by_q), None)
-    if not url:
-        return None
-    length = int(get(url, "HEAD").headers.get("Content-Length", "0"))
-    _media[item_id] = (url, length)
-    return _media[item_id]
+def length(url):
+    if url not in _lengths:
+        _lengths[url] = int(get(url, "HEAD").headers.get("Content-Length", "0"))
+    return _lengths[url]
 
 
 def build():
     items = []
-    for ts, title, item_id in editions():
+    for ts, ts_id, url in editions():
         try:
-            m = media(item_id)
+            size = length(url)
         except Exception:
-            m = None
-        if not m:
             continue
-        url, length = m
+        title = "tagesschau %s Uhr, %s" % (ts.strftime("%H:%M"), ts.strftime("%d.%m.%Y"))
         items.append(
             "<item><title>%s</title><guid isPermaLink=\"false\">%s</guid>"
-            "<pubDate>%s</pubDate><link>https://www.ardmediathek.de/video/%s</link>"
+            "<pubDate>%s</pubDate><link>%s/%s/%s.html</link>"
             "<description>%s</description>"
             "<enclosure url=\"%s\" length=\"%d\" type=\"video/mp4\"/></item>"
-            % (escape(title), escape(item_id), format_datetime(ts),
-               escape(item_id), escape(title), escape(url), length)
+            % (escape(title), escape(ts_id), format_datetime(ts),
+               SITE, _known[ts_id], escape(ts_id), escape(title), escape(url), size)
         )
     return (
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<rss version=\"2.0\" xmlns:itunes=\"http://www.itunes.com/dtds/podcast-1.0.dtd\"><channel>"
         "<title>tagesschau (alle Ausgaben)</title><link>https://www.tagesschau.de</link>"
         "<language>de</language>"
-        "<description>Die jeweils neuesten tagesschau-Ausgaben aus der ARD Mediathek.</description>"
+        "<description>Die jeweils neuesten tagesschau-Ausgaben von tagesschau.de.</description>"
         "<itunes:author>ARD</itunes:author><itunes:explicit>false</itunes:explicit>"
         + "".join(items) + "</channel></rss>"
     ).encode()
