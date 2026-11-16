@@ -425,7 +425,11 @@ scripts by the Home Manager profile, without relying on Zinit's symlink-based
 installer. ShellCheck is provided by Termux APT; the old upstream x86_64/proot
 wrapper is not loaded by the native shell.
 Private yadm files remain runtime inputs from the phone's home directory and
-are not copied into the public bundle.
+are not copied into the public bundle. yadm owns its local classes and alternate
+selection; the Home Manager shell must not add or remove classes. In particular,
+adding the stock `termux` class conflicts with the TermuxPP overlay that replaces
+it with `termuxpp`, causing alternates to be relinked on every shell startup and
+triggering Powerlevel10k's instant-prompt console-output warning.
 
 The package adapter rebuilds a Nixpkgs recipe for Android/Bionic when
 `pkgsCross.aarch64-android-prebuilt` provides a working derivation. It does not
