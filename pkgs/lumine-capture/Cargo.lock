@@ -1731,7 +1731,7 @@ dependencies = [
 
 [[package]]
 name = "lumine-capture"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ashpd",
  "async-trait",
@@ -1748,9 +1748,12 @@ dependencies = [
  "ort",
  "pico-args",
  "pipewire",
+ "ravif",
  "resvg",
  "rustix",
  "serde",
+ "shot-image",
+ "shot-stitch",
  "smithay-client-toolkit",
  "strum",
  "sys-locale",
@@ -1958,6 +1961,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "nasm-rs"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "706bf8a5e8c8ddb99128c3291d31bd21f4bcde17f0f4c20ec678d85c74faa149"
+dependencies = [
+ "jobserver",
+ "log",
 ]
 
 [[package]]
@@ -2711,6 +2724,7 @@ dependencies = [
  "av1-grain",
  "bitstream-io",
  "built",
+ "cc",
  "cfg-if",
  "interpolate_name",
  "itertools 0.14.0",
@@ -2718,6 +2732,7 @@ dependencies = [
  "libfuzzer-sys",
  "log",
  "maybe-rayon",
+ "nasm-rs",
  "new_debug_unreachable",
  "noop_proc_macro",
  "num-derive",
@@ -3101,6 +3116,17 @@ name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
+
+[[package]]
+name = "shot-image"
+version = "0.1.0"
+
+[[package]]
+name = "shot-stitch"
+version = "0.1.0"
+dependencies = [
+ "shot-image",
+]
 
 [[package]]
 name = "signal-hook-registry"
