@@ -26,8 +26,8 @@ SITE = "https://www.tagesschau.de"
 LISTING_PAGES = [SITE + "/multimedia/letzte_sendung", SITE + "/multimedia"]
 EDITION_RE = re.compile(r"/(tagesschau|tagesschau_20_uhr)/ts-(\d+)\.html")
 STREAMS = {"webs": "h264s", "webm": "h264m", "webxl": "h264xl"}
-QUALITIES = ["webm", "webxl", "webs"]  # fallback order
-PREFERRED = os.environ.get("TAGESSCHAU_QUALITY", "webm")
+QUALITIES = ["webxxl", "webxl", "webm", "webs"]  # fallback order
+PREFERRED = os.environ.get("TAGESSCHAU_QUALITY", "webxxl")
 KEEP = int(os.environ.get("TAGESSCHAU_ITEMS", "12"))
 MAX_AGE = timedelta(hours=int(os.environ.get("TAGESSCHAU_MAX_AGE_HOURS", "48")))
 CACHE_TTL = int(os.environ.get("TAGESSCHAU_CACHE_SECONDS", "60"))
@@ -78,8 +78,18 @@ def edition(ts_id):
     if (data.get("title") or "").strip().lower() != "tagesschau":
         return None
     streams = data.get("streams") or {}
-    order = [PREFERRED] + [q for q in QUALITIES if q != PREFERRED]
-    url = next((streams[STREAMS[q]] for q in order if streams.get(STREAMS.get(q))), None)
+    urls = {q: streams[k] for q, k in STREAMS.items() if streams.get(k)}
+    if "webxl" in urls:
+        # The 1080p file is not in the JSON but sits next to the 720p one.
+        urls["webxxl"] = urls["webxl"].replace(".webxl.h264.mp4", ".webxxl.h264.mp4")
+    url = None
+    for q in [PREFERRED] + [q for q in QUALITIES if q != PREFERRED]:
+        try:
+            if q in urls and length(urls[q]):
+                url = urls[q]
+                break
+        except Exception:
+            continue
     if not url or not data.get("date"):
         return None  # not published yet; retry on the next poll
     _editions[ts_id] = (datetime.fromisoformat(data["date"]), url)
