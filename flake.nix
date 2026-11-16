@@ -74,6 +74,12 @@
       };
     };
 
+    # Tasker MCP server (fork with persist_config without the screen, XDG dirs).
+    tasker-mcp = {
+      url = "github:pschmitt/tasker-mcp";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     declaroid = {
       url = "github:pschmitt/declaroid";
       inputs.nixpkgs.follows = "nixpkgs";

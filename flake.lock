@@ -2479,6 +2479,7 @@
         "srvos": "srvos",
         "stricknani": "stricknani",
         "systems": "systems_5",
+        "tasker-mcp": "tasker-mcp",
         "tdc": "tdc",
         "teams-auth-source": "teams-auth-source",
         "teams-live": "teams-live",
@@ -2799,6 +2800,26 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "tasker-mcp": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794827338,
+        "narHash": "sha256-ZGvLni0sut4gMs2uCBhWvAWlYyOj2fVWXaEfjrqENE4=",
+        "owner": "pschmitt",
+        "repo": "tasker-mcp",
+        "rev": "32f057f48db117e2efd361eb57f44ed9bb0dbc4b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "tasker-mcp",
         "type": "github"
       }
     },
