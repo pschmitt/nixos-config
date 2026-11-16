@@ -9,7 +9,6 @@ import hmac
 import json
 import os
 import selectors
-import shutil
 import socket
 import ssl
 import subprocess

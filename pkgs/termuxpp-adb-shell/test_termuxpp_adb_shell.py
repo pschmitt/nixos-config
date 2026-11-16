@@ -36,7 +36,8 @@ class BootstrapTests(unittest.TestCase):
                 existing_certificate = b"existing-server-cert"
                 transcript = (version + b"\0" + operation + b"\0" + nonce + server_nonce
                               + hashlib.sha256(public_key).digest() + hashlib.sha256(existing_certificate).digest())
-                mac = lambda role, data: hmac.digest(token, role + b"\0" + data, "sha256")
+                def mac(role, data):
+                    return hmac.digest(token, role + b"\0" + data, "sha256")
                 cli.send_frame(server, public_key)
                 cli.send_frame(server, server_nonce)
                 cli.send_frame(server, existing_certificate)
