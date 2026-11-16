@@ -13,11 +13,11 @@
 <style>
   :root {
     --studio: #0B2A5B;   /* page */
-    --deep: #071D40;     /* player well, list hover */
+    --deep: #071D40;     /* player well, transport, list hover */
     --panel: #10356F;    /* selected row */
     --ink: #F2F6FC;      /* text */
     --mist: #9FB4D6;     /* secondary text */
-    --signal: #FF8A00;   /* now playing, on air */
+    --signal: #FF8A00;   /* playhead, now playing, on air */
     --rule: rgba(159, 180, 214, 0.22);
   }
   * { box-sizing: border-box; }
@@ -43,10 +43,7 @@
   }
   header.bar {
     grid-column: 1 / -1;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
   }
   .brand { font-size: 1.25rem; font-weight: 400; letter-spacing: -0.01em; margin: 0; }
   .brand b { font-weight: 800; }
@@ -54,27 +51,77 @@
   .bar a { color: var(--mist); font-size: 0.9rem; text-decoration-color: var(--rule); text-underline-offset: 3px; }
   .bar a:hover { color: var(--ink); }
 
-  /* Player */
+  /* Player: picture and transport form one block */
   .stage { min-width: 0; }
-  .well { position: relative; background: var(--deep); aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; }
+  .player { border-radius: 6px; overflow: hidden; background: var(--deep); }
+  .well { position: relative; aspect-ratio: 16 / 9; background: var(--deep); cursor: pointer; }
   video { display: block; width: 100%; height: 100%; background: var(--deep); }
+  .big-play {
+    position: absolute; inset: 0; margin: auto; width: 5.5rem; height: 5.5rem;
+    border-radius: 50%; border: 0; background: rgba(7, 29, 64, 0.72); cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .big-play svg { width: 2.4rem; height: 2.4rem; margin-left: 0.3rem; }
+  .big-play[hidden], .unmute[hidden] { display: none; }
   .unmute {
-    position: absolute; left: 1rem; bottom: 4.5rem;
+    position: absolute; left: 1rem; bottom: 1rem;
     background: var(--signal); color: #1A1100; border: 0; border-radius: 999px;
     padding: 0.55rem 1.1rem; font-weight: 700; cursor: pointer;
   }
-  .unmute[hidden] { display: none; }
-  .now { margin-top: 1.25rem; display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
-  .now .clock {
-    font-size: clamp(3rem, 7vw, 5.5rem);
-    font-weight: 750; font-stretch: 112%;
-    font-variant-numeric: tabular-nums;
-    line-height: 0.9; letter-spacing: -0.03em;
+
+  .transport {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+    gap: 1rem; padding: 0.6rem 0.9rem 0.75rem;
   }
-  .now .when { color: var(--mist); font-size: 1.05rem; }
-  .now .when strong { color: var(--ink); font-weight: 600; }
+  .group { display: flex; align-items: center; gap: 0.15rem; }
+  .ctl {
+    background: none; border: 0; cursor: pointer; border-radius: 4px;
+    width: 2.5rem; height: 2.5rem; display: grid; place-items: center; color: var(--ink);
+  }
+  .ctl:hover { background: var(--panel); }
+  .ctl:disabled { opacity: 0.35; cursor: default; background: none; }
+  .ctl svg { width: 1.35rem; height: 1.35rem; }
+  .ctl.main svg { width: 1.7rem; height: 1.7rem; }
+  .ctl.text { width: auto; padding: 0 0.6rem; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
+
+  /* Timeline in broadcast time */
+  .line { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.75rem; min-width: 0; }
+  .line .edge { color: var(--mist); font-size: 0.85rem; font-variant-numeric: tabular-nums; font-stretch: 112%; font-weight: 600; }
+  .track { position: relative; height: 1.75rem; cursor: pointer; touch-action: none; }
+  .track .rail, .track .buf, .track .fill {
+    position: absolute; left: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px;
+  }
+  .track .rail { right: 0; background: var(--rule); }
+  .track .buf { background: rgba(159, 180, 214, 0.38); width: 0; }
+  .track .fill { background: var(--signal); width: 0; }
+  .track .knob {
+    position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; left: 0;
+    border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 3px var(--deep);
+  }
+  .track:hover .rail, .track:hover .buf, .track:hover .fill { height: 6px; margin-top: -3px; }
+  .track .tip {
+    position: absolute; bottom: 100%; transform: translateX(-50%); margin-bottom: 0.2rem;
+    background: var(--ink); color: var(--deep); font-weight: 700; font-size: 0.8rem;
+    padding: 0.1rem 0.4rem; border-radius: 3px; font-variant-numeric: tabular-nums; pointer-events: none;
+  }
+  .track .tip[hidden] { display: none; }
+
+  /* The clock: playhead as broadcast time */
+  .now { margin-top: 1.25rem; display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  .clock {
+    font-size: clamp(3rem, 7vw, 5.5rem); font-weight: 750; font-stretch: 112%;
+    font-variant-numeric: tabular-nums; line-height: 0.9; letter-spacing: -0.03em;
+  }
+  .clock small { font-size: 0.42em; font-weight: 600; color: var(--mist); letter-spacing: 0; margin-left: 0.15em; }
+  .when { color: var(--mist); font-size: 1.05rem; }
+  .when strong { color: var(--ink); font-weight: 600; }
   .onair { color: var(--signal); font-weight: 700; }
   .notice { color: var(--mist); margin-top: 1rem; max-width: 60ch; }
+
+  /* Fullscreen keeps the transport */
+  .player:fullscreen { display: flex; flex-direction: column; border-radius: 0; }
+  .player:fullscreen .well { flex: 1; aspect-ratio: auto; }
+  .player:fullscreen video { object-fit: contain; }
 
   /* Rundown */
   .rundown { min-width: 0; }
@@ -85,18 +132,17 @@
   }
   .day ol { list-style: none; margin: 0; padding: 0; }
   .item {
-    width: 100%; display: grid; grid-template-columns: 5.5rem 1fr; align-items: baseline;
+    position: relative; width: 100%; display: grid; grid-template-columns: 5.5rem 1fr; align-items: baseline;
     gap: 0.75rem; text-align: left; background: none; border: 0; cursor: pointer;
-    padding: 0.55rem 0.75rem; border-radius: 4px; border-left: 3px solid transparent;
+    padding: 0.55rem 0.75rem; border-radius: 4px; border-left: 3px solid transparent; overflow: hidden;
   }
   .item:hover { background: var(--deep); }
-  .item .t {
-    font-size: 1.6rem; font-weight: 700; font-stretch: 112%;
-    font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
-  }
+  .item .t { font-size: 1.6rem; font-weight: 700; font-stretch: 112%; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
   .item .d { color: var(--mist); font-size: 0.9rem; }
+  .item .seen { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--mist); opacity: 0.6; }
   .item[aria-current="true"] { background: var(--panel); border-left-color: var(--signal); }
   .item[aria-current="true"] .d { color: var(--ink); }
+  .item[aria-current="true"] .seen { background: var(--signal); opacity: 1; }
   .dot {
     display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%;
     background: var(--signal); margin-right: 0.4rem; vertical-align: 0.05em;
@@ -107,12 +153,28 @@
 
   @media (max-width: 900px) {
     .shell { grid-template-columns: 1fr; gap: 1.75rem; padding: 1rem 16px 2.5rem; }
-    .well { border-radius: 0; margin: 0 -16px; }
-    .unmute { bottom: 4rem; }
+    .player { border-radius: 0; margin: 0 -16px; }
+  }
+  @media (max-width: 640px) {
+    .transport { grid-template-columns: 1fr auto; row-gap: 0.25rem; }
+    .line { grid-column: 1 / -1; grid-row: 1; }
+    .ctl.opt { display: none; }
   }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15a1 1 0 0 0 1.5.86l12.4-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M6 4h4v16H6zM14 4h4v16h-4z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path fill="currentColor" d="M5 5h2v14H5zM19 5.6v12.8a.8.8 0 0 1-1.2.7L9 13.2a1.4 1.4 0 0 1 0-2.4l8.8-5.9a.8.8 0 0 1 1.2.7z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path fill="currentColor" d="M17 5h2v14h-2zM5 5.6v12.8a.8.8 0 0 0 1.2.7L15 13.2a1.4 1.4 0 0 0 0-2.4L6.2 4.9A.8.8 0 0 0 5 5.6z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/><text x="12" y="15.5" font-size="7.5" font-weight="700" text-anchor="middle" fill="currentColor" font-family="Archivo, sans-serif">10</text></symbol>
+  <symbol id="i-fwd" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4"/><text x="12" y="15.5" font-size="7.5" font-weight="700" text-anchor="middle" fill="currentColor" font-family="Archivo, sans-serif">30</text></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 9l5 6M21 9l-5 6"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+</svg>
+
 <div class="shell">
   <header class="bar">
     <p class="brand"><b>tagesschau</b><span>alle Ausgaben</span></p>
@@ -120,9 +182,34 @@
   </header>
 
   <main class="stage">
-    <div class="well">
-      <video id="video" controls playsinline preload="auto" poster="/cover.jpg"></video>
-      <button class="unmute" id="unmute" hidden>Ton einschalten</button>
+    <div class="player" id="player">
+      <div class="well" id="well">
+        <video id="video" playsinline preload="auto" poster="/cover.jpg"></video>
+        <button class="big-play" id="bigplay" aria-label="Abspielen" hidden><svg><use href="#i-play"/></svg></button>
+        <button class="unmute" id="unmute" hidden>Ton einschalten</button>
+      </div>
+      <div class="transport">
+        <div class="group">
+          <button class="ctl" id="prev" aria-label="Neuere Ausgabe" title="Neuere Ausgabe"><svg><use href="#i-prev"/></svg></button>
+          <button class="ctl main" id="toggle" aria-label="Abspielen" title="Abspielen (Leertaste)"><svg><use href="#i-play"/></svg></button>
+          <button class="ctl" id="next" aria-label="Ältere Ausgabe" title="Ältere Ausgabe"><svg><use href="#i-next"/></svg></button>
+        </div>
+        <div class="line">
+          <span class="edge" id="from">--:--</span>
+          <div class="track" id="track" role="slider" tabindex="0" aria-label="Position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="rail"></div><div class="buf" id="buf"></div><div class="fill" id="fill"></div>
+            <div class="knob" id="knob"></div><div class="tip" id="tip" hidden></div>
+          </div>
+          <span class="edge" id="to">--:--</span>
+        </div>
+        <div class="group">
+          <button class="ctl opt" id="back" aria-label="10 Sekunden zurück" title="10 Sekunden zurück (J)"><svg><use href="#i-back"/></svg></button>
+          <button class="ctl opt" id="fwd" aria-label="30 Sekunden vor" title="30 Sekunden vor (L)"><svg><use href="#i-fwd"/></svg></button>
+          <button class="ctl text" id="speed" aria-label="Geschwindigkeit" title="Geschwindigkeit">1×</button>
+          <button class="ctl" id="mute" aria-label="Ton aus" title="Ton aus (M)"><svg><use href="#i-vol"/></svg></button>
+          <button class="ctl" id="full" aria-label="Vollbild" title="Vollbild (F)"><svg><use href="#i-full"/></svg></button>
+        </div>
+      </div>
     </div>
     <div class="now" id="now" aria-live="polite"></div>
     <p class="notice" id="notice" hidden></p>
@@ -133,28 +220,51 @@
 
 <script>
 (() => {
-  const video = document.getElementById("video");
-  const unmute = document.getElementById("unmute");
-  const now = document.getElementById("now");
-  const notice = document.getElementById("notice");
-  const rundown = document.getElementById("rundown");
+  const $ = id => document.getElementById(id);
+  const video = $("video"), player = $("player"), well = $("well");
+  const track = $("track"), fill = $("fill"), buf = $("buf"), knob = $("knob"), tip = $("tip");
+  const now = $("now"), notice = $("notice"), rundown = $("rundown");
+  const SPEEDS = [1, 1.25, 1.5, 1.75, 2, 0.75];
   let items = [];      // newest first; a live edition, if any, comes first
-  let current = null;  // id of the item playing
+  let current = null;  // the item playing
   let hls = null;
+  let clockEl = null;
+
+  // Per-viewer memory: position and length of each edition. Optional.
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem("ts:" + k)); } catch (_) { return null; } },
+    set(k, v) { try { localStorage.setItem("ts:" + k, JSON.stringify(v)); } catch (_) {} },
+  };
 
   const tz = "Europe/Berlin";
-  const fmtTime = d => d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: tz });
-  const fmtDay = d => d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", timeZone: tz });
+  const hm = d => d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+  const hms = d => d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tz });
+  const longDay = d => d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", timeZone: tz });
   const dayKey = d => d.toLocaleDateString("sv-SE", { timeZone: tz });
   function dayLabel(d) {
-    const today = dayKey(new Date());
-    const yesterday = dayKey(new Date(Date.now() - 864e5));
     const k = dayKey(d);
-    if (k === today) return "Heute";
-    if (k === yesterday) return "Gestern";
-    return fmtDay(d);
+    if (k === dayKey(new Date())) return "Heute";
+    if (k === dayKey(new Date(Date.now() - 864e5))) return "Gestern";
+    return longDay(d);
+  }
+  const icon = (btn, name) => btn.querySelector("use").setAttribute("href", "#i-" + name);
+
+  // Broadcast time of the playhead: the stream's own date for live, else air time + offset.
+  function airAt(t) {
+    if (!current) return null;
+    if (hls && hls.playingDate && current.live) {
+      return new Date(hls.playingDate.getTime() + (t - video.currentTime) * 1000);
+    }
+    return new Date(current.date.getTime() + t * 1000);
+  }
+  function range() {
+    const s = video.seekable;
+    const end = s.length ? s.end(s.length - 1) : (isFinite(video.duration) ? video.duration : 0);
+    const start = s.length && current && current.live ? s.start(0) : 0;
+    return [start, end];
   }
 
+  /* Rundown */
   function render() {
     rundown.replaceChildren();
     let group = null, list = null;
@@ -173,35 +283,51 @@
       const li = document.createElement("li");
       const b = document.createElement("button");
       b.className = "item";
-      b.setAttribute("aria-current", it.id === current ? "true" : "false");
+      b.dataset.id = it.id;
+      b.setAttribute("aria-current", current && it.id === current.id ? "true" : "false");
       const t = document.createElement("span");
       t.className = "t";
-      t.textContent = fmtTime(it.date);
+      t.textContent = hm(it.date);
       const d = document.createElement("span");
       d.className = "d";
+      const mem = store.get(it.id);
       if (it.live) {
         const dot = document.createElement("span");
         dot.className = "dot";
         d.append(dot, "läuft gerade, ab Beginn");
+      } else if (current && it.id === current.id) {
+        d.textContent = "spielt";
+      } else if (mem && mem.dur && mem.pos / mem.dur > 0.95) {
+        d.textContent = "gesehen";
+      } else if (mem && mem.pos > 5) {
+        d.textContent = "weiter ab " + hm(new Date(it.date.getTime() + mem.pos * 1000));
       } else {
-        d.textContent = it.id === current ? "spielt" : "tagesschau";
+        d.textContent = "tagesschau";
       }
       b.append(t, d);
+      if (mem && mem.dur && !it.live) {
+        const seen = document.createElement("span");
+        seen.className = "seen";
+        seen.style.width = Math.min(100, (mem.pos / mem.dur) * 100) + "%";
+        b.append(seen);
+      }
       b.addEventListener("click", () => play(it, true));
       li.append(b);
       list.append(li);
     }
+    const i = items.findIndex(it => current && it.id === current.id);
+    $("prev").disabled = i <= 0;
+    $("next").disabled = i < 0 || i >= items.length - 1;
   }
 
   function caption(it) {
     now.replaceChildren();
-    const c = document.createElement("span");
-    c.className = "clock";
-    c.textContent = fmtTime(it.date);
+    clockEl = document.createElement("span");
+    clockEl.className = "clock";
     const w = document.createElement("span");
     w.className = "when";
     const s = document.createElement("strong");
-    s.textContent = "Uhr, " + fmtDay(it.date);
+    s.textContent = "Uhr, " + longDay(it.date);
     w.append(s);
     if (it.live) {
       const o = document.createElement("span");
@@ -209,51 +335,187 @@
       o.textContent = " läuft gerade";
       w.append(o);
     }
-    now.append(c, w);
+    now.append(clockEl, w);
+    tick();
   }
 
+  /* Playback */
   async function start(userGesture) {
     try {
       await video.play();
-      unmute.hidden = true;
+      $("unmute").hidden = true;
     } catch (e) {
       if (userGesture) return;
-      // Browsers block autoplay with sound: start muted and offer the sound.
-      video.muted = true;
-      try { await video.play(); } catch (_) {}
-      unmute.hidden = false;
+      video.muted = true; // browsers block autoplay with sound
+      try { await video.play(); $("unmute").hidden = false; } catch (_) { $("bigplay").hidden = false; }
     }
   }
 
   function play(it, userGesture) {
-    current = it.id;
+    save();
+    current = it;
     if (hls) { hls.destroy(); hls = null; }
-    // hls.js wherever it works; Chrome's native HLS claims support but fails
-    // on separate audio renditions. Native HLS only where hls.js cannot run (iOS).
     if (it.url.endsWith(".m3u8") && window.Hls && Hls.isSupported()) {
-      hls = new Hls();
+      // hls.js wherever it works; Chrome's native HLS claims support but fails on
+      // separate audio renditions. Native HLS only where hls.js cannot run (iOS).
+      hls = new Hls({ startPosition: 0 });
       hls.loadSource(it.url);
       hls.attachMedia(video);
     } else {
       video.src = it.url;
     }
+    const mem = !it.live && store.get(it.id);
+    if (mem && mem.pos > 5 && (!mem.dur || mem.pos / mem.dur < 0.95)) {
+      video.addEventListener("loadedmetadata", () => { video.currentTime = mem.pos; }, { once: true });
+    }
     caption(it);
     render();
+    session(it);
     start(userGesture);
   }
 
-  unmute.addEventListener("click", () => {
-    video.muted = false;
-    unmute.hidden = true;
-    video.play();
-  });
+  function step(dir) {
+    const i = items.findIndex(it => current && it.id === current.id) + dir;
+    if (i >= 0 && i < items.length) play(items[i], true);
+  }
+  function seekBy(s) {
+    const [a, b] = range();
+    video.currentTime = Math.max(a, Math.min(b - 0.5, video.currentTime + s));
+  }
+  function save() {
+    if (current && !current.live && video.currentTime > 0) {
+      store.set(current.id, { pos: video.currentTime, dur: isFinite(video.duration) ? video.duration : 0 });
+    }
+  }
+
+  /* Clock, timeline and button state */
+  function tick() {
+    if (!current) return;
+    const [a, b] = range();
+    const span = b - a || 1;
+    const p = Math.max(0, Math.min(1, (video.currentTime - a) / span));
+    fill.style.width = knob.style.left = (p * 100) + "%";
+    track.setAttribute("aria-valuenow", Math.round(p * 100));
+    if (video.buffered.length) {
+      buf.style.width = Math.min(100, ((video.buffered.end(video.buffered.length - 1) - a) / span) * 100) + "%";
+    }
+    const at = airAt(video.currentTime);
+    const fromD = airAt(a), toD = airAt(b);
+    $("from").textContent = fromD ? hm(fromD) : "--:--";
+    $("to").textContent = toD && b > 0 ? hm(toD) : "--:--";
+    track.setAttribute("aria-valuetext", at ? hms(at) : "");
+    if (clockEl && at) {
+      const s = hms(at);
+      clockEl.replaceChildren(s.slice(0, 5));
+      const small = document.createElement("small");
+      small.textContent = s.slice(5);
+      clockEl.append(small);
+    } else if (clockEl) {
+      clockEl.textContent = hm(current.date);
+    }
+  }
+
+  function syncButtons() {
+    const playing = !video.paused;
+    icon($("toggle"), playing ? "pause" : "play");
+    $("toggle").setAttribute("aria-label", playing ? "Pause" : "Abspielen");
+    $("bigplay").hidden = playing || video.currentTime > 0;
+    icon($("mute"), video.muted ? "mute" : "vol");
+    $("mute").setAttribute("aria-label", video.muted ? "Ton an" : "Ton aus");
+    $("speed").textContent = String(video.playbackRate).replace(".", ",") + "×";
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+  }
+
+  ["play", "pause", "volumechange", "ratechange"].forEach(e => video.addEventListener(e, syncButtons));
+  ["timeupdate", "progress", "durationchange", "seeked"].forEach(e => video.addEventListener(e, tick));
+  video.addEventListener("pause", () => { save(); render(); });
+  setInterval(save, 10e3);
+  window.addEventListener("pagehide", save);
 
   // When an edition ends, the next older one starts.
-  video.addEventListener("ended", () => {
-    const i = items.findIndex(it => it.id === current);
-    if (i >= 0 && i + 1 < items.length) play(items[i + 1], true);
+  video.addEventListener("ended", () => { save(); step(1); });
+
+  /* Seeking on the timeline, with a broadcast-time tooltip */
+  function posAt(ev) {
+    const r = track.getBoundingClientRect();
+    const p = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+    const [a, b] = range();
+    return [p, a + p * (b - a)];
+  }
+  let dragging = false;
+  track.addEventListener("pointerdown", ev => { dragging = true; track.setPointerCapture(ev.pointerId); video.currentTime = posAt(ev)[1]; });
+  track.addEventListener("pointermove", ev => {
+    const [p, t] = posAt(ev);
+    const at = airAt(t);
+    if (at) { tip.hidden = false; tip.style.left = (p * 100) + "%"; tip.textContent = hms(at); }
+    if (dragging) video.currentTime = t;
+  });
+  track.addEventListener("pointerup", () => { dragging = false; });
+  track.addEventListener("pointerleave", () => { if (!dragging) tip.hidden = true; });
+  track.addEventListener("keydown", ev => {
+    if (ev.key === "ArrowLeft") { seekBy(-10); ev.preventDefault(); }
+    if (ev.key === "ArrowRight") { seekBy(10); ev.preventDefault(); }
   });
 
+  /* Buttons */
+  const toggle = () => (video.paused ? video.play() : video.pause());
+  $("toggle").addEventListener("click", toggle);
+  $("bigplay").addEventListener("click", ev => { ev.stopPropagation(); video.play(); });
+  well.addEventListener("click", ev => { if (ev.target === video) toggle(); });
+  well.addEventListener("dblclick", ev => { if (ev.target === video) fullscreen(); });
+  $("prev").addEventListener("click", () => step(-1));
+  $("next").addEventListener("click", () => step(1));
+  $("back").addEventListener("click", () => seekBy(-10));
+  $("fwd").addEventListener("click", () => seekBy(30));
+  $("speed").addEventListener("click", () => {
+    video.playbackRate = SPEEDS[(SPEEDS.indexOf(video.playbackRate) + 1) % SPEEDS.length];
+  });
+  $("mute").addEventListener("click", () => { video.muted = !video.muted; $("unmute").hidden = true; });
+  $("unmute").addEventListener("click", ev => { ev.stopPropagation(); video.muted = false; $("unmute").hidden = true; video.play(); });
+  function fullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (player.requestFullscreen) player.requestFullscreen();
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iOS
+  }
+  $("full").addEventListener("click", fullscreen);
+
+  document.addEventListener("keydown", ev => {
+    if (ev.target.closest("input, textarea") || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    const onButton = ev.target.closest("button");
+    switch (ev.key) {
+      case " ": if (onButton) return; toggle(); break;
+      case "k": toggle(); break;
+      case "j": case "ArrowLeft": if (ev.target === track) return; seekBy(-10); break;
+      case "l": case "ArrowRight": if (ev.target === track) return; seekBy(30); break;
+      case "f": fullscreen(); break;
+      case "m": video.muted = !video.muted; break;
+      case "n": step(1); break;
+      case "p": step(-1); break;
+      default: return;
+    }
+    ev.preventDefault();
+  });
+
+  /* Lock screen and media keys */
+  function session(it) {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: "tagesschau " + hm(it.date) + " Uhr",
+      artist: longDay(it.date) + (it.live ? ", läuft gerade" : ""),
+      album: "tagesschau, alle Ausgaben",
+      artwork: [{ src: "/cover.jpg", sizes: "1400x1400", type: "image/jpeg" }],
+    });
+    const set = (a, f) => { try { navigator.mediaSession.setActionHandler(a, f); } catch (_) {} };
+    set("play", () => video.play());
+    set("pause", () => video.pause());
+    set("seekbackward", d => seekBy(-(d.seekOffset || 10)));
+    set("seekforward", d => seekBy(d.seekOffset || 30));
+    set("seekto", d => { video.currentTime = d.seekTime; });
+    set("previoustrack", () => step(-1));
+    set("nexttrack", () => step(1));
+  }
+
+  /* Data */
   async function load() {
     const r = await fetch("/episodes.json", { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
@@ -279,9 +541,18 @@
       return;
     }
     play(items[0], false);
+    syncButtons();
     // Pick up new editions without interrupting playback.
     setInterval(async () => {
-      try { items = await load(); render(); } catch (_) {}
+      try {
+        const fresh = await load();
+        if (current) {
+          const same = fresh.find(it => it.id === current.id);
+          if (same) Object.assign(same, { url: current.url });
+        }
+        items = fresh;
+        render();
+      } catch (_) {}
     }, 120e3);
   }
 
