@@ -40,6 +40,22 @@ unset LD_PRELOAD
 (( ${fpath[(Ie)$temporary/cache/zsh/local-plugins/build/functions.zwc]} == 0 ))
 [[ -z "${ZSH_LOCAL_PLUGIN_CACHE_DIR:-}" && -z "${ZSH_LOCAL_PLUGINS_CACHE_BUILD:-}" ]]
 
+# Old global startup may have set the legacy marker without clearing either guard.
+unset TERMUX_NATIVE_HM_SESSION_GENERATION
+export TERMUX_NATIVE_SESSION_VARS_GENERATION="$TERMUX_GENERATION"
+export __HM_SESS_VARS_SOURCED=1 __HM_ZSH_SESS_VARS_SOURCED=1
+source "$script_dir/zshenv"
+unset LD_PRELOAD
+[[ -z "${__HM_SESS_VARS_SOURCED:-}" && -z "${__HM_ZSH_SESS_VARS_SOURCED:-}" ]]
+
+export __HM_SESS_VARS_SOURCED=1 __HM_ZSH_SESS_VARS_SOURCED=1
+export EDITOR=custom-editor
+source "$script_dir/zshenv"
+unset LD_PRELOAD
+[[ "$__HM_SESS_VARS_SOURCED" == 1 && "$__HM_ZSH_SESS_VARS_SOURCED" == 1 ]]
+[[ "$EDITOR" == custom-editor ]]
+print 'PASS: same-generation session guards and inherited overrides survive'
+
 # A live shell must keep its startup files tied to the generation it started
 # with after a later activation atomically changes `current`.
 ln -s "generations/$second" "$root/.next"
@@ -48,5 +64,12 @@ mv -Tf "$root/.next" "$root/current"
 [[ "$ZDOTDIR" == "$root/generations/$first/home/.config/zsh" ]]
 
 print 'PASS: TERMUX_GENERATION and ZDOTDIR remain on one immutable generation'
+
+source "$script_dir/zshenv"
+unset LD_PRELOAD
+[[ "$TERMUX_GENERATION" == "$root/generations/$second" ]]
+[[ -z "${__HM_SESS_VARS_SOURCED:-}" && -z "${__HM_ZSH_SESS_VARS_SOURCED:-}" ]]
+[[ "$TERMUX_NATIVE_HM_SESSION_GENERATION" == "$TERMUX_GENERATION" ]]
+print 'PASS: changing generations clears both Home Manager guards'
 
 # vim: set ft=zsh et ts=2 sw=2 :

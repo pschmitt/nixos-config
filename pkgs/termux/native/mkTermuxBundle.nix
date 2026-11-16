@@ -20,15 +20,23 @@ let
   inherit (target) apiLevel ndkRoot;
   profile = import ../../../android/termux-native/profile.nix { inherit pkgs inputs; };
   elfCleaner = pkgs.callPackage ./elf-cleaner.nix { };
+  # Home Manager derives its XDG and application paths from the target app's home.
+  targetHomeDirectory = "/data/data/${
+    if termuxpp then "dev.pschmitt.termux" else "com.termux"
+  }/files/home";
   homeManagerProfile = inputs.home-manager.lib.homeManagerConfiguration {
     inherit pkgs;
     extraSpecialArgs = {
       inherit inputs;
       hostname = "termux";
     }
-    // extraSpecialArgs;
+    // extraSpecialArgs
+    // {
+      termuxHomeDirectory = targetHomeDirectory;
+    };
     modules = [ ../../../modules/home-manager/termux.nix ] ++ modules;
   };
+  homeDirectory = homeManagerProfile.config.home.homeDirectory;
   nvimInitLua = homeManagerProfile.config.xdg.configFile."nvim/init.lua".text;
   nvimDevPathParts = lib.splitString "dev = {\n  path = \"" nvimInitLua;
   nvimDevPathFunction = lib.any (line: lib.hasInfix "path = function(plugin)" line) (
@@ -162,7 +170,7 @@ let
   homeFileSources = map (
     path:
     let
-      absolutePath = "${homeManagerProfile.config.home.homeDirectory}/${lib.removePrefix "/" path}";
+      absolutePath = "${homeDirectory}/${lib.removePrefix "/" path}";
       sourcePath =
         if builtins.hasAttr path homeManagerProfile.config.home.file then
           path
@@ -241,16 +249,18 @@ let
           }) termuxNativePackages
         )
       );
-  manifest = (pkgs.formats.json { }).generate "termux-native-manifest.json" {
-    schema = 1;
-    inherit (target) architecture prefix;
-    minimumApi = apiLevel;
-    basePackages = termuxPackages;
-    homePackages = map (package: package.name) termuxNativePackages;
-    homeFiles = exportedHomeFiles;
-    plugins = builtins.attrNames profile.plugins;
-    gitstatusVersion = pkgs.gitstatus.version;
-  };
+  manifest =
+    assert homeDirectory == targetHomeDirectory;
+    (pkgs.formats.json { }).generate "termux-native-manifest.json" {
+      schema = 1;
+      inherit (target) architecture prefix;
+      minimumApi = apiLevel;
+      basePackages = termuxPackages;
+      homePackages = map (package: package.name) termuxNativePackages;
+      homeFiles = exportedHomeFiles;
+      plugins = builtins.attrNames profile.plugins;
+      gitstatusVersion = pkgs.gitstatus.version;
+    };
   termuxPackages = lib.unique (
     homeManagerProfile.config.termux.packages
     ++ lib.concatMap (package: package.passthru.termuxNative.aptPackages or [ ]) termuxNativePackages
@@ -305,6 +315,8 @@ let
         cp ${../../../android/termux-native/activate.sh} "$out/activate.sh"
         cp ${../../../android/termux-native/setup-known-hosts.sh} "$out/setup-known-hosts.sh"
         chmod 755 "$out/setup-known-hosts.sh"
+        cp ${../../../android/termux-native/setup-sshd.sh} "$out/setup-sshd.sh"
+        chmod 755 "$out/setup-sshd.sh"
         cp ${../../../android/termux-native/setup-gpg-keys.sh} "$out/setup-gpg-keys.sh"
         chmod 755 "$out/setup-gpg-keys.sh"
         cp ${../../../android/termux-native/bootstrap.sh} "$out/bootstrap.sh"

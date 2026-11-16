@@ -43,6 +43,18 @@ user for a Termux environment:
 }
 ```
 
+Welcome text is disabled by the shared profile (`termux.motd.enable = false`),
+including TermuxPP's app banner and OpenSSH's MOTD. Existing unmanaged app MOTD
+scripts are preserved. Set the option to `true` to stop suppressing welcome text;
+activation removes only its own managed link and SSH drop-in.
+
+`termux.sshd.ports` optionally manages OpenSSH listen ports. Activation validates
+both syntax and effective policy before switching generations, and restores the
+previous SSH configuration if validation or the generation switch fails. Removing
+the port configuration removes the managed drop-in; legacy port migration runs
+only when a profile explicitly supplies ports. The daemon is not restarted by
+activation, so existing SSH sessions remain available.
+
 `termux.packages` declares the Termux package names required by this profile.
 The bootstrap installs these through `pkg`, so Termux APT resolves dependencies,
 tracks package ownership, and handles future updates. A Nix-built package can

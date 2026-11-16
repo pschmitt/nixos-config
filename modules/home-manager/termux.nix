@@ -4,6 +4,7 @@
   inputs,
   lib,
   pkgs,
+  termuxHomeDirectory ? "/data/data/com.termux/files/home",
   ...
 }:
 let
@@ -57,6 +58,7 @@ in
     ../../home-manager/cli/zsh/tools/termux/udocker.nix
     ../../home-manager/cli/zsh/vivid.nix
     ../../home-manager/cli/zsh/zoxide.nix
+    ./termux-motd.nix
     ./termux-zsh-runtime.nix
     ../../home-manager/cli/zsh/config/base.nix
     ../../home-manager/cli/zsh/config/completions.nix
@@ -84,6 +86,8 @@ in
         ".config/zsh/termux/vivid.zsh"
         ".config/zsh/termux/prompt-color.zsh"
         ".config/nixpp/config.toml"
+        ".config/termuxpp/bin/termux-file-editor"
+        ".config/termuxpp/bin/termux-url-opener"
         ".config/termux/tasker/tudo"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
@@ -121,6 +125,9 @@ in
       ++ lib.optionals (config.termux.ssh.knownHostsSopsFile != null) [
         ".local/share/termux-native/ssh-known-hosts.sops.yaml"
       ]
+      ++ lib.optionals (config.termux.sshd.ports != [ ]) [
+        ".config/termux-native/sshd-ports.conf"
+      ]
       ++ lib.optionals (config.termux.gpg.sopsFile != null) [
         ".local/share/termux-native/gpg.sops.yaml"
       ];
@@ -140,6 +147,12 @@ in
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = "Encrypted OpenSSH known-hosts entries materialized on the Termux host.";
+    };
+
+    sshd.ports = lib.mkOption {
+      type = lib.types.listOf lib.types.port;
+      default = [ ];
+      description = "OpenSSH server ports managed in the Termux generation.";
     };
 
     gpg.sopsFile = lib.mkOption {
@@ -218,6 +231,24 @@ in
               "nixpp Niks3 cache"
             ]
           '';
+          "termuxpp/bin/termux-file-editor" = {
+            executable = true;
+            text = ''
+              #!/data/data/com.termux/files/usr/bin/env bash
+              exec nvim "$@"
+            '';
+          };
+          "termuxpp/bin/termux-url-opener" = {
+            executable = true;
+            text = ''
+              #!/data/data/com.termux/files/usr/bin/env bash
+
+              exec "$PREFIX/bin/termux-open-url" "$@"
+            '';
+          };
+          "termux-native/sshd-ports.conf".text = lib.concatMapStringsSep "" (
+            port: "Port ${toString port}\n"
+          ) config.termux.sshd.ports;
           "termux/tasker/tudo" = {
             executable = true;
             text = ''
@@ -256,7 +287,7 @@ in
       home = {
         file.".termux/font.ttf".source = termuxFont;
         username = "termux";
-        homeDirectory = "/data/data/com.termux/files/home";
+        homeDirectory = termuxHomeDirectory;
         stateVersion = "26.05";
         sessionVariables = {
           HOST = hostname;
@@ -292,6 +323,13 @@ in
               autoload -Uz _rbw
               compdef _rbw rbw
             fi
+
+          # Keep Zsh history in Home Manager's generation-specific XDG state directory.
+          if [[ -n "$XDG_STATE_HOME" ]]
+          then
+            HISTFILE="$XDG_STATE_HOME/zsh/zhistory"
+            mkdir -p -- "''${HISTFILE:h}"
+          fi
         '';
       };
 

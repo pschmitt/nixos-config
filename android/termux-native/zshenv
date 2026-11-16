@@ -42,14 +42,14 @@ fi
 export TERMUX_GENERATION
 export ZDOTDIR
 
-# A child shell inherits Home Manager's session-vars-loaded marker. Clear it
-# only when the resolved generation changes so login shells load that
-# generation's variables while same-generation subshells preserve overrides.
-if [[ "${TERMUX_NATIVE_SESSION_VARS_GENERATION:-}" != "$TERMUX_GENERATION" ]]
+# Older global zshenv files update TERMUX_NATIVE_SESSION_VARS_GENERATION before
+# clearing both Home Manager guards. Use a separate marker for this protocol.
+if [[ "${TERMUX_NATIVE_HM_SESSION_GENERATION:-}" != "$TERMUX_GENERATION" ]]
 then
-  unset __HM_ZSH_SESS_VARS_SOURCED
-  export TERMUX_NATIVE_SESSION_VARS_GENERATION="$TERMUX_GENERATION"
+  unset __HM_SESS_VARS_SOURCED __HM_ZSH_SESS_VARS_SOURCED
+  export TERMUX_NATIVE_HM_SESSION_GENERATION="$TERMUX_GENERATION"
 fi
+export TERMUX_NATIVE_SESSION_VARS_GENERATION="$TERMUX_GENERATION"
 
 typeset -g _termux_native_generation_root="$HOME/.local/share/termux-native/generations"
 typeset -g _termux_native_local_plugin_cache="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/local-plugins"

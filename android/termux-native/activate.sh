@@ -76,7 +76,9 @@ acquire_activation_lock() {
 }
 
 check_host() {
-  if [[ "${PREFIX:-}" != /data/data/com.termux/files/usr || "$(uname -m)" != aarch64 ]]
+  # Bundle relocation rewrites this literal for the target app.
+  local expected_prefix=/data/data/com.termux/files/usr
+  if [[ "${PREFIX:-}" != "$expected_prefix" || "$(uname -m)" != aarch64 ]]
   then
     printf 'This bundle requires its matching Termux app prefix on aarch64.\n' >&2
     return 1
@@ -295,12 +297,46 @@ switch_generation() {
       "$PREFIX/bin/bash" "$root/generations/$generation/setup-gpg-keys.sh" \
       "$root/generations/$generation" || return
   fi
+  link_termuxpp_motd "$root/generations/$generation" || return
   ensure_generation_number "$root" "$generation" "$action" || return
   ln -s "generations/$generation" "$root/.next" || return
-  mv -Tf "$root/.next" "$root/current" || return
+  if [[ -f "$root/generations/$generation/setup-sshd.sh" ]]
+  then
+    "$PREFIX/bin/bash" "$root/generations/$generation/setup-sshd.sh" \
+      "$root/generations/$generation" --switch-current "$root" || return
+  else
+    mv -Tf "$root/.next" "$root/current" || return
+  fi
   link_nixpp_config || return
   printf 'Activated %s. Start the managed shell with:\n  exec "%s/bin/zsh" -l\n' \
     "$generation" "$PREFIX"
+}
+
+link_termuxpp_motd() {
+  local generation=$1 config_dir="$HOME/.config/termuxpp"
+  local path="$HOME/.config/termuxpp/motd.sh"
+  local target="$HOME/.local/share/termux-native/current/home/.config/termuxpp/motd.sh"
+
+  [[ "$PREFIX" == /data/data/dev.pschmitt.termux/files/usr ]] || return 0
+  if [[ ! -f "$generation/home/.config/termuxpp/motd.sh" ]]
+  then
+    if [[ -L "$path" && "$(readlink -- "$path")" == "$target" ]]
+    then
+      rm -- "$path" || return
+    fi
+    return 0
+  fi
+  if [[ -e "$path" || -L "$path" ]]
+  then
+    if [[ -L "$path" && "$(readlink -- "$path")" == "$target" ]]
+    then
+      return 0
+    fi
+    printf 'Preserving existing unmanaged MOTD: %s\n' "$path" >&2
+    return 0
+  fi
+  mkdir -p -- "$config_dir" || return
+  ln -s -- "$target" "$path"
 }
 
 link_nixpp_config() {
