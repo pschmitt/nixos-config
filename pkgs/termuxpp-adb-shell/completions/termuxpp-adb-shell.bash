@@ -38,6 +38,18 @@ _termuxpp_adb_shell() {
           COMPREPLY+=("$serial")
         fi
       done < <(adb devices 2>/dev/null)
+      while read -r serial
+      do
+        if [[ "$serial" == "$current"* ]]
+        then
+          COMPREPLY+=("$serial")
+        fi
+      done < <("${COMP_WORDS[0]}" --list-aliases 2>/dev/null)
+      return
+      ;;
+    --devices-config)
+      mapfile -t COMPREPLY < <(compgen -f -- "$current")
+      compopt -o filenames
       return
       ;;
     --credential-dir)
@@ -49,7 +61,7 @@ _termuxpp_adb_shell() {
       return
       ;;
   esac
-  mapfile -t COMPREPLY < <(compgen -W '--help --serial --mode --shell --provision --name --credential-dir --list-authorizations --revoke --completions' -- "$current")
+  mapfile -t COMPREPLY < <(compgen -W '--help --serial --mode --shell --provision --name --credential-dir --devices-config --list-aliases --list-authorizations --revoke --completions' -- "$current")
 }
 complete -F _termuxpp_adb_shell termuxpp-adb-shell termuxpp-adb-shell.py
 

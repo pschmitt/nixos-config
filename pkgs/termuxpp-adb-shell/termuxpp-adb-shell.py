@@ -22,11 +22,15 @@ import time
 import tty
 from pathlib import Path
 
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+import termuxpp_adb_devices as devices
+
 
 HOST = "127.0.0.1"
 BOOTSTRAP_PORT = 8022
 TLS_PORT = 8023
-DEFAULT_CREDENTIAL_DIR = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "termuxpp" / "adb-shell"
+DEFAULT_CREDENTIAL_DIR = devices.DEFAULT_CREDENTIAL_DIR
 
 
 def parse_args():
@@ -36,7 +40,10 @@ def parse_args():
     mode.add_argument("--list-authorizations", action="store_true", help="list approved client certificates")
     mode.add_argument("--revoke", metavar="SHA256", help="revoke one approved client certificate")
     parser.add_argument("--name", default=socket.gethostname(), help="display name shown for fingerprint approval")
-    parser.add_argument("--serial", help="ADB serial of the target device (required for device operations)")
+    parser.add_argument("--serial", help="ADB serial or configured device alias of the target (required for device operations)")
+    parser.add_argument("--devices-config", type=Path,
+                        help="private JSON device alias configuration (default: $XDG_CONFIG_HOME/termuxpp/adb-devices.json)")
+    parser.add_argument("--list-aliases", action="store_true", help="print configured device aliases and exit")
     parser.add_argument("--completions", choices=("bash", "zsh", "fish"),
                         help="print shell completion integration and exit")
     parser.add_argument("--credential-dir", type=Path,
@@ -49,7 +56,8 @@ def parse_args():
     args = parser.parse_args()
     if args.command[:1] == ["--"]:
         args.command = args.command[1:]
-    if args.command and (args.provision or args.list_authorizations or args.revoke is not None or args.completions):
+    if args.command and (args.provision or args.list_authorizations or args.revoke is not None or args.completions
+                         or args.list_aliases):
         parser.error("commands cannot be combined with provisioning, authorization management or completions")
     if args.command and (len(args.command) > 4096 or any("\0" in arg for arg in args.command)
                          or not args.command[0] or args.command[0].startswith("-")):
@@ -61,7 +69,7 @@ def parse_args():
         parser.error("--shell must be an ASCII executable name or path without whitespace")
     if args.shell and (args.provision or args.list_authorizations or args.revoke is not None):
         parser.error("--shell is only valid for shell sessions")
-    if not args.completions and not args.serial:
+    if not args.completions and not args.list_aliases and not args.serial:
         parser.error("--serial is required for device operations")
     if args.mode == "run-as" and (args.provision or args.list_authorizations or args.revoke is not None):
         parser.error("provisioning and authorization management require mTLS, not --mode run-as")
@@ -559,9 +567,24 @@ def main():
             print(f"Could not load completions: {error}", file=sys.stderr)
             return 1
         return 0
+    if args.list_aliases:
+        try:
+            print("\n".join(sorted(devices.load_aliases(args.devices_config))))
+        except (OSError, RuntimeError) as error:
+            print(f"ADB shell failed: {error}", file=sys.stderr)
+            return 1
+        return 0
+    try:
+        device = devices.resolve_device(args.serial, args.devices_config, credential_root=DEFAULT_CREDENTIAL_DIR)
+    except (OSError, RuntimeError) as error:
+        print(f"ADB shell failed: {error}", file=sys.stderr)
+        return 1
+    args.serial = device.serial
+    if device.credential_error and args.credential_dir is None:
+        print(f"ADB shell failed: {device.credential_error}", file=sys.stderr)
+        return 1
     if args.credential_dir is None:
-        device_id = hashlib.sha256(args.serial.encode("utf-8")).hexdigest()
-        args.credential_dir = DEFAULT_CREDENTIAL_DIR / device_id
+        args.credential_dir = device.credential_dir
     management = args.provision or args.list_authorizations or args.revoke is not None
     try:
         if not management and args.mode != "mtls":

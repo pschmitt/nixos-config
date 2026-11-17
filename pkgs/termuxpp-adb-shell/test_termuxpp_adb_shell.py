@@ -17,6 +17,17 @@ cli = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cli)
 
 
+def setUpModule():
+    # Keep the suite independent of any real device alias configuration.
+    isolated = mock.patch.object(cli.devices, "DEFAULT_CONFIG", Path("/nonexistent/termuxpp-adb-devices.json"))
+    environment = mock.patch.dict(os.environ)
+    isolated.start()
+    environment.start()
+    os.environ.pop(cli.devices.CONFIG_ENV, None)
+    unittest.addModuleCleanup(isolated.stop)
+    unittest.addModuleCleanup(environment.stop)
+
+
 class BootstrapTests(unittest.TestCase):
     def exchange(self, fake_server=False):
         client, server = socket.socketpair()
@@ -291,6 +302,58 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(run.call_args.kwargs["stdin"], subprocess.DEVNULL)
 
 
+class AliasTests(unittest.TestCase):
+    def invoke(self, arguments):
+        with mock.patch.object(cli.sys, "argv", ["cli", *arguments]):
+            return cli.main()
+
+    def config(self, aliases):
+        directory = cli.tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "devices.json"
+        path.write_text(cli.json.dumps({"version": 1, "devices": aliases}))
+        path.chmod(0o600)
+        return path
+
+    @mock.patch.object(cli, "run_as_shell", return_value=0)
+    @mock.patch.object(cli, "supports_run_as", return_value=True)
+    @mock.patch.object(cli.devices, "list_adb_devices", return_value=[("USB1", "device", {})])
+    def test_alias_resolves_once_before_any_device_operation(self, listing, probe, shell):
+        path = self.config({"one": {"serials": ["USB1", "WIFI1"]}})
+        self.assertEqual(self.invoke(["--devices-config", str(path), "--serial", "one"]), 0)
+        listing.assert_called_once()
+        probe.assert_called_once_with("USB1")
+        shell.assert_called_once_with("USB1", None)
+
+    @mock.patch.object(cli, "setup_forwarding")
+    @mock.patch.object(cli, "supports_run_as")
+    @mock.patch.object(cli.devices, "list_adb_devices",
+                       return_value=[("USB1", "device", {}), ("WIFI1", "device", {})])
+    def test_ambiguous_alias_stops_before_touching_a_device(self, listing, probe, forward):
+        path = self.config({"one": {"serials": ["USB1", "WIFI1"]}})
+        self.assertEqual(self.invoke(["--devices-config", str(path), "--serial", "one"]), 1)
+        probe.assert_not_called()
+        forward.assert_not_called()
+
+    @mock.patch.object(cli, "remove_forwarding")
+    @mock.patch.object(cli, "create_credentials")
+    @mock.patch.object(cli, "setup_forwarding", return_value=[41001, 41002])
+    @mock.patch.object(cli.devices, "list_adb_devices", return_value=[("USB1", "device", {})])
+    def test_alias_provision_targets_stable_credential_dir(self, listing, forward, create, cleanup):
+        path = self.config({"one": {"serials": ["USB1"]}})
+        self.assertEqual(self.invoke(["--devices-config", str(path), "--serial", "one", "--provision"]), 0)
+        forward.assert_called_once_with("USB1")
+        self.assertEqual(create.call_args.args[0], cli.DEFAULT_CREDENTIAL_DIR / "aliases" / "one")
+
+    @mock.patch("builtins.print")
+    def test_list_aliases_needs_no_serial_or_adb(self, output):
+        path = self.config({"b": {"serials": ["x"]}, "a": {"serials": ["y"]}})
+        with mock.patch.object(cli.devices, "list_adb_devices") as listing:
+            self.assertEqual(self.invoke(["--devices-config", str(path), "--list-aliases"]), 0)
+        listing.assert_not_called()
+        output.assert_called_once_with("a\nb")
+
+
 class RunAsShellSelectionTests(unittest.TestCase):
     def launcher(self, requested=None):
         with mock.patch.object(cli.sys.stdin, "isatty", return_value=True), \
@@ -496,6 +559,34 @@ _termuxpp_adb_shell
 [[ "${COMPREPLY[*]}" == ready ]]
 '''
         subprocess.run(["bash", "-c", script, "test", str(self.completion_path("bash"))], check=True)
+
+    @unittest.skipUnless(shutil.which("bash"), "bash not installed")
+    def test_bash_completes_aliases_from_the_cli(self):
+        script = r'''
+source "$1"
+adb() { printf 'List of devices attached\nready device\n'; }
+termuxpp-adb-shell() { [[ "$1" == --list-aliases ]] && printf 'alpha\nbeta\n'; }
+COMP_WORDS=(termuxpp-adb-shell --serial '')
+COMP_CWORD=2
+_termuxpp_adb_shell
+[[ "${COMPREPLY[*]}" == "ready alpha beta" ]] || exit 1
+COMP_WORDS=(termuxpp-adb-shell --serial a)
+_termuxpp_adb_shell
+[[ "${COMPREPLY[*]}" == alpha ]]
+'''
+        subprocess.run(["bash", "-c", script, "test", str(self.completion_path("bash"))], check=True)
+
+    @unittest.skipUnless(shutil.which("zsh"), "zsh not installed")
+    def test_zsh_completes_aliases_from_the_cli(self):
+        script = r'''
+source "$1"
+adb() { printf 'List of devices attached\nready device\n'; }
+termuxpp-adb-shell() { printf 'alpha\nbeta\n'; }
+words=(termuxpp-adb-shell --serial '')
+compadd() { shift; print -r -- "$*"; }
+[[ "$(_termuxpp_adb_shell_serials)" == 'ready alpha beta' ]]
+'''
+        subprocess.run(["zsh", "-fc", script, "test", str(self.completion_path("zsh"))], check=True)
 
     @unittest.skipUnless(shutil.which("zsh"), "zsh not installed")
     def test_zsh_registers_both_commands_and_completes_devices(self):
