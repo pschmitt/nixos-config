@@ -28,7 +28,7 @@ in
 
   virtualisation.oci-containers.containers = {
     changedetection-io-playwright = {
-      image = "dgtlmoon/sockpuppetbrowser:latest@sha256:453381bb697b8b54e33ed20cee64d444b0a86885c9dc8a2ffbed27ef2b6c153a";
+      image = "dgtlmoon/sockpuppetbrowser:latest@sha256:6f681d418f1fb4215ce3720968790b63fdd2385a087bafd90e37a812f16e66da";
       autoStart = true;
       hostname = "changedetection-io-playwright";
       capabilities.SYS_ADMIN = true;
