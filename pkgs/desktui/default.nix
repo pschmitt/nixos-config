@@ -4,6 +4,7 @@
   fetchFromGitHub,
   bash,
   ncurses,
+  nix-update-script,
   python3,
   runCommand,
   tmux,
@@ -11,18 +12,25 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "desktui";
-  version = "0.4.0-unstable-2026-07-26";
+  version = "0.4.0-unstable-2026-11-14";
 
   # Our fork: tmux passthrough, and terminal replies never typed into the
   # remote desktop.
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "desktui";
-    rev = "29b4d26a6d240494041a240f5069175a4c0eaa42";
-    hash = "sha256-2SUOeq7uZdDPISPjOBjlKXheAqER9m0QcPOuP7q5MU0=";
+    rev = "147b352ec43953342236cb6aabf08b61384932b0";
+    hash = "sha256-VUHUS5JmeWRLwiEGgYZH255dvMwtmojGMIxvEuQXxVY=";
   };
 
-  cargoHash = "sha256-TUul0KS4Vth+su6mlipwStMmoS8iOimdbW0Fb4ipqKk=";
+  cargoHash = "sha256-cFqVWPNiCuKqUOuAe+z4+FUskHhKQxcHoxwSXsQRmQY=";
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch=reusable-vnc-tmux"
+    ];
+  };
 
   passthru.tests.tmux =
     runCommand "desktui-tmux-test"
