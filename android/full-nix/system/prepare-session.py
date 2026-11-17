@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import re
 import shutil
+import socket
+import subprocess
 import tempfile
 
 STORE = re.compile(r'/nix/store/[a-z0-9]{32}-[a-zA-Z0-9+._-]+(?:/[a-zA-Z0-9+._-]+)*')
@@ -103,6 +105,46 @@ def prepare(runtime, generation):
     return destination
 
 
+def manage(command, candidate=None, socket_path=None):
+    request = {'command': command}
+    if candidate is not None:
+        if not re.fullmatch(r'[a-z0-9]{32}-[a-zA-Z0-9+._-]+', candidate):
+            raise ValueError('invalid system candidate name')
+        request['candidate'] = candidate
+    path = socket_path or os.environ.get('NIXPP_SOCKET', '/tmp/nixpp.sock')
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(4500)
+        connection.connect(path)
+        connection.sendall(json.dumps(request).encode() + b'\n')
+        payload = bytearray()
+        while not payload.endswith(b'\n'):
+            chunk = connection.recv(65537 - len(payload))
+            if not chunk or len(payload) + len(chunk) > 65536:
+                raise ValueError('invalid native controller response')
+            payload.extend(chunk)
+    response = json.loads(payload)
+    if not isinstance(response, dict) or type(response.get('status')) is not int:
+        raise ValueError('invalid native controller status')
+    if response['status']:
+        raise ValueError(response.get('error', f'native controller failed with status {response["status"]}'))
+    return response
+
+
+def build_system(flake, host, rworker=False, run=subprocess.run):
+    if not re.fullmatch(r'[a-zA-Z0-9_-]+', host):
+        raise ValueError('invalid system host name')
+    if not flake or flake.startswith('-') or '#' in flake:
+        raise ValueError('supply a flake URI without an output fragment')
+    target = f'{flake}#termuxppConfigurations.{host}.system'
+    command = ['rworker-nix', 'build'] if rworker else ['nix', 'build', '--max-jobs', '0']
+    result = run([*command, '--no-link', '--print-out-paths', target],
+                 check=True, stdout=subprocess.PIPE, text=True)
+    paths = result.stdout.splitlines()
+    if len(paths) != 1:
+        raise ValueError('build did not return exactly one system generation')
+    return Path(store_path(paths[0]))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
@@ -110,12 +152,42 @@ def main():
     candidate.add_argument('--runtime', required=True, type=Path,
                            help='native runtime directory exposed through /android')
     candidate.add_argument('generation', type=Path)
+    for name in ('build', 'rebuild'):
+        build = commands.add_parser(name, help='build a system remotely' if name == 'build' else 'build, prepare and switch a system')
+        build.add_argument('--flake', required=True)
+        build.add_argument('--host', required=True)
+        build.add_argument('--rworker', action='store_true', help='use the configured disposable-worker builder')
+        if name == 'rebuild':
+            build.add_argument('--runtime', type=Path, default=os.environ.get('NIXPP_RUNTIME'))
+    for name in ('switch', 'check'):
+        command = commands.add_parser(name, help=f'{name} a prepared system through the native controller')
+        command.add_argument('candidate')
+    for name in ('list-generations', 'rollback', 'recover'):
+        commands.add_parser(name, help=f'{name} through the native controller')
     args = parser.parse_args()
     os.umask(0o077)
     try:
-        print(prepare(args.runtime, args.generation))
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        parser.exit(1, f'Cannot prepare system candidate: {error}\n')
+        if args.command == 'prepare':
+            print(prepare(args.runtime, args.generation))
+        elif args.command in ('build', 'rebuild'):
+            if args.command == 'rebuild' and args.runtime is None:
+                raise ValueError('rebuild requires NIXPP_RUNTIME or --runtime')
+            generation = build_system(args.flake, args.host, args.rworker)
+            if args.command == 'build':
+                print(generation)
+            else:
+                runtime = Path(args.runtime)
+                destination = runtime / 'system-candidates' / generation.name
+                if not destination.exists():
+                    prepare(runtime, generation)
+                manage('switch', generation.name)
+                print(generation)
+        else:
+            response = manage(args.command, getattr(args, 'candidate', None))
+            if args.command == 'list-generations':
+                print(json.dumps(response['generations'], sort_keys=True))
+    except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
+        parser.exit(1, f'nixpp: {error}\n')
 
 
 if __name__ == '__main__':

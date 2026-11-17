@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location('prepare_system', Path(__file__).with_name('prepare-session.py'))
 module = importlib.util.module_from_spec(spec)
@@ -109,6 +109,52 @@ class PrepareTests(unittest.TestCase):
         for value in [None, '/bin/bash', good + '/../escape', good + ':bad', good + '\nextra']:
             with self.subTest(value=value), self.assertRaises(ValueError):
                 module.store_path(value)
+
+
+class ManagementTests(unittest.TestCase):
+    def test_build_never_compiles_on_phone(self):
+        path = '/nix/store/' + 'a' * 32 + '-termuxpp-system-test'
+        runner = Mock(return_value=Mock(stdout=path + '\n'))
+        self.assertEqual(module.build_system('/source', 'test', run=runner), Path(path))
+        command = runner.call_args.args[0]
+        self.assertEqual(command, ['nix', 'build', '--max-jobs', '0', '--no-link',
+                                   '--print-out-paths', '/source#termuxppConfigurations.test.system'])
+        self.assertTrue(runner.call_args.kwargs['check'])
+
+    def test_build_uses_existing_rworker_integration(self):
+        path = '/nix/store/' + 'a' * 32 + '-termuxpp-system-test'
+        runner = Mock(return_value=Mock(stdout=path + '\n'))
+        module.build_system('github:example/config', 'test', rworker=True, run=runner)
+        self.assertEqual(runner.call_args.args[0][:2], ['rworker-nix', 'build'])
+
+    def test_invalid_build_arguments_never_launch(self):
+        runner = Mock()
+        for flake, host in [('--bad', 'host'), ('source#other', 'host'), ('source', 'host.bad'), ('', 'host')]:
+            with self.subTest(flake=flake, host=host), self.assertRaises(ValueError):
+                module.build_system(flake, host, run=runner)
+        runner.assert_not_called()
+
+    def test_build_output_is_validated(self):
+        for output in ['', '/tmp/not-store\n', '/nix/store/' + 'a' * 32 + '-one\n/nix/store/' + 'b' * 32 + '-two\n']:
+            with self.subTest(output=output), self.assertRaises(ValueError):
+                module.build_system('source', 'host', run=Mock(return_value=Mock(stdout=output)))
+
+    def test_native_management_protocol_is_data_only(self):
+        client = Mock()
+        client.recv.return_value = b'{"status":0,"generations":[]}\n'
+        context = Mock()
+        context.__enter__ = Mock(return_value=client)
+        context.__exit__ = Mock(return_value=False)
+        with patch.object(module.socket, 'socket', return_value=context):
+            self.assertEqual(module.manage('list-generations', socket_path='/tmp/test.sock')['generations'], [])
+        client.connect.assert_called_once_with('/tmp/test.sock')
+        self.assertEqual(json.loads(client.sendall.call_args.args[0]), {'command': 'list-generations'})
+
+    def test_invalid_candidate_never_connects(self):
+        with patch.object(module.socket, 'socket') as socket:
+            with self.assertRaises(ValueError):
+                module.manage('switch', '../escape')
+            socket.assert_not_called()
 
 
 if __name__ == '__main__':

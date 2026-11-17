@@ -77,6 +77,7 @@ pkgs.runCommand "termuxpp-system-assembly-tests" { nativeBuildInputs = [ pkgs.py
   with open(sys.argv[2]) as stream:
       integrated = json.load(stream)
   assert integrated['homeManager'] == sys.argv[3]
+  assert integrated['activationSupported'] is True
   PY
   touch "$out"
 ''

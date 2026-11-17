@@ -51,7 +51,7 @@ let
     inherit (cfg.networking) hostName;
     inherit (cfg.user) name home;
     runtime = "droid-nix";
-    activationSupported = false;
+    activationSupported = cfg.home-manager.configuration != null;
     systemPath = toString systemPath;
     session = {
       shell = "${pkgs.bashInteractive}/bin/bash";
