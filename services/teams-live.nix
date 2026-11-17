@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 let
   cfg = config.services.teams-live;
   secrets = config.sops.secrets;
@@ -17,6 +17,24 @@ let
 
   # A value teams-live reads from the secret file at startup (docs/nix.md).
   secretValue = name: { _secret = secrets.${name}.path; };
+
+  defaultHost = "teams-live.${config.domains.main}";
+  webhookHost = lib.head (cfg.webhookHostNames ++ [ defaultHost ]);
+  webhookPort = 3005;
+  backend = "http://127.0.0.1:${toString webhookPort}";
+  approvalBackend = "http://127.0.0.1:${toString cfg.approval.port}";
+
+  approveLocation = {
+    proxyPass = approvalBackend;
+    recommendedProxySettings = true;
+    extraConfig = ''
+      access_log off;
+      error_log /dev/null crit;
+      proxy_buffering off;
+      proxy_cache off;
+      client_max_body_size 4k;
+    '';
+  };
 in
 {
   sops.secrets = {
@@ -38,6 +56,13 @@ in
     "browser-daemon/cluster-secret" = serviceSecret { };
     "home-assistant/token" = serviceSecret { sopsFile = config.sops.defaultSopsFile; };
   };
+
+  assertions = [
+    {
+      assertion = !cfg.approval.enable || cfg.webhookHostNames != [ ];
+      message = "services.teams-live.approval needs services.teams-live.webhookHostNames: the approval page is served there, never behind Authelia on the default host.";
+    }
+  ];
 
   services = {
     teams-live = {
@@ -63,10 +88,21 @@ in
           history_max_age_minutes = 15;
           webhook = {
             enable = true;
-            port = 3005;
-            url = "https://teams-live.${config.domains.main}/webhook/gitlab";
+            port = webhookPort;
+            url = "https://${webhookHost}/webhook/gitlab";
             secret_file = secrets."teams-live/gitlab-webhook-secret".path;
             auto_setup = true;
+          };
+        }
+        // lib.optionalAttrs cfg.approval.enable {
+          # The page and its token endpoints are served on the first webhook
+          # host name, at /approve (see the nginx location below).
+          approve = {
+            enable = true;
+            host = "127.0.0.1";
+            inherit (cfg.approval) port;
+            base_url = "https://${webhookHost}/approve";
+            link_ttl_seconds = cfg.approval.linkTtlSeconds;
           };
         };
 
@@ -109,28 +145,55 @@ in
       };
     };
 
-    nginx.virtualHosts."teams-live.${config.domains.main}" = {
-      enableACME = true;
-      forceSSL = true;
-      authelia.enable = true;
+    nginx.virtualHosts = {
+      ${defaultHost} = {
+        enableACME = true;
+        forceSSL = true;
+        authelia.enable = true;
 
-      locations = {
-        "^~ /webhook/" = {
-          proxyPass = "http://127.0.0.1:3005";
-          recommendedProxySettings = true;
-          authelia = false;
-        };
-        "= /healthz" = {
-          proxyPass = "http://127.0.0.1:3005";
-          recommendedProxySettings = true;
-          authelia = false;
-        };
-        "/" = {
-          proxyPass = "http://127.0.0.1:3005";
-          recommendedProxySettings = true;
+        locations = {
+          "^~ /webhook/" = {
+            proxyPass = backend;
+            recommendedProxySettings = true;
+            authelia = false;
+          };
+          "= /healthz" = {
+            proxyPass = backend;
+            recommendedProxySettings = true;
+            authelia = false;
+          };
+          "/" = {
+            proxyPass = backend;
+            recommendedProxySettings = true;
+          };
         };
       };
-    };
+    }
+    # Webhook and health check only, no Authelia: GitLab authenticates with
+    # the shared secret and no other path is proxied.
+    // lib.genAttrs cfg.webhookHostNames (_: {
+      enableACME = true;
+      forceSSL = true;
+      locations = {
+        "^~ /webhook/" = {
+          proxyPass = backend;
+          recommendedProxySettings = true;
+        };
+        "= /healthz" = {
+          proxyPass = backend;
+          recommendedProxySettings = true;
+        };
+      }
+      // lib.optionalAttrs cfg.approval.enable {
+        # The link token is the only credential: keep it out of nginx logs,
+        # including the request line that error messages quote. The service
+        # sets its own cache and CSP headers and checks Origin itself, so
+        # nothing is rewritten, buffered or cached here. `= /approve` is
+        # proxied too (no 301), the page then reads the fragment itself.
+        "= /approve" = approveLocation;
+        "^~ /approve/" = approveLocation;
+      };
+    });
 
     monit.checks.teams-live = {
       type = "program";

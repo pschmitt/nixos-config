@@ -13,6 +13,7 @@
     ./services/nfs-client.nix
     ./services/nfs-server.nix
     ./services/ppd-react.nix
+    ./services/teams-live.nix
     ./services/watchyourlan.nix
   ];
 }
