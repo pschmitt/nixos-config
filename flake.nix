@@ -100,6 +100,11 @@
       };
     };
 
+    tagesschau = {
+      url = "github:pschmitt/tagesschau";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     monarch = {
       url = "github:pschmitt/monarch";
       inputs.nixpkgs.follows = "nixpkgs";

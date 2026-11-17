@@ -76,7 +76,9 @@ acquire_activation_lock() {
 }
 
 check_host() {
-  if [[ "${PREFIX:-}" != /data/data/com.termux/files/usr || "$(uname -m)" != aarch64 ]]
+  # Bundle relocation rewrites this literal for the target app.
+  local expected_prefix=/data/data/com.termux/files/usr
+  if [[ "${PREFIX:-}" != "$expected_prefix" || "$(uname -m)" != aarch64 ]]
   then
     printf 'This bundle requires its matching Termux app prefix on aarch64.\n' >&2
     return 1
@@ -253,8 +255,46 @@ ensure_generation_number() {
   rm -f -- "$temporary"
 }
 
-switch_generation() {
+switch_generation() (
   local root=$1 generation=$2 action=$3 package installed
+  local backup='' switched=0
+
+  # shellcheck disable=SC2329 # Invoked by the EXIT trap.
+  cleanup_activation() {
+    local name path
+    if [[ -n "$backup" ]]
+    then
+      if (( ! switched ))
+      then
+        for name in known-hosts config
+        do
+          if [[ "$name" == known-hosts ]]
+          then
+            path="$PREFIX/etc/ssh/ssh_known_hosts.d/nixpp"
+          else
+            path="$PREFIX/etc/ssh/ssh_config.d/nixpp.conf"
+          fi
+          if [[ -e "$backup/$name" || -L "$backup/$name" ]]
+          then
+            if ! cp -a --remove-destination -- "$backup/$name" "$path"
+            then
+              printf 'Could not restore SSH client state; recovery files retained at %s\n' "$backup" >&2
+              return 1
+            fi
+          elif [[ -f "$backup/$name.absent" ]]
+          then
+            if ! rm -f -- "$path"
+            then
+              printf 'Could not restore SSH client state; recovery files retained at %s\n' "$backup" >&2
+              return 1
+            fi
+          fi
+        done
+      fi
+      rm -rf -- "$backup"
+    fi
+  }
+  trap cleanup_activation EXIT
   if [[ "$generation" =~ ^[1-9][0-9]*$ ]]
   then
     generation=$(generation_id_for_number "$root" "$generation") || {
@@ -286,21 +326,86 @@ switch_generation() {
     "$root/generations/$generation" || return
   if [[ "${TERMUX_NATIVE_SKIP_SOPS_SETUP:-}" != 1 ]]
   then
+    local name path
+    backup=$(mktemp -d "$root/.activation.XXXXXXXX") || return
+    for name in known-hosts config
+    do
+      if [[ "$name" == known-hosts ]]
+      then
+        path="$PREFIX/etc/ssh/ssh_known_hosts.d/nixpp"
+      else
+        path="$PREFIX/etc/ssh/ssh_config.d/nixpp.conf"
+      fi
+      if [[ -e "$path" || -L "$path" ]]
+      then
+        cp -a -- "$path" "$backup/$name.next" || return
+        mv -- "$backup/$name.next" "$backup/$name" || return
+      else
+        touch "$backup/$name.absent" || return
+      fi
+    done
     TERMUX_GENERATION="$root/generations/$generation" \
       PATH="$root/generations/$generation/bin:$PATH" \
       "$PREFIX/bin/bash" "$root/generations/$generation/setup-known-hosts.sh" \
       "$root/generations/$generation" || return
-    TERMUX_GENERATION="$root/generations/$generation" \
-      PATH="$root/generations/$generation/bin:$PATH" \
-      "$PREFIX/bin/bash" "$root/generations/$generation/setup-gpg-keys.sh" \
+  fi
+  if [[ "${TERMUX_NATIVE_SKIP_SOPS_SETUP:-}" != 1 && -f "$root/generations/$generation/setup-cache-credentials.sh" ]]
+  then
+    "$PREFIX/bin/bash" "$root/generations/$generation/setup-cache-credentials.sh" \
       "$root/generations/$generation" || return
   fi
+  link_termuxpp_motd "$root/generations/$generation" || return
   ensure_generation_number "$root" "$generation" "$action" || return
   ln -s "generations/$generation" "$root/.next" || return
-  mv -Tf "$root/.next" "$root/current" || return
+  if [[ -f "$root/generations/$generation/setup-sshd.sh" ]]
+  then
+    "$PREFIX/bin/bash" "$root/generations/$generation/setup-sshd.sh" \
+      "$root/generations/$generation" --switch-current "$root" || return
+  else
+    mv -Tf "$root/.next" "$root/current" || return
+  fi
+  switched=1
   link_nixpp_config || return
   printf 'Activated %s. Start the managed shell with:\n  exec "%s/bin/zsh" -l\n' \
     "$generation" "$PREFIX"
+  # Key imports are additive shared state, not part of generation rollback.
+  if [[ "${TERMUX_NATIVE_SKIP_SOPS_SETUP:-}" != 1 ]]
+  then
+    if ! TERMUX_GENERATION="$root/generations/$generation" \
+      PATH="$root/generations/$generation/bin:$PATH" \
+      "$PREFIX/bin/bash" "$root/generations/$generation/setup-gpg-keys.sh" \
+      "$root/generations/$generation"
+    then
+      printf 'Warning: generation activated, but GPG key provisioning failed. Retry setup-gpg-keys.sh for the active generation.\n' >&2
+    fi
+  fi
+)
+
+link_termuxpp_motd() {
+  local generation=$1 config_dir="$HOME/.config/termuxpp"
+  local path="$HOME/.config/termuxpp/motd.sh"
+  local target="$HOME/.local/share/termux-native/current/home/.config/termuxpp/motd.sh"
+
+  [[ "$PREFIX" == /data/data/dev.pschmitt.termux/files/usr ]] || return 0
+  if [[ ! -f "$generation/home/.config/termuxpp/motd.sh" ]]
+  then
+    if [[ -L "$path" && "$(readlink -- "$path")" == "$target" ]]
+    then
+      rm -- "$path" || return
+    fi
+    return 0
+  fi
+  if [[ -e "$path" || -L "$path" ]]
+  then
+    if [[ -L "$path" && "$(readlink -- "$path")" == "$target" ]]
+    then
+      return 0
+    fi
+    printf 'Preserving existing unmanaged MOTD: %s\n' "$path" >&2
+    return 0
+  fi
+  mkdir -p -- "$config_dir" || return
+  ln -s -- "$target" "$path"
 }
 
 link_nixpp_config() {

@@ -24,6 +24,11 @@ behavior.
   `mp4`, or `zf10`.
 - Inspect the existing Termux and generation state before modifying it. A
   successful shell prompt alone does not prove yadm bootstrap completed.
+- After a TermuxPP APK update, an existing SSH daemon can retain a deleted APK's
+  prefix-redirect library and close new SSH connections despite still listening.
+  Check the daemon's library mappings and coordinate with any agent installing
+  APKs before restarting it with the current app environment. Do not disable
+  host-key checking, clear app data, or reinstall the prefix to fix this.
 - Clearing Termux app data removes its private prefix, home, nixpp generations,
   and installer recovery files. Do this only when the user explicitly requests
   a clean reinstall. Check the backup before replacing or removing the prefix.
@@ -68,15 +73,19 @@ mode-`600` file under Termux private app data and remove it after use.
 Use nixpp for later profile updates; do not clear app data or rerun first-run
 initialization to add packages.
 
-- Run `nixpp doctor` to inspect configuration, Niks3 access, rbw credentials,
+- Run `nixpp doctor` to inspect configuration, Niks3 access, credentials,
   and configured builders. The builder checks run concurrently; report their
   captured results in a stable, sorted order and omit builder Nix versions.
 - Run `nixpp upgrade` to build the configured flake on an available builder,
   fetch its published bundle from the configured S3 substituter, verify it,
   and activate a new generation. `nixpp fetch latest` is an alias for this
   operation. The config is `~/.config/nixpp/config.toml`; it provides the
-  flake, builders, trusted public keys, Niks3 substituter, and rbw credential
-  command.
+  flake, builders, trusted public keys, Niks3 substituter, and credential source.
+- Use `nixpp upgrade --from-cache` for unattended profile updates. It consumes
+  the selected `cache_profile` pin without SSH or building. Use file-based
+  read-only credentials, not a command that needs an unlocked personal vault.
+  `--from-cache --dry-run` verifies the selected bundle without activation;
+  a successful `cache list` alone does not prove the selected pin exists.
 - `nixpp upgrade --dry-run` preflights and diffs a candidate without
   activation. After an upgrade, inspect the generation diff.
 - `nixpp cache list [--json]` checks the configured Niks3 pins for device
@@ -95,10 +104,27 @@ copy files that retain Nix store references into the Termux environment.
 The nightly Termux update runs from Tasker in a nonstandard, often
 noninteractive context. Keep its script yadm-managed. Avoid TTY-dependent
 prompts, assume neither the interactive login shell nor its current directory,
-and propagate `nixpp upgrade`'s exit status so Tasker can detect failures. Do
-not put credentials in the script; nixpp gets Niks3 credentials from rbw at
-runtime. Keep output concise and capture command output before sorting or
-presenting it so messages stay in the right order.
+and propagate command exit status so Tasker can detect failures. Do not put
+credentials in the script or keep rbw unlocked. A private configuration may
+supply `termux.cache.credentialsSopsFile`: native activation decrypts the narrow
+payload with the phone's SSH host identity. Ordinary Home Manager activation
+DAG entries are not executed by native nixpp activation. Native bundles compose
+`hosts/<profile>` directly, so wire the payload option into that host composition;
+setting it only in the integrated private Home Manager host module is insufficient.
+Verify that the built archive contains the payload and that the installed config
+selects its runtime credential file.
+
+Use a background plugin action with wait-for-result and an absolute working
+directory. Its Bundle must contain `dev.pschmitt.termux.execute.arguments`, even
+when the value is null. `~` is not expanded in the working-directory field.
+Allow more time in Tasker than the runner's own bounded execution budget and
+inspect `%result` (shell exit code), not only plugin transport success. Save
+Tasker edits with `persist_config`.
+
+Test through a real Tasker plugin job, including with rbw locked. Android may
+block networking for a bare `run-as` process while the app UID is backgrounded;
+a DNS failure in that context does not establish a device DNS problem. Keep
+output concise and capture command output before presenting it.
 
 ## Verify both layers
 
@@ -106,8 +132,12 @@ After setup or recovery, verify independently:
 
 1. `nixpp status --json` reports a current generation and no invalid
    generations.
-2. The yadm checkout exists, `yadm status` works, the `termux` and `nixpp`
-   local classes are configured, and yadm bootstrap completed.
+2. The yadm checkout exists, `yadm status` works, and yadm bootstrap completed.
+   Check classes against the app: stock Termux uses `termux`; TermuxPP uses
+   `termuxpp` instead, alongside `nixpp` and `impure`. yadm owns class selection;
+   do not add a second class-management hook to the Home Manager shell. Open
+   several fresh shells and confirm classes stay unchanged and alternates are
+   not relinked on every startup.
 3. `command -v yadm` and `command -v zhj` resolve; a simple `zhj` command
    works with the managed Zsh configuration.
 4. Relaunch Termux and confirm it starts the managed shell.

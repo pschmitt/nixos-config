@@ -10,7 +10,10 @@ in
 {
   # The adb:: zsh functions only need adb itself; adb::scan uses nmap, ip
   # and jq.
-  home.packages = lib.mkIf (!termuxMode) [ pkgs.android-tools ];
+  home.packages = lib.mkIf (!termuxMode) [
+    pkgs.android-tools
+    pkgs.termuxpp-adb-shell
+  ];
 
   termux.packages = lib.mkIf termuxMode [
     "android-tools"

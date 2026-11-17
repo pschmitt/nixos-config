@@ -99,7 +99,11 @@ enum Command {
     },
     /// Upgrade to the configured default Termux profile.
     Upgrade {
-        /// Build and compare the configured profile without activating it.
+        /// Install the cache pin selected by `cache_profile` instead of building:
+        /// needs no SSH and no builder, only read access to the S3 cache.
+        #[arg(long)]
+        from_cache: bool,
+        /// Compare the configured profile without activating it.
         #[arg(long)]
         dry_run: bool,
     },
@@ -165,7 +169,16 @@ fn run(cli: Cli) -> Result<()> {
             builder,
             public_key,
         } => nixpp::switch_profile(flake.as_deref(), builder.as_deref(), public_key.as_deref()),
-        Command::Upgrade { dry_run } => nixpp::upgrade_profile(dry_run),
+        Command::Upgrade {
+            from_cache,
+            dry_run,
+        } => {
+            if from_cache {
+                nixpp::upgrade_from_cache(dry_run)
+            } else {
+                nixpp::upgrade_profile(dry_run)
+            }
+        }
         Command::Doctor => nixpp::doctor(),
         Command::Diff { old, new } => nixpp::diff(old.as_deref(), new.as_deref()),
         Command::Status { all, json } => nixpp::status(all, json),
@@ -174,5 +187,62 @@ fn run(cli: Cli) -> Result<()> {
         Command::Rollback { generation } => nixpp::rollback(&generation),
         Command::Unpin { generation } => nixpp::pin(&generation, false),
         Command::Gc { keep, dry_run } => nixpp::gc(keep, dry_run),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    fn upgrade_flags(arguments: &[&str]) -> (bool, bool) {
+        match Cli::try_parse_from(arguments).unwrap().command {
+            Command::Upgrade {
+                from_cache,
+                dry_run,
+            } => (from_cache, dry_run),
+            other => panic!("expected upgrade, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn plain_upgrade_keeps_the_builder_path() {
+        assert_eq!(upgrade_flags(&["nixpp", "upgrade"]), (false, false));
+        assert_eq!(
+            upgrade_flags(&["nixpp", "upgrade", "--dry-run"]),
+            (false, true)
+        );
+    }
+
+    #[test]
+    fn upgrade_from_cache_accepts_dry_run_in_any_order() {
+        assert_eq!(
+            upgrade_flags(&["nixpp", "upgrade", "--from-cache"]),
+            (true, false)
+        );
+        assert_eq!(
+            upgrade_flags(&["nixpp", "upgrade", "--from-cache", "--dry-run"]),
+            (true, true)
+        );
+        assert_eq!(
+            upgrade_flags(&["nixpp", "upgrade", "--dry-run", "--from-cache"]),
+            (true, true)
+        );
+    }
+
+    #[test]
+    fn upgrade_rejects_builder_and_cache_overrides() {
+        for argument in ["--builder", "--flake", "--public-key", "--cache"] {
+            assert!(
+                Cli::try_parse_from(["nixpp", "upgrade", "--from-cache", argument, "x"]).is_err(),
+                "{argument} must not be accepted by upgrade"
+            );
+        }
+    }
+
+    #[test]
+    fn from_cache_is_only_an_upgrade_flag() {
+        assert!(Cli::try_parse_from(["nixpp", "switch", "--from-cache"]).is_err());
+        assert!(Cli::try_parse_from(["nixpp", "fetch", "latest", "--from-cache"]).is_err());
     }
 }

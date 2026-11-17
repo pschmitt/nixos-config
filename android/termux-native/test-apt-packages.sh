@@ -125,7 +125,25 @@ MOCK_APT_GET
   grep -Fxq obsolete-owned "$MOCK_INSTALLED_FILE"
   grep -Fxq obsolete-owned "$root/apt-owned-packages.txt"
 
+  local process_stat
+  local -a process_fields
+  IFS= read -r process_stat < /proc/$$/stat
+  process_stat=${process_stat##*) }
+  read -ra process_fields <<< "$process_stat"
+  mkdir -p "$root/sessions"
+  printf '%s %s\n' "${process_fields[19]}" "$old_generation" > "$root/sessions/$$"
   HOME="$temporary/home" bash "$script_dir/bootstrap.sh" gc --keep 3
+  [[ -d "$root/generations/$old_generation" ]]
+  grep -Fxq obsolete-owned "$MOCK_INSTALLED_FILE"
+  grep -Fxq obsolete-owned "$root/apt-owned-packages.txt"
+
+  # A reused PID must not keep an unrelated generation alive indefinitely.
+  printf '0 %s\n' "$old_generation" > "$root/sessions/$$"
+  gc_output=$(HOME="$temporary/home" bash "$script_dir/bootstrap.sh" gc --keep 3 --dry-run)
+  grep -Fq "Would remove generation $old_generation" <<< "$gc_output"
+  [[ -f "$root/sessions/$$" ]]
+  HOME="$temporary/home" bash "$script_dir/bootstrap.sh" gc --keep 3
+  [[ ! -e "$root/sessions/$$" ]]
   [[ ! -e "$root/generations/$old_generation" ]]
   [[ -d "$root/generations/$retained_generation" ]]
   [[ -d "$root/generations/$newest_generation" ]]

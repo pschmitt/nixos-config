@@ -39,6 +39,13 @@ agent's commit, and theirs in yours.
 - Pre-commit hooks run on the commit. Do not bypass them with `--no-verify`;
   fix the cause (in `nixos-config`: `just dev-hooks` when the hook binary is
   missing).
+- In a linked worktree, verify `core.hooksPath` resolves to real hooks before
+  committing. A relative `.git/hooks` can silently skip them because `.git`
+  is a file there. Scope an absolute existing hook directory to the Git
+  command (`git -c core.hooksPath=/absolute/common/git/hooks commit ...`),
+  and make the repository's generated pre-commit configuration available in
+  that worktree. Run checks from the worktree root so relative linter
+  configuration paths resolve. Do not bypass missing configuration or hooks.
 - Push right after committing. If the push is rejected, pull with rebase and
   push again; never force-push the default branch.
 
