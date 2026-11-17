@@ -15,17 +15,8 @@ Run on a disposable build worker, from this repository root with its pinned
 private input available. Do not evaluate/build these on the workstation.
 
 ```sh
-nix build --impure --option restrict-eval true \
-  --option allowed-uris 'github: gitlab: https: git+https:' -I . --expr '
-  let f = builtins.getFlake (toString ./.);
-      homes = import ./android/full-nix { inputs = f.inputs; };
-  in homes.zf10.activationPackage' -o zf10-home
-
-nix build --impure --option restrict-eval true \
-  --option allowed-uris 'github: gitlab: https: git+https:' -I . --expr '
-  let f = builtins.getFlake (toString ./.);
-      homes = import ./android/full-nix { inputs = f.inputs; };
-  in homes.p11.activationPackage' -o p11-home
+nix build '.#homeConfigurations.zf10.activationPackage' -o zf10-home
+nix build '.#homeConfigurations.p11.activationPackage' -o p11-home
 
 nix eval --impure --option restrict-eval true \
   --option allowed-uris 'github: gitlab: https: git+https:' -I . --json --expr '
@@ -38,11 +29,13 @@ nix develop --command statix check android/full-nix
 nix develop --command deadnix android/full-nix
 nix shell --inputs-from . 'nixpkgs#shellcheck' -c shellcheck android/full-nix/scripts/*.sh
 bash android/full-nix/scripts/rworker-nix-test.sh
+nix shell --inputs-from . 'nixpkgs#python3' -c bash android/full-nix/scripts/test-check-runtime.sh
 ```
 
-Restricted evaluation keeps the upstream editor module from scanning the build
-host's real home for user plugins. Only repository inputs should affect the build;
-private runtime dotfiles must not become evaluation inputs.
+Standard flake builds use pure evaluation, so the editor module cannot scan the
+build host's home for user plugins. The expression-based assertions above use
+restricted evaluation for the same reason. Private runtime dotfiles must not
+become build inputs.
 
 The invariants check guest identity/home, host-specific colors, Linux package
 architecture, an empty native APT dependency list and no systemd service startup.
@@ -112,13 +105,90 @@ main thread fixes `eza -d`, but listings still crash; enlarging worker-thread
 stacks fixes the tested long, icon and tree listings. The shim retains at most
 one mapping per participating thread until process exit. It is not installed as
 a global preload and does not change the launcher or other Rust/Go programs.
-An independently fetched `nix shell nixpkgs#eza` is unwrapped and can still crash.
+`overlay.nix` centralizes this workaround and the capability-free `iputils`
+variant. A generated Nixpkgs facade with an explicitly locked local input supplies
+the pinned registry and
+`<nixpkgs>`, so `nix shell nixpkgs#eza` and `nix-shell -p eza` select the same
+Android-aware variant. Explicit upstream URLs or another registry bypass this
+overlay and are not covered by the compatibility guarantee.
 
 Run `python3 -I android/full-nix/scripts/check-eza.py` inside the activated guest
 for 60 real listings covering threads, long/icon/tree/Git output and symlinks.
 It creates and removes its own fixture. Linux builds and profile assertions do
 not replace this Android acceptance check. Keep future runtime-specific package
 fixes here, separate from the native Android/Bionic package profiles.
+
+## Runtime gate and generation management
+
+`full-nix-check-runtime` checks shell startup, bare/configured Neovim, repeated
+fixture-based eza listings, the local Nix registry, Unix sockets, tmux and an
+already-built Go executable (`kubectl`). It never compiles a probe on the phone.
+Use `--thorough` for 60 eza listings and an offline pinned Nixpkgs evaluation.
+Candidate mode uses a scratch home; active mode checks the real configuration.
+Neither mode is a sandbox or proof that every installed package works.
+
+These are ordinary `homeConfigurations.zf10` and `homeConfigurations.p11`.
+Home Manager owns activation, profiles and generations; there is no separate
+Android generation manager. With the source available, the normal interface is:
+
+```sh
+home-manager switch --flake '.#zf10'
+home-manager generations
+full-nix-check-runtime --thorough
+```
+
+`max-jobs = 0` still prevents phone compilation, but `home-manager switch`
+evaluates on the machine running it. For remote evaluation as well as building,
+run the standard build on a worker, then fetch the result directly on the phone:
+
+```sh
+# Worker, after syncing the source and configuring private-input authentication:
+nix build '.#homeConfigurations.zf10.activationPackage' -o zf10-home
+readlink -f zf10-home
+
+# Guest, using a privately configured SSH alias and pinned host key:
+nix copy --from ssh://build-worker /nix/store/HASH-home-manager-generation
+/nix/store/HASH-home-manager-generation/activate
+home-manager generations
+```
+
+A signed binary cache is an alternative to direct SSH transfer. Do not route
+large closures through the workstation. This is the same build/copy/activate
+workflow used for prebuilt Home Manager configurations on ordinary Linux hosts.
+The worker is disposable; its provisioning/authentication is separate from Home
+Manager and must not be embedded in the public configuration.
+
+For a new guest with no Nix package profile, initialize a standard modern profile
+before the first activation:
+
+```sh
+nix profile add /nix/store/HASH-home-manager-generation/home-path
+```
+
+Otherwise Home Manager selects its legacy `nix-env` path, which needs to build a
+profile environment and correctly fails with phone compilation disabled.
+
+Activation hooks run the isolated candidate gate before Home Manager's
+`writeBoundary`, then the real-home gate after linking files and installing packages. A preflight
+failure prevents activation; a postcheck failure reports an unsuccessful
+activation. Activation is **not atomic** and there is no automatic rollback.
+Use `home-manager generations` and run a retained generation's `activate` script
+for normal Home Manager recovery. Preserve native recovery independently.
+
+## Android integration
+
+`android-bridge ping|status|battery-status|toast` talks to a native broker through
+`/tmp/android-bridge/bridge.sock`. Start it outside the Linux guest using the
+runtime's `start-android-bridge.sh`; opt-in login startup uses `bridge.enabled`.
+The guest cannot directly execute Android/Bionic helpers. The bridge accepts
+only the four listed operations, validates requests and same-UID peers, bounds
+helper execution/output, and uses a private directory/socket. It is not a
+security boundary against other processes of the Android app UID. There is no
+arbitrary command, clipboard, location, contact or credential interface.
+
+Both test phones passed guest-to-native ping, filtered battery status and toast.
+Those probes do not establish background-service lifetime or every companion's
+compatibility. Native recovery and native SSH configuration remain independent.
 
 ## Included
 
@@ -150,9 +220,12 @@ fixes here, separate from the native Android/Bionic package profiles.
 
 ## Activation boundary
 
-The two generations have been built on a worker. Building them is not proof of
-activation or Android acceptance. Do not switch the phone's native nixpp profile
-or run these activation scripts in the native Android home.
+Both configurations have been built through the standard flake outputs and
+activated in their Linux guests. Candidate and active gates passed on both test
+phones, including configured Neovim and 60 eza listings per gate. The primary
+phone uses the full-Nix login; the second phone retains its native default shell.
+These checks do not establish long-running/background reliability. Do not switch
+the native nixpp profile or run these activation scripts in the native Android home.
 
 Once the closure is available in the guest's virtual store, run its `activate`
 script **inside** `session.sh --`, with guest `HOME=/home/pschmitt`. Preserve the
@@ -173,8 +246,9 @@ yadm and the actual editor before considering the migration complete.
 Large closures must be imported directly on the device from a signed cache or
 built remotely; do not shuttle them through the workstation. The runtime must
 already be qualified for the device's ABI and page size. In particular, the
-current launcher accepts only AArch64/4096-byte-page devices; the tablet has not
-been qualified by this configuration change.
+current launcher accepts only AArch64/4096-byte-page devices. Both test phones
+passed the basic runtime and Unix-socket probes; this alone does not qualify a
+Home Manager generation or prove a completed default-shell migration.
 
 ## Deliberately not migrated
 
@@ -182,9 +256,9 @@ This is the declarative shell/package baseline, not complete feature parity:
 
 - Native SSH host identities/daemon ports and read-only cache credentials remain
   owned by native recovery. No credentials are copied into the guest or Nix store.
-- Android API/Tasker helpers, shared storage bindings and native command bridges
-  need separate runtime integration; Linux binaries are not substitutes for the
-  Bionic helpers.
+- Beyond the four allowlisted bridge operations, Android API/Tasker helpers and
+  shared storage bindings need separate runtime integration; Linux binaries are
+  not substitutes for the Bionic helpers.
 - Existing dotfiles must be migrated device-locally; they are not build inputs.
   Back up the guest home, copy tracked files from the native worktree without
   overwriting Home Manager links, and clone the yadm repository with independent

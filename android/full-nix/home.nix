@@ -1,7 +1,6 @@
 {
   config,
   hostname,
-  inputs,
   lib,
   pkgs,
   ...
@@ -11,6 +10,9 @@
     ./operations.nix
     ./eza.nix
     ./rworker.nix
+    ./package-set.nix
+    ./bridge.nix
+    ./lifecycle.nix
     ../../modules/dotfiles.nix
     ../../modules/domains.nix
     ../../home-manager/termux-options.nix
@@ -33,7 +35,11 @@
     ../../home-manager/cli/zsh/plugins
   ];
 
-  fullNix.rworker.enable = true;
+  fullNix = {
+    rworker.enable = true;
+    androidBridge.enable = true;
+    lifecycle.enable = true;
+  };
 
   home = {
     username = "pschmitt";
@@ -47,9 +53,7 @@
       NIX_CONF_DIR = "${config.xdg.configHome}/nix";
     };
     packages = builtins.attrValues {
-      iputils = pkgs.iputils.overrideAttrs (old: {
-        mesonFlags = old.mesonFlags ++ [ "-DUSE_CAP=false" ];
-      });
+      inherit (pkgs) iputils;
       inherit (pkgs)
         bashInteractive
         cacert
@@ -109,8 +113,6 @@
       builders-use-substitutes = true;
       builders = "@${config.xdg.configHome}/nix/machines";
     };
-    registry.nixpkgs.flake = inputs.nixpkgs;
-    nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
   };
   systemd.user.startServices = false;
   news.display = "silent";

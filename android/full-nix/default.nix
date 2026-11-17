@@ -3,7 +3,9 @@ let
   pkgs = import inputs.nixpkgs {
     system = "aarch64-linux";
     config.allowUnfree = true;
-    overlays = builtins.attrValues (import ../../overlays { inherit inputs; });
+    overlays = builtins.attrValues (import ../../overlays { inherit inputs; }) ++ [
+      (import ./overlay.nix)
+    ];
   };
   mkHome =
     hostname:

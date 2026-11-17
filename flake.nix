@@ -610,6 +610,8 @@
         extraModules: [ privateIsoHostModule ] ++ extraModules ++ [ privateIsoFlakeModule ];
     in
     {
+      homeConfigurations = import ./android/full-nix { inherit inputs; };
+
       lib.termux = {
         mkBundle =
           {

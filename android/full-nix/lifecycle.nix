@@ -1,0 +1,35 @@
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  cfg = config.fullNix.lifecycle;
+  check-runtime = pkgs.writeShellApplication {
+    name = "full-nix-check-runtime";
+    runtimeInputs = [ pkgs.python3 ];
+    text = ''
+      exec python3 -I ${./scripts/check-runtime.py} "$@"
+    '';
+  };
+in
+{
+  options.fullNix.lifecycle.enable = lib.mkEnableOption "Android acceptance checks during standard Home Manager activation";
+
+  config = lib.mkIf cfg.enable {
+    home = {
+      packages = [ check-runtime ];
+      activation = {
+        androidPreflight = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+          run ${check-runtime}/bin/full-nix-check-runtime --isolated --generation "$newGenPath" --thorough
+        '';
+
+        androidAcceptance = lib.hm.dag.entryAfter [ "linkGeneration" "onFilesChange" "installPackages" ] ''
+          run env NIX_CONF_DIR=${lib.escapeShellArg "${config.xdg.configHome}/nix"} \
+            ${check-runtime}/bin/full-nix-check-runtime --generation "$newGenPath" --thorough
+        '';
+      };
+    };
+  };
+}

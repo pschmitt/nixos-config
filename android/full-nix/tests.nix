@@ -21,18 +21,25 @@ let
       home.pkgs.opentofu
       home.pkgs.ansible
     ];
+    assert c.fullNix.androidBridge.enable;
+    assert c.fullNix.androidBridge.socket == "/tmp/android-bridge/bridge.sock";
+    assert c.fullNix.lifecycle.enable;
+    assert builtins.elem "writeBoundary" c.home.activation.androidPreflight.before;
+    assert builtins.elem "linkGeneration" c.home.activation.androidAcceptance.after;
+    assert builtins.elem "onFilesChange" c.home.activation.androidAcceptance.after;
+    assert builtins.elem "installPackages" c.home.activation.androidAcceptance.after;
+    assert c.programs.home-manager.enable;
+    assert builtins.match "file:///nix/store/.*" c.nix.settings.flake-registry != null;
     assert c.fullNix.rworker.enable;
     assert c.fullNix.rworker.controller == null;
     assert c.fullNix.rworker.system == "aarch64-linux";
     assert c.programs.eza.package.name == "eza-full-nix";
     assert builtins.elem c.programs.eza.package c.home.packages;
-    assert !(builtins.elem home.pkgs.eza c.home.packages);
-    assert builtins.elem c.programs.eza.package c.home.packages;
-    assert !(builtins.elem home.pkgs.eza c.home.packages);
+    assert c.programs.eza.package == home.pkgs.eza;
     assert c.nix.settings.max-jobs == 0;
     assert c.nix.settings.builders-use-substitutes;
-    assert c.nix.registry.nixpkgs.flake.outPath == inputs.nixpkgs.outPath;
-    assert c.nix.nixPath == [ "nixpkgs=${inputs.nixpkgs}" ];
+    assert c.nix.registry.nixpkgs.to.type == "path";
+    assert c.nix.nixPath == [ "nixpkgs=${c.nix.registry.nixpkgs.to.path}" ];
     assert builtins.any (p: (p.pname or "") == "iputils") c.home.packages;
     assert c.home.sessionVariables.NIX_CONF_DIR == "/home/pschmitt/.config/nix";
     assert c.termux.enable == false;
