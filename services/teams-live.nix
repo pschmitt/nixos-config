@@ -92,6 +92,12 @@ in
             url = "https://${webhookHost}/webhook/gitlab";
             secret_file = secrets."teams-live/gitlab-webhook-secret".path;
             auto_setup = true;
+          }
+          // lib.optionalAttrs (cfg.webhook.adoptHooks != [ ]) {
+            adopt_hooks = cfg.webhook.adoptHooks;
+          }
+          // lib.optionalAttrs cfg.webhook.acceptSharedSecret {
+            accept_shared_secret = true;
           };
         }
         // lib.optionalAttrs cfg.approval.enable {
