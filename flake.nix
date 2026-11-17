@@ -611,6 +611,7 @@
     in
     {
       homeConfigurations = import ./android/full-nix { inherit inputs; };
+      termuxppConfigurations = import ./android/full-nix/system/hosts.nix { inherit inputs; };
 
       lib.termux = {
         mkBundle =
