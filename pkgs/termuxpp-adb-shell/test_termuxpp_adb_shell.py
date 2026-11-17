@@ -315,6 +315,21 @@ _termuxpp_adb_shell_serials
 '''
         subprocess.run(["zsh", "-fc", script, "test", str(self.completion_path("zsh"))], check=True)
 
+    @unittest.skipUnless(shutil.which("zsh"), "zsh not installed")
+    def test_zsh_native_autoload_completes_on_first_call(self):
+        script = r'''
+autoload -Uz compinit
+compinit -D
+fpath=("$1" $fpath)
+_arguments() { called=1; }
+autoload -Uz _termuxpp-adb-shell
+_termuxpp-adb-shell
+[[ $called == 1 ]]
+'''
+        with cli.tempfile.TemporaryDirectory() as directory:
+            shutil.copyfile(self.completion_path("zsh"), Path(directory) / "_termuxpp-adb-shell")
+            subprocess.run(["zsh", "-fc", script, "test", directory], check=True)
+
     @unittest.skipUnless(shutil.which("fish"), "fish not installed")
     def test_fish_completion_syntax(self):
         subprocess.run(["fish", "--no-execute", str(self.completion_path("fish"))], check=True)

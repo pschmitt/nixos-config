@@ -28,4 +28,9 @@ _termuxpp_adb_shell() {
 
 compdef _termuxpp_adb_shell termuxpp-adb-shell termuxpp-adb-shell.py
 
+if [[ "${funcstack[1]}" == _termuxpp-adb-shell ]]
+then
+  _termuxpp_adb_shell "$@"
+fi
+
 # vim: set ft=zsh et ts=2 sw=2 :
