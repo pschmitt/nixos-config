@@ -373,6 +373,27 @@ case "$verb" in
     fix_webcam &
     notify "📹 Webcam scene"
     ;;
+  tv-mute)
+    # Mute the active ARD/ZDF/Tagesschau source itself (explicit, never a
+    # toggle); the microphone and the audio routing are not touched.
+    exec obs-tv-audio mute
+    ;;
+  tv-volume)
+    # `obs-control tv-volume up|down`: bounded step of the active TV source;
+    # never changes its mute state.
+    case "${1:-}" in
+      up | down)
+        exec obs-tv-audio volume "$1"
+        ;;
+      *)
+        echo "Usage: obs-control tv-volume up|down" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  tv-audio-status)
+    exec obs-tv-audio status
+    ;;
   roomba-show)
     set_roomba_visibility show
     ;;

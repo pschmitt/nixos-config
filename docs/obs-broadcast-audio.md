@@ -74,6 +74,30 @@ in the meeting app may distort music or broadcast audio; use its original-audio
 or music mode if available. Audio may lag the OBS virtual camera slightly and
 needs a real call/recording check before relying on lip-sync.
 
+## Muting or stepping the TV source itself
+
+`obs-control` has verbs that act on the TV source in OBS, independent of the
+broadcast route above (they work whether sharing is on or off):
+
+```console
+obs-control tv-mute              # mute the active TV source (explicit, never a toggle)
+obs-control tv-volume up|down    # step its OBS volume by 3 dB
+obs-control tv-audio-status      # read-only: scene, sources, mute state, dB
+```
+
+They are backed by `obs-tv-audio`, which talks to obs-websocket with the same
+host, port and password handling as `obs-control`. The targets are exactly the
+allowlisted sources of the broadcast route (`ARD Live` in `ARD`, `ZDF Live` in
+`ZDF`, `Browser` or `Media` in `Tagesschau`; visible, media or browser sources,
+nested scenes and groups traversed) on the current **program** scene. On any
+other scene (for example brb) nothing is changed and the exit status is 3.
+Microphones, desktop capture, monitoring and the OBS Broadcast bridge are never
+touched, and there is no unmute.
+
+Volume steps are clamped to -40 dB .. 0 dB (never a boost, never silence), do
+not change the mute state, and leave a source that is already outside that range
+where it is when stepping further out. Muting an already muted source is a no-op.
+
 ## Troubleshooting
 
 `systemctl --user status obs-broadcast-audio.service` shows controller failures.
