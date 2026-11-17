@@ -9,6 +9,7 @@
     screencopy {
       allow_token_by_default = true
       custom_picker_binary = ${pkgs.hyprland-share-picker-gtk}/bin/hyprland-share-picker-gtk
+      custom_indicator_binary = ${pkgs.hyprland-share-picker-gtk}/bin/hyprland-share-picker-gtk
       cursor_mode = 2 # embedded: share the cursor in screencasts
     }
   '';
@@ -27,7 +28,7 @@
       mode = dim
       dim_factor = 0.62
       color = #60a5fa
-      # Border and badge while a window or region is actually being shared.
+      # Border and badge while a screen, region or window is actually being shared.
       sharing_color = #ef4444
       # Blink a ring around a newly marked window: `flash_count` times,
       # `flash_step` ms per step (bright or normal).

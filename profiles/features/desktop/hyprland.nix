@@ -13,6 +13,8 @@ let
         patches = (old.patches or [ ]) ++ [
           # A failed frame (e.g. resizing a shared window) stalls the stream.
           ../../../overlays/patches/xdph/0001-screencopy-recover-from-failed-frames.patch
+          # Local indicator integration also covers sessions restored without a picker.
+          ../../../overlays/patches/xdph/0002-screencopy-launch-sharing-indicator.patch
         ];
       });
 in

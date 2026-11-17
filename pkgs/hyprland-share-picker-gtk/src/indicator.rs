@@ -1,9 +1,8 @@
-//! Border drawn around a shared region or window while its screencast runs.
+//! Border drawn around a shared screen, region or window while its screencast runs.
 //!
-//! The picker exits as soon as it reports a selection, so the indicator runs
-//! as a detached copy of this binary (`--indicator <target>`). It watches
-//! PipeWire for the stream XDPH creates for that share and exits when the
-//! stream node disappears, whatever ended it.
+//! The portal starts a detached copy of this binary (`--indicator <target>`)
+//! before creating the stream, including when a remembered share skips the
+//! picker. It watches PipeWire for that stream and exits when its node disappears.
 
 use std::{
     collections::{HashMap, HashSet},
@@ -24,10 +23,7 @@ use crate::{
     config::{DEFAULT_HIGHLIGHT_RGBA, load_config, parse_rgba_color},
     css::install_css,
     decoration,
-    hyprland::{
-        Client, Monitor, PortalWindowEntry, Rect, client_for_entry, parse_region_details,
-        query_clients, query_monitors,
-    },
+    hyprland::{Client, Monitor, Rect, parse_region_details, query_clients, query_monitors},
 };
 
 const INDICATOR_APP_ID: &str = "lol.brkn.HyprlandShareIndicator";
@@ -39,23 +35,6 @@ const READY_TIMEOUT: Duration = Duration::from_secs(2);
 const WINDOW_POLL: Duration = Duration::from_millis(50);
 const REGION_POLL: Duration = Duration::from_secs(2);
 const PORTAL_BINARY: &str = "xdg-desktop-portal-hyprland";
-
-/// Maps a picker selection to an indicator target. Screens get none: a
-/// border on a shared output would end up in the stream.
-pub fn target_for_selection(selection: &str, entries: &[PortalWindowEntry]) -> Option<String> {
-    if selection.starts_with("region:") {
-        return Some(selection.to_string());
-    }
-    let id = selection.strip_prefix("window:")?;
-    let clients = query_clients();
-    let client = match entries.iter().find(|entry| entry.id == id) {
-        Some(entry) => client_for_entry(entry, &clients),
-        None => clients
-            .iter()
-            .find(|c| c.stable_id_string().as_deref() == Some(id)),
-    }?;
-    Some(format!("client:{}", client.address))
-}
 
 /// Starts the detached indicator and waits until it has recorded the streams
 /// that already exist, so the share's own node cannot slip into that set.
@@ -106,6 +85,7 @@ pub fn spawn(target: &str) {
 enum Target {
     Region(String),
     Client(String),
+    Screen(String),
 }
 
 enum StreamEvent {
@@ -114,10 +94,10 @@ enum StreamEvent {
     Ended,
 }
 
-/// Global rectangle to outline plus the outputs it may be drawn on.
+/// Global rectangle to outline, or the entire output when `rect` is absent.
 #[derive(Clone, PartialEq)]
 struct Outline {
-    rect: Rect,
+    rect: Option<Rect>,
     outputs: Vec<String>,
 }
 
@@ -126,6 +106,8 @@ pub fn run(raw_target: &str) -> ! {
         Target::Region(raw_target.to_string())
     } else if let Some(address) = raw_target.strip_prefix("client:") {
         Target::Client(address.to_string())
+    } else if let Some(output) = raw_target.strip_prefix("screen:") {
+        Target::Screen(output.to_string())
     } else {
         process::exit(2);
     };
@@ -158,7 +140,7 @@ pub fn run(raw_target: &str) -> ! {
             decoration::decorate(address, &props);
             true
         }
-        Target::Region(_) => false,
+        Target::Region(_) | Target::Screen(_) => false,
     };
 
     let outline_rx = spawn_outline_watcher(target);
@@ -264,7 +246,10 @@ fn build(
                 let rect = outline
                     .outputs
                     .contains(connector)
-                    .then(|| relative_rect(outline.rect, border.geom, width))
+                    .then(|| match outline.rect {
+                        Some(rect) => relative_rect(rect, border.geom, width),
+                        None => Some(screen_rect(border.geom, width)),
+                    })
                     .flatten();
                 border.rect.set(rect);
                 border.window.set_visible(rect.is_some());
@@ -406,6 +391,17 @@ fn draw_camera_badge(
     let _ = cr.fill();
 }
 
+/// Output decorations must fit inside its logical bounds, including on scaled outputs.
+fn screen_rect(geom: gdk::Rectangle, width: f64) -> Rect {
+    let inset = width.ceil() as i32;
+    Rect {
+        x: inset,
+        y: inset,
+        width: (geom.width() - 2 * inset).max(0),
+        height: (geom.height() - 2 * inset).max(0),
+    }
+}
+
 /// Converts a global rectangle to monitor-local coordinates when its border
 /// touches the monitor at all. The rectangle itself is not clipped, so a
 /// border spanning two outputs lines up on both.
@@ -428,6 +424,13 @@ fn relative_rect(global: Rect, geom: gdk::Rectangle, width: f64) -> Option<Rect>
 fn spawn_outline_watcher(target: Target) -> Receiver<Outline> {
     let (tx, rx) = channel();
     thread::spawn(move || {
+        if let Target::Screen(output) = &target {
+            let _ = tx.send(Outline {
+                rect: None,
+                outputs: vec![output.clone()],
+            });
+            return;
+        }
         let mut last: Option<Outline> = None;
         loop {
             let monitors = query_monitors();
@@ -442,6 +445,7 @@ fn spawn_outline_watcher(target: Target) -> Receiver<Outline> {
                             Some(client_outline(address, &clients, &monitors))
                         }
                     }
+                    Target::Screen(_) => unreachable!(),
                 };
                 if let Some(outline) = outline {
                     if last.as_ref() != Some(&outline) {
@@ -453,7 +457,7 @@ fn spawn_outline_watcher(target: Target) -> Receiver<Outline> {
                 }
             }
             thread::sleep(match target {
-                Target::Region(_) => REGION_POLL,
+                Target::Region(_) | Target::Screen(_) => REGION_POLL,
                 Target::Client(_) => WINDOW_POLL,
             });
         }
@@ -464,12 +468,12 @@ fn spawn_outline_watcher(target: Target) -> Receiver<Outline> {
 fn region_outline(selection: &str, monitors: &[Monitor]) -> Option<Outline> {
     let details = parse_region_details(selection, monitors)?;
     Some(Outline {
-        rect: Rect {
+        rect: Some(Rect {
             x: details.global_x,
             y: details.global_y,
             width: details.width as i32,
             height: details.height as i32,
-        },
+        }),
         outputs: monitors.iter().map(|m| m.name.clone()).collect(),
     })
 }
@@ -482,12 +486,12 @@ fn client_outline(address: &str, clients: &[Client], monitors: &[Monitor]) -> Ou
         .filter(|c| c.at.len() == 2 && c.size.len() == 2);
     match client {
         Some(c) => Outline {
-            rect: Rect {
+            rect: Some(Rect {
                 x: c.at[0],
                 y: c.at[1],
                 width: c.size[0],
                 height: c.size[1],
-            },
+            }),
             outputs: monitors
                 .iter()
                 .filter(|m| c.is_visible_on_monitor(m))
@@ -495,12 +499,7 @@ fn client_outline(address: &str, clients: &[Client], monitors: &[Monitor]) -> Ou
                 .collect(),
         },
         None => Outline {
-            rect: Rect {
-                x: 0,
-                y: 0,
-                width: 0,
-                height: 0,
-            },
+            rect: None,
             outputs: Vec::new(),
         },
     }
@@ -615,4 +614,22 @@ fn watch_streams(tx: &Sender<StreamEvent>) {
         }
     }
     let _ = child.kill();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn screen_border_fits_inside_logical_output() {
+        assert_eq!(
+            screen_rect(gdk::Rectangle::new(1920, -200, 1280, 720), 4.0),
+            Rect {
+                x: 4,
+                y: 4,
+                width: 1272,
+                height: 712,
+            }
+        );
+    }
 }

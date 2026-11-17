@@ -33,9 +33,13 @@ struct Args {
     #[arg(long, num_args = 2, value_names = ["OUTPUT", "PREFIX"], hide = true)]
     probe_capture: Option<Vec<String>>,
 
-    /// Draw a border around a shared region or window until its stream ends.
+    /// Draw a border around a shared screen, region or window until its stream ends.
     #[arg(long, value_name = "TARGET")]
     indicator: Option<String>,
+
+    /// Start a detached indicator before the portal creates its PipeWire stream.
+    #[arg(long, value_name = "TARGET", hide = true)]
+    spawn_indicator: Option<String>,
 
     #[arg(index = 1)]
     window_list: Option<String>,
@@ -118,6 +122,11 @@ fn main() {
             eprintln!("probe failed: {err:#}");
             process::exit(1);
         }
+        process::exit(0);
+    }
+
+    if let Some(target) = args.spawn_indicator {
+        indicator::spawn(&target);
         process::exit(0);
     }
 

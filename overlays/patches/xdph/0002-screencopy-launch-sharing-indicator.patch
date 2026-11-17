@@ -1,0 +1,68 @@
+diff --git a/src/core/PortalManager.cpp b/src/core/PortalManager.cpp
+--- a/src/core/PortalManager.cpp
++++ b/src/core/PortalManager.cpp
+@@ -78,5 +78,6 @@
+     m_sConfig.config->addConfigValue("screencopy:max_fps", Hyprlang::INT{120L});
+     m_sConfig.config->addConfigValue("screencopy:allow_token_by_default", Hyprlang::INT{0L});
+     m_sConfig.config->addConfigValue("screencopy:custom_picker_binary", Hyprlang::STRING{""});
++    m_sConfig.config->addConfigValue("screencopy:custom_indicator_binary", Hyprlang::STRING{""});
+     m_sConfig.config->addConfigValue("screencopy:force_shm", Hyprlang::INT{0L});
+     m_sConfig.config->addConfigValue("screencopy:cursor_mode", Hyprlang::INT{0L});
+diff --git a/src/portals/Screencopy.cpp b/src/portals/Screencopy.cpp
+--- a/src/portals/Screencopy.cpp
++++ b/src/portals/Screencopy.cpp
+@@ -309,2 +309,6 @@
+-    if (PSESSION->sharingData.active || !startSharing(PSESSION))
++    if (PSESSION->sharingData.active)
++        return {2, {}};
++
++    startScreencopyIndicator(PSESSION->selection);
++    if (!startSharing(PSESSION))
+         return {2, {}};
+diff --git a/src/shared/ScreencopyShared.hpp b/src/shared/ScreencopyShared.hpp
+--- a/src/shared/ScreencopyShared.hpp
++++ b/src/shared/ScreencopyShared.hpp
+@@ -47,4 +47,5 @@
+ SSelectionData   promptForScreencopySelection();
++void             startScreencopyIndicator(const SSelectionData& data);
+ uint32_t         drmFourccFromSHM(wl_shm_format format);
+ spa_video_format pwFromDrmFourcc(uint32_t format);
+ wl_shm_format    wlSHMFromDrmFourcc(uint32_t format);
+diff --git a/src/shared/ScreencopyShared.cpp b/src/shared/ScreencopyShared.cpp
+--- a/src/shared/ScreencopyShared.cpp
++++ b/src/shared/ScreencopyShared.cpp
+@@ -241,3 +241,34 @@
++void startScreencopyIndicator(const SSelectionData& data) {
++    static auto* const* PBINARY =
++        (Hyprlang::STRING* const)g_pPortalManager->m_sConfig.config->getConfigValuePtr("screencopy:custom_indicator_binary")->getDataStaticPtr();
++    if (std::string{*PBINARY}.empty())
++        return;
++
++    std::string target;
++    switch (data.type) {
++        case TYPE_OUTPUT:
++            target = std::format("screen:{}", data.output);
++            break;
++        case TYPE_GEOMETRY:
++            target = std::format("region:{}@{},{},{},{}", data.output, data.x, data.y, data.w, data.h);
++            break;
++        case TYPE_WINDOW: {
++            if (!g_pPortalManager->m_sHelpers.toplevelMapping)
++                return;
++            const auto address = g_pPortalManager->m_sHelpers.toplevelMapping->getWindowForToplevel(data.windowHandle);
++            if (!address)
++                return;
++            target = std::format("client:0x{:x}", address);
++            break;
++        }
++        default: return;
++    }
++
++    CProcess proc(*PBINARY, {"--spawn-indicator", target});
++    if (!proc.runSync())
++        Debug::log(ERR, "[screencopy] Could not start sharing indicator");
++}
++
+ SSelectionData promptForScreencopySelection() {
+     const char*         WAYLAND_DISPLAY             = getenv("WAYLAND_DISPLAY");
+     const char*         XCURSOR_SIZE                = getenv("XCURSOR_SIZE");

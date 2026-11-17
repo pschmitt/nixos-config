@@ -37,7 +37,6 @@ use crate::{
         query_clients, query_cursor_pos, query_monitors, spawn_state_watcher, window_at_point,
         window_to_region,
     },
-    indicator,
     overlay::OverlayHighlighter,
 };
 
@@ -349,7 +348,7 @@ pub fn build_ui(
             let s = state_key.borrow();
             if let Some(ref sel) = s.selection {
                 let final_sel = resolve_final_selection(sel, &s);
-                emit_selection(&final_sel, s.allow_token, &s.window_entries);
+                emit_selection(&final_sel, s.allow_token);
             }
             return glib::Propagation::Stop;
         }
@@ -499,7 +498,7 @@ pub fn build_ui(
         let s = state_share.borrow();
         if let Some(ref sel) = s.selection {
             let final_sel = resolve_final_selection(sel, &s);
-            emit_selection(&final_sel, s.allow_token, &s.window_entries);
+            emit_selection(&final_sel, s.allow_token);
         }
     });
     footer.append(&share_btn);
@@ -1626,7 +1625,7 @@ fn make_source_card(
         if is_double {
             let s = state_click.borrow();
             let final_sel = resolve_final_selection(&sel_click, &s);
-            emit_selection(&final_sel, allow_token, &s.window_entries);
+            emit_selection(&final_sel, allow_token);
         }
     });
     card.add_controller(click);
@@ -1999,7 +1998,7 @@ fn finish_pick(state: Rc<RefCell<AppState>>, selection: Option<String>) {
     if let Some(sel) = selection.as_deref().filter(|s| !s.starts_with("region:")) {
         let s = state.borrow();
         let final_sel = resolve_final_selection(sel, &s);
-        emit_selection(&final_sel, s.allow_token, &s.window_entries);
+        emit_selection(&final_sel, s.allow_token);
     }
 
     let window = state.borrow().window.clone();
@@ -2071,11 +2070,8 @@ fn set_region_selection(state: Rc<RefCell<AppState>>, sel: &str) {
     }
 }
 
-pub fn emit_selection(selection: &str, allow_token: bool, window_entries: &[PortalWindowEntry]) {
+pub fn emit_selection(selection: &str, allow_token: bool) {
     decoration::restore();
-    if let Some(target) = indicator::target_for_selection(selection, window_entries) {
-        indicator::spawn(&target);
-    }
     let prefix = if allow_token { "r" } else { "" };
     let record = format!("[SELECTION]{prefix}/{selection}\n");
     let mut out = stdout().lock();
