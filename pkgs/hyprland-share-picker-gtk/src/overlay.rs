@@ -303,6 +303,14 @@ impl OverlayHighlighter {
         );
     }
 
+    pub fn dim_around_picker(&self) {
+        decoration::restore();
+        self.stop_flash();
+        for entry in self.overlays.values() {
+            self.show_entry(entry, None, true);
+        }
+    }
+
     pub fn highlight_screen(&self, monitor_name: &str) {
         decoration::restore();
         for (connector, entry) in &self.overlays {

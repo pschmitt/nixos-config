@@ -19,8 +19,8 @@ use std::{
 use gtk4::{
     Application, ApplicationWindow, Box as GtkBox, Button, CenterBox, CheckButton, ContentFit,
     EventControllerKey, EventControllerMotion, GestureClick, GestureDrag, Image, Label,
-    Orientation, Picture, PolicyType, PropagationPhase, ScrolledWindow, Stack, StackTransitionType,
-    ToggleButton, Widget, gdk, glib, prelude::*,
+    Orientation, Picture, PolicyType, PropagationPhase, ScrolledWindow, SearchEntry, Stack,
+    StackTransitionType, ToggleButton, Widget, gdk, glib, prelude::*,
 };
 
 use crate::{
@@ -96,7 +96,16 @@ pub struct SourcePreview {
     picture: Picture,
     heading: Label,
     placeholder: Label,
+    placeholder_text: String,
     selected_id: Option<usize>,
+    search: SearchEntry,
+    no_results: Label,
+}
+
+pub struct SourceCard {
+    button: ToggleButton,
+    tab: String,
+    search_text: String,
 }
 
 pub struct AppState {
@@ -137,7 +146,7 @@ pub struct AppState {
     pub region_draw_button: Option<Button>,
     pub card_buttons: Vec<(String, ToggleButton)>,
     pub card_targets: Vec<(usize, String, CaptureTarget)>,
-    pub card_widgets: HashMap<usize, ToggleButton>,
+    pub card_widgets: HashMap<usize, SourceCard>,
     pub pictures: Rc<RefCell<HashMap<usize, Picture>>>,
     pub window: Option<ApplicationWindow>,
     pub stack: Option<Stack>,
@@ -342,8 +351,15 @@ pub fn build_ui(
     // Key handling: Esc to quit, Enter to share
     let key_controller = EventControllerKey::new();
     let state_key = state.clone();
-    key_controller.connect_key_pressed(move |_ctrl, keyval, _keycode, _mod| {
-        if keyval == gdk::Key::Escape || keyval == gdk::Key::q {
+    key_controller.connect_key_pressed(move |_ctrl, keyval, _keycode, modifiers| {
+        if keyval == gdk::Key::f && modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+            let s = state_key.borrow();
+            if let Some(preview) = s.source_previews.get(&s.active_tab) {
+                preview.search.grab_focus();
+            }
+            return glib::Propagation::Stop;
+        }
+        if keyval == gdk::Key::Escape {
             if let Some(ref h) = state_key.borrow().highlighter {
                 h.clear();
             }
@@ -590,6 +606,7 @@ pub fn build_ui(
     });
 
     capture_mgr.set_active_tab(&initial_tab);
+    update_overlay_highlight(&state.borrow());
     window.present();
 }
 
@@ -941,6 +958,11 @@ fn make_source_page(
     page.set_margin_end(28);
     page.set_margin_bottom(8);
 
+    let search = SearchEntry::new();
+    search.set_placeholder_text(Some(&format!("Search {tab}…")));
+    search.set_hexpand(true);
+    page.append(&search);
+
     let picture = Picture::new();
     picture.set_can_shrink(true);
     picture.set_content_fit(ContentFit::Contain);
@@ -973,7 +995,16 @@ fn make_source_page(
     scroll.set_min_content_height(180);
     scroll.set_vexpand(false);
     watch_scroll_for_culling(&scroll, state.clone());
-    page.append(&scroll);
+    let no_results = Label::new(Some("No matching sources. Try another search."));
+    no_results.add_css_class("dim-label");
+    no_results.set_wrap(true);
+    no_results.set_halign(gtk4::Align::Center);
+    no_results.set_valign(gtk4::Align::Center);
+    no_results.set_visible(false);
+    let results = gtk4::Overlay::new();
+    results.set_child(Some(&scroll));
+    results.add_overlay(&no_results);
+    page.append(&results);
 
     state.borrow_mut().source_previews.insert(
         tab.to_string(),
@@ -981,10 +1012,89 @@ fn make_source_page(
             picture,
             heading,
             placeholder,
+            placeholder_text: placeholder_text.to_string(),
             selected_id: None,
+            search: search.clone(),
+            no_results,
         },
     );
+    let search_state = state.clone();
+    let search_tab = tab.to_string();
+    search.connect_changed(move |_| {
+        filter_source_cards(&search_state, &search_tab);
+        let adjustment = scroll.hadjustment();
+        adjustment.set_value(adjustment.lower());
+    });
+    search.connect_stop_search(|entry| entry.set_text(""));
     page
+}
+
+fn matches_source_search(search_text: &str, query: &str) -> bool {
+    query
+        .split_whitespace()
+        .all(|term| search_text.contains(&term.to_lowercase()))
+}
+
+fn filter_source_cards(state: &Rc<RefCell<AppState>>, tab: &str) {
+    let cards = {
+        let mut s = state.borrow_mut();
+        let Some(preview) = s.source_previews.get(tab) else {
+            return;
+        };
+        let query = preview.search.text();
+        let cards: Vec<_> = s
+            .card_widgets
+            .iter()
+            .filter(|(_, card)| card.tab == tab)
+            .map(|(id, card)| {
+                (
+                    *id,
+                    card.button.clone(),
+                    matches_source_search(&card.search_text, &query),
+                )
+            })
+            .collect();
+        let selected_hidden = preview.selected_id.is_some_and(|selected| {
+            cards
+                .iter()
+                .any(|(id, _, visible)| *id == selected && !visible)
+        });
+        preview
+            .no_results
+            .set_visible(!cards.iter().any(|(_, _, visible)| *visible));
+        if selected_hidden {
+            if let Some(preview) = s.source_previews.get_mut(tab) {
+                preview.selected_id = None;
+                preview.picture.set_paintable(None::<&gdk::Paintable>);
+                preview.heading.set_label("Preview");
+                preview.placeholder.set_label(&preview.placeholder_text);
+                preview.placeholder.set_visible(true);
+            }
+            if s.active_tab == tab {
+                s.selection = None;
+                if let Some(button) = &s.share_button {
+                    button.set_sensitive(false);
+                }
+            }
+        }
+        if s.hovered_id.is_some_and(|hovered| {
+            cards
+                .iter()
+                .any(|(id, _, visible)| *id == hovered && !visible)
+        }) {
+            s.hovered_id = None;
+        }
+        cards
+    };
+    for (_, card, visible) in cards {
+        if !visible {
+            card.set_active(false);
+        }
+        card.set_visible(visible);
+    }
+    let s = state.borrow();
+    update_card_fps(&s);
+    update_overlay_highlight(&s);
 }
 
 /// Fills `flow` with a card per window, sorted and filtered per the config.
@@ -1188,7 +1298,7 @@ fn refresh_window_cards(state: &Rc<RefCell<AppState>>) {
             let s = state.borrow();
             s.capture_mgr.unregister_card(*id);
             s.pictures.borrow_mut().remove(id);
-            s.card_widgets.get(id).cloned()
+            s.card_widgets.get(id).map(|card| card.button.clone())
         };
         if let Some(card) = card {
             flow.remove(&card);
@@ -1229,9 +1339,7 @@ fn refresh_window_cards(state: &Rc<RefCell<AppState>>) {
         }
     }
 
-    let s = state.borrow();
-    update_card_fps(&s);
-    update_overlay_highlight(&s);
+    filter_source_cards(state, "windows");
 }
 
 fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> GtkBox {
@@ -1572,7 +1680,14 @@ fn make_source_card(
         let mut s = state.borrow_mut();
         s.card_buttons.push((sel_str.clone(), card.clone()));
         s.card_targets.push((card_id, sel_str.clone(), target));
-        s.card_widgets.insert(card_id, card.clone());
+        s.card_widgets.insert(
+            card_id,
+            SourceCard {
+                button: card.clone(),
+                tab: tab.to_string(),
+                search_text: format!("{clean_title} {clean_subtitle}").to_lowercase(),
+            },
+        );
     }
 
     // A tab switch can park cards before GTK maps the new page. Resume each
@@ -1750,7 +1865,7 @@ fn update_card_fps(state: &AppState) {
         let visible = match state.card_widgets.get(id) {
             // The region preview has no card widget; it is always live.
             None => true,
-            Some(card) => card_is_in_viewport(card),
+            Some(card) => card_is_in_viewport(&card.button),
         };
 
         let fps = if Some(*id) == focused_id
@@ -1772,6 +1887,9 @@ fn update_card_fps(state: &AppState) {
 }
 
 fn update_overlay_highlight(state: &AppState) {
+    if state.pick_receiver.is_some() {
+        return;
+    }
     let highlighter = match state.highlighter.as_ref() {
         Some(h) => h,
         None => return,
@@ -1790,7 +1908,7 @@ fn update_overlay_highlight(state: &AppState) {
     let sel = match target_sel {
         Some(s) => s,
         None => {
-            highlighter.clear();
+            highlighter.dim_around_picker();
             return;
         }
     };
@@ -1814,7 +1932,7 @@ fn update_overlay_highlight(state: &AppState) {
         if let Some(c) = client {
             highlighter.highlight_window(c, &monitors_to_use);
         } else {
-            highlighter.clear();
+            highlighter.dim_around_picker();
         }
     } else if let Some(id) = sel.strip_prefix("workspace-id:") {
         let monitor = id
@@ -1824,16 +1942,16 @@ fn update_overlay_highlight(state: &AppState) {
             .and_then(|entry| monitor_showing_workspace(entry, &monitors_to_use));
         match monitor {
             Some(mon) => highlighter.highlight_screen(&mon.name),
-            None => highlighter.clear(),
+            None => highlighter.dim_around_picker(),
         }
     } else if sel.starts_with("region:") {
         if let Some(details) = parse_region_details(&sel, &monitors_to_use) {
             highlighter.highlight_region(&details);
         } else {
-            highlighter.clear();
+            highlighter.dim_around_picker();
         }
     } else {
-        highlighter.clear();
+        highlighter.dim_around_picker();
     }
 }
 
@@ -2109,4 +2227,36 @@ pub fn emit_selection(selection: &str, allow_token: bool) {
     let _ = out.write_all(record.as_bytes());
     let _ = out.flush();
     process::exit(0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::matches_source_search;
+
+    #[test]
+    fn empty_source_search_matches_everything() {
+        assert!(matches_source_search("terminal workspace 1", ""));
+        assert!(matches_source_search("terminal workspace 1", "  \t "));
+    }
+
+    #[test]
+    fn source_search_matches_case_insensitive_terms_in_any_order() {
+        let text = "project notes org.example.editor workspace work";
+        assert!(matches_source_search(text, "NOTES editor"));
+        assert!(matches_source_search(text, "work   Project"));
+        assert!(!matches_source_search(text, "notes browser"));
+    }
+
+    #[test]
+    fn source_search_matches_screens_workspaces_and_unicode() {
+        assert!(matches_source_search(
+            "dp-1 external display 1920 × 1080 px",
+            "1920 DP-1"
+        ));
+        assert!(matches_source_search(
+            "workspace café eDP-1".to_lowercase().as_str(),
+            "CAFÉ"
+        ));
+        assert!(!matches_source_search("workspace work dp-1", "personal"));
+    }
 }
