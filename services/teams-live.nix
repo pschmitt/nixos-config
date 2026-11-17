@@ -181,6 +181,8 @@ in
       enableACME = true;
       forceSSL = true;
       locations = {
+        # Everything else is not served (nginx would show its welcome page).
+        "/".return = "404";
         "^~ /webhook/" = {
           proxyPass = backend;
           recommendedProxySettings = true;
