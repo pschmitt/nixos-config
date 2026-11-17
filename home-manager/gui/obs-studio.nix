@@ -8,6 +8,7 @@
 
 let
   enableNvidiaOffload = config.host.nvidiaPrimeOffload;
+  registrar = import ./obs-register-script.nix { inherit pkgs; };
   obsAutostart = pkgs.writeShellApplication {
     name = "obs-hyprland-autostart";
     runtimeInputs = with pkgs; [
@@ -16,12 +17,14 @@ let
       curl
       jq
       procps
+      registrar
       systemd
     ];
     text = builtins.readFile ./obs-autostart.sh;
   };
   obsAutostartExec = "${obsAutostart}/bin/obs-hyprland-autostart";
   obs-nvidia = pkgs.writeShellScriptBin "obs-nvidia" ''
+    ${registrar}/bin/obs-register-script --quiet || true
     nvidia-offload ${config.programs.obs-studio.finalPackage}/bin/obs "$@"
   '';
   obs-nvidia-custom = pkgs.writeShellScriptBin "obs-nvidia-custom" ''

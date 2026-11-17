@@ -1,5 +1,11 @@
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
+  registrar = import ./obs-register-script.nix { inherit pkgs; };
   controller = pkgs.writeShellApplication {
     name = "obs-broadcast-audio";
     runtimeInputs = [
@@ -13,9 +19,23 @@ let
   };
 in
 {
-  home.packages = [ controller ];
+  home = {
+    packages = [
+      controller
+      registrar
+    ];
 
-  home.file.".config/obs-studio/scripts/obs-broadcast-audio.lua".source = ./obs-broadcast-audio.lua;
+    file.".config/obs-studio/scripts/obs-broadcast-audio.lua".source = ./obs-broadcast-audio.lua;
+
+    # Register the script in the active OBS scene collection. OBS owns that file
+    # while it runs, so the helper defers until OBS is closed; the next run is
+    # the next activation or a launch through obs-hyprland-autostart / obs-nvidia.
+    activation.registerObsBroadcastAudio = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+      ${lib.getExe registrar} \
+        --config-dir ${lib.escapeShellArg "${config.xdg.configHome}/obs-studio"} \
+        --quiet || true
+    '';
+  };
 
   systemd.user.services.obs-broadcast-audio = {
     Unit = {

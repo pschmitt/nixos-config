@@ -4,12 +4,30 @@ An optional route from OBS's ARD, ZDF, and Tagesschau program scenes into
 **Meeting Microphone**, alongside the denoised microphone and soundboard.
 It is off by default and does not start automatically at login.
 
-## One-time OBS setup
+## OBS script registration
 
-In **Tools → Scripts**, add
-`~/.config/obs-studio/scripts/obs-broadcast-audio.lua`.
-OBS remembers the script for that scene collection. Add it separately to another
-collection if needed. The script does nothing to audio while sharing is off.
+No manual import is needed. `obs-register-script` adds
+`~/.config/obs-studio/scripts/obs-broadcast-audio.lua` to the **active** scene
+collection's script list (`modules["scripts-tool"]`) and leaves every other
+setting, script and scene untouched. It runs on every Home Manager activation and
+before each launch through `obs-hyprland-autostart` (the "OBS Studio (Custom)"
+launcher and the autostart unit), `obs-nvidia` and `obs-nvidia-custom`. It is
+idempotent and never turns routing on.
+
+OBS rewrites the collection from memory when it exits, so the helper only edits
+the file while OBS is **not** running. If OBS is running during an activation,
+registration is deferred (the activation log says so) and happens at the next
+activation or the next launch through one of the wrappers above. Starting plain
+`obs` from the stock launcher does not register; quit OBS and run
+`obs-register-script` once, or launch it through a wrapper. Another scene
+collection is registered the next time it is the active one at such a moment.
+
+The write is atomic, keeps the file's mode and leaves a private copy of the
+previous content next to it (`<collection>.json.obs-register.bak`).
+`obs-register-script --check` reports without writing (exit 3 if missing). Its
+output never contains scene or script settings.
+
+## Before enabling
 
 Disable existing audio monitoring before enabling this feature. It temporarily
 owns OBS's global monitoring device and refuses to start if any source is already
@@ -59,8 +77,9 @@ needs a real call/recording check before relying on lip-sync.
 ## Troubleshooting
 
 `systemctl --user status obs-broadcast-audio.service` shows controller failures.
-If enabling reports that the script is unavailable, check that it is loaded in
-OBS's active scene collection and inspect **Tools → Scripts → Script Log**.
+If enabling reports that the script is unavailable, check that
+`obs-register-script --check` reports it as registered (registration is
+deferred while OBS runs) and inspect **Tools → Scripts → Script Log**.
 The script needs OBS's Lua scripting support and `XDG_RUNTIME_DIR` in OBS's
 environment.
 
@@ -73,6 +92,7 @@ On a worker with Python and LuaJIT:
 
 ```console
 python3 home-manager/gui/test_obs_broadcast_audio.py
+python3 home-manager/gui/test_obs_register_script.py
 mkdir -p "$XDG_RUNTIME_DIR/obs-broadcast-audio"
 luajit home-manager/gui/test_obs_broadcast_audio.lua home-manager/gui/obs-broadcast-audio.lua
 ```

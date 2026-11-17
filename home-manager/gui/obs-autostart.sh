@@ -91,6 +91,10 @@ obs-studio::start() {
     rm -vrf ~/.config/obs-studio/.sentinel
   fi
 
+  # Register obs-broadcast-audio.lua in the active scene collection. A no-op
+  # while OBS runs (it owns the file) and once the script is registered.
+  obs-register-script --quiet || true
+
   local -a obs_cmd=(
     "$obs_bin"
     --minimize-to-tray
