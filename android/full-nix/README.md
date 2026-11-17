@@ -302,6 +302,34 @@ current launcher accepts only AArch64/4096-byte-page devices. Both test phones
 passed the basic runtime and Unix-socket probes; this alone does not qualify a
 Home Manager generation or prove a completed default-shell migration.
 
+## Secrets (sops-nix)
+
+`sops.nix` reuses the pinned upstream Home Manager sops-nix module for options,
+assertions, manifest generation and the installer, but replaces its activation:
+upstream restarts a systemd user unit, which does not exist here. Upstream's
+installer script instead runs from `home.activation.sops-nix` (after
+`linkGeneration`, before `androidAcceptance`), so a failed decryption fails the
+activation. The upstream unit files are disabled. Like upstream, nothing is added
+without secrets, so existing generations and guests are unaffected.
+
+```nix
+sops = {
+  defaultSopsFile = ./secrets.yaml;       # in the store; contains only ciphertext
+  age.keyFile = "/home/pschmitt/.config/sops/age/keys.txt";  # outside the store
+  secrets.example = { };
+};
+```
+
+Use `fullNix.sops.runtimeDir` (default `/tmp/run`) for the `%r` fallback when
+`XDG_RUNTIME_DIR` is unset. Cleanup is upstream's and nothing more: a secret that is
+dropped from a still-configured set disappears with the pruned generation, but a
+custom `path` symlink of it dangles, and removing every secret runs nothing, so the
+previously installed data stays until removed by hand. The declarative system layer
+has its own `sops.*` and activation executable, run by the controller before this
+one; see `system/README.md` for the contract and the limits (same Android UID,
+persistent `/tmp/run`, rollback to generations without the hook). Test with
+`sops-tests.nix`.
+
 ## Deliberately not migrated
 
 This is the declarative shell/package baseline, not complete feature parity:

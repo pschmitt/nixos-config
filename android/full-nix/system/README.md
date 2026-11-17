@@ -119,6 +119,68 @@ fresh-login, rollback and recovery behavior on the authorized test device before
 migrating another phone. Native service supervision and Android API integration
 are separate concerns.
 
+## Secrets (sops-nix)
+
+Both layers can install secrets with the pinned upstream
+[sops-nix](https://github.com/Mic92/sops-nix) installer; there is no systemd, no
+root and no daemon. The system layer (`system/sops.nix`) reuses the pinned upstream
+Home Manager module for every `sops.*` option (including templates), its assertions,
+its manifest and its installer script. It is evaluated against inert option sinks
+for the few Home Manager and systemd options that module writes; nothing reads
+them and no systemd is run or faked. The installer script is read from the unit's
+`ExecStart`, and `sops.environment` is applied from its literal values. Home
+Manager keeps its own `sops.*` (see `../README.md`).
+
+**Contract with the runtime.** The manifest gains an optional field
+
+```json
+"systemSecrets": "/nix/store/<hash>-activate-secrets/bin/activate-secrets"
+```
+
+and the toplevel exposes the same executable as `bin/activate-secrets` (a symlink).
+It is present only when `sops.secrets` is not empty, and absent otherwise and in
+older generations. The controller runs it with no arguments in the freshly selected
+candidate environment, after the journal is persisted and before the matching Home
+Manager `activate`, for switch, rollback and recover. A non-zero exit fails the
+activation, so no Home Manager mutation happens after a failed system secret
+install. It uses `$XDG_RUNTIME_DIR` when set and falls back to
+`fullNix.sops.runtimeDir` (`/tmp/run`, matching the guest shell). It is idempotent
+and re-runnable for recovery.
+
+**Separate namespaces.** The system layer uses `%r/termuxpp-system/sops-nix/secrets`
+(link) and `%r/termuxpp-system/secrets.d` (generations); Home Manager uses
+`~/.config/sops-nix/secrets` and `%r/secrets.d`. Both run as the same Android UID,
+so this is organization, not a security boundary: file modes are the only access
+control.
+
+**Stale secrets and baseline.** Cleanup is upstream's and there is no state of ours.
+A secret dropped from a still-configured set disappears with the pruned generation
+(`keepGenerations`); its custom `path` symlink dangles. Removing every secret
+leaves no hook, so nothing runs and the previously installed data stays until
+removed by hand; the same holds for rolling back to a generation without
+`systemSecrets` (for example the original HM-only baseline). A changed
+`runtimeDir` is a different location and the earlier one is not touched. Revocation
+is therefore not guaranteed by activation.
+
+**Limits.** Decrypted secrets live under `$XDG_RUNTIME_DIR`, which is `/tmp/run`:
+persistent app storage in the guest, not tmpfs. They are not in the Nix store, but
+they do survive reboots until removed. `sops.environment` values are literal strings
+(not pre-quoted as for systemd units). `home.nix` imports `sops.nix`, which adds
+nothing to a guest without secrets.
+
+Tests: `../sops-tests.nix` (ephemeral age key and synthetic sops file generated
+inside the build) covers install, modes, templates in both layers, namespace
+separation, the `%r` fallback, the exact `systemSecrets` hook in the built manifest,
+failure propagation (wrong or missing key keeps what is installed), a removed
+secret, the retained data when every secret is removed, upstream's assertions and no
+systemd; it also evaluates the real `zf10` and `p11` configurations. Run it on a
+worker:
+
+```sh
+nix build --impure --no-link -L --expr \
+  'import ./android/full-nix/sops-tests.nix { inputs = (builtins.getFlake (toString ./.)).inputs; }'
+```
+
 ## Upstream assessment
 
 Reviewed nix-on-droid at revision

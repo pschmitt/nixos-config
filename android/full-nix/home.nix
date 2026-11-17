@@ -13,6 +13,7 @@
     ./package-set.nix
     ./bridge.nix
     ./lifecycle.nix
+    ./sops.nix
     ../../modules/dotfiles.nix
     ../../modules/domains.nix
     ../../home-manager/termux-options.nix

@@ -45,27 +45,37 @@ let
       ln -s ${lib.escapeShellArg (toString entry.path)} "$out/etc/"${lib.escapeShellArg entry.name}
     '') etcFiles}
   '';
-  manifest = (pkgs.formats.json { }).generate "termuxpp-system.json" {
-    formatVersion = 1;
-    inherit (cfg.system) stateVersion;
-    inherit (cfg.networking) hostName;
-    inherit (cfg.user) name home;
-    runtime = "droid-nix";
-    activationSupported = cfg.home-manager.configuration != null;
-    systemPath = toString systemPath;
-    session = {
-      shell = "${pkgs.bashInteractive}/bin/bash";
-      certificate = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-      terminfo = "${pkgs.ncurses}/share/terminfo";
-    };
-    homeManager =
-      if cfg.home-manager.configuration == null then
-        null
-      else
-        toString cfg.home-manager.configuration.activationPackage;
-  };
+  secretsActivation = cfg.system.build.secretsActivation;
+  manifest = (pkgs.formats.json { }).generate "termuxpp-system.json" (
+    {
+      formatVersion = 1;
+      inherit (cfg.system) stateVersion;
+      inherit (cfg.networking) hostName;
+      inherit (cfg.user) name home;
+      runtime = "droid-nix";
+      activationSupported = cfg.home-manager.configuration != null;
+      systemPath = toString systemPath;
+      session = {
+        shell = "${pkgs.bashInteractive}/bin/bash";
+        certificate = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+        terminfo = "${pkgs.ncurses}/share/terminfo";
+      };
+      homeManager =
+        if cfg.home-manager.configuration == null then
+          null
+        else
+          toString cfg.home-manager.configuration.activationPackage;
+    }
+    // lib.optionalAttrs (secretsActivation != null) {
+      # Store path of an executable the runtime runs in the selected candidate
+      # before the Home Manager activation. Absent in generations without it.
+      systemSecrets = "${secretsActivation}/bin/activate-secrets";
+    }
+  );
 in
 {
+  imports = [ ./sops.nix ];
+
   options = {
     assertions = mkOption {
       type = types.listOf types.raw;
@@ -130,6 +140,10 @@ in
       ln -s ${systemPath} "$out/sw"
       ln -s ${etc}/etc "$out/etc"
       ln -s ${manifest} "$out/manifest.json"
+      ${lib.optionalString (secretsActivation != null) ''
+        mkdir -p "$out/bin"
+        ln -s ${secretsActivation}/bin/activate-secrets "$out/bin/activate-secrets"
+      ''}
       ${lib.optionalString (cfg.home-manager.configuration != null) ''
         ln -s ${cfg.home-manager.configuration.activationPackage} "$out/home-manager"
       ''}
