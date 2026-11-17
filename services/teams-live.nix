@@ -50,6 +50,8 @@ in
     "teams-live/jira-board-id" = hostSecret;
     "teams-live/confluence-token" = hostSecret;
     "teams-live/troll-user" = hostSecret;
+    "teams-live/tv-webhook" = hostSecret;
+    "teams-live/tv-state-entity" = hostSecret;
     "opsgenie/gksv3-on-call/api-key" = hostSecret;
     "opsgenie/gksv3-support-schedule/api-key" = hostSecret;
     "opsgenie/edge-stack/api-key" = hostSecret;
@@ -134,6 +136,18 @@ in
           # (HR WORKS) after 60s and retries them through Nabu Casa.
           url = "http://ha.${config.domains.netbird}:8123";
           token_file = secrets."home-assistant/token".path;
+        };
+
+        # /tv controls. One Home Assistant webhook switches the OBS scene; the
+        # same scene entity is the readback, so /tv next|prev never relies on
+        # process memory. Audio (/tv mute, /tv vol) has no receiver yet and
+        # stays unconfigured, which fails closed.
+        tv.switch = {
+          webhooks = lib.genAttrs [ "ard" "zdf" "tagesschau" "off" ] (_: secretValue "teams-live/tv-webhook");
+          state = {
+            entity_id = secretValue "teams-live/tv-state-entity";
+            map.off = [ "🚬 brb" ];
+          };
         };
 
         conversations = [
