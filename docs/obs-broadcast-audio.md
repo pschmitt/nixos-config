@@ -98,6 +98,11 @@ fall back to capturing desktop audio) and start and stop together:
   Meeting Microphone, so what you hear is not mixed into the meeting.
   The stream runs at unity gain; the output device's volume is not touched.
 
+This is the soundboard's model (`soundboard play`): an untargeted local stream
+that follows the default output, plus a separate stream tagged
+`meeting-mic.feed` that is linked into Meeting Microphone, so the local branch is
+audible without sidetone and without hardcoded hardware.
+
 Only loops are refused: if the default output is the `OBS Broadcast` sink (or the
 local stream lands on it), both branches stop within half a second and the status
 carries the reason. Speakers are allowed. **Acoustic echo:** with speakers,
