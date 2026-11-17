@@ -14,7 +14,6 @@ let
   # Hoisted so obs-control can depend on them (not top-level nixpkgs attrs).
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   soundboard = pkgs.callPackage ./local/soundboard { };
-  obs-tv-audio = pkgs.callPackage ./local/obs-tv-audio { };
   timew-is-on = pkgs.callPackage ./local/timew-is-on { };
   timew-total = pkgs.callPackage ./local/timew-total { };
   timew-status = pkgs.callPackage ./local/timew-status {
@@ -57,11 +56,9 @@ in
       emoji-fzf
       soundboard
       osd
-      obs-tv-audio
       ;
     inherit (pkgs) walker;
   };
-  inherit obs-tv-audio;
   inherit screencast-state;
   inherit soundboard;
   xcp = pkgs.callPackage ./local/xcp { };

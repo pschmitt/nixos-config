@@ -16,7 +16,6 @@
   walker,
   soundboard,
   osd,
-  obs-tv-audio,
 }:
 let
   obs-cli = inputs.obs-cli.packages.${stdenv.hostPlatform.system}.obs-cli;
@@ -37,7 +36,6 @@ writeShellApplication {
     walker
     soundboard
     osd
-    obs-tv-audio
   ];
   text = builtins.readFile ./obs-control.sh;
   meta = {
