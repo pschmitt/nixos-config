@@ -2,9 +2,12 @@
 
 Checks the commands the Android runtime has broken before: eza listings (alternate
 signal stacks), zsh, Neovim, Nix configuration/registry (local only), Unix domain
-sockets (short paths, tmux) and a basic Go-built command (kubectl version --client; nothing
-is compiled on the device). Nothing here uses the network or reads personal data: outputs
-are only matched for markers, never printed.
+sockets (short paths, tmux), a basic Go-built command (kubectl version --client; nothing
+is compiled on the device) and the Rust CLIs that crashed with SIGSEGV (bat, rg incl. PCRE,
+fd, rbw version, osc version). The Rust CLIs run against small generated fixture files in
+the scratch directory with a scratch HOME/XDG: they never touch a vault, a config, a
+daemon or the network. Nothing here reads personal data: outputs are only matched for
+markers, never printed.
 
 Two contexts, selected by --isolated:
 
@@ -33,7 +36,7 @@ import tempfile
 import time
 from pathlib import Path
 
-CHECKS = ('zsh', 'nvim', 'eza', 'nix', 'sockets', 'tmux', 'go')
+CHECKS = ('zsh', 'nvim', 'eza', 'nix', 'sockets', 'tmux', 'go', 'bat', 'rg', 'fd', 'rbw', 'osc')
 # Variables copied into the isolated environment. Runtime-specific launcher
 # variables belong in FULL_NIX_PASS_ENV (space separated names or globs).
 PASS_ENV = (
@@ -211,7 +214,11 @@ class Gate:
         limit = min(timeout or self.args.timeout, remaining)
         env = dict(self.env)
         if extra_env:
-            env.update(extra_env)
+            for name, value in extra_env.items():
+                if value is None:
+                    env.pop(name, None)
+                else:
+                    env[name] = value
         with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
             try:
                 proc = subprocess.Popen(
@@ -242,8 +249,8 @@ class Gate:
                 err.read(MAX_OUTPUT).decode('utf-8', 'replace'),
             )
 
-    def require(self, result, what):
-        if result.returncode != 0:
+    def require(self, result, what, ok=(0,)):
+        if result.returncode not in ok:
             detail = self.scrub(result.err)
             message = '%s: %s' % (what, describe_rc(result.returncode))
             if detail:
@@ -472,6 +479,226 @@ def check_go(gate):
     return ['kubectl ' + version, platform]
 
 
+# -- Rust CLI acceptance checks -------------------------------------------
+# Every check runs on generated fixtures with a scratch HOME/XDG so that no real
+# file, vault, config or daemon is involved, in candidate and active mode alike.
+
+ANSI_RE = re.compile(r'\x1b\[[0-9;?]*[A-Za-z]')
+
+BAT_FIXTURE = (
+    'def fullnix_marker(value):\n'
+    '    return "FULLNIX-BAT-" + str(value)\n'
+    'print(fullnix_marker(42))\n'
+)
+
+# relative path -> content. other.txt must never match "needle-".
+RG_FILES = {
+    'a.txt': 'alpha needle-123\nbeta\n',
+    'b.txt': 'Gamma NEEDLE-456\n',
+    'other.txt': 'nothing here\n',
+    'sub/c.txt': 'plain\nneedle-789 tail\n',
+}
+
+FD_FILES = (
+    'src/main.rs',
+    'src/lib.rs',
+    'docs/readme.md',
+    'docs/notes.txt',
+    'nested/deep/file.rs',
+    '.hidden.txt',
+)
+
+
+def private_env(gate):
+    """Scratch HOME/XDG so the tool cannot see the real home, in either context."""
+    base = gate.scratch
+    names = ('home', 'run', 'xdg', 'xdg/cache', 'xdg/data', 'xdg/state', 'xdg/config')
+    for sub in names:
+        (base / sub).mkdir(mode=0o700, parents=True, exist_ok=True)
+    env = {name: None for name in gate.env if name not in ('PATH', 'LANG', 'LC_ALL', 'TERM')}
+    env.update({
+        'HOME': str(base / 'home'),
+        'XDG_CONFIG_HOME': str(base / 'xdg'),
+        'XDG_CACHE_HOME': str(base / 'xdg' / 'cache'),
+        'XDG_DATA_HOME': str(base / 'xdg' / 'data'),
+        'XDG_STATE_HOME': str(base / 'xdg' / 'state'),
+        'XDG_RUNTIME_DIR': str(base / 'run'),
+        'RIPGREP_CONFIG_PATH': str(base / 'no-ripgreprc'),
+        'BAT_CONFIG_PATH': str(base / 'no-bat-config'),
+        'BAT_CACHE_PATH': str(base / 'bat-cache'),
+    })
+    return env
+
+
+def write_fixture(root, files):
+    for rel, content in files.items():
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+
+
+def output_lines(res, strip_dirs=False):
+    lines = []
+    for line in res.out.replace('\r', '').splitlines():
+        if not line.strip():
+            continue
+        if line.startswith('./'):
+            line = line[2:]
+        if strip_dirs:
+            line = line.rstrip('/')
+        lines.append(line)
+    return lines
+
+
+def expect_output(gate, res, want, what, strip_dirs=False, ordered=False):
+    got = output_lines(res, strip_dirs)
+    want = list(want)
+    if not ordered:
+        got, want = sorted(got), sorted(want)
+    if got != want:
+        if not got:
+            raise CheckFailure('%s printed nothing, expected %d lines' % (what, len(want)))
+        raise CheckFailure(
+            '%s printed unexpected output (%d lines, expected %d): %s'
+            % (what, len(got), len(want), gate.scrub(res.out))
+        )
+
+
+def check_bat(gate):
+    bat = gate.tool('bat')
+    root = gate.scratch / 'bat-fixture'
+    root.mkdir()
+    sample = root / 'sample.py'
+    sample.write_text(BAT_FIXTURE)
+    env = private_env(gate)
+    expected = BAT_FIXTURE.splitlines()
+    base = [bat, '--paging=never', '--theme=ansi']
+
+    res = gate.run(base + ['--plain', '--color=never', str(sample)], extra_env=env, cwd=root)
+    gate.require(res, 'bat plain')
+    expect_output(gate, res, expected, 'bat plain', ordered=True)
+
+    res = gate.run(
+        base
+        + ['--decorations=always', '--style=numbers', '--color=never', '--language=py']
+        + [str(sample)],
+        extra_env=env,
+        cwd=root,
+    )
+    gate.require(res, 'bat numbers')
+    numbered = []
+    for line in res.out.replace('\r', '').splitlines():
+        match = re.match(r'^\s*(\d+)\s(.*)$', line)
+        if not match:
+            raise CheckFailure('bat numbers printed an unnumbered line')
+        numbered.append((int(match.group(1)), match.group(2).strip()))
+    if numbered != [(i + 1, line.strip()) for i, line in enumerate(expected)]:
+        raise CheckFailure('bat numbers did not render the fixture lines')
+
+    # Syntax highlighting is the path that crashed: it must emit colour escapes and
+    # still contain exactly the fixture text.
+    res = gate.run(
+        base + ['--style=plain', '--color=always', '--language=py', str(sample)],
+        extra_env=env,
+        cwd=root,
+    )
+    gate.require(res, 'bat highlight')
+    if not ANSI_RE.search(res.out):
+        raise CheckFailure('bat highlight emitted no colour escapes')
+    plain = ANSI_RE.sub('', res.out).replace('\r', '')
+    if plain.rstrip('\n') != BAT_FIXTURE.rstrip('\n'):
+        raise CheckFailure('bat highlight changed the fixture text')
+    return ['plain, numbered and highlighted rendering ok']
+
+
+def check_rg(gate):
+    rg = gate.tool('rg')
+    root = gate.scratch / 'rg-fixture'
+    write_fixture(root, RG_FILES)
+    env = private_env(gate)
+    common = [
+        rg, '--no-config', '--no-ignore', '--no-messages', '--color=never',
+        '--no-heading', '--sort', 'path',
+    ]
+    cases = (
+        ('regex', ['-n', '--with-filename', 'needle-', '.'],
+         ['a.txt:1:alpha needle-123', 'sub/c.txt:2:needle-789 tail'], (0,)),
+        ('ignore case', ['-n', '--with-filename', '-i', 'needle-', '.'],
+         ['a.txt:1:alpha needle-123', 'b.txt:1:Gamma NEEDLE-456',
+          'sub/c.txt:2:needle-789 tail'], (0,)),
+        ('fixed string', ['-n', '--with-filename', '-F', 'needle-1', '.'],
+         ['a.txt:1:alpha needle-123'], (0,)),
+        ('only matching', ['-N', '--no-filename', '-o', 'needle-[0-9]+', '.'],
+         ['needle-123', 'needle-789'], (0,)),
+        ('count', ['-c', '--with-filename', 'needle-', '.'],
+         ['a.txt:1', 'sub/c.txt:1'], (0,)),
+        ('files with matches', ['-l', '-i', 'needle-', '.'],
+         ['a.txt', 'b.txt', 'sub/c.txt'], (0,)),
+        ('pcre', ['-P', '-N', '--no-filename', '-o', r'(?<=needle-)\d+', '.'],
+         ['123', '789'], (0,)),
+        ('no match', ['needle-zzz', '.'], [], (1,)),
+        ('file listing', ['--files', '.'],
+         ['a.txt', 'b.txt', 'other.txt', 'sub/c.txt'], (0,)),
+    )
+    for name, args, want, rcs in cases:
+        what = 'rg ' + name
+        res = gate.run(common + args, extra_env=env, cwd=root)
+        gate.require(res, what, ok=rcs)
+        if want:
+            expect_output(gate, res, want, what, ordered=True)
+        elif res.out.strip():
+            raise CheckFailure('%s printed output: %s' % (what, gate.scrub(res.out)))
+    return ['%d searches incl. PCRE ok' % len(cases)]
+
+
+def check_fd(gate):
+    fd = gate.tool('fd')
+    root = gate.scratch / 'fd-fixture'
+    write_fixture(root, {rel: 'x\n' for rel in FD_FILES})
+    env = private_env(gate)
+    common = [fd, '--no-ignore', '--color=never']
+    cases = (
+        ('extension', ['-t', 'f', '-e', 'rs'],
+         ['nested/deep/file.rs', 'src/lib.rs', 'src/main.rs']),
+        ('regex', ['-t', 'f', r'^(main|lib)\.rs$'], ['src/lib.rs', 'src/main.rs']),
+        ('substring', ['-t', 'f', 'readme'], ['docs/readme.md']),
+        ('glob', ['-t', 'f', '-g', '*.md'], ['docs/readme.md']),
+        ('hidden included', ['-t', 'f', '-H', r'^\.hidden'], ['.hidden.txt']),
+        ('hidden skipped', ['-t', 'f', 'hidden'], []),
+        ('directories', ['-t', 'd'], ['docs', 'nested', 'nested/deep', 'src']),
+    )
+    for name, args, want in cases:
+        what = 'fd ' + name
+        res = gate.run(common + args, extra_env=env, cwd=root)
+        gate.require(res, what)
+        if want:
+            expect_output(gate, res, want, what, strip_dirs=True)
+        elif res.out.strip():
+            raise CheckFailure('%s printed output: %s' % (what, gate.scrub(res.out)))
+    return ['%d searches ok' % len(cases)]
+
+
+def check_rbw(gate):
+    """Only `rbw version`: no config, vault, list or agent command is ever run."""
+    rbw = gate.tool('rbw')
+    res = gate.run([rbw, 'version'], extra_env=private_env(gate))
+    gate.require(res, 'rbw version')
+    match = re.search(r'^rbw (\d+\.\d+\.\d+\S*)$', res.out, re.M)
+    if not match:
+        raise CheckFailure('rbw version did not report a version: %s' % gate.scrub(res.out))
+    return ['rbw ' + match.group(1)]
+
+
+def check_osc(gate):
+    osc = gate.tool('osc')
+    res = gate.run([osc, '--version'], extra_env=private_env(gate))
+    gate.require(res, 'osc version')
+    match = re.search(r'\d+\.\d+\.\d+\S*', res.out)
+    if not match:
+        raise CheckFailure('osc version did not report a version: %s' % gate.scrub(res.out))
+    return ['osc ' + match.group(0)]
+
+
 RUNNERS = {
     'zsh': check_zsh,
     'nvim': check_nvim,
@@ -480,6 +707,11 @@ RUNNERS = {
     'sockets': check_sockets,
     'tmux': check_tmux,
     'go': check_go,
+    'bat': check_bat,
+    'rg': check_rg,
+    'fd': check_fd,
+    'rbw': check_rbw,
+    'osc': check_osc,
 }
 
 

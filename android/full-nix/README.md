@@ -96,17 +96,22 @@ handler. Local compilation remains disabled. Nix evaluation still runs on the
 phone; this helper offloads builds, not evaluation. To offload expensive profile
 evaluations, sync the source and run Nix on a worker as described above.
 
-### eza signal-stack compatibility
+### Targeted signal-stack compatibility
 
-The guest's `eza` is wrapped with a small, eza-specific interposer that increases
-alternate signal stacks to 128 KiB in every thread. The runtime's SIGSYS path
-translation exceeds Rust's default alternate-stack budget: enlarging only the
-main thread fixes `eza -d`, but listings still crash; enlarging worker-thread
-stacks fixes the tested long, icon and tree listings. The shim retains at most
-one mapping per participating thread until process exit. It is not installed as
-a global preload and does not change the launcher or other Rust/Go programs.
-`overlay.nix` centralizes this workaround and the capability-free `iputils`
-variant. A generated Nixpkgs facade with an explicitly locked local input supplies
+The guest wraps `eza`, `bat`, `fd`, `ripgrep`, `rbw` (including its agent), and
+`openstack-rs` with an interposer that increases alternate signal stacks to
+128 KiB in every thread. Real-device probes found crashes in these packages
+that disappear with enlarged stacks; this implicates the runtime's SIGSYS
+translation, but is not a complete symbolic root-cause trace. In particular,
+`rg` and `fd` version probes pass even when actual searches crash. For `eza`,
+enlarging only the main thread is insufficient for threaded listings.
+The shim retains at most one mapping per participating thread until process
+exit. It is not a global preload and does not modify other package outputs or
+the launcher. The agent is wrapped so `rbw` subprocesses retain the same stack
+policy; this does not qualify real vault authentication or long-running agent
+behavior. The source filename and derivation name retain their historical eza
+names to avoid an unnecessary rebuild of the interposer.
+`overlay.nix` centralizes these targeted variants and capability-free `iputils`. A generated Nixpkgs facade with an explicitly locked local input supplies
 the pinned registry and
 `<nixpkgs>`, so `nix shell nixpkgs#eza` and `nix-shell -p eza` select the same
 Android-aware variant. Explicit upstream URLs or another registry bypass this
@@ -122,7 +127,12 @@ fixes here, separate from the native Android/Bionic package profiles.
 
 `full-nix-check-runtime` checks shell startup, bare/configured Neovim, repeated
 fixture-based eza listings, the local Nix registry, Unix sockets, tmux and an
-already-built Go executable (`kubectl`). It never compiles a probe on the phone.
+already-built Go executable (`kubectl`). It also checks real `bat` plain,
+numbered and highlighted rendering, nine `rg` cases including PCRE and no-match,
+seven `fd` searches, and isolated `rbw version` / `osc --version` startup. These
+additional checks use generated fixtures and scratch HOME/XDG directories even
+in active mode; they do not access a real vault or authenticate to a service.
+It never compiles a probe on the phone.
 Use `--thorough` for 60 eza listings and an offline pinned Nixpkgs evaluation.
 Candidate mode uses a scratch home; active mode checks the real configuration.
 Neither mode is a sandbox or proof that every installed package works.
@@ -189,6 +199,46 @@ arbitrary command, clipboard, location, contact or credential interface.
 Both test phones passed guest-to-native ping, filtered battery status and toast.
 Those probes do not establish background-service lifetime or every companion's
 compatibility. Native recovery and native SSH configuration remain independent.
+
+### Tasker execution
+
+The TermuxPP Tasker plug-in remains a native Android entry point; selecting a
+full-Nix login does not automatically move existing Tasker scripts into the
+guest. Keep a native launcher in `~/.config/termuxpp/tasker/`, the plug-in's
+allowlisted script directory, and explicitly enter the managed guest:
+
+```sh
+#!/system/bin/sh
+exec /system/bin/sh "$HOME/.local/share/termuxpp-nix/login.sh" -lc \
+  'exec "$HOME/.local/bin/my-job"'
+```
+
+Here the outer `HOME` is the native home; the quoted job uses the guest home.
+Select the launcher's filename in the plug-in, run in background mode, enable
+wait-for-result, and use an absolute native working directory. Check `%result`
+for the command exit status; `%stdout` and `%stderr` carry its output. Keep the
+arguments field in the plug-in bundle even when it is null. A guest job should
+use `exec` or propagate failures explicitly rather than hide them behind a
+successful final command.
+
+Scratch Tasker jobs on both test phones successfully entered the managed guest,
+ran local version/rendering probes, and returned stdout, stderr and deliberate
+exit status 7. On the second phone the plug-in correctly rejected an executable
+outside its allowlisted directory; using that directory passed without enabling
+`allow-external-apps`. Existing saved tasks, schedules and native recovery were
+not changed. This does not qualify unattended maintenance, vault authentication,
+Android background lifetime or arbitrary native helpers inside the guest.
+
+### Remaining functional audit findings
+
+A further offline fixture audit reproduced `vivid generate` and `zoxide`
+add/query crashes on both phones. Enlarging their alternate signal stacks made
+the tested operations succeed, but these packages are not yet wrapped here.
+Local `rsync` copies also failed with a receiver directory permission error,
+including with the stack shim and a pre-existing destination. These remain
+unresolved compatibility gaps; passing the activation gate does not cover them.
+The audit used disposable HOME/XDG directories, no real vault or remote cloud
+operations, and no compilation on the phones.
 
 ## Included
 

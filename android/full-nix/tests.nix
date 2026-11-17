@@ -21,6 +21,7 @@ let
       home.pkgs.opentofu
       home.pkgs.ansible
     ];
+    assert builtins.elem home.pkgs.jc c.home.packages;
     assert c.fullNix.androidBridge.enable;
     assert c.fullNix.androidBridge.socket == "/tmp/android-bridge/bridge.sock";
     assert c.fullNix.lifecycle.enable;
@@ -36,6 +37,15 @@ let
     assert c.programs.eza.package.name == "eza-full-nix";
     assert builtins.elem c.programs.eza.package c.home.packages;
     assert c.programs.eza.package == home.pkgs.eza;
+    assert home.pkgs.bat.fullNixSignalStackPrograms == [ "bat" ];
+    assert home.pkgs.fd.fullNixSignalStackPrograms == [ "fd" ];
+    assert home.pkgs.ripgrep.fullNixSignalStackPrograms == [ "rg" ];
+    assert
+      home.pkgs.rbw.fullNixSignalStackPrograms == [
+        "rbw"
+        "rbw-agent"
+      ];
+    assert home.pkgs.openstack-rs.fullNixSignalStackPrograms == [ "osc" ];
     assert c.nix.settings.max-jobs == 0;
     assert c.nix.settings.builders-use-substitutes;
     assert c.nix.registry.nixpkgs.to.type == "path";

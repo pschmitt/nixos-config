@@ -68,6 +68,7 @@
         gawk
         gnutar
         gzip
+        jc
         jq
         less
         nix

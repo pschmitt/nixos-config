@@ -12,16 +12,28 @@ let
       install -Dm755 stack.so $out/lib/stack.so
     '';
   };
+  withSignalStack =
+    package: programs:
+    final.symlinkJoin {
+      name = "${package.pname or package.name}-full-nix";
+      paths = [ package ];
+      passthru.fullNixSignalStackPrograms = programs;
+      nativeBuildInputs = [ final.makeWrapper ];
+      postBuild = final.lib.concatMapStringsSep "\n" (program: ''
+        wrapProgram $out/bin/${program} --prefix LD_PRELOAD : ${signalStack}/lib/stack.so
+      '') programs;
+    };
 in
 {
-  eza = final.symlinkJoin {
-    name = "eza-full-nix";
-    paths = [ prev.eza ];
-    nativeBuildInputs = [ final.makeWrapper ];
-    postBuild = ''
-      wrapProgram $out/bin/eza --prefix LD_PRELOAD : ${signalStack}/lib/stack.so
-    '';
-  };
+  eza = withSignalStack prev.eza [ "eza" ];
+  bat = withSignalStack prev.bat [ "bat" ];
+  fd = withSignalStack prev.fd [ "fd" ];
+  ripgrep = withSignalStack prev.ripgrep [ "rg" ];
+  rbw = withSignalStack prev.rbw [
+    "rbw"
+    "rbw-agent"
+  ];
+  openstack-rs = withSignalStack prev.openstack-rs [ "osc" ];
   iputils = prev.iputils.overrideAttrs (old: {
     mesonFlags = old.mesonFlags ++ [ "-DUSE_CAP=false" ];
   });

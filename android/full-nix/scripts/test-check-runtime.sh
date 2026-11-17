@@ -48,6 +48,18 @@ write_tool() {
   chmod +x "$dir/home-path/bin/$name"
 }
 
+# Python fakes (shebang is the real interpreter, so the isolated PATH needs nothing
+# else) for the Rust CLIs. NAME's behaviour is switched by a mode file next to the
+# generation: ${0%/*}/../../fail-NAME holds segv, empty, wrong or a tool specific mode.
+write_py_tool() {
+  local dir="$1" name="$2" real
+  real=$(readlink -f "$(command -v python3)")
+  {
+    printf '#!%s -I\n' "$real"
+    cat
+  } | write_tool "$dir" "$name"
+}
+
 # Fakes are POSIX sh that use builtins only: the isolated PATH holds nothing but
 # the generation's own bin directory. Markers next to the generation switch
 # failure modes: ${0%/*}/../../NAME.
@@ -144,6 +156,201 @@ case "$*" in
     ;;
   *) exit 1 ;;
 esac
+FAKE
+
+  make_rust_cli_fakes "$dir"
+}
+
+make_rust_cli_fakes() {
+  local dir="$1"
+  write_py_tool "$dir" bat <<'FAKE'
+import os, re, signal, sys
+here = os.path.dirname(os.path.abspath(sys.argv[0]))
+try:
+    mode = open(os.path.join(here, '..', '..', 'fail-bat')).read().strip()
+except OSError:
+    mode = ''
+if mode == 'segv':
+    os.kill(os.getpid(), signal.SIGSEGV)
+args = sys.argv[1:]
+text = open(args[-1]).read()
+if mode == 'empty':
+    sys.exit(0)
+if '--style=numbers' in args and '--decorations=always' in args:
+    for i, line in enumerate(text.splitlines(), 1):
+        print('%4d %s' % (i, line))
+elif '--color=always' in args and mode != 'nocolor':
+    for line in text.splitlines():
+        print('\x1b[38;5;2m' + line + '\x1b[0m')
+else:
+    sys.stdout.write(text)
+FAKE
+
+  write_py_tool "$dir" rg <<'FAKE'
+import os, re, signal, sys
+here = os.path.dirname(os.path.abspath(sys.argv[0]))
+try:
+    mode = open(os.path.join(here, '..', '..', 'fail-rg')).read().strip()
+except OSError:
+    mode = ''
+args = sys.argv[1:]
+with open(os.path.join(here, '..', '..', 'seen-rg-cwd'), 'w') as f:
+    f.write(os.getcwd() + '\n')
+if mode == 'segv' or (mode == 'segv-pcre' and '-P' in args):
+    os.kill(os.getpid(), signal.SIGSEGV)
+if mode == 'nopcre' and '-P' in args:
+    sys.stderr.write('PCRE2 is not available in this build\n')
+    sys.exit(2)
+if mode == 'empty':
+    sys.exit(1)
+flags, pos, i = set(), [], 0
+while i < len(args):
+    a = args[i]
+    if a == '--sort':
+        i += 1
+    elif a.startswith('-'):
+        flags.add(a)
+    else:
+        pos.append(a)
+    i += 1
+files_mode = '--files' in flags
+if files_mode:
+    root, pattern = pos[0], None
+else:
+    pattern, root = pos[0], pos[1]
+paths = []
+for d, dirs, names in os.walk(root):
+    dirs.sort()
+    for n in sorted(names):
+        paths.append(os.path.join(d, n))
+paths.sort()
+if mode == 'wrong':
+    paths = [p for p in paths if '/sub/' not in p]
+if files_mode:
+    print('\n'.join(paths))
+    sys.exit(0 if paths else 1)
+rx = re.compile(re.escape(pattern) if '-F' in flags else pattern,
+                re.I if '-i' in flags else 0)
+found = False
+for path in paths:
+    count = 0
+    for n, line in enumerate(open(path).read().splitlines(), 1):
+        ms = list(rx.finditer(line))
+        if not ms:
+            continue
+        count += 1
+        found = True
+        if '-c' in flags or '-l' in flags:
+            continue
+        if '-o' in flags:
+            for m in ms:
+                print(m.group(0))
+            continue
+        prefix = '' if '--no-filename' in flags else path + ':'
+        if '-N' not in flags:
+            prefix += '%d:' % n
+        print(prefix + line)
+    if '-c' in flags and count:
+        print('%s:%d' % (path, count))
+    if '-l' in flags and count:
+        print(path)
+sys.exit(0 if found else 1)
+FAKE
+
+  write_py_tool "$dir" fd <<'FAKE'
+import fnmatch, os, re, signal, sys
+here = os.path.dirname(os.path.abspath(sys.argv[0]))
+try:
+    mode = open(os.path.join(here, '..', '..', 'fail-fd')).read().strip()
+except OSError:
+    mode = ''
+with open(os.path.join(here, '..', '..', 'seen-fd-cwd'), 'w') as f:
+    f.write(os.getcwd() + '\n')
+if mode == 'segv':
+    os.kill(os.getpid(), signal.SIGSEGV)
+if mode == 'empty':
+    sys.exit(0)
+args = sys.argv[1:]
+kind = ext = pattern = None
+glob = hidden = False
+i = 0
+while i < len(args):
+    a = args[i]
+    if a == '-t':
+        kind = args[i + 1]; i += 1
+    elif a == '-e':
+        ext = args[i + 1]; i += 1
+    elif a == '-g':
+        glob = True
+    elif a == '-H':
+        hidden = True
+    elif a.startswith('-'):
+        pass
+    else:
+        pattern = a
+    i += 1
+if mode == 'wrong':
+    ext = None
+out = []
+for d, dirs, names in os.walk('.'):
+    if not hidden:
+        dirs[:] = [x for x in dirs if not x.startswith('.')]
+    entries = [(x, True) for x in dirs] + [(x, False) for x in names]
+    for name, isdir in entries:
+        if not hidden and name.startswith('.'):
+            continue
+        if kind == 'f' and isdir or kind == 'd' and not isdir:
+            continue
+        if ext and not name.endswith('.' + ext):
+            continue
+        if pattern:
+            if glob and not fnmatch.fnmatch(name, pattern):
+                continue
+            if not glob and not re.search(pattern, name):
+                continue
+        rel = os.path.relpath(os.path.join(d, name))
+        out.append(rel + ('/' if isdir else ''))
+print('\n'.join(out))
+FAKE
+
+  write_py_tool "$dir" rbw <<'FAKE'
+import os, signal, sys
+here = os.path.dirname(os.path.abspath(sys.argv[0]))
+try:
+    mode = open(os.path.join(here, '..', '..', 'fail-rbw')).read().strip()
+except OSError:
+    mode = ''
+with open(os.path.join(here, '..', '..', 'seen-rbw-args'), 'w') as f:
+    f.write(' '.join(sys.argv[1:]) + '\n')
+with open(os.path.join(here, '..', '..', 'seen-rbw-home'), 'w') as f:
+    f.write(os.environ.get('HOME', 'unset') + '\n')
+if mode == 'segv':
+    os.kill(os.getpid(), signal.SIGSEGV)
+if sys.argv[1:] == ['version'] and mode != 'bad':
+    print('rbw 2.46.0')
+elif mode == 'bad':
+    print('error: not logged in')
+else:
+    sys.exit(2)
+FAKE
+
+  write_py_tool "$dir" osc <<'FAKE'
+import os, signal, sys
+here = os.path.dirname(os.path.abspath(sys.argv[0]))
+try:
+    mode = open(os.path.join(here, '..', '..', 'fail-osc')).read().strip()
+except OSError:
+    mode = ''
+with open(os.path.join(here, '..', '..', 'seen-osc-home'), 'w') as f:
+    f.write(os.environ.get('HOME', 'unset') + '\n')
+if mode == 'segv':
+    os.kill(os.getpid(), signal.SIGSEGV)
+if sys.argv[1:] == ['--version'] and mode != 'bad':
+    print('osc 0.9.1')
+elif mode == 'bad':
+    print('usage: osc')
+else:
+    sys.exit(2)
 FAKE
 }
 
@@ -302,6 +509,117 @@ test_gate_active_and_list() {
   assert_contains "$W/out" "sockets" "--list shows checks"
   run_gate --isolated
   assert_eq 2 "$RC" "--isolated without --generation is a usage error"
+}
+
+# Breaks one fake with MODE and expects only that check to fail with a message
+# containing TEXT. The good generation must pass again once the mode is removed.
+expect_rust_cli_failure() {
+  local tool="$1" mode="$2" text="$3"
+  printf '%s\n' "$mode" > "$W/gen/fail-$tool"
+  run_gate --isolated --generation "$W/gen"
+  assert_eq 1 "$RC" "$tool $mode fails the gate"
+  assert_contains "$W/out" "\"failed\": [\"$tool\"]" "$tool $mode: only $tool fails"
+  assert_contains "$W/err" "$text" "$tool $mode message"
+  rm -f "$W/gen/fail-$tool"
+}
+
+test_gate_rust_cli_good() {
+  gate_world gate-rust-good
+  run_gate --isolated --generation "$W/gen"
+  assert_eq 0 "$RC" "rust CLI checks pass with good fakes"
+  assert_contains "$W/err" "PASS bat" "bat ran"
+  assert_contains "$W/err" "PASS rg" "rg ran"
+  assert_contains "$W/err" "incl. PCRE" "rg PCRE ran"
+  assert_contains "$W/err" "PASS fd" "fd ran"
+  assert_contains "$W/err" "PASS rbw (" "rbw ran"
+  assert_contains "$W/err" "rbw 2.46.0" "rbw version reported"
+  assert_contains "$W/err" "osc 0.9.1" "osc version reported"
+  assert_eq version "$(cat "$W/gen/seen-rbw-args")" "rbw only runs the version command"
+  assert_eq 0 "$(find "$W/scratch" -mindepth 1 | wc -l)" "rust CLI scratch removed"
+}
+
+test_gate_rust_cli_isolation() {
+  local f
+  gate_world gate-rust-isolation
+  run_gate --isolated --generation "$W/gen"
+  assert_eq 0 "$RC" "isolated rust CLI run rc"
+  for f in seen-rg-cwd seen-fd-cwd seen-rbw-home seen-osc-home
+  do
+    if [[ "$(cat "$W/gen/$f")" == "$W/scratch/"* ]]
+    then
+      ok
+    else
+      bad "$f is outside the scratch directory: $(cat "$W/gen/$f")"
+    fi
+  done
+  # Active context: the real HOME must still not be visible to rbw and osc.
+  gate_world gate-rust-active
+  run_gate --generation "$W/gen" --only rbw --only osc --only rg --only fd \
+    --config-dir "$W/gen/home-files/.config/nix"
+  assert_eq 0 "$RC" "active rust CLI run rc"
+  for f in seen-rbw-home seen-osc-home seen-rg-cwd seen-fd-cwd
+  do
+    if [[ "$(cat "$W/gen/$f")" == "$W/scratch/"* && "$(cat "$W/gen/$f")" != "$HOME"* ]]
+    then
+      ok
+    else
+      bad "active $f is outside the scratch directory: $(cat "$W/gen/$f")"
+    fi
+  done
+}
+
+test_gate_bat_regressions() {
+  gate_world gate-bat
+  expect_rust_cli_failure bat segv SIGSEGV
+  expect_rust_cli_failure bat empty "bat plain printed nothing"
+  expect_rust_cli_failure bat nocolor "no colour escapes"
+  run_gate --isolated --generation "$W/gen"
+  assert_eq 0 "$RC" "bat passes again once repaired"
+}
+
+test_gate_rg_regressions() {
+  gate_world gate-rg
+  expect_rust_cli_failure rg segv SIGSEGV
+  expect_rust_cli_failure rg segv-pcre "rg pcre: killed by SIGSEGV"
+  expect_rust_cli_failure rg nopcre "rg pcre: exit 2"
+  expect_rust_cli_failure rg empty "rg regex: exit 1"
+  expect_rust_cli_failure rg wrong "unexpected output"
+  run_gate --isolated --generation "$W/gen"
+  assert_eq 0 "$RC" "rg passes again once repaired"
+}
+
+test_gate_fd_regressions() {
+  gate_world gate-fd
+  expect_rust_cli_failure fd segv SIGSEGV
+  expect_rust_cli_failure fd empty "fd extension printed nothing"
+  expect_rust_cli_failure fd wrong "unexpected output"
+  run_gate --isolated --generation "$W/gen"
+  assert_eq 0 "$RC" "fd passes again once repaired"
+}
+
+test_gate_rbw_osc_regressions() {
+  gate_world gate-rbw-osc
+  expect_rust_cli_failure rbw segv SIGSEGV
+  expect_rust_cli_failure rbw bad "did not report a version"
+  expect_rust_cli_failure osc segv SIGSEGV
+  expect_rust_cli_failure osc bad "did not report a version"
+  run_gate --isolated --generation "$W/gen"
+  assert_eq 0 "$RC" "rbw and osc pass again once repaired"
+}
+
+test_gate_rust_cli_missing_tool() {
+  local tool
+  gate_world gate-rust-missing
+  for tool in bat rg fd rbw osc
+  do
+    mv "$W/gen/home-path/bin/$tool" "$W/gen/$tool.off"
+    run_gate --isolated --generation "$W/gen"
+    assert_eq 1 "$RC" "missing $tool fails the gate"
+    assert_contains "$W/out" "\"failed\": [\"$tool\"]" "only $tool fails"
+    run_gate --isolated --generation "$W/gen" --skip "$tool"
+    assert_eq 0 "$RC" "--skip $tool passes"
+    mv "$W/gen/$tool.off" "$W/gen/home-path/bin/$tool"
+  done
 }
 
 # --- driver -----------------------------------------------------------------
