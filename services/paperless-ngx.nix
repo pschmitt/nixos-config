@@ -1,10 +1,14 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 let
+  paperlessPkgs = import inputs.nixpkgs-paperless {
+    inherit (pkgs.stdenv.hostPlatform) system;
+  };
   hostnames = [
     "paperless.${config.domains.main}"
     "paperless.${config.networking.hostName}.${config.domains.main}"
@@ -109,7 +113,7 @@ in
       enable = true;
       # Flaky test reads local time from a file's mtime; excluded upstream
       # before nixpkgs commit d6524aa dropped that exclusion.
-      package = pkgs.paperless-ngx.overrideAttrs (old: {
+      package = paperlessPkgs.paperless-ngx.overrideAttrs (old: {
         disabledTests = (old.disabledTests or [ ]) ++ [
           "testNormalOperation"
         ];

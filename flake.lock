@@ -1969,6 +1969,23 @@
         "type": "github"
       }
     },
+    "nixpkgs-paperless": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794386569,
+        "narHash": "sha256-x9sADJvoVG0L6RejZB+/BB4YiGZFBZrfTlhF4uBq1tQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "d4f25a3e562008648d45bcf2d70bcc7422cad84e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "d4f25a3e562008648d45bcf2d70bcc7422cad84e",
+        "type": "github"
+      }
+    },
     "nixpkgs-stable": {
       "locked": {
         "lastModified": 1794756927,
@@ -2460,6 +2477,7 @@
         "nixpkgs": "nixpkgs_6",
         "nixpkgs-kubectl-123": "nixpkgs-kubectl-123",
         "nixpkgs-master": "nixpkgs-master",
+        "nixpkgs-paperless": "nixpkgs-paperless",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-terraform-157": "nixpkgs-terraform-157",
         "noctalia": "noctalia",
