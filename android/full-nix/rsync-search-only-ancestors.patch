@@ -1,0 +1,46 @@
+--- a/syscall.c
++++ b/syscall.c
+@@ -348,7 +348,7 @@
+ 
+ 	/* Absolute path: pin "/" as the starting dfd. */
+ 	if (remaining[0] == '/') {
+-		dfd = open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
++		dfd = open("/", O_PATH | O_DIRECTORY | O_CLOEXEC);
+ 		if (dfd < 0)
+ 			return -1;
+ 		dfd_owns = 1;
+@@ -435,7 +435,7 @@
+ 
+ 			if (target[0] == '/') {
+ 				if (dfd_owns) close(dfd);
+-				dfd = open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
++				dfd = open("/", O_PATH | O_DIRECTORY | O_CLOEXEC);
+ 				if (dfd < 0) {
+ 					saved_errno = errno;
+ 					dfd_owns = 0;
+@@ -490,7 +490,7 @@
+ 			saved_errno = ELOOP;
+ 			goto out;
+ 		}
+-		int next = openat(dfd, comp, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
++		int next = openat(dfd, comp, O_PATH | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+ 		if (next < 0) {
+ 			saved_errno = errno;
+ 			goto out;
+@@ -510,12 +510,11 @@
+ 	}
+ 
+ 	/* Path resolved entirely to a directory (no leaf component left).
+-	 * If the caller wanted O_DIRECTORY we already hold the dirfd we
+-	 * built up; otherwise it's an EISDIR. */
++	 * Reopen with the caller's access flags rather than returning the
++	 * search-only dirfd; otherwise it's an EISDIR. */
+ 	if (flags & O_DIRECTORY) {
+-		retfd = dfd;
+-		dfd_owns = 0;	/* caller now owns it */
+-		saved_errno = 0;
++		retfd = openat(dfd, ".", flags | O_NOFOLLOW, mode);
++		saved_errno = retfd < 0 ? errno : 0;
+ 		if (out_abs && out_cap)
+ 			/* Root-resolved (".." popped abspath empty) tracked daemon walk:
+ 			 * hand back "/" so owner_walk_parent still leaf-checks (path=/ bypass). */

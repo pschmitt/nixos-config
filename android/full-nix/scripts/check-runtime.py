@@ -36,7 +36,7 @@ import tempfile
 import time
 from pathlib import Path
 
-CHECKS = ('zsh', 'nvim', 'eza', 'nix', 'sockets', 'tmux', 'go', 'bat', 'rg', 'fd', 'rbw', 'osc')
+CHECKS = ('zsh', 'nvim', 'eza', 'nix', 'sockets', 'tmux', 'go', 'bat', 'rg', 'fd', 'rbw', 'osc', 'vivid', 'zoxide', 'rsync')
 # Variables copied into the isolated environment. Runtime-specific launcher
 # variables belong in FULL_NIX_PASS_ENV (space separated names or globs).
 PASS_ENV = (
@@ -699,6 +699,57 @@ def check_osc(gate):
     return ['osc ' + match.group(0)]
 
 
+def check_vivid(gate):
+    res = gate.run([gate.tool('vivid'), 'generate', 'molokai'], extra_env=private_env(gate))
+    gate.require(res, 'vivid generate')
+    entries = res.out.strip().split(':')
+    if len(entries) < 10 or not all(re.fullmatch(r'[^=\s]+=[0-9;]+', item) for item in entries):
+        raise CheckFailure('vivid generate did not emit LS_COLORS assignments')
+    return ['molokai LS_COLORS generation ok']
+
+
+def check_zoxide(gate):
+    zoxide = gate.tool('zoxide')
+    root = gate.scratch / 'zoxide-fixture'
+    root.mkdir()
+    env = private_env(gate)
+    res = gate.run([zoxide, 'add', str(root)], extra_env=env)
+    gate.require(res, 'zoxide add')
+    res = gate.run([zoxide, 'query', 'zoxide-fixture'], extra_env=env)
+    gate.require(res, 'zoxide query')
+    expect_output(gate, res, [str(root)], 'zoxide query', ordered=True)
+    return ['scratch database add/query ok']
+
+
+def check_rsync(gate):
+    rsync = gate.tool('rsync')
+    root = gate.scratch / 'rsync-fixture'
+    source = root / 'source'
+    write_fixture(source, {'a.txt': 'alpha\n', 'nested/b.txt': 'beta\n'})
+    (source / 'link').symlink_to('a.txt')
+    (source / 'a.txt').chmod(0o640)
+    env = private_env(gate)
+    for name, absolute in (('relative', False), ('absolute', True), ('existing', False)):
+        dest = root / name
+        if name == 'existing':
+            dest.mkdir()
+        target = str(dest) if absolute else name
+        res = gate.run([rsync, '-a', 'source/', target + '/'], extra_env=env, cwd=root)
+        gate.require(res, 'rsync ' + name)
+        if ((dest / 'a.txt').read_text() != 'alpha\n'
+                or (dest / 'nested/b.txt').read_text() != 'beta\n'
+                or not (dest / 'link').is_symlink()
+                or os.readlink(dest / 'link') != 'a.txt'
+                or (dest / 'a.txt').stat().st_mode & 0o777 != 0o640):
+            raise CheckFailure('rsync ' + name + ' did not preserve fixture content/mode/symlink')
+    (source / 'a.txt').write_text('updated alpha\n')
+    res = gate.run([rsync, '-a', 'source/', 'relative/'], extra_env=env, cwd=root)
+    gate.require(res, 'rsync update')
+    if (root / 'relative/a.txt').read_text() != 'updated alpha\n':
+        raise CheckFailure('rsync update did not copy changed content')
+    return ['relative, absolute, existing directory and update copies verified']
+
+
 RUNNERS = {
     'zsh': check_zsh,
     'nvim': check_nvim,
@@ -712,6 +763,9 @@ RUNNERS = {
     'fd': check_fd,
     'rbw': check_rbw,
     'osc': check_osc,
+    'vivid': check_vivid,
+    'zoxide': check_zoxide,
+    'rsync': check_rsync,
 }
 
 

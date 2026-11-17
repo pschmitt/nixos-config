@@ -98,8 +98,8 @@ evaluations, sync the source and run Nix on a worker as described above.
 
 ### Targeted signal-stack compatibility
 
-The guest wraps `eza`, `bat`, `fd`, `ripgrep`, `rbw` (including its agent), and
-`openstack-rs` with an interposer that increases alternate signal stacks to
+The guest wraps `eza`, `bat`, `fd`, `ripgrep`, `rbw` (including its agent),
+`openstack-rs`, `vivid`, and `zoxide` with an interposer that increases alternate signal stacks to
 128 KiB in every thread. Real-device probes found crashes in these packages
 that disappear with enlarged stacks; this implicates the runtime's SIGSYS
 translation, but is not a complete symbolic root-cause trace. In particular,
@@ -129,7 +129,9 @@ fixes here, separate from the native Android/Bionic package profiles.
 fixture-based eza listings, the local Nix registry, Unix sockets, tmux and an
 already-built Go executable (`kubectl`). It also checks real `bat` plain,
 numbered and highlighted rendering, nine `rg` cases including PCRE and no-match,
-seven `fd` searches, and isolated `rbw version` / `osc --version` startup. These
+seven `fd` searches, isolated `rbw version` / `osc --version` startup,
+`vivid` theme generation, `zoxide` database add/query, and recursive `rsync`
+copies with content, mode, symlink and update verification. These
 additional checks use generated fixtures and scratch HOME/XDG directories even
 in active mode; they do not access a real vault or authenticate to a service.
 It never compiles a probe on the phone.
@@ -229,14 +231,14 @@ outside its allowlisted directory; using that directory passed without enabling
 not changed. This does not qualify unattended maintenance, vault authentication,
 Android background lifetime or arbitrary native helpers inside the guest.
 
-### Remaining functional audit findings
+### Functional audit qualification
 
-A further offline fixture audit reproduced `vivid generate` and `zoxide`
-add/query crashes on both phones. Enlarging their alternate signal stacks made
-the tested operations succeed, but these packages are not yet wrapped here.
-Local `rsync` copies also failed with a receiver directory permission error,
-including with the stack shim and a pre-existing destination. These remain
-unresolved compatibility gaps; passing the activation gate does not cover them.
+The overlay now wraps `vivid` and `zoxide` with the targeted signal-stack shim.
+The `rsync` patch uses search-only ancestor descriptors while retaining symlink
+and ownership checks. The runtime gate covers these previously failing operations.
+On the test phone, the thorough active gate and a separate 90-probe offline
+fixture audit passed after migration to the declarative guest system plus HM.
+The second phone still requires qualification of these fixes and migration.
 The audit used disposable HOME/XDG directories, no real vault or remote cloud
 operations, and no compilation on the phones.
 

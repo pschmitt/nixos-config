@@ -46,6 +46,9 @@ let
         "rbw-agent"
       ];
     assert home.pkgs.openstack-rs.fullNixSignalStackPrograms == [ "osc" ];
+    assert home.pkgs.vivid.fullNixSignalStackPrograms == [ "vivid" ];
+    assert home.pkgs.zoxide.fullNixSignalStackPrograms == [ "zoxide" ];
+    assert builtins.elem ./rsync-search-only-ancestors.patch home.pkgs.rsync.patches;
     assert c.nix.settings.max-jobs == 0;
     assert c.nix.settings.builders-use-substitutes;
     assert c.nix.registry.nixpkgs.to.type == "path";

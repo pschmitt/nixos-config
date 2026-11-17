@@ -352,6 +352,45 @@ elif mode == 'bad':
 else:
     sys.exit(2)
 FAKE
+
+  write_py_tool "$dir" vivid <<'FAKE'
+import os, signal, sys
+from pathlib import Path
+marker = Path(sys.argv[0]).absolute().parent.parent.parent / 'fail-vivid'
+mode = marker.read_text().strip() if marker.exists() else ''
+if mode == 'segv':
+    os.kill(os.getpid(), signal.SIGSEGV)
+print('bad' if mode == 'bad' else ':'.join('*.ext%d=01;32' % i for i in range(12)))
+FAKE
+
+  write_py_tool "$dir" zoxide <<'FAKE'
+import os, signal, sys
+from pathlib import Path
+marker = Path(sys.argv[0]).absolute().parent.parent.parent / 'fail-zoxide'
+mode = marker.read_text().strip() if marker.exists() else ''
+if mode == 'segv':
+    os.kill(os.getpid(), signal.SIGSEGV)
+db = Path(os.environ['HOME']) / 'fake-zoxide-db'
+if sys.argv[1] == 'add':
+    db.write_text(sys.argv[2])
+else:
+    print('wrong' if mode == 'bad' else db.read_text())
+FAKE
+
+  write_py_tool "$dir" rsync <<'FAKE'
+import os, shutil, signal, sys
+from pathlib import Path
+marker = Path(sys.argv[0]).absolute().parent.parent.parent / 'fail-rsync'
+mode = marker.read_text().strip() if marker.exists() else ''
+if mode == 'segv':
+    os.kill(os.getpid(), signal.SIGSEGV)
+if mode == 'bad':
+    sys.exit(0)
+dest = Path(sys.argv[-1])
+if (dest / 'link').is_symlink():
+    (dest / 'link').unlink()
+shutil.copytree(sys.argv[-2], dest, symlinks=True, dirs_exist_ok=True)
+FAKE
 }
 
 run_gate() {
@@ -610,7 +649,7 @@ test_gate_rbw_osc_regressions() {
 test_gate_rust_cli_missing_tool() {
   local tool
   gate_world gate-rust-missing
-  for tool in bat rg fd rbw osc
+  for tool in bat rg fd rbw osc vivid zoxide rsync
   do
     mv "$W/gen/home-path/bin/$tool" "$W/gen/$tool.off"
     run_gate --isolated --generation "$W/gen"
@@ -620,6 +659,24 @@ test_gate_rust_cli_missing_tool() {
     assert_eq 0 "$RC" "--skip $tool passes"
     mv "$W/gen/$tool.off" "$W/gen/home-path/bin/$tool"
   done
+}
+
+test_gate_remaining_audit_regressions() {
+  local tool mode
+  gate_world gate-remaining-audit
+  for tool in vivid zoxide rsync
+  do
+    for mode in segv bad
+    do
+      printf '%s\n' "$mode" > "$W/gen/fail-$tool"
+      run_gate --isolated --generation "$W/gen"
+      assert_eq 1 "$RC" "$tool $mode fails the gate"
+      assert_contains "$W/out" "\"failed\": [\"$tool\"]" "only $tool fails for $mode"
+      rm "$W/gen/fail-$tool"
+    done
+  done
+  run_gate --isolated --generation "$W/gen"
+  assert_eq 0 "$RC" "remaining audit checks pass once repaired"
 }
 
 # --- driver -----------------------------------------------------------------

@@ -34,6 +34,11 @@ in
     "rbw-agent"
   ];
   openstack-rs = withSignalStack prev.openstack-rs [ "osc" ];
+  vivid = withSignalStack prev.vivid [ "vivid" ];
+  zoxide = withSignalStack prev.zoxide [ "zoxide" ];
+  rsync = prev.rsync.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./rsync-search-only-ancestors.patch ];
+  });
   iputils = prev.iputils.overrideAttrs (old: {
     mesonFlags = old.mesonFlags ++ [ "-DUSE_CAP=false" ];
   });
