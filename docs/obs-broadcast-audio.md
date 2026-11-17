@@ -128,31 +128,16 @@ needs a real call/recording check before relying on lip-sync.
 
 ## Muting or stepping the TV source itself
 
-`obs-control` has verbs that act on the TV source in OBS, independent of the
-broadcast route above (they work whether sharing is on or off):
-
-```console
-obs-control tv-mute              # mute the active TV source (explicit, never a toggle)
-obs-control tv-unmute            # unmute the active TV source (explicit, never a toggle)
-obs-control tv-volume up|down    # step its OBS volume by 3 dB (up also unmutes)
-obs-control tv-audio-status      # read-only: scene, sources, mute state, dB
-```
-
-They are backed by `obs-tv-audio`, which talks to obs-websocket with the same
-host, port and password handling as `obs-control`. The targets are exactly the
-allowlisted sources of the broadcast route (`ARD Live` in `ARD`, `ZDF Live` in
-`ZDF`, `Browser` or `Media` in `Tagesschau`; visible, media or browser sources,
-nested scenes and groups traversed) on the current **program** scene. On any
-other scene (for example brb) nothing is changed and the exit status is 3.
-Microphones, desktop capture, monitoring and the OBS Broadcast bridge are never
-touched.
-
-Volume steps are clamped to -40 dB .. 0 dB (never a boost, never silence) and
-leave a source that is already outside that range where it is when stepping
-further out. `tv-volume up` additionally unmutes the source explicitly after the
-step, also when it already sits at 0 dB, so a muted maximum-volume source can
-recover; `tv-volume down` never changes the mute state. Muting or unmuting a
-source that is already in that state is a no-op.
+Muting, unmuting and stepping the volume of the TV source is done by the
+native `obs_studio.set_input_mute` and `obs_studio.step_input_volume` actions
+of the Home Assistant `obs_studio` integration (the teams-live `/tv` webhooks
+call them), independent of the broadcast route above. The scene-to-input
+allowlist (`ARD Live` in `ARD`, `ZDF Live` in `ZDF`, `Browser` or `Media` in
+`Tagesschau`) lives in the Home Assistant automations. With any other scene on
+air (for example brb) they fail without touching OBS. Volume steps are 3 dB
+within -40 dB .. 0 dB, `up` also unmutes (even at 0 dB) and `down` never
+changes the mute state. Microphones, desktop capture, monitoring and the OBS
+Broadcast bridge are never touched.
 
 ## Troubleshooting
 
