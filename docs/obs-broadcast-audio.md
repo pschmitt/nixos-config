@@ -166,6 +166,23 @@ environment.
 For an emergency stop, use `obs-broadcast-audio off` or mute the meeting app.
 Do not use `soundboard stop`: it stops clip playback, not this bridge.
 
+## Transitions
+
+Leaving the program scene silences the sources first and never touches the OBS
+monitoring device, and the controller closes both branches in one step: the
+local monitor is signalled first and nothing waits for the meeting branch. What
+is already in flight (the device buffer of the headset or speakers) cannot be
+recalled, so a very short tail on the current default output remains possible.
+
+Turning sharing off, or any failure, silences every owned source, restores the
+original monitoring device, and only then restores each source's saved
+monitoring mode. If a source was saved as Monitor and Output on OBS's
+`Default` device, that is your own configuration returning, and it is audible
+on whatever device OBS resolves `Default` to (not necessarily the current
+system default output). The script never changes that configuration; if the
+TV sources should not be audible after sharing, set their monitoring to Off in
+OBS before enabling sharing.
+
 ## Focused tests
 
 On a worker with Python and LuaJIT:
@@ -181,11 +198,14 @@ The Lua test mocks OBS with reference counts, synchronous reentrant callbacks
 inside every monitoring and device change, a spill detector (anything audible
 on the sink that is not the permitted program source fails the run), preexisting
 monitoring modes, an unrelated conflict, source rename and recreation, failure,
-restore-retry and unload. The Python tests cover both branches' commands (no
-target or tag on the local one), their joint lifecycle and loop detection. On an
+restore-retry, unload, and a tail scenario: sources keep playing while the
+program leaves them, and at no call may one be audible on the user's output or
+on the sink outside the program scene, nor the original device return under an
+audible source. The Python tests cover both branches' commands (no
+target or tag on the local one), their joint lifecycle (local branch stopped first) and loop detection. On an
 isolated worker, `test_obs_broadcast_audio_graph.py` builds a private PipeWire
 session and checks the real links: meeting feed to `meeting_source` only, local
-branch to the default output and following it, no capture fallback. Tests mock
+branch to the default output and following it, a bounded stop of both branches, no capture fallback. Tests mock
 OBS and audio commands; they do not transmit audio. End-to-end audio, OBS Lua bindings, transition
 timing, and meeting-app processing require a live OBS session and an explicitly enabled
 route.

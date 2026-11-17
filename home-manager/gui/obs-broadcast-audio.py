@@ -13,6 +13,7 @@ import time
 
 UNIT = "obs-broadcast-audio.service"
 GUARD_INTERVAL = 0.5
+POLL_INTERVAL = 0.02
 
 
 def run(*args):
@@ -33,19 +34,20 @@ def read_status(directory, now=None):
         return {"fresh": False, "enabled": False, "routing": False, "error": ""}
 
 
-def stop_process(process):
-    if process is not None:
+def stop_processes(processes):
+    """Stop all branches at once, the local monitor first.
+
+    Only the local branch can be heard on the user's own output, so it is
+    signalled first and nothing waits for the meeting branch before it is gone.
+    """
+    for process in reversed(processes):
         process.terminate()
+    for process in reversed(processes):
         try:
             process.wait(timeout=2)
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
-
-
-def stop_processes(processes):
-    for process in processes:
-        stop_process(process)
 
 
 def bridge_command():
@@ -181,7 +183,7 @@ def serve(directory):
                     raise RuntimeError(
                         "The default audio output became the OBS Broadcast sink; audio route closed."
                     )
-            time.sleep(0.1)
+            time.sleep(POLL_INTERVAL)
     finally:
         request.unlink(missing_ok=True)
         stop_processes(processes)

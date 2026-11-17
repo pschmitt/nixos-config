@@ -197,6 +197,29 @@ class AudioBridgeTests(unittest.TestCase):
             for process in processes:
                 process.terminate.assert_called_once()
 
+    def test_stop_signals_the_local_branch_first(self):
+        events = []
+        processes = []
+        for name in ("meeting", "local"):
+            process = unittest.mock.Mock()
+            process.terminate.side_effect = lambda name=name: events.append(("terminate", name))
+            process.wait.side_effect = lambda timeout, name=name: events.append(("wait", name))
+            processes.append(process)
+        bridge.stop_processes(processes)
+        self.assertEqual(events, [
+            ("terminate", "local"), ("terminate", "meeting"),
+            ("wait", "local"), ("wait", "meeting"),
+        ])
+
+    def test_a_stuck_branch_is_killed_without_delaying_the_other_signal(self):
+        local, meeting = unittest.mock.Mock(), unittest.mock.Mock()
+        local.wait.side_effect = [subprocess.TimeoutExpired("pw-loopback", 2), None]
+        bridge.stop_processes([meeting, local])
+        local.terminate.assert_called_once()
+        meeting.terminate.assert_called_once()
+        local.kill.assert_called_once()
+        meeting.kill.assert_not_called()
+
     def test_failed_local_start_stops_the_meeting_branch(self):
         meeting = unittest.mock.Mock()
         with patch.object(bridge, "local_output_loops", return_value=False), \

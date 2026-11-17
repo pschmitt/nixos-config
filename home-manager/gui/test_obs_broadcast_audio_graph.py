@@ -110,6 +110,20 @@ def main():
             bridge.run("pactl", "set-default-sink", "obs_broadcast")
             assert bridge.local_output_loops(), "loop onto the OBS sink not detected"
             bridge.run("pactl", "set-default-sink", "test_output_b")
+            # Scene-away: both branches go in one bounded step, the local
+            # monitor first, and nothing of either stays in the graph.
+            started = time.monotonic()
+            bridge.stop_processes(processes[-2:])
+            elapsed = time.monotonic() - started
+            assert elapsed < 1.0, f"stopping the branches took {elapsed:.2f}s"
+            nodes, _, find = snapshot()
+            assert find("obs_broadcast_local") is None and find("obs_broadcast_feed") is None, \
+                "a branch node outlived the stop"
+            assert not any(p.get("stream.capture.sink") in (True, "true") for p in nodes.values()), \
+                "a sink capture outlived the stop"
+            for command in (bridge.bridge_command(), bridge.local_command()):
+                processes.append(subprocess.Popen(command, stdout=log, stderr=log))
+            wait_for(lambda: graph_connected("test_output_b"), "bridge did not restart after a stop")
             bridge.run("pactl", "unload-module", module)
             time.sleep(0.3)
             graph = json.loads(bridge.run("pw-dump"))
@@ -117,10 +131,10 @@ def main():
                         and o.get("info", {}).get("props", {}).get("stream.capture.sink") in (True, "true")}
             assert not any(o["type"] == "PipeWire:Interface:Link"
                            and o["info"]["input-node-id"] in captures for o in graph), "capture fell back"
-            print("Live isolated PipeWire graph passed: exact sink capture, meeting feed, local output follows default, loop detection, no capture fallback")
+            print("Live isolated PipeWire graph passed: exact sink capture, meeting feed, local output follows default, loop detection, bounded stop, no capture fallback")
         finally:
             for process in reversed(processes):
-                bridge.stop_process(process)
+                bridge.stop_processes([process])
 
 
 if __name__ == "__main__":

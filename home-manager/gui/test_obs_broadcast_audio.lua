@@ -49,6 +49,30 @@ local function spill(what, s)
   W.violations[#W.violations + 1] = what .. ": " .. s.name
 end
 
+-- While sharing is requested every broadcast source must be silent or heard
+-- only through the OBS Broadcast sink and only while it is on the program
+-- scene. Anything else is audible on the user's own output, or is a tail of a
+-- source that already left the program, so it is a wrong-sink transient.
+local function sharing_requested()
+  local f = io.open(directory .. "/requested")
+  if not f then return false end
+  f:close()
+  return true
+end
+
+local function invariant(what)
+  if not W.watch or not sharing_requested() then return end
+  for _, s in ipairs({ W.ard, W.zdf, W.browser }) do
+    if s.monitoring ~= NONE then
+      if W.device ~= "obs_broadcast" then
+        spill(what .. " audible on the user's output", s)
+      elseif not audible_ok(s) then
+        spill(what .. " tail on the broadcast sink", s)
+      end
+    end
+  end
+end
+
 local function setup()
   W = { counter = 0, current = "Webcam", device = "default", progress = 1, calls = 0,
     violations = {}, logs = {}, device_sets = 0, device_ok = true, hooks = {} }
@@ -93,6 +117,7 @@ local function setup()
       count()
       if v ~= NONE and W.device == "obs_broadcast" and not audible_ok(s) then spill("enabled on sink", s) end
       s.monitoring = v
+      invariant("monitoring change")
       hook("set_monitoring")
     end,
     obs_source_get_unversioned_id = function(s) count(); return s.kind end,
@@ -107,7 +132,14 @@ local function setup()
           if s.monitoring ~= NONE and not audible_ok(s) then spill("on sink at switch", s) end
         end
       end
+      if W.device == "obs_broadcast" and id ~= "obs_broadcast" then
+        -- The original device returns only once nothing can reach it.
+        for _, s in ipairs({ W.ard, W.zdf, W.browser }) do
+          if s.monitoring ~= NONE then spill("device restored under a source tail", s) end
+        end
+      end
       W.device = id
+      invariant("device change")
       hook("set_device")
       return true
     end,
@@ -419,4 +451,64 @@ for _, scene in ipairs({ "ARD", "ZDF", "Tagesschau", "Webcam", "ZDF", "ARD" }) d
 end
 off_and_assert_restored("switching")
 
-print("Lua routing tests passed: ownership, restore order, reentrancy, conflicts, rename/recreation, one-shot errors, unload")
+-- 12. Scene-away and teardown under a source tail: the sources keep decoding
+--     (their audio is still in flight) while the program leaves them. At no
+--     call, even from reentrant callbacks, may one of them be audible on the
+--     user's own output or on the broadcast sink outside the program scene,
+--     and the original device returns only after every source is silent.
+for _, prior in ipairs({ NONE, ONLY, BOTH }) do
+  setup()
+  W.ard.monitoring, W.zdf.monitoring, W.browser.monitoring = prior, prior, prior
+  local nested = { n = 0 }
+  W.hooks.set_monitoring = reentrant(nested)
+  W.hooks.set_device = reentrant(nested)
+  request(true)
+  tick()
+  -- Before the first pass the user's own configuration is audible by design;
+  -- from the moment the route is engaged nothing may leak.
+  W.watch = true
+  W.current = "ARD"
+  tick()
+  assert(W.ard.monitoring == BOTH and W.device == "obs_broadcast")
+  local device_sets = W.device_sets
+  -- scene-away: the tail is still decoding, nothing may reach another device
+  W.current = "Webcam"
+  frontend_event(EV.SCENE_CHANGED)
+  tick()
+  assert(W.ard.monitoring == NONE, "scene-away silences the source")
+  assert(W.device == "obs_broadcast" and W.device_sets == device_sets,
+    "scene-away must not touch the monitoring device")
+  -- away during a transition and back, then away to another allowed scene
+  W.current = "ZDF"
+  W.progress = 0.4
+  frontend_event(EV.SCENE_CHANGED)
+  assert(W.zdf.monitoring == NONE, "transition silent")
+  W.progress = 1
+  tick()
+  W.current = "Tagesschau"
+  tick()
+  W.current = "ARD"
+  tick()
+  -- teardown while a source is the program (maximum tail), then again away
+  request(false)
+  tick()
+  assert(W.device == "default", "device restored")
+  assert(W.ard.monitoring == prior and W.zdf.monitoring == prior and W.browser.monitoring == prior,
+    "exact prior modes restored")
+  check_clean("tail teardown, prior mode " .. prior)
+end
+
+-- 12b. A failure during the tail (unrelated monitoring appears while a
+--      program source plays) restores the device only after silence.
+setup()
+W.ard.monitoring = BOTH
+request(true)
+W.current = "ARD"
+tick()
+W.watch = true
+W.mic.monitoring = BOTH
+tick()
+assert(W.device == "default" and W.ard.monitoring == BOTH and not sharing_requested())
+check_clean("tail failure")
+
+print("Lua routing tests passed: ownership, restore order, reentrancy, conflicts, rename/recreation, one-shot errors, unload, tail teardown")
