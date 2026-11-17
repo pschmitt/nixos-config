@@ -273,6 +273,8 @@ class TransportTests(unittest.TestCase):
         run.side_effect = [mock.Mock(returncode=0, stdout="package:/data/app/random/base.apk\n"),
                            mock.Mock(returncode=7)]
         self.assertEqual(cli.run_as_shell("serial"), 7)
+        self.assertEqual(run.call_args_list[0].kwargs["stdin"], subprocess.DEVNULL)
+        self.assertNotIn("stdin", run.call_args.kwargs)
         command = run.call_args.args[0]
         self.assertEqual(command[:5], ["adb", "-s", "serial", "shell", "-tt"])
         remote = cli.shlex.split(command[5])
@@ -280,6 +282,13 @@ class TransportTests(unittest.TestCase):
         for value in ("TERMUX_APP__DATA_DIR", "LD_LIBRARY_PATH", "libtermux-pkg-redirect.so",
                       "/data/app/random/lib/*/", 'exec "$SHELL" -l', '"$HOME/.config/termuxpp/shell"'):
             self.assertIn(value, remote[4])
+
+
+    @mock.patch.object(cli.subprocess, "run")
+    def test_run_as_probe_cannot_consume_command_stdin(self, run):
+        run.return_value = mock.Mock(returncode=0, stdout="10459\n")
+        self.assertTrue(cli.supports_run_as("serial"))
+        self.assertEqual(run.call_args.kwargs["stdin"], subprocess.DEVNULL)
 
 
 class RunAsShellSelectionTests(unittest.TestCase):

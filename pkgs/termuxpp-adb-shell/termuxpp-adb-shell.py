@@ -462,7 +462,7 @@ PACKAGE = "dev.pschmitt.termux"
 def supports_run_as(serial):
     result = subprocess.run(
         ["adb", "-s", serial, "shell", "run-as", PACKAGE, "id", "-u"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15,
+        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15,
     )
     if result.returncode == 0 and result.stdout.strip().isdigit():
         return True
@@ -475,7 +475,7 @@ def run_as_shell(serial, shell=None, command=None):
     if not command and (not sys.stdin.isatty() or not sys.stdout.isatty()):
         raise RuntimeError("This command requires an interactive terminal.")
     result = subprocess.run(["adb", "-s", serial, "shell", "pm", "path", PACKAGE],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
+                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
     paths = [line.removeprefix("package:") for line in result.stdout.splitlines()
              if line.startswith("package:") and line.endswith("/base.apk")]
     if result.returncode != 0 or len(paths) != 1:
