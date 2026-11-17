@@ -112,6 +112,11 @@ in
             icon = "mdi:television-off";
           }
           {
+            name = "OBS TV Unmute";
+            exec = "${commandScripts."obs-tv-unmute.sh"}";
+            icon = "mdi:television";
+          }
+          {
             name = "OBS TV Volume Up";
             exec = "${commandScripts."obs-tv-volume-up.sh"}";
             icon = "mdi:volume-plus";

@@ -109,7 +109,8 @@ broadcast route above (they work whether sharing is on or off):
 
 ```console
 obs-control tv-mute              # mute the active TV source (explicit, never a toggle)
-obs-control tv-volume up|down    # step its OBS volume by 3 dB
+obs-control tv-unmute            # unmute the active TV source (explicit, never a toggle)
+obs-control tv-volume up|down    # step its OBS volume by 3 dB (up also unmutes)
 obs-control tv-audio-status      # read-only: scene, sources, mute state, dB
 ```
 
@@ -120,11 +121,14 @@ allowlisted sources of the broadcast route (`ARD Live` in `ARD`, `ZDF Live` in
 nested scenes and groups traversed) on the current **program** scene. On any
 other scene (for example brb) nothing is changed and the exit status is 3.
 Microphones, desktop capture, monitoring and the OBS Broadcast bridge are never
-touched, and there is no unmute.
+touched.
 
-Volume steps are clamped to -40 dB .. 0 dB (never a boost, never silence), do
-not change the mute state, and leave a source that is already outside that range
-where it is when stepping further out. Muting an already muted source is a no-op.
+Volume steps are clamped to -40 dB .. 0 dB (never a boost, never silence) and
+leave a source that is already outside that range where it is when stepping
+further out. `tv-volume up` additionally unmutes the source explicitly after the
+step, also when it already sits at 0 dB, so a muted maximum-volume source can
+recover; `tv-volume down` never changes the mute state. Muting or unmuting a
+source that is already in that state is a no-op.
 
 ## Troubleshooting
 

@@ -7,9 +7,13 @@ under the current *program* scene (nested scenes and groups included). It
 never touches microphones, desktop capture, other scenes' sources, the
 monitoring routing or the OBS Broadcast bridge.
 
-  mute                 explicitly mute (never toggle, never unmute)
-  volume up|down       step by --step-db, clamped to [MIN_DB, MAX_DB]; never
-                       touches the mute state, never boosts above 0 dB
+  mute                 explicitly mute (never a toggle)
+  unmute               explicitly unmute (never a toggle)
+  volume up            step up by --step-db, clamped to [MIN_DB, MAX_DB]
+                       (never above 0 dB), then explicitly unmute the source,
+                       also when it already sits at 0 dB
+  volume down          step down by --step-db, clamped; never touches the
+                       mute state
   status               read-only: scene, sources, mute state and dB
 
 Exit status: 0 done, 1 error, 3 no active TV source (nothing was changed).
@@ -135,6 +139,19 @@ def do_mute(client, sources, out):
     print(f"muted {len(sources)} source(s)", file=out)
 
 
+def set_unmuted(client, sources):
+    for name in sources:
+        client.set_input_mute(name, False)
+    for name in sources:
+        if client.get_input_mute(name).input_muted:
+            raise TvAudioError(f"{name} did not report unmuted")
+
+
+def do_unmute(client, sources, out):
+    set_unmuted(client, sources)
+    print(f"unmuted {len(sources)} source(s)", file=out)
+
+
 def do_volume(client, sources, direction, step_db, out):
     for name in sources:
         current = client.get_input_volume(name).input_volume_db
@@ -142,6 +159,11 @@ def do_volume(client, sources, direction, step_db, out):
         if target != current:
             client.set_input_volume(name, vol_db=target)
         print(f"{name}: {current:.1f} -> {target:.1f} dB", file=out)
+    if direction == "up":
+        # Volume up also unmutes, even at the 0 dB ceiling, so a muted
+        # max-volume source can recover. Volume down never changes the mute.
+        set_unmuted(client, sources)
+        print(f"unmuted {len(sources)} source(s)", file=out)
 
 
 def step_value(text):
@@ -155,8 +177,11 @@ def parser():
     cli = argparse.ArgumentParser(prog="obs-tv-audio", description=__doc__.split("\n")[0])
     sub = cli.add_subparsers(dest="command", required=True)
     sub.add_parser("mute", help="mute the active TV source(s)")
+    sub.add_parser("unmute", help="unmute the active TV source(s)")
     sub.add_parser("status", help="show the active TV source(s), read-only")
-    volume = sub.add_parser("volume", help="step the active TV source volume")
+    volume = sub.add_parser(
+        "volume", help="step the active TV source volume (up also unmutes)"
+    )
     volume.add_argument("direction", choices=("up", "down"))
     volume.add_argument("--step-db", type=step_value, default=DEFAULT_STEP_DB)
     return cli
@@ -175,6 +200,8 @@ def run(args, client_factory=connect, out=None, err=None):
             do_status(client, scene, sources, out)
         elif args.command == "mute":
             do_mute(client, sources, out)
+        elif args.command == "unmute":
+            do_unmute(client, sources, out)
         else:
             do_volume(client, sources, args.direction, args.step_db, out)
     except TvAudioError as exc:

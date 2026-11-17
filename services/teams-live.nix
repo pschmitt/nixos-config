@@ -53,6 +53,7 @@ in
     "teams-live/tv-webhook" = hostSecret;
     "teams-live/tv-state-entity" = hostSecret;
     "teams-live/tv-mute-webhook" = hostSecret;
+    "teams-live/tv-unmute-webhook" = hostSecret;
     "teams-live/tv-volume-up-webhook" = hostSecret;
     "teams-live/tv-volume-down-webhook" = hostSecret;
     "opsgenie/gksv3-on-call/api-key" = hostSecret;
@@ -143,13 +144,15 @@ in
 
         # /tv controls. One Home Assistant webhook switches the OBS scene; the
         # same scene entity is the readback, so /tv next|prev never relies on
-        # process memory. /tv mute and /tv vol up|down each have their own
-        # fixed-meaning webhook, which acts on the active TV OBS source only.
+        # process memory. /tv mute, /tv unmute and /tv vol up|down each have
+        # their own fixed-meaning webhook, which acts on the active TV OBS
+        # source only (/tv vol up also unmutes it).
         tv.switch = {
           webhooks =
             lib.genAttrs [ "ard" "zdf" "tagesschau" "off" ] (_: secretValue "teams-live/tv-webhook")
             // {
               mute = secretValue "teams-live/tv-mute-webhook";
+              unmute = secretValue "teams-live/tv-unmute-webhook";
               volume_up = secretValue "teams-live/tv-volume-up-webhook";
               volume_down = secretValue "teams-live/tv-volume-down-webhook";
             };

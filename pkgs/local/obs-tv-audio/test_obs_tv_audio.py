@@ -101,7 +101,7 @@ class TvAudioTests(unittest.TestCase):
     def test_non_tv_scene_fails_closed_without_changes(self):
         for scene in ("🚬 brb", "Other"):
             fake = world(scene)
-            for argv in (["mute"], ["volume", "up"], ["volume", "down"]):
+            for argv in (["mute"], ["unmute"], ["volume", "up"], ["volume", "down"]):
                 code, _, err = run(argv, fake)
                 self.assertEqual(code, tv.EXIT_NO_SOURCE)
                 self.assertIn("nothing changed", err)
@@ -120,25 +120,87 @@ class TvAudioTests(unittest.TestCase):
         code, _, _ = run(["mute"], fake)
         self.assertEqual(code, 0)
 
-    def test_volume_steps_and_never_touches_mute(self):
+    def test_volume_up_steps_then_unmutes_a_muted_source(self):
         fake = world("ARD")
         fake.inputs["ARD Live"]["muted"] = True
         code, _, _ = run(["volume", "up"], fake)
         self.assertEqual(code, 0)
-        self.assertEqual(fake.calls, [("volume", "ARD Live", -7.0)])
+        self.assertEqual(fake.calls, [("volume", "ARD Live", -7.0), ("mute", "ARD Live", False)])
+        self.assertFalse(fake.inputs["ARD Live"]["muted"])
+
+    def test_volume_up_on_an_unmuted_source_keeps_it_unmuted(self):
+        fake = world("ARD")
+        code, _, _ = run(["volume", "up"], fake)
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.calls, [("volume", "ARD Live", -7.0), ("mute", "ARD Live", False)])
+        self.assertFalse(fake.inputs["ARD Live"]["muted"])
+
+    def test_volume_up_at_max_volume_still_unmutes(self):
+        fake = world("ARD")
+        fake.inputs["ARD Live"].update(muted=True, db=0.0)
+        code, _, _ = run(["volume", "up"], fake)
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.calls, [("mute", "ARD Live", False)])
+        self.assertEqual(fake.inputs["ARD Live"]["db"], 0.0)
+        self.assertFalse(fake.inputs["ARD Live"]["muted"])
+
+    def test_volume_down_never_unmutes(self):
+        fake = world("ARD")
+        fake.inputs["ARD Live"]["muted"] = True
+        code, _, _ = run(["volume", "down", "--step-db", "2"], fake)
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.calls, [("volume", "ARD Live", -12.0)])
         self.assertTrue(fake.inputs["ARD Live"]["muted"])
-        run(["volume", "down", "--step-db", "2"], fake)
-        self.assertEqual(fake.calls[-1], ("volume", "ARD Live", -9.0))
+        fake.inputs["ARD Live"]["db"] = -40.0
+        run(["volume", "down"], fake)
         self.assertTrue(all(c[0] == "volume" for c in fake.calls))
+        self.assertTrue(fake.inputs["ARD Live"]["muted"])
+
+    def test_volume_up_never_touches_other_sources(self):
+        fake = world("ARD")
+        for name in ("Microphone", "Desktop", "ZDF Live"):
+            fake.inputs[name]["muted"] = True
+        run(["volume", "up"], fake)
+        self.assertEqual({c[1] for c in fake.calls}, {"ARD Live"})
+        for name in ("Microphone", "Desktop", "ZDF Live"):
+            self.assertTrue(fake.inputs[name]["muted"])
+
+    def test_unmute_targets_only_the_active_tv_source(self):
+        fake = world("ARD")
+        for name in ("ARD Live", "Microphone", "ZDF Live"):
+            fake.inputs[name]["muted"] = True
+        code, _, _ = run(["unmute"], fake)
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.calls, [("mute", "ARD Live", False)])
+        self.assertFalse(fake.inputs["ARD Live"]["muted"])
+        self.assertTrue(fake.inputs["Microphone"]["muted"])
+        self.assertTrue(fake.inputs["ZDF Live"]["muted"])
+        self.assertEqual(fake.inputs["ARD Live"]["db"], -10.0)
+
+    def test_unmute_is_explicit_false_never_toggle_and_idempotent(self):
+        fake = world("ZDF")
+        code, _, _ = run(["unmute"], fake)
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.calls, [("mute", "ZDF Live", False)])
+        self.assertFalse(fake.inputs["ZDF Live"]["muted"])
+
+    def test_unverified_unmute_is_an_error(self):
+        for argv in (["unmute"], ["volume", "up"]):
+            fake = world("ARD")
+            fake.inputs["ARD Live"]["muted"] = True
+            fake.set_input_mute = lambda name, muted, f=fake: f.calls.append(("mute", name, muted))
+            code, _, err = run(argv, fake)
+            self.assertEqual(code, tv.EXIT_ERROR)
+            self.assertIn("did not report unmuted", err)
 
     def test_volume_is_clamped_at_both_ends(self):
         fake = world("ARD")
         fake.inputs["ARD Live"]["db"] = -1.0
         run(["volume", "up"], fake)
-        self.assertEqual(fake.calls[-1], ("volume", "ARD Live", 0.0))
-        before = len(fake.calls)
+        self.assertIn(("volume", "ARD Live", 0.0), fake.calls)
+        volume_calls = [c for c in fake.calls if c[0] == "volume"]
         run(["volume", "up"], fake)
-        self.assertEqual(len(fake.calls), before)
+        self.assertEqual([c for c in fake.calls if c[0] == "volume"], volume_calls)
         fake.inputs["ARD Live"]["db"] = -39.0
         run(["volume", "down"], fake)
         self.assertEqual(fake.calls[-1], ("volume", "ARD Live", -40.0))
