@@ -78,11 +78,11 @@ def main():
                 capture = next((i for i, p in nodes.items() if p.get("stream.capture.sink") in (True, "true")), None)
                 if None in (feed, sink, mic, capture):
                     return False
-                outgoing = [l for l in links if l["output-node-id"] == feed]
-                incoming = [l for l in links if l["input-node-id"] == capture]
+                outgoing = [link for link in links if link["output-node-id"] == feed]
+                incoming = [link for link in links if link["input-node-id"] == capture]
                 return (len(outgoing) == 2 and len(incoming) == 2
-                        and all(l["input-node-id"] == mic for l in outgoing)
-                        and all(l["output-node-id"] == sink for l in incoming))
+                        and all(link["input-node-id"] == mic for link in outgoing)
+                        and all(link["output-node-id"] == sink for link in incoming))
 
             wait_for(graph_connected, "bridge did not exclusively link OBS sink to Meeting Microphone")
             bridge.run("pactl", "unload-module", module)
