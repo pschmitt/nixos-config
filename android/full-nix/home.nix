@@ -1,12 +1,14 @@
 {
   config,
   hostname,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 {
   imports = [
+    ./operations.nix
     ../../modules/dotfiles.nix
     ../../modules/domains.nix
     ../../home-manager/termux-options.nix
@@ -31,16 +33,20 @@
   ];
 
   home = {
-    username = "nix";
-    homeDirectory = "/home/nix";
+    username = "pschmitt";
+    homeDirectory = "/home/pschmitt";
     stateVersion = "26.05";
     sessionVariables = {
       HOST = hostname;
       HOSTNAME = hostname;
       EDITOR = "nvim";
       PAGER = "less";
+      NIX_CONF_DIR = "${config.xdg.configHome}/nix";
     };
     packages = builtins.attrValues {
+      iputils = pkgs.iputils.overrideAttrs (old: {
+        mesonFlags = old.mesonFlags ++ [ "-DUSE_CAP=false" ];
+      });
       inherit (pkgs)
         bashInteractive
         cacert
@@ -58,6 +64,7 @@
         jq
         less
         nix
+        netcat-openbsd
         openssh
         procps
         python3
@@ -87,6 +94,21 @@
       },
     }
   '';
+  nix = {
+    enable = true;
+    package = pkgs.nix;
+    settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      max-jobs = 0;
+      builders-use-substitutes = true;
+      builders = "@${config.xdg.configHome}/nix/machines";
+    };
+    registry.nixpkgs.flake = inputs.nixpkgs;
+    nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
+  };
   systemd.user.startServices = false;
   news.display = "silent";
   programs = {

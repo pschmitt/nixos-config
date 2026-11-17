@@ -12,12 +12,25 @@ let
         }
         .${hostname};
     in
-    assert c.home.homeDirectory == "/home/nix";
-    assert c.home.username == "nix";
+    assert c.home.homeDirectory == "/home/pschmitt";
+    assert c.home.username == "pschmitt";
+    assert builtins.all (p: builtins.elem p c.home.packages) [
+      home.pkgs.openstackclient-full
+      home.pkgs.kubectl
+      home.pkgs.kubernetes-helm
+      home.pkgs.opentofu
+      home.pkgs.ansible
+    ];
+    assert c.nix.settings.max-jobs == 0;
+    assert c.nix.settings.builders-use-substitutes;
+    assert c.nix.registry.nixpkgs.flake.outPath == inputs.nixpkgs.outPath;
+    assert c.nix.nixPath == [ "nixpkgs=${inputs.nixpkgs}" ];
+    assert builtins.any (p: (p.pname or "") == "iputils") c.home.packages;
+    assert c.home.sessionVariables.NIX_CONF_DIR == "/home/pschmitt/.config/nix";
     assert c.termux.enable == false;
     assert c.termux.packages == [ ];
     assert c.programs.zsh.enable;
-    assert c.programs.zsh.dotDir == "/home/nix/.config/zsh-nix";
+    assert c.programs.zsh.dotDir == "/home/pschmitt/.config/zsh-nix";
     assert c.home.file.".zshenv".enable;
     assert c.dotfiles.zsh.nixShell.default;
     assert c.programs.neovim.enable;
