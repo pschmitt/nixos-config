@@ -25,9 +25,14 @@ let
     inherit name;
     path = if value.text != null then pkgs.writeText "guest-etc-file" value.text else value.source;
   }) cfg.environment.etc;
+  systemTools = pkgs.runCommand "nixpp-system-tools" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
+    mkdir -p "$out/bin"
+    makeWrapper ${pkgs.python3}/bin/python3 "$out/bin/nixpp" \
+      --add-flags "-I ${./prepare-session.py}"
+  '';
   systemPath = pkgs.buildEnv {
     name = "termuxpp-system-path";
-    paths = cfg.environment.systemPackages;
+    paths = cfg.environment.systemPackages ++ [ systemTools ];
     pathsToLink = [
       "/bin"
       "/share"
@@ -48,6 +53,11 @@ let
     runtime = "droid-nix";
     activationSupported = false;
     systemPath = toString systemPath;
+    session = {
+      shell = "${pkgs.bashInteractive}/bin/bash";
+      certificate = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+      terminfo = "${pkgs.ncurses}/share/terminfo";
+    };
     homeManager =
       if cfg.home-manager.configuration == null then
         null
