@@ -47,6 +47,7 @@ in
           credentials_file = secrets."teams-live/credentials".path;
           troll_user = secretValue "teams-live/troll-user";
           edit_own_url_messages = true;
+          rich_messages = true;
         };
 
         browser_daemon = {
