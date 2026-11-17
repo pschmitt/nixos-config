@@ -21,6 +21,14 @@ let
       home.pkgs.opentofu
       home.pkgs.ansible
     ];
+    assert c.fullNix.rworker.enable;
+    assert c.fullNix.rworker.controller == null;
+    assert c.fullNix.rworker.system == "aarch64-linux";
+    assert c.programs.eza.package.name == "eza-full-nix";
+    assert builtins.elem c.programs.eza.package c.home.packages;
+    assert !(builtins.elem home.pkgs.eza c.home.packages);
+    assert builtins.elem c.programs.eza.package c.home.packages;
+    assert !(builtins.elem home.pkgs.eza c.home.packages);
     assert c.nix.settings.max-jobs == 0;
     assert c.nix.settings.builders-use-substitutes;
     assert c.nix.registry.nixpkgs.flake.outPath == inputs.nixpkgs.outPath;

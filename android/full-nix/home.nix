@@ -9,11 +9,12 @@
 {
   imports = [
     ./operations.nix
+    ./eza.nix
+    ./rworker.nix
     ../../modules/dotfiles.nix
     ../../modules/domains.nix
     ../../home-manager/termux-options.nix
     ../../home-manager/cli/bat.nix
-    ../../home-manager/cli/eza.nix
     ../../home-manager/cli/fd.nix
     ../../home-manager/cli/ripgrep.nix
     ../../home-manager/cli/nvim
@@ -31,6 +32,8 @@
     ../../home-manager/cli/zsh/config/runtime.nix
     ../../home-manager/cli/zsh/plugins
   ];
+
+  fullNix.rworker.enable = true;
 
   home = {
     username = "pschmitt";

@@ -36,6 +36,8 @@ nix eval --impure --option restrict-eval true \
 nix develop --command nixfmt --check android/full-nix/*.nix
 nix develop --command statix check android/full-nix
 nix develop --command deadnix android/full-nix
+nix shell --inputs-from . 'nixpkgs#shellcheck' -c shellcheck android/full-nix/scripts/*.sh
+bash android/full-nix/scripts/rworker-nix-test.sh
 ```
 
 Restricted evaluation keeps the upstream editor module from scanning the build
@@ -67,6 +69,56 @@ keys privately before activating this profile. Do not embed worker addresses or
 host keys in the public configuration. An ephemeral worker entry must be replaced
 or removed when that worker expires. The builder must support `aarch64-linux`,
 natively or through configured emulation.
+
+### Disposable workers (opt-in per command)
+
+`rworker-nix build`, `rworker-nix shell` and `rworker-nix develop` lease a worker
+for that command and delete it afterwards, including command failure and ordinary
+termination signals. They do not rewrite the normal machines file. A lost network
+connection or an uncatchable kill can prevent cleanup; the worker TTL remains the
+backstop, and `rworker-nix --down NAME` retries explicit cleanup.
+
+Configure a trusted controller SSH alias privately in
+`~/.config/rworker-nix/local.conf` (`controller=rworker-controller`), or pass it
+in the environment. The managed `config` supplies defaults; `local.conf`
+overrides them and is never sourced as shell code. For example:
+
+```sh
+RWORKER_NIX_CONTROLLER=rworker-controller rworker-nix --ttl 1h build '.#package'
+RWORKER_NIX_CONTROLLER=rworker-controller rworker-nix shell nixpkgs#hello -c hello
+```
+
+The public key defaults to `~/.ssh/id_ed25519.pub`; override it with
+`RWORKER_NIX_KEY`. The matching private key and pinned controller host key must
+already be available. No cloud credentials are needed on the phone. The optional
+Home Manager module exposes `fullNix.rworker` defaults; environment variables
+supply private runtime values without putting them in the Nix store.
+
+The phone-packaged controller client disables SSH multiplexing because Android's
+translated app-private control-socket paths exceed Unix socket limits.
+
+The command checks the worker's pinned host key and refuses an x86 worker unless
+its image advertises `aarch64-linux` and enables the corresponding qemu binfmt
+handler. Local compilation remains disabled. Nix evaluation still runs on the
+phone; this helper offloads builds, not evaluation. To offload expensive profile
+evaluations, sync the source and run Nix on a worker as described above.
+
+### eza signal-stack compatibility
+
+The guest's `eza` is wrapped with a small, eza-specific interposer that increases
+alternate signal stacks to 128 KiB in every thread. The runtime's SIGSYS path
+translation exceeds Rust's default alternate-stack budget: enlarging only the
+main thread fixes `eza -d`, but listings still crash; enlarging worker-thread
+stacks fixes the tested long, icon and tree listings. The shim retains at most
+one mapping per participating thread until process exit. It is not installed as
+a global preload and does not change the launcher or other Rust/Go programs.
+An independently fetched `nix shell nixpkgs#eza` is unwrapped and can still crash.
+
+Run `python3 -I android/full-nix/scripts/check-eza.py` inside the activated guest
+for 60 real listings covering threads, long/icon/tree/Git output and symlinks.
+It creates and removes its own fixture. Linux builds and profile assertions do
+not replace this Android acceptance check. Keep future runtime-specific package
+fixes here, separate from the native Android/Bionic package profiles.
 
 ## Included
 
