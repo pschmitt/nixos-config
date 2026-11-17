@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location(
@@ -43,6 +44,47 @@ class AudioBridgeTests(unittest.TestCase):
         self.assertTrue(capture["node.dont-fallback"])
         self.assertFalse(playback["node.autoconnect"])
         self.assertTrue(playback["meeting-mic.feed"])
+
+    def test_local_branch_is_monitor_only_and_follows_the_default_output(self):
+        command = bridge.local_command()
+        self.assertEqual(command[command.index("--capture") + 1], "obs_broadcast")
+        capture = json.loads(command[command.index("--capture-props") + 1])
+        playback = json.loads(command[command.index("--playback-props") + 1])
+        self.assertTrue(capture["stream.capture.sink"])
+        self.assertTrue(capture["node.dont-fallback"])
+        self.assertTrue(capture["node.dont-reconnect"])
+        # No explicit target and no pinning: the session manager follows the
+        # default output (speakers, headphones, Bluetooth) and its changes.
+        self.assertNotIn("--playback", command)
+        self.assertNotIn("target.object", playback)
+        self.assertNotIn("node.dont-fallback", playback)
+        self.assertNotIn("node.dont-reconnect", playback)
+        self.assertNotIn("node.autoconnect", playback)
+        self.assertNotIn("meeting-mic.feed", playback)
+        self.assertNotEqual(playback["node.name"], "obs_broadcast_feed")
+        self.assertNotIn("meeting_source", " ".join(command))
+
+    def test_output_loop_detection(self):
+        sinks = json.dumps([{"index": 7, "name": "obs_broadcast"}, {"index": 9, "name": "speakers"}])
+
+        def streams(sink):
+            return json.dumps([
+                {"sink": 7, "properties": {"node.name": "other"}},
+                {"sink": sink, "properties": {"node.name": "obs_broadcast_local"}},
+            ])
+
+        cases = (
+            ("speakers", streams(9), False),
+            ("bt_headset", streams(9), False),
+            ("obs_broadcast", streams(9), True),
+            ("speakers", streams(7), True),
+        )
+        for default, inputs, expected in cases:
+            with patch.object(bridge, "run", side_effect=[default, sinks, inputs]):
+                self.assertEqual(bridge.local_output_loops(), expected, (default, inputs))
+        with patch.object(bridge, "run", side_effect=["obs_broadcast"]) as run:
+            self.assertTrue(bridge.local_output_loops())
+            self.assertEqual(run.call_count, 1)
 
     def test_cleanup_only_unloads_the_owned_module(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -83,11 +125,13 @@ class AudioBridgeTests(unittest.TestCase):
             {"fresh": True, "enabled": False, "routing": False, "error": ""}
         ]), patch.object(
             bridge.subprocess, "Popen"
-        ) as popen, patch.object(bridge.time, "sleep"):
+        ) as popen, patch.object(bridge.time, "sleep"), \
+             patch.object(bridge, "local_output_loops", return_value=False):
             popen.return_value.poll.return_value = None
             with self.assertRaisesRegex(RuntimeError, "route closed"):
                 bridge.serve(Path(directory))
-            popen.return_value.terminate.assert_called_once()
+            self.assertEqual(popen.call_count, 2)
+            self.assertEqual(popen.return_value.terminate.call_count, 2)
             run.assert_called_with("pactl", "unload-module", "42")
             self.assertFalse((Path(directory) / "requested").exists())
 
@@ -103,12 +147,63 @@ class AudioBridgeTests(unittest.TestCase):
             {"fresh": True, "enabled": False, "routing": False, "error": ""}
         ]), patch.object(
             bridge.subprocess, "Popen"
-        ) as popen, patch.object(bridge.time, "sleep"):
+        ) as popen, patch.object(bridge.time, "sleep"), \
+             patch.object(bridge, "local_output_loops", return_value=False):
             popen.return_value.poll.return_value = None
             with self.assertRaisesRegex(RuntimeError, "route closed"):
                 bridge.serve(Path(directory))
-            popen.assert_called_once()
-            popen.return_value.terminate.assert_called_once()
+            commands = [call.args[0] for call in popen.call_args_list]
+            self.assertEqual(commands, [bridge.bridge_command(), bridge.local_command()])
+            self.assertEqual(popen.return_value.terminate.call_count, 2)
+
+    def serve_running(self, processes, loops, extra_states=()):
+        ready = {"fresh": True, "enabled": True, "routing": True, "error": ""}
+        off = dict(ready, enabled=False, routing=False)
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        with patch.object(bridge, "run", side_effect=[
+            '[{"name":"meeting_source"}]', '[]', '42', ''
+        ]) as run, patch.object(bridge, "read_status", side_effect=[ready] * 6 + [off]), \
+             patch.object(bridge.subprocess, "Popen", side_effect=processes) as popen, \
+             patch.object(bridge.time, "sleep"), \
+             patch.object(bridge, "GUARD_INTERVAL", 0), \
+             patch.object(bridge, "local_output_loops", side_effect=loops) as guard:
+            with self.assertRaisesRegex(RuntimeError, "route closed"):
+                bridge.serve(Path(directory.name))
+        return run, popen, guard
+
+    def test_default_output_becoming_the_obs_sink_closes_both_branches(self):
+        processes = [unittest.mock.Mock(), unittest.mock.Mock()]
+        for process in processes:
+            process.poll.return_value = None
+        run, _, guard = self.serve_running(processes, [False, False, True])
+        self.assertEqual(guard.call_count, 3)
+        for process in processes:
+            process.terminate.assert_called_once()
+        run.assert_called_with("pactl", "unload-module", "42")
+
+    def test_loop_at_start_launches_nothing(self):
+        run, popen, _ = self.serve_running([], [True])
+        popen.assert_not_called()
+        run.assert_called_with("pactl", "unload-module", "42")
+
+    def test_either_branch_exiting_closes_both(self):
+        for dead in (0, 1):
+            processes = [unittest.mock.Mock(), unittest.mock.Mock()]
+            for process in processes:
+                process.poll.return_value = None
+            processes[dead].poll.side_effect = [None, 1]
+            self.serve_running(processes, [False] * 5)
+            for process in processes:
+                process.terminate.assert_called_once()
+
+    def test_failed_local_start_stops_the_meeting_branch(self):
+        meeting = unittest.mock.Mock()
+        with patch.object(bridge, "local_output_loops", return_value=False), \
+             patch.object(bridge.subprocess, "Popen", side_effect=[meeting, OSError("boom")]):
+            with self.assertRaises(OSError):
+                bridge.start_bridges()
+        meeting.terminate.assert_called_once()
 
 
     def run_on(self, directory, start_returncode):

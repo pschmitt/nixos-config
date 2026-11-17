@@ -1,7 +1,9 @@
 # OBS broadcast audio
 
 An optional route from OBS's ARD, ZDF, and Tagesschau program scenes into
-**Meeting Microphone**, alongside the denoised microphone and soundboard.
+**Meeting Microphone**, alongside the denoised microphone and soundboard, and
+to your own ears: while sharing is on, the broadcast also plays on the current
+default audio output (speakers, headphones or a Bluetooth headset).
 It is off by default and does not start automatically at login.
 
 ## OBS script registration
@@ -84,13 +86,30 @@ The route is silent while OBS reports an in-progress transition, rather than
 mixing outgoing and incoming broadcasts.
 
 The controller creates a private `OBS Broadcast` null sink, and OBS sends its
-monitoring audio there. A PipeWire loopback captures only that sink and is tagged
-for the existing WirePlumber Meeting Microphone mixer. It never falls back to
-capturing desktop audio. Local speaker playback is not added; existing OBS
-streaming and recording audio output is preserved.
+monitoring audio there. Two PipeWire loopbacks capture only that sink (they never
+fall back to capturing desktop audio) and start and stop together:
 
-Turning sharing off stops the bridge and removes its sink. Losing the OBS script
-heartbeat closes the bridge within two seconds; a PipeWire bridge failure stops
+- the **meeting branch**, tagged for the existing WirePlumber Meeting Microphone
+  mixer;
+- the **local branch**, which plays on your normal default output. It has no
+  device name, ID or target in the configuration: the session manager keeps it
+  on whatever the default output currently is and moves it when that changes
+  (headset connects or disconnects, speakers selected). It is never tagged for
+  Meeting Microphone, so what you hear is not mixed into the meeting.
+  The stream runs at unity gain; the output device's volume is not touched.
+
+Only loops are refused: if the default output is the `OBS Broadcast` sink (or the
+local stream lands on it), both branches stop within half a second and the status
+carries the reason. Speakers are allowed. **Acoustic echo:** with speakers,
+the broadcast is picked up by your microphone and sent to the meeting a second
+time, delayed. Use headphones or keep the volume low during a call; sharing is
+not disabled automatically.
+
+Existing OBS streaming and recording audio output is preserved.
+
+Turning sharing off stops both branches and removes the sink. If either branch
+exits, both are closed. Leaving an eligible program scene stops both branches.
+Losing the OBS script heartbeat closes the bridge within two seconds; a PipeWire bridge failure stops
 the service rather than restarting and silently re-enabling it. A profile or
 scene-collection change disarms sharing. OBS shutdown or script unloading also
 disarms it. Turn it on explicitly again afterwards.
@@ -157,7 +176,11 @@ The Lua test mocks OBS with reference counts, synchronous reentrant callbacks
 inside every monitoring and device change, a spill detector (anything audible
 on the sink that is not the permitted program source fails the run), preexisting
 monitoring modes, an unrelated conflict, source rename and recreation, failure,
-restore-retry and unload. Tests mock OBS and audio commands; they do not
-transmit audio. End-to-end audio, OBS Lua bindings, transition timing, and
-meeting-app processing require a live OBS session and an explicitly enabled
+restore-retry and unload. The Python tests cover both branches' commands (no
+target or tag on the local one), their joint lifecycle and loop detection. On an
+isolated worker, `test_obs_broadcast_audio_graph.py` builds a private PipeWire
+session and checks the real links: meeting feed to `meeting_source` only, local
+branch to the default output and following it, no capture fallback. Tests mock
+OBS and audio commands; they do not transmit audio. End-to-end audio, OBS Lua bindings, transition
+timing, and meeting-app processing require a live OBS session and an explicitly enabled
 route.

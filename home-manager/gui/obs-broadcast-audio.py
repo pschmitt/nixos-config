@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Opt-in, watchdog-protected OBS monitoring bridge into Meeting Microphone."""
+"""Opt-in, watchdog-protected OBS broadcast bridge: Meeting Microphone plus local output."""
 
 import argparse
 import contextlib
@@ -12,6 +12,7 @@ import sys
 import time
 
 UNIT = "obs-broadcast-audio.service"
+GUARD_INTERVAL = 0.5
 
 
 def run(*args):
@@ -42,6 +43,11 @@ def stop_process(process):
             process.wait()
 
 
+def stop_processes(processes):
+    for process in processes:
+        stop_process(process)
+
+
 def bridge_command():
     return [
         "pw-loopback", "--name", "obs-broadcast-audio", "--channels", "2",
@@ -57,6 +63,54 @@ def bridge_command():
             "meeting-mic.feed": True,
         }),
     ]
+
+
+def local_command():
+    """Monitor-only branch: the OBS sink to whatever the desktop's output is.
+
+    No target is set, so the session manager keeps the stream on the current
+    default output (speakers, headphones, Bluetooth) and moves it when that
+    changes. Never tagged for Meeting Microphone.
+    """
+    return [
+        "pw-loopback", "--name", "obs-broadcast-local", "--channels", "2",
+        "--capture", "obs_broadcast",
+        "--capture-props", json.dumps({
+            "stream.capture.sink": True,
+            "node.dont-fallback": True,
+            "node.dont-reconnect": True,
+        }),
+        "--playback-props", json.dumps({"node.name": "obs_broadcast_local"}),
+    ]
+
+
+def local_output_loops():
+    """True if the local branch would play back into the OBS sink it captures."""
+    if run("pactl", "get-default-sink") == "obs_broadcast":
+        return True
+    sinks = {
+        str(sink["index"]): sink["name"]
+        for sink in json.loads(run("pactl", "-f", "json", "list", "sinks"))
+    }
+    return any(
+        stream.get("properties", {}).get("node.name") == "obs_broadcast_local"
+        and sinks.get(str(stream.get("sink"))) == "obs_broadcast"
+        for stream in json.loads(run("pactl", "-f", "json", "list", "sink-inputs"))
+    )
+
+
+def start_bridges():
+    """Start the meeting and the local branch together, or neither."""
+    if local_output_loops():
+        raise RuntimeError("The default audio output is the OBS Broadcast sink; audio route closed.")
+    started = []
+    try:
+        for command in (bridge_command(), local_command()):
+            started.append(subprocess.Popen(command, stdout=subprocess.DEVNULL))
+    except BaseException:
+        stop_processes(started)
+        raise
+    return started
 
 
 def cleanup(directory):
@@ -76,7 +130,7 @@ def serve(directory):
     request = directory / "requested"
     request.unlink(missing_ok=True)
     module = None
-    process = None
+    processes = []
     stopping = False
 
     def stop(_signum, _frame):
@@ -100,6 +154,7 @@ def serve(directory):
         (directory / "module").write_text(module)
         request.touch(mode=0o600)
         deadline = time.monotonic() + 3
+        guarded = 0.0
         acknowledged = False
         while not stopping:
             status = read_status(directory)
@@ -112,17 +167,24 @@ def serve(directory):
             if not ready and (acknowledged or time.monotonic() >= deadline):
                 raise RuntimeError("OBS script is unavailable; audio route closed.")
             routing = ready and status["routing"]
-            if process is not None and process.poll() is not None:
+            if any(process.poll() is not None for process in processes):
                 raise RuntimeError("PipeWire bridge exited; audio route closed.")
-            if routing and process is None:
-                process = subprocess.Popen(bridge_command(), stdout=subprocess.DEVNULL)
-            elif not routing and process is not None:
-                stop_process(process)
-                process = None
+            if routing and not processes:
+                processes = start_bridges()
+                guarded = time.monotonic()
+            elif not routing and processes:
+                stop_processes(processes)
+                processes = []
+            elif processes and time.monotonic() - guarded >= GUARD_INTERVAL:
+                guarded = time.monotonic()
+                if local_output_loops():
+                    raise RuntimeError(
+                        "The default audio output became the OBS Broadcast sink; audio route closed."
+                    )
             time.sleep(0.1)
     finally:
         request.unlink(missing_ok=True)
-        stop_process(process)
+        stop_processes(processes)
         if module:
             deadline = time.monotonic() + 0.5
             while time.monotonic() < deadline:
@@ -189,7 +251,7 @@ def main():
         status = read_status(directory)
         enabled = active and status["fresh"] and status["enabled"]
         print("OBS broadcast audio: " + (
-            "on, routing stream audio" if enabled and status["routing"] else
+            "on, routing stream audio to the meeting and the default output" if enabled and status["routing"] else
             "on, waiting for an eligible program scene" if enabled else "off"
         ))
         if active and not status["fresh"]:
