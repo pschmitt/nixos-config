@@ -33,6 +33,8 @@ let
   '';
 in
 {
+  imports = [ ./obs-broadcast-audio.nix ];
+
   home.packages = [
     inputs.obs-cli.packages.${pkgs.stdenv.hostPlatform.system}.obs-cli
     obsAutostart
