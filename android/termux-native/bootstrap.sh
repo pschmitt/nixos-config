@@ -338,6 +338,42 @@ set_generation_pin() (
   fi
 )
 
+retain_live_generations() {
+  local root=$1 record pid start generation extra process_stat
+  local -a process_fields
+
+  for record in "$root"/sessions/[0-9]*
+  do
+    [[ -f "$record" && ! -L "$record" ]] || continue
+    pid=${record##*/}
+    [[ "$pid" =~ ^[1-9][0-9]*$ ]] || continue
+    if ! read -r start generation extra < "$record" ||
+      [[ ! "$start" =~ ^[0-9]+$ || ! "$generation" =~ ^[0-9a-f]{64}$ || -n "$extra" ]]
+    then
+      printf 'Invalid live-shell record; refusing garbage collection: %s\n' "$record" >&2
+      return 1
+    fi
+    if [[ ! -d "/proc/$pid" ]]
+    then
+      [[ "$dry_run" == 1 ]] || rm -f -- "$record" || return
+      continue
+    fi
+    if ! IFS= read -r process_stat < "/proc/$pid/stat"
+    then
+      printf 'Cannot inspect live shell %s; refusing garbage collection.\n' "$pid" >&2
+      return 1
+    fi
+    process_stat=${process_stat##*) }
+    read -ra process_fields <<< "$process_stat"
+    if [[ "${process_fields[19]:-}" != "$start" ]]
+    then
+      [[ "$dry_run" == 1 ]] || rm -f -- "$record" || return
+      continue
+    fi
+    retained[$generation]=1
+  done
+}
+
 gc_generations() (
   local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.json"
   local legacy_index="$1/generation-index.tsv"
@@ -501,6 +537,7 @@ gc_generations() (
     fi
   done < "$ordered_index"
   retained[$current_id]=1
+  retain_live_generations "$root" || return
   local pins="$root/pinned-generations.json"
   if [[ -s "$pins" ]]
   then

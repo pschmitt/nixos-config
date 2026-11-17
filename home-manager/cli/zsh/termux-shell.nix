@@ -48,39 +48,6 @@ let
           ${hashdirBody}
         fi
       '';
-  yadmClassBody = ''
-    if (( $+commands[yadm] ))
-    then
-      () {
-        local class classes changed
-        classes="$(yadm config --get-all local.class)"
-
-        for class in termux impure
-        do
-          if ! grep -qx "$class" <<< "$classes"
-          then
-            yadm config --add local.class "$class"
-            changed=1
-          fi
-        done
-
-        if [[ -n "$changed" ]]
-        then
-          yadm alt
-        fi
-      }
-    fi
-  '';
-  yadmClassInit =
-    if termuxMode then
-      yadmClassBody
-    else
-      ''
-        if is_termux
-        then
-          ${yadmClassBody}
-        fi
-      '';
 in
 {
   programs.vivid.activeTheme = lib.mkForce "catppuccin-mocha";
@@ -138,7 +105,6 @@ in
     initContent = lib.mkMerge [
       (lib.mkOrder 600 termuxFunctionInit)
       (lib.mkOrder 615 hashdirInit)
-      (lib.mkOrder 620 yadmClassInit)
     ];
   };
 }

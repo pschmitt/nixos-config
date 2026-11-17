@@ -31,6 +31,22 @@ native_shell_check() {
       print -u2 -- 'The managed Zsh history file is not under the XDG state directory'
       return 1
     fi
+    local path_variable path_value
+    for path_variable in XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME XDG_STATE_HOME \
+      ZSH_CACHE_DIR GNUPGHOME
+    do
+      path_value="${(P)path_variable}"
+      if [[ "$path_value" != "$HOME"/* ]]
+      then
+        print -u2 -- "$path_variable is not under the active runtime home"
+        return 1
+      fi
+    done
+    if [[ "$ZSH_COMPDUMP" != "$ZSH_CACHE_DIR/"* ]]
+    then
+      print -u2 -- 'The Zsh completion dump is not under the active Zsh cache directory'
+      return 1
+    fi
     if [[ "${TERMUX_NATIVE_USER_PLUGINS_READY:-}" != 1 ]]
     then
       print -u2 -- 'The yadm Termux plugin configuration did not finish loading'

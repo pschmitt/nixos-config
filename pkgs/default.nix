@@ -76,7 +76,7 @@ in
   };
 
   bichon-mcp = pkgs.callPackage ./bichon-mcp { };
-  tasker-mcp = pkgs.callPackage ./tasker-mcp { };
+  tasker-mcp = inputs.tasker-mcp.packages.${pkgs.stdenv.hostPlatform.system}.default;
   browser-daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   desktui = pkgs.callPackage ./desktui { };
@@ -120,6 +120,7 @@ in
   syncthingtui = pkgs.callPackage ./syncthingtui { };
   teams-live = inputs.teams-live.packages.${pkgs.stdenv.hostPlatform.system}.default;
   termux-apt-prefix-builder = pkgs.callPackage ./termux/apt-prefix-builder { };
+  termuxpp-adb-shell = pkgs.callPackage ./termuxpp-adb-shell { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   todoist-cli = pkgs.callPackage ./todoist-cli { };

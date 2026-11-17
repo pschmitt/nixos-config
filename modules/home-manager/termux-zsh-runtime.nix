@@ -20,6 +20,7 @@
     };
 
     envExtra = lib.mkAfter ''
+      export ZSH_CACHE_DIR=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
       export LC_ALL="''${LC_ALL:-en_US.UTF-8}"
       unset VIMINIT
 
@@ -30,14 +31,14 @@
 
       fpath=("$ZDOTDIR/completions" $fpath)
 
-      if [[ -z "''${NETWORK_LOCATION:-}" && -r ${lib.escapeShellArg "${config.xdg.cacheHome}/network-location.txt"} ]]
+      if [[ -z "''${NETWORK_LOCATION:-}" && -r "$XDG_CACHE_HOME/network-location.txt" ]]
       then
-        NETWORK_LOCATION="$(<${lib.escapeShellArg "${config.xdg.cacheHome}/network-location.txt"})"
+        NETWORK_LOCATION="$(<"$XDG_CACHE_HOME/network-location.txt")"
       fi
 
       export XDG_DATA_DIRS="$PREFIX/share:''${XDG_DATA_DIRS:-/usr/share}"
-      [[ -d ${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"} ]] || mkdir -p -- ${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
-      export ZSH_COMPDUMP=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh/zcompdump-termux"}-''${TERMUX_GENERATION:t}
+      [[ -d "$ZSH_CACHE_DIR" ]] || mkdir -p -- "$ZSH_CACHE_DIR"
+      export ZSH_COMPDUMP="$ZSH_CACHE_DIR/zcompdump-termux-''${TERMUX_GENERATION:t}"
 
       # Match the regular yadm .zshenv while keeping private overrides at runtime.
       if [[ -r "$XDG_CONFIG_HOME/zsh/zshenv.private" ]]
