@@ -27,12 +27,40 @@ previous content next to it (`<collection>.json.obs-register.bak`).
 `obs-register-script --check` reports without writing (exit 3 if missing). Its
 output never contains scene or script settings.
 
-## Before enabling
+## Monitoring policy
 
-Disable existing audio monitoring before enabling this feature. It temporarily
-owns OBS's global monitoring device and refuses to start if any source is already
-monitored. It restores the previous device and source monitoring modes when
-sharing stops. Do not change monitoring settings manually while sharing.
+Existing monitoring on the broadcast sources is fine. While sharing is on, the
+script temporarily **owns every allowlisted broadcast source** (`ARD Live`,
+`ZDF Live`, `Browser`, `Media`; media or browser sources, in any scene). Before
+it touches OBS's global monitoring device it remembers each source's monitoring
+mode (and holds a reference to the source), then silences all of them. Only the
+visible, allowlisted source on the current program scene is switched to
+*Monitor and Output*; every other owned source stays silent, so a source that was
+already monitored (for example a saved `ZDF Live` in *Monitor and Output*) can
+never leak into the meeting. Renamed or recreated sources are adopted again on
+the next pass.
+
+Monitoring on any **unrelated** source (microphone, desktop capture, a VLC
+source, ...) is not touched and not allowed: enabling is refused before the
+device or any source changes, and the status line says which source it was. If
+an unrelated source starts monitoring while sharing runs, sharing stops. Turn
+that monitoring off and enable sharing again.
+
+When sharing stops (off, error, profile or scene-collection change, OBS exit,
+script unload) the order is fixed so nothing is audible on the sink:
+silence all owned sources, restore the original monitoring device, then restore
+each source's original monitoring mode and drop the references. If the device
+cannot be restored, the sources stay silent and the next pass retries. If OBS
+crashes while sharing, the saved modes are lost: the sources stay silent
+(modes `None`) and the monitoring device may still be `OBS Broadcast`; restore
+them in OBS's audio settings.
+
+OBS calls the frontend callback synchronously from inside its own API (every
+scene, monitoring or device change), so the 100 ms tick never nests: a nested
+call only requests one more pass, and a lifecycle event or unload during a pass
+stops it at the next checkpoint. A failure disarms sharing once (the controller
+stops, the status line carries the reason for two seconds) and is logged once
+with a traceback, not on every tick.
 
 ## Controls
 
@@ -121,6 +149,11 @@ mkdir -p "$XDG_RUNTIME_DIR/obs-broadcast-audio"
 luajit home-manager/gui/test_obs_broadcast_audio.lua home-manager/gui/obs-broadcast-audio.lua
 ```
 
-Tests mock OBS and audio commands; they do not transmit audio. End-to-end audio,
-OBS Lua bindings, transition timing, and meeting-app processing require a live
-OBS session and an explicitly enabled route.
+The Lua test mocks OBS with reference counts, synchronous reentrant callbacks
+inside every monitoring and device change, a spill detector (anything audible
+on the sink that is not the permitted program source fails the run), preexisting
+monitoring modes, an unrelated conflict, source rename and recreation, failure,
+restore-retry and unload. Tests mock OBS and audio commands; they do not
+transmit audio. End-to-end audio, OBS Lua bindings, transition timing, and
+meeting-app processing require a live OBS session and an explicitly enabled
+route.
