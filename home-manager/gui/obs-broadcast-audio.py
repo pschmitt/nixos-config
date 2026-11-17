@@ -162,7 +162,11 @@ def main():
     elif action == "on":
         if not active:
             (directory / "status").unlink(missing_ok=True)
-            run("systemctl", "--user", "reset-failed", UNIT)
+            # Best effort: systemd reports "Unit not loaded" (exit 1) for a service
+            # that never ran, which is not a reason to abort the start.
+            subprocess.run(
+                ["systemctl", "--user", "reset-failed", UNIT], check=False, capture_output=True
+            )
             run("systemctl", "--user", "start", UNIT)
         deadline = time.monotonic() + 4
         while time.monotonic() < deadline:

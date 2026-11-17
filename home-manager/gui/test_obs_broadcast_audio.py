@@ -1,6 +1,8 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -107,6 +109,43 @@ class AudioBridgeTests(unittest.TestCase):
                 bridge.serve(Path(directory))
             popen.assert_called_once()
             popen.return_value.terminate.assert_called_once()
+
+
+    def run_on(self, directory, start_returncode):
+        calls = []
+
+        def fake_run(args, check=False, **kwargs):
+            args = list(args)
+            calls.append(args)
+            returncode = {"is-active": 3, "reset-failed": 1, "start": start_returncode}[args[2]]
+            if check and returncode:
+                raise subprocess.CalledProcessError(returncode, args)
+            return subprocess.CompletedProcess(args, returncode, stdout="", stderr="")
+
+        status = {"fresh": True, "enabled": True, "routing": False, "error": ""}
+        (directory / "requested").write_text("")
+        with patch.object(bridge.subprocess, "run", side_effect=fake_run), \
+             patch.object(bridge, "read_status", return_value=status), \
+             patch.object(sys, "argv", ["obs-broadcast-audio", "on"]), \
+             patch.dict(bridge.os.environ, {"XDG_RUNTIME_DIR": str(directory.parent)}):
+            bridge.main()
+        return calls
+
+    def test_on_ignores_reset_failed_for_never_started_unit(self):
+        with tempfile.TemporaryDirectory() as root:
+            directory = Path(root) / "obs-broadcast-audio"
+            directory.mkdir()
+            calls = self.run_on(directory, start_returncode=0)
+        self.assertEqual(
+            [call[2] for call in calls], ["is-active", "reset-failed", "start"]
+        )
+
+    def test_on_still_fails_when_start_fails(self):
+        with tempfile.TemporaryDirectory() as root:
+            directory = Path(root) / "obs-broadcast-audio"
+            directory.mkdir()
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.run_on(directory, start_returncode=1)
 
 
 if __name__ == "__main__":
