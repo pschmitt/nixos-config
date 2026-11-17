@@ -128,6 +128,12 @@ in
     ./termux.nix
   ];
 
+  options.programs.neovim.nightly.enable = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = "Install the additional nvim-nightly command alongside configured Neovim.";
+  };
+
   config = lib.mkIf (!termuxMode) {
     programs.lazyvim = {
       enable = true;
@@ -197,7 +203,7 @@ in
     xdg.configFile = import ./config-files.nix { inherit appName lib; };
 
     # Provide the nvim-nightly command.
-    home.packages = [
+    home.packages = lib.optionals config.programs.neovim.nightly.enable [
       (pkgs.runCommand "nvim-nightly" { } ''
         mkdir -p $out/bin
         ln -s ${nvimNightlyWrapped}/bin/nvim $out/bin/nvim-nightly

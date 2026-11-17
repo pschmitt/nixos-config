@@ -14,11 +14,15 @@
     ../../home-manager/cli/eza.nix
     ../../home-manager/cli/fd.nix
     ../../home-manager/cli/ripgrep.nix
+    ../../home-manager/cli/nvim
     ../../home-manager/cli/zsh/atuin.nix
     ../../home-manager/cli/zsh/direnv.nix
     ../../home-manager/cli/zsh/vivid.nix
     ../../home-manager/cli/zsh/zoxide.nix
-    ../../home-manager/cli/zsh/config/base.nix
+    ../../home-manager/cli/zsh/config/core.nix
+    ../../home-manager/cli/zsh/config/zhj.nix
+    ../../home-manager/cli/zsh/plugins/local-path.nix
+    ../../home-manager/cli/zsh/plugins/local-yadm.nix
     ../../home-manager/cli/zsh/config/portable.nix
     ../../home-manager/cli/zsh/config/source-me.nix
     ../../home-manager/cli/tmux
@@ -53,7 +57,6 @@
         gzip
         jq
         less
-        neovim
         nix
         openssh
         procps
@@ -72,11 +75,42 @@
     };
   };
 
+  # The guest has no yadm-owned root startup file to select the Nix dotDir.
+  home.file.".zshenv".enable = lib.mkOverride 40 true;
+  dotfiles.zsh.nixShell.default = true;
   xdg.enable = true;
+  xdg.configFile."nvim/lua/plugins/full-nix.lua".text = ''
+    return {
+      {
+        "neovim/nvim-lspconfig",
+        opts = { servers = { nil_ls = { enabled = false }, nixd = {} } },
+      },
+    }
+  '';
   systemd.user.startServices = false;
   news.display = "silent";
   programs = {
     home-manager.enable = true;
+    neovim = {
+      nightly.enable = false;
+      extraPackages = [
+        pkgs.nixd
+        pkgs.statix
+      ];
+      extraLuaConfig = ''
+        vim.schedule(function()
+          local osc52 = require("vim.ui.clipboard.osc52")
+          local function paste()
+            return { vim.fn.split(vim.fn.getreg(""), "\n"), vim.fn.getregtype("") }
+          end
+          vim.g.clipboard = {
+            name = "OSC 52",
+            copy = { ["+"] = osc52.copy("+"), ["*"] = osc52.copy("*") },
+            paste = { ["+"] = paste, ["*"] = paste },
+          }
+        end)
+      '';
+    };
     fzf = {
       enable = true;
       enableZshIntegration = true;
@@ -88,11 +122,17 @@
     tmux = {
       enable = lib.mkForce true;
       shell = "${pkgs.zsh}/bin/zsh";
+      extraConfig = lib.mkAfter ''
+        source-file -q "${config.xdg.configHome}/tmux/user.conf"
+      '';
     };
     zsh = {
       enable = true;
-      dotDir = "${config.xdg.configHome}/zsh";
-      envExtra = ''
+      dotDir = "${config.xdg.configHome}/zsh-nix";
+      envExtra = lib.mkBefore ''
+        export LC_ALL=C.UTF-8
+        export XDG_RUNTIME_DIR="/tmp/run"
+        mkdir -p -m 700 "$XDG_RUNTIME_DIR"
         export HOST=${lib.escapeShellArg hostname}
         export HOSTNAME=$HOST
       '';

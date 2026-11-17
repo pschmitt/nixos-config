@@ -44,11 +44,24 @@ architecture, an empty native APT dependency list and no systemd service startup
   vivid, bat, eza, fd and ripgrep.
 - Host identity and prompt color. A usable fallback prompt works without an
   existing yadm checkout or `p10k.zsh`.
-- Nix-managed Zsh and tmux, Git, Neovim, Python, rbw, SOPS, GnuPG, OpenSSH and
-  standard shell tools.
+- The shared Linux Zsh core, including local yadm plugin/function loading and
+  `zhj`. Generated startup files live in `~/.config/zsh-nix`, separate from the
+  writable yadm configuration in `~/.config/zsh`. A managed root `.zshenv` also
+  selects this configuration in nested shells and tmux.
+- The shared Linux Neovim/LazyVim configuration, its Nix-managed plugins,
+  Tree-sitter parsers, language servers and formatter dependencies.
+- Nix-managed tmux, Git, Python, rbw, SOPS, GnuPG, OpenSSH and standard shell
+  tools. tmux optionally sources `~/.config/tmux/user.conf` after managed defaults.
 - Home Manager generations, with no attempt to launch systemd user services.
 - Lightweight fzf integration rather than the desktop image/video preview
   closure. This is an intentional mobile-specific composition choice.
+- Stable configured Neovim without the optional second `nvim-nightly` executable.
+  Terminal clipboard copies use OSC 52; pastes use the editor's current register
+  rather than querying the Android clipboard. The guest selects `nixd` instead of
+  `nil` (which crashed during on-device language-server startup), and includes
+  `statix` for the shared Nix formatting configuration.
+- A short writable `/tmp/run` runtime directory: Android's translated app-private
+  paths can otherwise exceed Unix-domain socket limits.
 
 ## Activation boundary
 
@@ -77,8 +90,19 @@ This is the declarative shell/package baseline, not complete feature parity:
 - Android API/Tasker helpers, shared storage bindings and native command bridges
   need separate runtime integration; Linux binaries are not substitutes for the
   Bionic helpers.
-- The existing native yadm home, local plugins, prompt file, history, private
-  shell settings and editor configuration are not copied or overwritten. The
-  guest gets packaged Neovim, not the native bundle's LazyVim configuration.
-- Automatic startup, on-device Home Manager activation/rollback and full host
-  acceptance remain deployment gates. Keep the native shell usable throughout.
+- Existing dotfiles must be migrated device-locally; they are not build inputs.
+  Back up the guest home, copy tracked files from the native worktree without
+  overwriting Home Manager links, and clone the yadm repository with independent
+  objects and index. Set its worktree to `/home/nix`, initialize its index with
+  `git read-tree HEAD`, and preserve its upstream remote. Do not run the native
+  bootstrap, activate Android-specific alternatives, or enable automatic
+  alternative relinking over Nix-owned files.
+- Copy the actual prompt and private shell additions only inside app-private
+  storage. Reuse existing device credentials through runtime paths, never through
+  Nix sources or the store. Native recovery files remain untouched.
+- Put the original tmux configuration at `~/.config/tmux/user.conf`, retaining
+  sibling keybinding/helper files. The desktop Linux Neovim module supplies the
+  editor configuration; do not activate the native Android editor alternative.
+- Android integrations, runtime authentication, desktop-only commands in local
+  helpers, and full host acceptance need separate verification. Keep the native
+  shell usable throughout.
