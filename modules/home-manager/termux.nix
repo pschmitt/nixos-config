@@ -4,6 +4,7 @@
   inputs,
   lib,
   pkgs,
+  termuxHomeDirectory ? "/data/data/com.termux/files/home",
   ...
 }:
 let
@@ -57,6 +58,7 @@ in
     ../../home-manager/cli/zsh/tools/termux/udocker.nix
     ../../home-manager/cli/zsh/vivid.nix
     ../../home-manager/cli/zsh/zoxide.nix
+    ./termux-motd.nix
     ./termux-zsh-runtime.nix
     ../../home-manager/cli/zsh/config/base.nix
     ../../home-manager/cli/zsh/config/completions.nix
@@ -84,6 +86,8 @@ in
         ".config/zsh/termux/vivid.zsh"
         ".config/zsh/termux/prompt-color.zsh"
         ".config/nixpp/config.toml"
+        ".config/termuxpp/bin/termux-file-editor"
+        ".config/termuxpp/bin/termux-url-opener"
         ".config/termux/tasker/tudo"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
@@ -121,6 +125,12 @@ in
       ++ lib.optionals (config.termux.ssh.knownHostsSopsFile != null) [
         ".local/share/termux-native/ssh-known-hosts.sops.yaml"
       ]
+      ++ lib.optionals (config.termux.sshd.ports != [ ]) [
+        ".config/termux-native/sshd-ports.conf"
+      ]
+      ++ lib.optionals (config.termux.cache.credentialsSopsFile != null) [
+        ".local/share/termux-native/cache-credentials.sops.yaml"
+      ]
       ++ lib.optionals (config.termux.gpg.sopsFile != null) [
         ".local/share/termux-native/gpg.sops.yaml"
       ];
@@ -128,6 +138,12 @@ in
         Relative Home Manager output files copied into a Termux generation.
         This allowlist keeps unrelated home and private dotfiles out of bundles.
       '';
+    };
+
+    cache.credentialsSopsFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Encrypted read-only cache credentials decrypted with the Termux SSH identity at activation.";
     };
 
     ssh.hostKeysSopsFile = lib.mkOption {
@@ -140,6 +156,12 @@ in
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = "Encrypted OpenSSH known-hosts entries materialized on the Termux host.";
+    };
+
+    sshd.ports = lib.mkOption {
+      type = lib.types.listOf lib.types.port;
+      default = [ ];
+      description = "OpenSSH server ports managed in the Termux generation.";
     };
 
     gpg.sopsFile = lib.mkOption {
@@ -196,28 +218,59 @@ in
       xdg = {
         enable = true;
         configFile = {
-          "nixpp/config.toml".text = ''
-            [defaults]
-            substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
-            flake = "github:pschmitt/nixos-config#termux-native-${hostname}-bundle"
-            builders = [ "rofl-13", "rofl-15", "rofl-16" ]
-            cache_pins = { mp4 = "gh-main-packages.x86_64-linux.termux-native-mp4-bundle-0", p11 = "gh-main-packages.x86_64-linux.termux-native-p11-bundle-0", zf10 = "gh-main-packages.x86_64-linux.termux-native-zf10-bundle-0" }
-            public_keys = [
-              "rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0=",
-              "rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0=",
-              "rofl-14:XkEHSleW71wOnEnAcTZnYi/badnlAJAUxt6SIzbYsG8=",
-              "rofl-15:x68gyyrKadDfvJKdpPkRvmPckrYF6XqzlKaqs2xheVw=",
-              "rofl-16:DB8WQ415B8v3P9r1R8U4pO1iKrOAldbBHbSz+chryXI=",
-              "gh-actions:x+pfxw4yRpZbonnjaCR0nIm5eN1wOGAki0soDQyFjJQ=",
-            ]
-            aws_credentials_command = [
-              "rbw",
-              "get",
-              "--raw",
-              "--exact",
-              "nixpp Niks3 cache"
-            ]
-          '';
+          "nixpp/config.toml".source = (pkgs.formats.toml { }).generate "nixpp-config.toml" {
+            defaults = {
+              substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30";
+              flake = "github:pschmitt/nixos-config#termux-native-${hostname}-bundle";
+              builders = [
+                "rofl-13"
+                "rofl-15"
+                "rofl-16"
+              ];
+              # nixbot publishes every flake package, including the TermuxPP fork's
+              # `termuxpp-native-*-bundle` variants, under this pin prefix. The fork
+              # relocation rewrites `termux-native-` to `termuxpp-native-` in this
+              # file, so the pin names stay correct for both variants. GitHub CI
+              # (`gh-main-packages...-0`) publishes the stock bundles only.
+              cache_pins = {
+                mp4 = "nixbot-pschmitt-nixos-config-packages.x86_64-linux.termux-native-mp4-bundle";
+                p11 = "nixbot-pschmitt-nixos-config-packages.x86_64-linux.termux-native-p11-bundle";
+                zf10 = "nixbot-pschmitt-nixos-config-packages.x86_64-linux.termux-native-zf10-bundle";
+              };
+              public_keys = [
+                "rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0="
+                "rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0="
+                "rofl-14:XkEHSleW71wOnEnAcTZnYi/badnlAJAUxt6SIzbYsG8="
+                "rofl-15:x68gyyrKadDfvJKdpPkRvmPckrYF6XqzlKaqs2xheVw="
+                "rofl-16:DB8WQ415B8v3P9r1R8U4pO1iKrOAldbBHbSz+chryXI="
+                "gh-actions:x+pfxw4yRpZbonnjaCR0nIm5eN1wOGAki0soDQyFjJQ="
+              ];
+              # `nixpp upgrade --from-cache` installs this pin; it needs only the
+              # read-only [niks3] profile in ~/.aws/credentials, no vault and no SSH.
+              cache_profile = hostname;
+            }
+            // lib.optionalAttrs (config.termux.cache.credentialsSopsFile != null) {
+              aws_credentials_file = "~/.config/nixpp/cache-credentials";
+            };
+          };
+          "termuxpp/bin/termux-file-editor" = {
+            executable = true;
+            text = ''
+              #!/data/data/com.termux/files/usr/bin/env bash
+              exec nvim "$@"
+            '';
+          };
+          "termuxpp/bin/termux-url-opener" = {
+            executable = true;
+            text = ''
+              #!/data/data/com.termux/files/usr/bin/env bash
+
+              exec "$PREFIX/bin/termux-open-url" "$@"
+            '';
+          };
+          "termux-native/sshd-ports.conf".text = lib.concatMapStringsSep "" (
+            port: "Port ${toString port}\n"
+          ) config.termux.sshd.ports;
           "termux/tasker/tudo" = {
             executable = true;
             text = ''
@@ -239,6 +292,11 @@ in
           '';
         };
         dataFile = {
+          "termux-native/cache-credentials.sops.yaml" =
+            lib.mkIf (config.termux.cache.credentialsSopsFile != null)
+              {
+                source = config.termux.cache.credentialsSopsFile;
+              };
           "termux-native/ssh-host-keys.sops.yaml" = lib.mkIf (config.termux.ssh.hostKeysSopsFile != null) {
             source = config.termux.ssh.hostKeysSopsFile;
           };
@@ -256,7 +314,7 @@ in
       home = {
         file.".termux/font.ttf".source = termuxFont;
         username = "termux";
-        homeDirectory = "/data/data/com.termux/files/home";
+        homeDirectory = termuxHomeDirectory;
         stateVersion = "26.05";
         sessionVariables = {
           HOST = hostname;
@@ -292,6 +350,13 @@ in
               autoload -Uz _rbw
               compdef _rbw rbw
             fi
+
+          # Keep Zsh history in Home Manager's generation-specific XDG state directory.
+          if [[ -n "$XDG_STATE_HOME" ]]
+          then
+            HISTFILE="$XDG_STATE_HOME/zsh/zhistory"
+            mkdir -p -- "''${HISTFILE:h}"
+          fi
         '';
       };
 

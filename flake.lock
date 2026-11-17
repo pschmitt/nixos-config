@@ -1789,11 +1789,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1794830067,
-        "narHash": "sha256-JYhVOD7oUNGIuHimDq1b4cAql6xhZmeMBrqqkK/Wa1s=",
+        "lastModified": 1794899123,
+        "narHash": "sha256-HQQlc5R23apoXhnbw67p7elt00VSZp/bRZnc9QyPtfA=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "efea007df0d914bb9de7693d1138e72a62b9ba48",
+        "rev": "548d206dfdfe75a14729ab7fd10002ab411ca4e4",
         "type": "github"
       },
       "original": {
@@ -2479,6 +2479,7 @@
         "srvos": "srvos",
         "stricknani": "stricknani",
         "systems": "systems_5",
+        "tagesschau": "tagesschau",
         "tasker-mcp": "tasker-mcp",
         "tdc": "tdc",
         "teams-auth-source": "teams-auth-source",
@@ -2800,6 +2801,26 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "tagesschau": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794895514,
+        "narHash": "sha256-rdUeJwbZ7mj6bZ83PNzIp0E7XgeSZxsptoY2L9LzwMw=",
+        "owner": "pschmitt",
+        "repo": "tagesschau",
+        "rev": "362d23e0d2f87751ba717f4bf71cbf4fda9cb3f4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "tagesschau",
         "type": "github"
       }
     },

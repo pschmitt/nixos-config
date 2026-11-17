@@ -43,6 +43,18 @@ user for a Termux environment:
 }
 ```
 
+Welcome text is disabled by the shared profile (`termux.motd.enable = false`),
+including TermuxPP's app banner and OpenSSH's MOTD. Existing unmanaged app MOTD
+scripts are preserved. Set the option to `true` to stop suppressing welcome text;
+activation removes only its own managed link and SSH drop-in.
+
+`termux.sshd.ports` optionally manages OpenSSH listen ports. Activation validates
+both syntax and effective policy before switching generations, and restores the
+previous SSH configuration if validation or the generation switch fails. Removing
+the port configuration removes the managed drop-in; legacy port migration runs
+only when a profile explicitly supplies ports. The daemon is not restarted by
+activation, so existing SSH sessions remain available.
+
 `termux.packages` declares the Termux package names required by this profile.
 The bootstrap installs these through `pkg`, so Termux APT resolves dependencies,
 tracks package ownership, and handles future updates. A Nix-built package can
@@ -425,7 +437,11 @@ scripts by the Home Manager profile, without relying on Zinit's symlink-based
 installer. ShellCheck is provided by Termux APT; the old upstream x86_64/proot
 wrapper is not loaded by the native shell.
 Private yadm files remain runtime inputs from the phone's home directory and
-are not copied into the public bundle.
+are not copied into the public bundle. yadm owns its local classes and alternate
+selection; the Home Manager shell must not add or remove classes. In particular,
+adding the stock `termux` class conflicts with the TermuxPP overlay that replaces
+it with `termuxpp`, causing alternates to be relinked on every shell startup and
+triggering Powerlevel10k's instant-prompt console-output warning.
 
 The package adapter rebuilds a Nixpkgs recipe for Android/Bionic when
 `pkgsCross.aarch64-android-prebuilt` provides a working derivation. It does not
@@ -545,8 +561,12 @@ The installer trusts a digest obtained from the builder; it does not verify a
 release signature or enforce an anti-downgrade policy. Operation locks record
 their owner and recover stale directories left by interrupted processes, while
 still refusing a lock held by a live bootstrap or activation. `nixpp gc` prunes
-old generations after a dry-run preview while preserving the active and
-configured rollback generations.
+old generations after a dry-run preview while preserving the active,
+configured rollback, pinned, and live-shell generations. Managed Zsh startup
+records its generation with the process ID and Linux process start time;
+GC discards stale records and protects matching live processes and their APT
+requirements. Shells started before this tracking was installed must be
+restarted, or their generation explicitly pinned, before running GC.
 If the generation index is missing or does not include an installed generation,
 GC assigns stable numbers to those generations. When an index already exists,
 unindexed directories are treated as older than indexed generations, so GC can
@@ -567,6 +587,12 @@ rollback does not undo APT changes; packages needed by any retained generation
 remain installed. The first bootstrap after this tracking is introduced does
 not claim packages installed by older bootstrap runs, because their original
 ownership cannot be established safely.
+Activation restores the previous managed SSH client known-hosts files if a
+later pre-switch step fails. GPG key imports run only after a successful switch;
+they are additive shared state, not rolled back with a generation. A failed
+import reports a warning without presenting the completed switch as a failed
+activation. Retry the active generation's `setup-gpg-keys.sh` to provision keys.
+
 The bootstrap saves the existing `$PREFIX/etc/zshenv` and Termux login shell
 before selecting the managed Zsh configuration. A cold app launch then starts
 the managed shell directly. `bash bootstrap.sh restore` restores both saved
