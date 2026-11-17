@@ -108,7 +108,11 @@ and propagate command exit status so Tasker can detect failures. Do not put
 credentials in the script or keep rbw unlocked. A private configuration may
 supply `termux.cache.credentialsSopsFile`: native activation decrypts the narrow
 payload with the phone's SSH host identity. Ordinary Home Manager activation
-DAG entries are not executed by native nixpp activation.
+DAG entries are not executed by native nixpp activation. Native bundles compose
+`hosts/<profile>` directly, so wire the payload option into that host composition;
+setting it only in the integrated private Home Manager host module is insufficient.
+Verify that the built archive contains the payload and that the installed config
+selects its runtime credential file.
 
 Use a background plugin action with wait-for-result and an absolute working
 directory. Its Bundle must contain `dev.pschmitt.termux.execute.arguments`, even
