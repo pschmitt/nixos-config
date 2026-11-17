@@ -4,6 +4,7 @@
   fetchFromGitHub,
   bash,
   ncurses,
+  nix-update-script,
   python3,
   runCommand,
   tmux,
@@ -23,6 +24,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
 
   cargoHash = "sha256-cFqVWPNiCuKqUOuAe+z4+FUskHhKQxcHoxwSXsQRmQY=";
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version=branch=reusable-vnc-tmux"
+    ];
+  };
 
   passthru.tests.tmux =
     runCommand "desktui-tmux-test"
