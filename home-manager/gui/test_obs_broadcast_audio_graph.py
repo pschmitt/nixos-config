@@ -80,7 +80,10 @@ def main():
                 nodes = {o["id"]: o.get("info", {}).get("props", {}) for o in graph
                          if o["type"] == "PipeWire:Interface:Node"}
                 links = [o["info"] for o in graph if o["type"] == "PipeWire:Interface:Link"]
-                find = lambda name: next((i for i, p in nodes.items() if p.get("node.name") == name), None)
+
+                def find(name):
+                    return next((i for i, p in nodes.items() if p.get("node.name") == name), None)
+
                 return nodes, links, find
 
             def graph_connected(target="test_output_a"):
