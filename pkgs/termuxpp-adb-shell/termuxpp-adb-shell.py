@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open a mutually authenticated TermuxPP shell through adb forward."""
+"""Open a TermuxPP shell through ADB using run-as or authenticated mTLS."""
 
 import argparse
 import base64
@@ -9,6 +9,7 @@ import hmac
 import json
 import os
 import selectors
+import shlex
 import socket
 import ssl
 import subprocess
@@ -33,10 +34,19 @@ def parse_args():
     mode.add_argument("--list-authorizations", action="store_true", help="list approved client certificates")
     mode.add_argument("--revoke", metavar="SHA256", help="revoke one approved client certificate")
     parser.add_argument("--name", default=socket.gethostname(), help="display name shown for fingerprint approval")
-    parser.add_argument("--serial", required=True, help="ADB serial of the target device")
+    parser.add_argument("--serial", help="ADB serial of the target device (required for device operations)")
+    parser.add_argument("--completions", choices=("bash", "zsh", "fish"),
+                        help="print shell completion integration and exit")
     parser.add_argument("--credential-dir", type=Path,
                         help="private directory for this device's mTLS credentials (default: per device)")
-    return parser.parse_args()
+    parser.add_argument("--mode", choices=("auto", "mtls", "run-as"), default="auto",
+                        help="shell transport (default: auto tries run-as, then mTLS for non-debuggable apps)")
+    args = parser.parse_args()
+    if not args.completions and not args.serial:
+        parser.error("--serial is required for device operations")
+    if args.mode == "run-as" and (args.provision or args.list_authorizations or args.revoke is not None):
+        parser.error("provisioning and authorization management require mTLS, not --mode run-as")
+    return args
 
 
 def read_line(connection):
@@ -228,8 +238,8 @@ def create_credentials(credential_dir, name=None):
         run_openssl("x509", "-req", "-in", str(work / "client.csr"), "-CA", str(work / "client-ca.crt"),
                     "-CAkey", str(work / "client-ca.key"), "-CAcreateserial", "-out", str(work / "client.crt"),
                     "-days", "90", "-sha256", "-extfile", str(extensions))
-        for name in ("server.key", "server.pk8", "server.crt", "client.key", "client.crt", "client-ca.key", "client-ca.crt"):
-            os.chmod(work / name, 0o600)
+        for filename in ("server.key", "server.pk8", "server.crt", "client.key", "client.crt", "client-ca.key", "client-ca.crt"):
+            os.chmod(work / filename, 0o600)
         token = request_token()
 
         der = ssl.PEM_cert_to_DER_cert((work / "client.crt").read_text(encoding="ascii"))
@@ -361,13 +371,90 @@ def run_shell(credential_dir):
             connection.close()
 
 
+PACKAGE = "dev.pschmitt.termux"
+
+
+def supports_run_as(serial):
+    result = subprocess.run(
+        ["adb", "-s", serial, "shell", "run-as", PACKAGE, "id", "-u"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15,
+    )
+    if result.returncode == 0 and result.stdout.strip().isdigit():
+        return True
+    if "package not debuggable" in result.stderr or "package not debuggable" in result.stdout:
+        return False
+    raise RuntimeError("Could not probe run-as; check the ADB connection and installed TermuxPP package.")
+
+
+def run_as_shell(serial):
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        raise RuntimeError("This command requires an interactive terminal.")
+    result = subprocess.run(["adb", "-s", serial, "shell", "pm", "path", PACKAGE],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
+    paths = [line.removeprefix("package:") for line in result.stdout.splitlines()
+             if line.startswith("package:") and line.endswith("/base.apk")]
+    if result.returncode != 0 or len(paths) != 1:
+        raise RuntimeError("Could not locate the installed TermuxPP APK.")
+    apk_dir = str(Path(paths[0]).parent)
+    script = f"""export HOME=/data/data/{PACKAGE}/files/home
+export PREFIX=/data/data/{PACKAGE}/files/usr
+export TERMUX_APP__DATA_DIR=/data/data/{PACKAGE}
+export PATH="$PREFIX/bin:/system/bin:/system/xbin"
+export LD_LIBRARY_PATH="$PREFIX/lib"
+export TERM="${{TERM:-xterm-256color}}"
+for redirect in {shlex.quote(apk_dir)}/lib/*/libtermux-pkg-redirect.so
+do
+  if [ -f "$redirect" ]
+  then
+    export LD_PRELOAD="$redirect"
+    break
+  fi
+done
+if [ -z "${{LD_PRELOAD:-}}" ]
+then
+  printf '%s\\n' 'TermuxPP prefix redirect library is missing.' >&2
+  exit 1
+fi
+if [ -f "$PREFIX/lib/libtermux-exec.so" ]
+then
+  export LD_PRELOAD="$LD_PRELOAD:$PREFIX/lib/libtermux-exec.so"
+fi
+cd "$HOME" || exit 1
+exec "$PREFIX/bin/bash" -l
+"""
+    command = shlex.join(["run-as", PACKAGE, "/system/bin/sh", "-c", script])
+    print("Using run-as (debuggable TermuxPP).", file=sys.stderr)
+    return subprocess.run(["adb", "-s", serial, "shell", "-tt", command]).returncode
+
+
 def main():
     global BOOTSTRAP_PORT, TLS_PORT
     os.umask(0o077)
     args = parse_args()
+    if args.completions:
+        completion = Path(__file__).resolve().parent / "completions" / f"termuxpp-adb-shell.{args.completions}"
+        try:
+            print(completion.read_text(encoding="utf-8"), end="")
+        except OSError as error:
+            print(f"Could not load completions: {error}", file=sys.stderr)
+            return 1
+        return 0
     if args.credential_dir is None:
         device_id = hashlib.sha256(args.serial.encode("utf-8")).hexdigest()
         args.credential_dir = DEFAULT_CREDENTIAL_DIR / device_id
+    management = args.provision or args.list_authorizations or args.revoke is not None
+    try:
+        if not management and args.mode != "mtls":
+            if supports_run_as(args.serial):
+                return run_as_shell(args.serial)
+            if args.mode == "run-as":
+                raise RuntimeError("run-as requires a debuggable TermuxPP APK; use --mode mtls instead.")
+            print("TermuxPP is not debuggable; using mTLS.", file=sys.stderr)
+    except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+        print(f"ADB shell failed: {error}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        return 130
     if args.credential_dir.is_symlink():
         print("Credential directory must not be a symbolic link.", file=sys.stderr)
         return 2

@@ -5,6 +5,8 @@ import importlib.util
 import os
 from pathlib import Path
 import socket
+import shutil
+import subprocess
 import threading
 import unittest
 from unittest import mock
@@ -83,6 +85,27 @@ class BootstrapTests(unittest.TestCase):
         self.exchange(fake_server=True)
 
 
+class CredentialTests(unittest.TestCase):
+    @mock.patch("builtins.print")
+    @mock.patch.object(cli.ssl, "PEM_cert_to_DER_cert", return_value=b"certificate-fixture")
+    @mock.patch.object(cli, "request_token", return_value=b"test-token-not-a-credential")
+    def test_provision_preserves_requested_client_name(self, token, certificate, output):
+        def openssl(*args, **kwargs):
+            for option in ("-out", "-keyout"):
+                if option in args:
+                    Path(args[args.index(option) + 1]).write_bytes(b"fixture")
+
+        def provision(access_token, operation, material_factory):
+            self.assertEqual(operation, "PROVISION")
+            materials = material_factory(b"public-key-fixture", b"\0")
+            self.assertEqual(materials[-1], b"Test workstation")
+
+        with cli.tempfile.TemporaryDirectory() as directory:
+            with mock.patch.object(cli, "run_openssl", side_effect=openssl):
+                with mock.patch.object(cli, "bootstrap", side_effect=provision):
+                    cli.create_credentials(Path(directory) / "credentials", "Test workstation")
+
+
 class ConnectionTests(unittest.TestCase):
     @mock.patch.object(cli.time, "sleep")
     @mock.patch.object(cli.socket, "create_connection")
@@ -148,6 +171,153 @@ class ForwardingTests(unittest.TestCase):
             ["adb", "-s", "test-serial", "forward", "--remove", "tcp:41001"],
             ["adb", "-s", "test-serial", "forward", "--remove", "tcp:41002"],
         ])
+
+
+class TransportTests(unittest.TestCase):
+    @mock.patch.object(cli.subprocess, "run")
+    def test_probe_requires_successful_uid(self, run):
+        run.return_value = mock.Mock(returncode=0, stdout="10234\n", stderr="")
+        self.assertTrue(cli.supports_run_as("serial"))
+        run.return_value = mock.Mock(returncode=1, stdout="", stderr="run-as: package not debuggable")
+        self.assertFalse(cli.supports_run_as("serial"))
+        for error in ("device offline", "package unknown", "permission denied"):
+            run.return_value = mock.Mock(returncode=1, stdout="", stderr=error)
+            with self.assertRaises(RuntimeError):
+                cli.supports_run_as("serial")
+
+    def invoke(self, arguments):
+        with mock.patch.object(cli.sys, "argv", ["cli", "--serial", "serial", *arguments]):
+            return cli.main()
+
+    @mock.patch.object(cli, "setup_forwarding")
+    @mock.patch.object(cli, "run_as_shell", return_value=7)
+    @mock.patch.object(cli, "supports_run_as", return_value=True)
+    def test_auto_uses_run_as_without_forwarding(self, probe, shell, forward):
+        self.assertEqual(self.invoke([]), 7)
+        shell.assert_called_once_with("serial")
+        forward.assert_not_called()
+
+    @mock.patch.object(cli, "remove_forwarding")
+    @mock.patch.object(cli, "run_shell")
+    @mock.patch.object(cli, "setup_forwarding", return_value=[41001, 41002])
+    @mock.patch.object(cli, "supports_run_as", return_value=False)
+    def test_auto_falls_back_for_non_debuggable_app(self, probe, forward, shell, cleanup):
+        self.assertEqual(self.invoke([]), 0)
+        shell.assert_called_once()
+        cleanup.assert_called_once_with("serial", [41001, 41002])
+
+    @mock.patch.object(cli, "setup_forwarding")
+    @mock.patch.object(cli, "supports_run_as", side_effect=RuntimeError("offline"))
+    def test_auto_does_not_hide_probe_failure(self, probe, forward):
+        self.assertEqual(self.invoke([]), 1)
+        forward.assert_not_called()
+
+    @mock.patch.object(cli, "setup_forwarding")
+    @mock.patch.object(cli, "run_as_shell", side_effect=RuntimeError("launch failed"))
+    @mock.patch.object(cli, "supports_run_as", return_value=True)
+    def test_auto_does_not_fall_back_after_launch_failure(self, probe, shell, forward):
+        self.assertEqual(self.invoke([]), 1)
+        forward.assert_not_called()
+
+    @mock.patch.object(cli, "setup_forwarding")
+    @mock.patch.object(cli, "supports_run_as", return_value=False)
+    def test_explicit_run_as_does_not_fall_back(self, probe, forward):
+        self.assertEqual(self.invoke(["--mode", "run-as"]), 1)
+        forward.assert_not_called()
+
+    @mock.patch.object(cli, "remove_forwarding")
+    @mock.patch.object(cli, "run_shell")
+    @mock.patch.object(cli, "setup_forwarding", return_value=[41001, 41002])
+    @mock.patch.object(cli, "supports_run_as")
+    def test_explicit_mtls_skips_probe(self, probe, forward, shell, cleanup):
+        self.assertEqual(self.invoke(["--mode", "mtls"]), 0)
+        probe.assert_not_called()
+        shell.assert_called_once()
+
+    @mock.patch.object(cli, "remove_forwarding")
+    @mock.patch.object(cli, "create_credentials")
+    @mock.patch.object(cli, "setup_forwarding", return_value=[41001, 41002])
+    @mock.patch.object(cli, "supports_run_as")
+    def test_auto_provision_uses_mtls(self, probe, forward, create, cleanup):
+        self.assertEqual(self.invoke(["--provision"]), 0)
+        probe.assert_not_called()
+        create.assert_called_once()
+
+    @mock.patch.object(cli, "setup_forwarding")
+    @mock.patch.object(cli, "supports_run_as")
+    @mock.patch("builtins.print")
+    def test_completions_do_not_require_serial_or_adb(self, output, probe, forward):
+        for shell in ("bash", "zsh", "fish"):
+            with mock.patch.object(cli.sys, "argv", ["cli", "--completions", shell]):
+                self.assertEqual(cli.main(), 0)
+            self.assertIn("termuxpp-adb-shell", output.call_args.args[0])
+        probe.assert_not_called()
+        forward.assert_not_called()
+
+    def test_serial_still_required_for_device_operations(self):
+        with mock.patch.object(cli.sys, "argv", ["cli"]), self.assertRaises(SystemExit) as error:
+            cli.parse_args()
+        self.assertEqual(error.exception.code, 2)
+
+    def test_management_rejects_run_as(self):
+        for option in ("--provision", "--list-authorizations", "--revoke"):
+            args = [option, "a" * 64] if option == "--revoke" else [option]
+            with self.assertRaises(SystemExit) as error:
+                self.invoke(["--mode", "run-as", *args])
+            self.assertEqual(error.exception.code, 2)
+
+    @mock.patch.object(cli.sys.stdout, "isatty", return_value=True)
+    @mock.patch.object(cli.sys.stdin, "isatty", return_value=True)
+    @mock.patch.object(cli.subprocess, "run")
+    def test_run_as_initializes_environment_and_returns_exit_status(self, run, stdin, stdout):
+        run.side_effect = [mock.Mock(returncode=0, stdout="package:/data/app/random/base.apk\n"),
+                           mock.Mock(returncode=7)]
+        self.assertEqual(cli.run_as_shell("serial"), 7)
+        command = run.call_args.args[0]
+        self.assertEqual(command[:5], ["adb", "-s", "serial", "shell", "-tt"])
+        remote = cli.shlex.split(command[5])
+        self.assertEqual(remote[:4], ["run-as", cli.PACKAGE, "/system/bin/sh", "-c"])
+        for value in ("TERMUX_APP__DATA_DIR", "LD_LIBRARY_PATH", "libtermux-pkg-redirect.so",
+                      "/data/app/random/lib/*/", 'exec "$PREFIX/bin/bash" -l'):
+            self.assertIn(value, remote[4])
+
+
+class CompletionTests(unittest.TestCase):
+    def completion_path(self, shell):
+        return Path(cli.__file__).parent / "completions" / f"termuxpp-adb-shell.{shell}"
+
+    @unittest.skipUnless(shutil.which("bash"), "bash not installed")
+    def test_bash_completes_modes_and_only_authorized_devices(self):
+        script = r'''
+source "$1"
+adb() { printf 'List of devices attached\nready device\nlocked unauthorized\noff offline\n'; }
+COMP_WORDS=(termuxpp-adb-shell --mode r)
+COMP_CWORD=2
+_termuxpp_adb_shell
+[[ "${COMPREPLY[*]}" == run-as ]] || exit 1
+COMP_WORDS=(termuxpp-adb-shell.py --serial '')
+_termuxpp_adb_shell
+[[ "${COMPREPLY[*]}" == ready ]]
+'''
+        subprocess.run(["bash", "-c", script, "test", str(self.completion_path("bash"))], check=True)
+
+    @unittest.skipUnless(shutil.which("zsh"), "zsh not installed")
+    def test_zsh_registers_both_commands_and_completes_devices(self):
+        script = r'''
+autoload -Uz compinit
+compinit -D
+source "$1"
+[[ ${_comps[termuxpp-adb-shell]} == _termuxpp_adb_shell ]] || exit 1
+[[ ${_comps[termuxpp-adb-shell.py]} == _termuxpp_adb_shell ]] || exit 1
+adb() { printf 'List of devices attached\nready device\nlocked unauthorized\noff offline\n'; }
+compadd() { shift; [[ "$*" == ready ]]; }
+_termuxpp_adb_shell_serials
+'''
+        subprocess.run(["zsh", "-fc", script, "test", str(self.completion_path("zsh"))], check=True)
+
+    @unittest.skipUnless(shutil.which("fish"), "fish not installed")
+    def test_fish_completion_syntax(self):
+        subprocess.run(["fish", "--no-execute", str(self.completion_path("fish"))], check=True)
 
 
 if __name__ == "__main__":
