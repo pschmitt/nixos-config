@@ -4,7 +4,6 @@ import contextlib
 import importlib.util
 import io
 import os
-import sys
 import unittest
 from types import SimpleNamespace as NS
 
