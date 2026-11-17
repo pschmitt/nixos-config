@@ -31,6 +31,10 @@ Start **one** watch per pushed commit, in the background, then carry on with ind
 
 Do not pipe the watcher (`| tail`, `| cut`): the task then reports the pipe's exit code, so a failed run looks like exit 0. Redirect to a file if you must keep the output.
 
+## External GitHub checks
+
+The GitHub watcher queries Actions workflow runs, not external check runs or commit statuses. Exit 0 therefore does not prove that checks from services such as nixbot have passed. Before merging, inspect all checks on the current PR head once. If external checks remain pending after the Actions watch finishes, use one background `gh pr checks PR --repo OWNER/REPO --watch` to await them instead of manually polling or restarting the Actions watcher. Reconfirm the head SHA and mergeability before merging; a newer head needs its own passing checks.
+
 ## Exit codes
 
 | Code | Meaning | What to do |
