@@ -18,9 +18,9 @@ use std::{
 
 use gtk4::{
     Application, ApplicationWindow, Box as GtkBox, Button, CenterBox, CheckButton, ContentFit,
-    EventControllerKey, EventControllerMotion, FlowBox, GestureClick, GestureDrag, Image, Label,
-    Orientation, Picture, PolicyType, PropagationPhase, ScrolledWindow, SelectionMode, Stack,
-    StackTransitionType, ToggleButton, Widget, gdk, glib, prelude::*,
+    EventControllerKey, EventControllerMotion, GestureClick, GestureDrag, Image, Label,
+    Orientation, Picture, PolicyType, PropagationPhase, ScrolledWindow, Stack, StackTransitionType,
+    ToggleButton, Widget, gdk, glib, prelude::*,
 };
 
 use crate::{
@@ -92,6 +92,13 @@ pub struct WindowCardItem {
     pub detail_label: Label,
 }
 
+pub struct SourcePreview {
+    picture: Picture,
+    heading: Label,
+    placeholder: Label,
+    selected_id: Option<usize>,
+}
+
 pub struct AppState {
     pub config: PickerConfig,
     pub allow_token: bool,
@@ -113,10 +120,8 @@ pub struct AppState {
     pub has_window_list_raw: bool,
     pub next_card_id: usize,
     pub desktop_reg: Rc<DesktopRegistry>,
-    pub selected_window_preview: Option<Picture>,
-    pub selected_window_heading: Option<Label>,
-    pub selected_window_id: Option<usize>,
-    pub window_flow: Option<FlowBox>,
+    pub source_previews: HashMap<String, SourcePreview>,
+    pub window_flow: Option<GtkBox>,
     pub window_group_lead: Option<ToggleButton>,
     pub window_cards: HashMap<String, WindowCardItem>,
     pub last_active_ws: Option<i64>,
@@ -125,6 +130,7 @@ pub struct AppState {
     pub pick_button_label: Option<Label>,
     pub pick_button: Option<Button>,
     pub region_preview: Option<Picture>,
+    pub region_placeholder: Option<Label>,
     pub region_heading: Option<Label>,
     pub region_description: Option<Label>,
     pub region_details_label: Option<Label>,
@@ -202,9 +208,7 @@ pub fn build_ui(
         has_window_list_raw,
         next_card_id: 0,
         desktop_reg,
-        selected_window_preview: None,
-        selected_window_heading: None,
-        selected_window_id: None,
+        source_previews: HashMap::new(),
         window_flow: None,
         window_group_lead: None,
         window_cards: HashMap::new(),
@@ -214,6 +218,7 @@ pub fn build_ui(
         pick_button_label: None,
         pick_button: None,
         region_preview: None,
+        region_placeholder: None,
         region_heading: None,
         region_description: None,
         region_details_label: None,
@@ -530,6 +535,18 @@ pub fn build_ui(
                 s.active_tab = name.to_string();
                 save_last_tab(&name);
                 s.capture_mgr.set_active_tab(&name);
+                s.selection = if name == "regions" {
+                    s.region_selection.clone()
+                } else {
+                    s.source_previews
+                        .get(name.as_str())
+                        .and_then(|preview| preview.selected_id)
+                        .and_then(|id| s.card_targets.iter().find(|(card_id, _, _)| *card_id == id))
+                        .map(|(_, selection, _)| selection.clone())
+                };
+                if let Some(button) = &s.share_button {
+                    button.set_sensitive(s.selection.is_some());
+                }
                 update_pick_button_ui(&mut s);
                 update_overlay_highlight(&s);
             }
@@ -550,14 +567,17 @@ pub fn build_ui(
             if let Some(highlighter) = s.highlighter.as_ref() {
                 highlighter.refresh_picker_bounds();
             }
-            s.selected_window_id.zip(s.selected_window_preview.clone())
+            s.source_previews
+                .values()
+                .filter_map(|preview| preview.selected_id.map(|id| (id, preview.picture.clone())))
+                .collect::<Vec<_>>()
         };
-        deliver_frames(
-            &frame_rx,
-            &pictures_loop,
-            &release_sender,
-            selected.as_ref(),
-        );
+        deliver_frames(&frame_rx, &pictures_loop, &release_sender, &selected);
+        for preview in frame_state.borrow().source_previews.values() {
+            preview
+                .placeholder
+                .set_visible(preview.picture.paintable().is_none());
+        }
         glib::ControlFlow::Continue
     });
 
@@ -580,7 +600,7 @@ fn deliver_frames(
     frame_rx: &Receiver<FrameMessage>,
     pictures: &Rc<RefCell<HashMap<usize, Picture>>>,
     release_sender: &Sender<CaptureCommand>,
-    selected: Option<&(usize, Picture)>,
+    selected: &[(usize, Picture)],
 ) {
     let mut latest: HashMap<usize, FramePayload> = HashMap::new();
     while let Ok(msg) = frame_rx.try_recv() {
@@ -627,7 +647,7 @@ fn deliver_frames(
                 }
             }
         }
-        if let Some((selected_id, expanded)) = selected {
+        for (selected_id, expanded) in selected {
             if *selected_id == card_id {
                 expanded.set_paintable(picture.paintable().as_ref());
             }
@@ -880,7 +900,7 @@ fn resolve_final_selection(selection: &str, state: &AppState) -> String {
 /// Re-evaluates which cards are on screen whenever the list scrolls or is
 /// resized, so off-screen previews stop capturing.
 fn watch_scroll_for_culling(scroll: &ScrolledWindow, state: Rc<RefCell<AppState>>) {
-    let adjustment = scroll.vadjustment();
+    let adjustment = scroll.hadjustment();
 
     let state_scroll = state.clone();
     adjustment.connect_value_changed(move |_adj| {
@@ -901,65 +921,76 @@ fn make_window_page(
     desktop_reg: &DesktopRegistry,
     next_id: &mut usize,
 ) -> GtkBox {
-    let flow = FlowBox::new();
-    flow.set_selection_mode(SelectionMode::None);
-    let cols = state.borrow().config.columns;
-    flow.set_max_children_per_line(cols as u32);
-    flow.set_min_children_per_line(cols as u32);
-    flow.set_homogeneous(true);
+    let flow = GtkBox::new(Orientation::Horizontal, 12);
     flow.set_valign(gtk4::Align::Start);
-    flow.set_column_spacing(14);
-    flow.set_row_spacing(14);
-    flow.set_margin_top(4);
-    flow.set_margin_bottom(16);
-    flow.set_margin_start(28);
-    flow.set_margin_end(28);
 
     populate_window_cards(&state, &flow, desktop_reg, next_id);
     state.borrow_mut().window_flow = Some(flow.clone());
 
-    let scroll = ScrolledWindow::new();
-    scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
-    scroll.set_child(Some(&flow));
-    watch_scroll_for_culling(&scroll, state.clone());
-    scroll.set_hexpand(true);
+    make_source_page(state, &flow, "windows", "Select a window to preview")
+}
 
-    let expanded = GtkBox::new(Orientation::Vertical, 12);
-    expanded.set_size_request(360, -1);
-    expanded.set_margin_end(28);
-    expanded.set_margin_bottom(16);
-    expanded.set_visible(false);
+fn make_source_page(
+    state: Rc<RefCell<AppState>>,
+    thumbnails: &GtkBox,
+    tab: &str,
+    placeholder_text: &str,
+) -> GtkBox {
+    let page = GtkBox::new(Orientation::Vertical, 12);
+    page.set_margin_start(28);
+    page.set_margin_end(28);
+    page.set_margin_bottom(8);
 
-    let heading = Label::new(None);
-    heading.add_css_class("heading");
-    heading.set_wrap(true);
-    heading.set_max_width_chars(32);
-    expanded.append(&heading);
+    let picture = Picture::new();
+    picture.set_can_shrink(true);
+    picture.set_content_fit(ContentFit::Contain);
+    picture.set_size_request(-1, 180);
+    picture.set_hexpand(true);
+    picture.set_vexpand(true);
 
-    let preview = Picture::new();
+    let placeholder = Label::new(Some(placeholder_text));
+    placeholder.add_css_class("dim-label");
+    placeholder.set_wrap(true);
+    placeholder.set_halign(gtk4::Align::Center);
+    placeholder.set_valign(gtk4::Align::Center);
+
+    let preview = gtk4::Overlay::new();
     preview.add_css_class("region-preview");
-    preview.set_can_shrink(true);
-    preview.set_content_fit(ContentFit::Contain);
-    preview.set_size_request(360, 240);
+    preview.set_child(Some(&picture));
+    preview.add_overlay(&placeholder);
     preview.set_vexpand(true);
-    expanded.append(&preview);
+    page.append(&preview);
 
-    {
-        let mut s = state.borrow_mut();
-        s.selected_window_preview = Some(preview);
-        s.selected_window_heading = Some(heading);
-    }
+    let heading = Label::new(Some("Preview"));
+    heading.add_css_class("heading");
+    heading.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+    heading.set_max_width_chars(1);
+    page.append(&heading);
 
-    let page = GtkBox::new(Orientation::Horizontal, 14);
+    let scroll = ScrolledWindow::new();
+    scroll.set_policy(PolicyType::Automatic, PolicyType::Never);
+    scroll.set_child(Some(thumbnails));
+    scroll.set_min_content_height(180);
+    scroll.set_vexpand(false);
+    watch_scroll_for_culling(&scroll, state.clone());
     page.append(&scroll);
-    page.append(&expanded);
+
+    state.borrow_mut().source_previews.insert(
+        tab.to_string(),
+        SourcePreview {
+            picture,
+            heading,
+            placeholder,
+            selected_id: None,
+        },
+    );
     page
 }
 
 /// Fills `flow` with a card per window, sorted and filtered per the config.
 fn populate_window_cards(
     state: &Rc<RefCell<AppState>>,
-    flow: &FlowBox,
+    flow: &GtkBox,
     desktop_reg: &DesktopRegistry,
     next_id: &mut usize,
 ) {
@@ -1077,7 +1108,7 @@ fn populate_window_cards(
             "windows",
             &mut group_lead,
         );
-        flow.insert(&card, -1);
+        flow.append(&card);
     }
 }
 
@@ -1137,6 +1168,12 @@ fn refresh_window_cards(state: &Rc<RefCell<AppState>>) {
             .filter(|(_, sel, _)| sel.starts_with("window:"))
             .map(|(id, _, _)| *id)
             .collect();
+        let selection = s
+            .source_previews
+            .get("windows")
+            .and_then(|preview| preview.selected_id)
+            .and_then(|id| s.card_targets.iter().find(|(card_id, _, _)| *card_id == id))
+            .map(|(_, selection, _)| selection.clone());
         s.card_targets
             .retain(|(_, sel, _)| !sel.starts_with("window:"));
         s.card_buttons
@@ -1144,7 +1181,6 @@ fn refresh_window_cards(state: &Rc<RefCell<AppState>>) {
         if s.hovered_id.is_some_and(|id| removed.contains(&id)) {
             s.hovered_id = None;
         }
-        let selection = s.selection.clone().filter(|sel| sel.starts_with("window:"));
         (flow, s.desktop_reg.clone(), removed, selection)
     };
     for id in &removed {
@@ -1176,13 +1212,18 @@ fn refresh_window_cards(state: &Rc<RefCell<AppState>>) {
             None => {
                 // The selected window closed.
                 let mut s = state.borrow_mut();
-                s.selection = None;
-                s.selected_window_id = None;
-                if let Some(ref btn) = s.share_button {
-                    btn.set_sensitive(false);
+                if s.active_tab == "windows" {
+                    s.selection = None;
+                    if let Some(ref btn) = s.share_button {
+                        btn.set_sensitive(false);
+                    }
                 }
-                if let Some(panel) = s.selected_window_preview.as_ref().and_then(|p| p.parent()) {
-                    panel.set_visible(false);
+                if let Some(preview) = s.source_previews.get_mut("windows") {
+                    preview.selected_id = None;
+                    preview.picture.set_paintable(None::<&gdk::Paintable>);
+                    preview.heading.set_label("Preview");
+                    preview.placeholder.set_label("Select a window to preview");
+                    preview.placeholder.set_visible(true);
                 }
             }
         }
@@ -1193,20 +1234,9 @@ fn refresh_window_cards(state: &Rc<RefCell<AppState>>) {
     update_overlay_highlight(&s);
 }
 
-fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> ScrolledWindow {
-    let flow = FlowBox::new();
-    flow.set_selection_mode(SelectionMode::None);
-    let cols = state.borrow().config.columns;
-    flow.set_max_children_per_line(cols as u32);
-    flow.set_min_children_per_line(cols as u32);
-    flow.set_homogeneous(true);
+fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> GtkBox {
+    let flow = GtkBox::new(Orientation::Horizontal, 12);
     flow.set_valign(gtk4::Align::Start);
-    flow.set_column_spacing(14);
-    flow.set_row_spacing(14);
-    flow.set_margin_top(4);
-    flow.set_margin_bottom(16);
-    flow.set_margin_start(28);
-    flow.set_margin_end(28);
 
     let monitors = state.borrow().monitors.clone();
     let mut group_lead: Option<ToggleButton> = None;
@@ -1243,14 +1273,10 @@ fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> Scroll
             "screens",
             &mut group_lead,
         );
-        flow.insert(&card, -1);
+        flow.append(&card);
     }
 
-    let scroll = ScrolledWindow::new();
-    scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
-    scroll.set_child(Some(&flow));
-    watch_scroll_for_culling(&scroll, state.clone());
-    scroll
+    make_source_page(state, &flow, "screens", "Select a screen to preview")
 }
 
 /// The Hyprland monitor currently showing a workspace of this name, if any.
@@ -1266,28 +1292,14 @@ fn monitor_showing_workspace<'a>(
     })
 }
 
-fn make_workspace_page(
-    state: Rc<RefCell<AppState>>,
-    next_id: &mut usize,
-) -> Option<ScrolledWindow> {
+fn make_workspace_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> Option<GtkBox> {
     let entries = state.borrow().workspace_entries.clone();
     if entries.is_empty() {
         return None;
     }
 
-    let flow = FlowBox::new();
-    flow.set_selection_mode(SelectionMode::None);
-    let cols = state.borrow().config.columns;
-    flow.set_max_children_per_line(cols as u32);
-    flow.set_min_children_per_line(cols as u32);
-    flow.set_homogeneous(true);
+    let flow = GtkBox::new(Orientation::Horizontal, 12);
     flow.set_valign(gtk4::Align::Start);
-    flow.set_column_spacing(14);
-    flow.set_row_spacing(14);
-    flow.set_margin_top(4);
-    flow.set_margin_bottom(16);
-    flow.set_margin_start(28);
-    flow.set_margin_end(28);
 
     let monitors = state.borrow().monitors.clone();
     let mut group_lead: Option<ToggleButton> = None;
@@ -1323,28 +1335,42 @@ fn make_workspace_page(
             "workspaces",
             &mut group_lead,
         );
-        flow.insert(&card, -1);
+        flow.append(&card);
     }
 
-    let scroll = ScrolledWindow::new();
-    scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
-    scroll.set_child(Some(&flow));
-    watch_scroll_for_culling(&scroll, state.clone());
-    Some(scroll)
+    Some(make_source_page(
+        state,
+        &flow,
+        "workspaces",
+        "Select a workspace to preview",
+    ))
 }
 
 fn make_region_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> GtkBox {
     let box_main = GtkBox::new(Orientation::Vertical, 14);
-    box_main.set_halign(gtk4::Align::Center);
-    box_main.set_valign(gtk4::Align::Center);
     box_main.set_vexpand(true);
     box_main.set_hexpand(true);
-    box_main.set_margin_top(40);
-    box_main.set_margin_bottom(40);
+    box_main.set_margin_start(28);
+    box_main.set_margin_end(28);
+    box_main.set_margin_bottom(8);
 
-    let icon = Image::from_icon_name("selection-rectangular-symbolic");
-    icon.set_pixel_size(48);
-    box_main.append(&icon);
+    let preview = Picture::new();
+    preview.set_can_shrink(true);
+    preview.set_size_request(-1, 180);
+    preview.set_content_fit(ContentFit::Contain);
+    preview.set_hexpand(true);
+    preview.set_vexpand(true);
+
+    let placeholder = Label::new(Some("Draw a region to preview"));
+    placeholder.add_css_class("dim-label");
+    placeholder.set_halign(gtk4::Align::Center);
+    placeholder.set_valign(gtk4::Align::Center);
+    let preview_area = gtk4::Overlay::new();
+    preview_area.add_css_class("region-preview");
+    preview_area.set_child(Some(&preview));
+    preview_area.add_overlay(&placeholder);
+    preview_area.set_vexpand(true);
+    box_main.append(&preview_area);
 
     let heading = Label::new(Some("Select a region"));
     heading.add_css_class("title-2");
@@ -1356,14 +1382,6 @@ fn make_region_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> GtkBox
     desc.set_wrap(true);
     desc.add_css_class("dim-label");
     box_main.append(&desc);
-
-    let preview = Picture::new();
-    preview.add_css_class("region-preview");
-    preview.set_can_shrink(true);
-    preview.set_size_request(420, 236);
-    preview.set_content_fit(ContentFit::Contain);
-    preview.set_visible(false);
-    box_main.append(&preview);
 
     let details = Label::new(None);
     details.add_css_class("dim-label");
@@ -1407,6 +1425,7 @@ fn make_region_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> GtkBox
     {
         let mut s = state.borrow_mut();
         s.region_preview = Some(preview);
+        s.region_placeholder = Some(placeholder);
         s.region_heading = Some(heading);
         s.region_description = Some(desc);
         s.region_details_label = Some(details);
@@ -1435,10 +1454,10 @@ fn make_source_card(
 ) -> ToggleButton {
     let card = ToggleButton::new();
     card.add_css_class("source-card");
-    card.set_hexpand(true);
+    card.set_hexpand(false);
     card.set_vexpand(false);
     card.set_valign(gtk4::Align::Start);
-    card.set_size_request(240, 246);
+    card.set_size_request(180, 164);
 
     if let Some(lead) = group_lead {
         card.set_group(Some(lead));
@@ -1461,7 +1480,7 @@ fn make_source_card(
     let preview_box = ScrolledWindow::new();
     preview_box.add_css_class("preview");
     preview_box.set_policy(PolicyType::Never, PolicyType::Never);
-    preview_box.set_size_request(-1, 170);
+    preview_box.set_size_request(180, 100);
     preview_box.set_hexpand(true);
     preview_box.set_vexpand(false);
     preview_box.set_child(Some(&preview));
@@ -1512,6 +1531,7 @@ fn make_source_card(
     let clean_title = title.replace(['\r', '\n'], " ");
     let name_label = Label::new(Some(&clean_title));
     name_label.set_xalign(0.0);
+    name_label.set_max_width_chars(16);
     name_label.set_single_line_mode(true);
     name_label.set_lines(1);
     name_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
@@ -1520,6 +1540,7 @@ fn make_source_card(
     let clean_subtitle = subtitle.replace(['\r', '\n'], " ");
     let detail_label = Label::new(Some(&clean_subtitle));
     detail_label.set_xalign(0.0);
+    detail_label.set_max_width_chars(16);
     detail_label.set_single_line_mode(true);
     detail_label.set_lines(1);
     detail_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
@@ -1567,6 +1588,7 @@ fn make_source_card(
     let state_toggle = state.clone();
     let sel_toggle = sel_str.clone();
     let name_label_for_preview = clean_title.clone();
+    let preview_tab = tab.to_string();
     card.connect_toggled(move |c| {
         if c.is_active() {
             {
@@ -1574,23 +1596,25 @@ fn make_source_card(
                     Ok(s) => s,
                     Err(_) => return,
                 };
-                s.selection = Some(sel_toggle.clone());
-                if sel_toggle.starts_with("window:") {
-                    s.selected_window_id = Some(card_id);
-                    if let Some(expanded) = s.selected_window_preview.as_ref() {
-                        if let Some(picture) = s.pictures.borrow().get(&card_id) {
-                            expanded.set_paintable(picture.paintable().as_ref());
-                        }
-                        if let Some(panel) = expanded.parent() {
-                            panel.set_visible(true);
-                        }
-                    }
-                    if let Some(heading) = s.selected_window_heading.as_ref() {
-                        heading.set_label(&name_label_for_preview);
-                    }
+                if s.active_tab == preview_tab {
+                    s.selection = Some(sel_toggle.clone());
+                }
+                let paintable = s
+                    .pictures
+                    .borrow()
+                    .get(&card_id)
+                    .and_then(|p| p.paintable());
+                if let Some(preview) = s.source_previews.get_mut(&preview_tab) {
+                    preview.selected_id = Some(card_id);
+                    preview.picture.set_paintable(paintable.as_ref());
+                    preview.heading.set_label(&name_label_for_preview);
+                    preview.placeholder.set_visible(paintable.is_none());
+                    preview
+                        .placeholder
+                        .set_label("Preview unavailable for this source");
                 }
                 if let Some(ref btn) = s.share_button {
-                    btn.set_sensitive(true);
+                    btn.set_sensitive(s.selection.is_some());
                 }
             }
             if let Ok(s) = state_toggle.try_borrow() {
@@ -1701,7 +1725,11 @@ fn card_is_in_viewport(card: &ToggleButton) -> bool {
         return true;
     }
 
-    bounds.y() < height && bounds.y() + bounds.height() > 0.0
+    let width = viewport.width() as f32;
+    bounds.x() < width
+        && bounds.x() + bounds.width() > 0.0
+        && bounds.y() < height
+        && bounds.y() + bounds.height() > 0.0
 }
 
 fn update_card_fps(state: &AppState) {
@@ -1726,7 +1754,10 @@ fn update_card_fps(state: &AppState) {
         };
 
         let fps = if Some(*id) == focused_id
-            || Some(*id) == state.selected_window_id
+            || state
+                .source_previews
+                .values()
+                .any(|preview| preview.selected_id == Some(*id))
             || (state.active_tab == "regions" && state.card_widgets.get(id).is_none())
         {
             high_fps
@@ -2035,11 +2066,11 @@ fn set_region_selection(state: Rc<RefCell<AppState>>, sel: &str) {
     }
     if let Some(ref desc) = s.region_description {
         desc.set_label(
-            "Review the live preview below. Choose Edit region to redraw it, then click Share when ready.",
+            "Review the live preview above. Choose Edit region to redraw it, then click Share when ready.",
         );
     }
-    if let Some(ref prev) = s.region_preview {
-        prev.set_visible(true);
+    if let Some(ref placeholder) = s.region_placeholder {
+        placeholder.set_visible(false);
     }
     if let Some(ref dt) = s.region_details_label {
         dt.set_label(&format!(

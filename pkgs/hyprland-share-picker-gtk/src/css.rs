@@ -18,7 +18,7 @@ window.share-picker {
   border: 2px solid transparent;
   border-radius: 14px;
   padding: 0;
-  min-height: 246px;
+  min-height: 164px;
 }
 .source-card:hover { background: alpha(@accent_bg_color, 0.12); }
 .source-card:checked {
@@ -27,8 +27,8 @@ window.share-picker {
   box-shadow: 0 4px 16px alpha(@accent_bg_color, 0.18);
 }
 .source-card > box {
-  min-width: 220px;
-  min-height: 246px;
+  min-width: 180px;
+  min-height: 164px;
 }
 .action-card {
   background: alpha(@accent_bg_color, 0.08);
@@ -37,7 +37,7 @@ window.share-picker {
 .preview {
   background: alpha(@window_fg_color, 0.09);
   border-radius: 12px 12px 0 0;
-  min-height: 170px;
+  min-height: 100px;
 }
 .region-preview {
   background: alpha(@window_fg_color, 0.09);
