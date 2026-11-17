@@ -38,7 +38,7 @@ const PORTAL_BINARY: &str = "xdg-desktop-portal-hyprland";
 
 /// Starts the detached indicator and waits until it has recorded the streams
 /// that already exist, so the share's own node cannot slip into that set.
-pub fn spawn(target: &str) {
+pub fn spawn(target: &str, session_handle: Option<&str>) {
     let Ok(exe) = std::env::current_exe() else {
         return;
     };
@@ -49,6 +49,9 @@ pub fn spawn(target: &str) {
         // XDPH reads the picker's stdout and stderr; the indicator must not
         // keep either open.
         .stderr(Stdio::null());
+    if let Some(handle) = session_handle {
+        cmd.args(["--session-handle", handle]);
+    }
     // SAFETY: setsid and close_range are async-signal-safe and touch no
     // Rust state.
     unsafe {
@@ -101,7 +104,7 @@ struct Outline {
     outputs: Vec<String>,
 }
 
-pub fn run(raw_target: &str) -> ! {
+pub fn run(raw_target: &str, session_handle: Option<String>) -> ! {
     let target = if raw_target.starts_with("region:") {
         Target::Region(raw_target.to_string())
     } else if let Some(address) = raw_target.strip_prefix("client:") {
@@ -152,7 +155,13 @@ pub fn run(raw_target: &str) -> ! {
     let stream_rx = Rc::new(stream_rx);
     let outline_rx = Rc::new(outline_rx);
     app.connect_activate(move |app| {
-        build(app, stream_rx.clone(), outline_rx.clone(), native_border);
+        build(
+            app,
+            stream_rx.clone(),
+            outline_rx.clone(),
+            native_border,
+            session_handle.clone(),
+        );
     });
     let status = app.run_with_args::<&str>(&[]);
     decoration::restore();
@@ -165,6 +174,30 @@ struct MonitorBorder {
     area: DrawingArea,
     geom: gdk::Rectangle,
     rect: Rc<std::cell::Cell<Option<Rect>>>,
+    hovered: Rc<std::cell::Cell<bool>>,
+    animation: Rc<std::cell::Cell<BadgeAnimation>>,
+}
+
+#[derive(Clone, Copy)]
+struct BadgeAnimation {
+    dot_alpha: f64,
+    hover: f64,
+    opacity: f64,
+}
+
+fn advance_hover(progress: f64, hovered: bool) -> f64 {
+    let target = if hovered { 1.0 } else { 0.0 };
+    let next = progress + (target - progress) * 0.3;
+    if (next - target).abs() < 0.002 {
+        target
+    } else {
+        next
+    }
+}
+
+fn stop_opacity(elapsed: Duration) -> f64 {
+    let progress = (elapsed.as_secs_f64() / 0.2).min(1.0);
+    (1.0 - progress).powi(2)
 }
 
 /// Opacity of the recording dot, fading in and out once per second.
@@ -178,6 +211,7 @@ fn build(
     stream_rx: Rc<Receiver<StreamEvent>>,
     outline_rx: Rc<Receiver<Outline>>,
     native_border: bool,
+    session_handle: Option<String>,
 ) {
     let Some(display) = gdk::Display::default() else {
         decoration::restore();
@@ -192,7 +226,6 @@ fn build(
     let (r, g, b, _) = parse_rgba_color(&config.sharing_color, DEFAULT_HIGHLIGHT_RGBA);
     let width = config.highlight_border_size.max(3.0);
 
-    let blink = Rc::new(std::cell::Cell::new(1.0));
     let mut borders: HashMap<String, MonitorBorder> = HashMap::new();
     let monitors = display.monitors();
     for i in 0..monitors.n_items() {
@@ -204,7 +237,14 @@ fn build(
         };
         borders.insert(
             connector.to_string(),
-            create_border(app, &mon, (r, g, b), width, native_border, blink.clone()),
+            create_border(
+                app,
+                &mon,
+                (r, g, b),
+                width,
+                native_border,
+                session_handle.clone(),
+            ),
         );
     }
 
@@ -213,7 +253,8 @@ fn build(
     let app = app.clone();
     let started_at = Instant::now();
     let mut streaming = false;
-    glib::timeout_add_local(Duration::from_millis(100), move || {
+    let mut ended_at = None;
+    glib::timeout_add_local(Duration::from_millis(33), move || {
         let _ = &hold;
         loop {
             match stream_rx.try_recv() {
@@ -223,20 +264,33 @@ fn build(
                 }
                 Ok(StreamEvent::Ready) => {}
                 Ok(StreamEvent::Ended) | Err(TryRecvError::Disconnected) => {
-                    eprintln!("hyprland-share-indicator: stream ended");
-                    app.quit();
-                    return glib::ControlFlow::Break;
+                    if ended_at.is_none() {
+                        eprintln!("hyprland-share-indicator: stream ended");
+                        decoration::restore();
+                        ended_at = Some(Instant::now());
+                    }
+                    break;
                 }
                 Err(TryRecvError::Empty) => break,
             }
+        }
+        let opacity = ended_at.map_or(1.0, |ended: Instant| stop_opacity(ended.elapsed()));
+        if opacity == 0.0 {
+            app.quit();
+            return glib::ControlFlow::Break;
         }
         if !streaming && started_at.elapsed() > STREAM_START_TIMEOUT {
             eprintln!("hyprland-share-indicator: no stream appeared");
             app.quit();
             return glib::ControlFlow::Break;
         }
-        blink.set(dot_alpha(started_at.elapsed()));
+        let dot_alpha = dot_alpha(started_at.elapsed());
         for border in borders.values() {
+            border.animation.set(BadgeAnimation {
+                dot_alpha,
+                hover: advance_hover(border.animation.get().hover, border.hovered.get()),
+                opacity,
+            });
             if border.rect.get().is_some() {
                 border.area.queue_draw();
             }
@@ -266,7 +320,7 @@ fn create_border(
     (r, g, b): (f64, f64, f64),
     width: f64,
     native_border: bool,
-    blink: Rc<std::cell::Cell<f64>>,
+    session_handle: Option<String>,
 ) -> MonitorBorder {
     let window = Window::new();
     window.set_application(Some(app));
@@ -282,9 +336,17 @@ fn create_border(
     window.add_css_class("overlay-highlighter");
 
     let rect = Rc::new(std::cell::Cell::new(None::<Rect>));
+    let hovered = Rc::new(std::cell::Cell::new(false));
+    let animation = Rc::new(std::cell::Cell::new(BadgeAnimation {
+        dot_alpha: 1.0,
+        hover: 0.0,
+        opacity: 1.0,
+    }));
     let area = DrawingArea::new();
     let rect_draw = rect.clone();
-    area.set_draw_func(move |_area, cr, _w, h| {
+    let animation_draw = animation.clone();
+    let clickable = session_handle.is_some();
+    area.set_draw_func(move |area, cr, _w, h| {
         let _ = cr.save();
         cr.set_operator(cairo::Operator::Clear);
         let _ = cr.paint();
@@ -301,12 +363,49 @@ fn create_border(
                 rect.width as f64 + width,
                 rect.height as f64 + width,
             );
-            cr.set_source_rgba(r, g, b, 0.95);
+            cr.set_source_rgba(r, g, b, 0.95 * animation_draw.get().opacity);
             cr.set_line_width(width);
             let _ = cr.stroke();
         }
-        draw_camera_badge(cr, rect, width, h as f64, (r, g, b), blink.get());
+        draw_camera_badge(cr, rect, width, h as f64, (r, g, b), animation_draw.get());
+        if clickable {
+            if let Some(surface) = area.native().and_then(|native| native.surface()) {
+                surface.set_input_region(&badge_input_region(rect, width, h as f64));
+            }
+        }
     });
+    if let Some(handle) = session_handle {
+        area.set_cursor_from_name(Some("pointer"));
+        area.set_tooltip_text(Some("Stop sharing"));
+        let motion = gtk4::EventControllerMotion::new();
+        let enter = hovered.clone();
+        motion.connect_enter(move |_, _, _| enter.set(true));
+        let leave = hovered.clone();
+        motion.connect_leave(move |_| leave.set(false));
+        area.add_controller(motion);
+
+        let click = gtk4::GestureClick::new();
+        click.set_button(1);
+        click.connect_pressed(|gesture, _, _, _| {
+            gesture.set_state(gtk4::EventSequenceState::Claimed);
+        });
+        let rect_click = rect.clone();
+        let stopping = Rc::new(std::cell::Cell::new(false));
+        click.connect_released(move |gesture, _, x, y| {
+            let Some(rect) = rect_click.get() else {
+                return;
+            };
+            let Some(area) = gesture.widget() else {
+                return;
+            };
+            let region = badge_input_region(rect, width, area.height() as f64);
+            if region.contains_point(x.floor() as i32, y.floor() as i32) && !stopping.replace(true)
+            {
+                stop_share(handle.clone(), stopping.clone());
+            }
+        });
+        area.add_controller(click);
+    }
     window.set_child(Some(&area));
     window.connect_map(|w| {
         if let Some(surface) = w.surface() {
@@ -319,7 +418,33 @@ fn create_border(
         area,
         geom: mon.geometry(),
         rect,
+        hovered,
+        animation,
     }
+}
+
+fn stop_share(session_handle: String, stopping: Rc<std::cell::Cell<bool>>) {
+    glib::MainContext::default().spawn_local(async move {
+        let result = async {
+            let bus = gio::bus_get_future(gio::BusType::Session).await?;
+            bus.call_future(
+                Some("org.freedesktop.impl.portal.desktop.hyprland"),
+                &session_handle,
+                "org.freedesktop.impl.portal.Session",
+                "Close",
+                None,
+                None,
+                gio::DBusCallFlags::NONE,
+                3000,
+            )
+            .await
+        }
+        .await;
+        if result.is_err() {
+            eprintln!("hyprland-share-indicator: could not stop sharing");
+            stopping.set(false);
+        }
+    });
 }
 
 const BADGE_WIDTH: f64 = 50.0;
@@ -334,17 +459,15 @@ fn draw_camera_badge(
     border: f64,
     area_height: f64,
     (r, g, b): (f64, f64, f64),
-    dot_alpha: f64,
+    animation: BadgeAnimation,
 ) {
-    let x = rect.x as f64 + rect.width as f64 + border / 2.0 - BADGE_WIDTH;
-    let above = rect.y as f64 - border / 2.0 - BADGE_HEIGHT;
-    let below = rect.y as f64 + rect.height as f64 + border / 2.0;
-    let y = if above >= 0.0 || below + BADGE_HEIGHT > area_height {
-        above.max(0.0)
-    } else {
-        below
-    };
-
+    let (x, y) = badge_position(rect, border, area_height);
+    let _ = cr.save();
+    cr.translate(x + BADGE_WIDTH / 2.0, y + BADGE_HEIGHT / 2.0);
+    let scale = 0.8 + 0.2 * animation.opacity;
+    cr.scale(scale, scale);
+    cr.translate(-x - BADGE_WIDTH / 2.0, -y - BADGE_HEIGHT / 2.0);
+    cr.push_group();
     let radius = 6.0;
     cr.new_sub_path();
     cr.arc(
@@ -373,22 +496,63 @@ fn draw_camera_badge(
     cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
     let _ = cr.fill();
     cr.arc(dx, dy, 4.5, 0.0, 2.0 * PI);
-    cr.set_source_rgba(0.94, 0.27, 0.27, dot_alpha);
+    cr.set_source_rgba(0.94, 0.27, 0.27, animation.dot_alpha);
     let _ = cr.fill();
 
-    // Body, lens and viewfinder bump.
+    let _ = cr.save();
+    cr.translate(x + 33.0, y + 12.0);
+    cr.rotate(-0.16 * (PI * animation.hover).sin());
+    cr.translate(-x - 33.0, -y - 12.0);
+    let alpha = 1.0 - animation.hover;
     let (bx, by, bw, bh) = (x + 23.0, y + 8.0, 20.0, 12.0);
-    cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
+    cr.set_source_rgba(1.0, 1.0, 1.0, alpha);
     cr.rectangle(bx + 6.0, by - 3.0, 8.0, 3.0);
     let _ = cr.fill();
     cr.rectangle(bx, by, bw, bh);
     let _ = cr.fill();
     cr.arc(bx + bw / 2.0, by + bh / 2.0, 4.0, 0.0, 2.0 * PI);
-    cr.set_source_rgba(r, g, b, 1.0);
+    cr.set_source_rgba(r, g, b, alpha);
     let _ = cr.fill();
     cr.arc(bx + bw / 2.0, by + bh / 2.0, 2.0, 0.0, 2.0 * PI);
-    cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
+    cr.set_source_rgba(1.0, 1.0, 1.0, alpha);
     let _ = cr.fill();
+    let _ = cr.restore();
+
+    let half = 4.5 * (0.7 + 0.3 * animation.hover);
+    cr.set_line_width(2.3);
+    cr.set_line_cap(cairo::LineCap::Round);
+    cr.set_source_rgba(1.0, 1.0, 1.0, animation.hover);
+    cr.move_to(x + 33.0 - half, y + 12.0 - half);
+    cr.line_to(x + 33.0 + half, y + 12.0 + half);
+    cr.move_to(x + 33.0 + half, y + 12.0 - half);
+    cr.line_to(x + 33.0 - half, y + 12.0 + half);
+    let _ = cr.stroke();
+    let _ = cr.pop_group_to_source();
+    let _ = cr.paint_with_alpha(animation.opacity);
+    let _ = cr.restore();
+}
+
+fn badge_position(rect: Rect, border: f64, area_height: f64) -> (f64, f64) {
+    let x = rect.x as f64 + rect.width as f64 + border / 2.0 - BADGE_WIDTH;
+    let above = rect.y as f64 - border / 2.0 - BADGE_HEIGHT;
+    let below = rect.y as f64 + rect.height as f64 + border / 2.0;
+    let y = if above >= 0.0 || below + BADGE_HEIGHT > area_height {
+        above.max(0.0)
+    } else {
+        below
+    };
+    (x, y)
+}
+
+/// Only the badge accepts input; the shared content underneath stays interactive.
+fn badge_input_region(rect: Rect, border: f64, area_height: f64) -> cairo::Region {
+    let (x, y) = badge_position(rect, border, area_height);
+    cairo::Region::create_rectangle(&cairo::RectangleInt::new(
+        x.floor() as i32,
+        y.floor() as i32,
+        (x + BADGE_WIDTH).ceil() as i32 - x.floor() as i32,
+        (y + BADGE_HEIGHT).ceil() as i32 - y.floor() as i32,
+    ))
 }
 
 /// Output decorations must fit inside its logical bounds, including on scaled outputs.
@@ -619,6 +783,96 @@ fn watch_streams(tx: &Sender<StreamEvent>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stop_fades_out_and_finishes_after_two_hundred_milliseconds() {
+        assert_eq!(stop_opacity(Duration::ZERO), 1.0);
+        assert_eq!(stop_opacity(Duration::from_millis(100)), 0.25);
+        assert_eq!(stop_opacity(Duration::from_millis(200)), 0.0);
+        assert_eq!(stop_opacity(Duration::from_secs(1)), 0.0);
+    }
+
+    #[test]
+    fn hover_eases_in_and_out_without_overshooting() {
+        let mut progress = 0.0;
+        for _ in 0..32 {
+            let next = advance_hover(progress, true);
+            assert!(next >= progress && next <= 1.0);
+            progress = next;
+        }
+        assert_eq!(progress, 1.0);
+        for _ in 0..32 {
+            let next = advance_hover(progress, false);
+            assert!(next <= progress && next >= 0.0);
+            progress = next;
+        }
+        assert_eq!(progress, 0.0);
+    }
+
+    #[test]
+    fn only_the_badge_accepts_pointer_input() {
+        let rect = Rect {
+            x: 100,
+            y: 100,
+            width: 640,
+            height: 480,
+        };
+        let region = badge_input_region(rect, 4.0, 1080.0);
+        assert_eq!(region.num_rectangles(), 1);
+        assert!(region.contains_point(692, 74));
+        assert!(region.contains_point(741, 97));
+        assert!(region.contains_point(700, 85));
+        assert!(!region.contains_point(400, 300));
+        assert!(!region.contains_point(691, 85));
+        assert!(!region.contains_point(742, 85));
+        assert!(!region.contains_point(700, 73));
+        assert!(!region.contains_point(700, 98));
+    }
+
+    #[test]
+    fn screen_badge_hitbox_stays_inside_the_output() {
+        let rect = screen_rect(gdk::Rectangle::new(1920, 0, 1280, 720), 4.0);
+        let (x, y) = badge_position(rect, 4.0, 720.0);
+        assert!(x >= 0.0 && y >= 0.0);
+        assert!(x + BADGE_WIDTH <= 1280.0);
+        assert!(y + BADGE_HEIGHT <= 720.0);
+        let region = badge_input_region(rect, 4.0, 720.0);
+        assert!(region.contains_point(x as i32, y as i32));
+        assert!(!region.contains_point(1280, y as i32));
+    }
+
+    #[test]
+    fn hover_morph_changes_the_rendered_camera_into_a_cross() {
+        let render = |hover| {
+            let mut surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 128, 200).unwrap();
+            let cr = cairo::Context::new(&surface).unwrap();
+            draw_camera_badge(
+                &cr,
+                Rect {
+                    x: 10,
+                    y: 50,
+                    width: 100,
+                    height: 100,
+                },
+                4.0,
+                200.0,
+                (0.94, 0.27, 0.27),
+                BadgeAnimation {
+                    dot_alpha: 1.0,
+                    hover,
+                    opacity: 1.0,
+                },
+            );
+            drop(cr);
+            surface.data().unwrap().to_vec()
+        };
+        let camera = render(0.0);
+        let transition = render(0.5);
+        let cross = render(1.0);
+        assert_ne!(camera, transition);
+        assert_ne!(transition, cross);
+        assert_ne!(camera, cross);
+    }
 
     #[test]
     fn screen_border_fits_inside_logical_output() {

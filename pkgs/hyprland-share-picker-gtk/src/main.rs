@@ -41,6 +41,9 @@ struct Args {
     #[arg(long, value_name = "TARGET", hide = true)]
     spawn_indicator: Option<String>,
 
+    #[arg(long, value_name = "PATH", hide = true)]
+    session_handle: Option<String>,
+
     #[arg(index = 1)]
     window_list: Option<String>,
 }
@@ -126,12 +129,12 @@ fn main() {
     }
 
     if let Some(target) = args.spawn_indicator {
-        indicator::spawn(&target);
+        indicator::spawn(&target, args.session_handle.as_deref());
         process::exit(0);
     }
 
     if let Some(target) = args.indicator {
-        indicator::run(&target);
+        indicator::run(&target, args.session_handle);
     }
 
     if args.runtime_check {

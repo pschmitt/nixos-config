@@ -16,15 +16,32 @@ diff --git a/src/portals/Screencopy.cpp b/src/portals/Screencopy.cpp
 +    if (PSESSION->sharingData.active)
 +        return {2, {}};
 +
-+    startScreencopyIndicator(PSESSION->selection);
++    startScreencopyIndicator(PSESSION->selection, sessionHandle);
 +    if (!startSharing(PSESSION))
          return {2, {}};
+diff --git a/src/shared/Session.cpp b/src/shared/Session.cpp
+--- a/src/shared/Session.cpp
++++ b/src/shared/Session.cpp
+@@ -20,2 +20,2 @@
+-    if (!sess)
++    if (!sess || !sess->onDestroy)
+         return 0;
+@@ -23,3 +23,4 @@
+     auto destroy = std::move(sess->onDestroy);
+     g_pPortalManager->addTimer({0, [sess, destroy]() {
++                                    sess->object->emitSignal("Closed").onInterface("org.freedesktop.impl.portal.Session");
+                                     sess->object.reset();
+@@ -41,1 +42,3 @@
+-    pSession->object->addVTable(sdbus::registerMethod("Close").implementedAs([PSESSION]() { onCloseSession(PSESSION); })).forInterface("org.freedesktop.impl.portal.Session");
++    pSession->object
++        ->addVTable(sdbus::registerMethod("Close").implementedAs([PSESSION]() { onCloseSession(PSESSION); }), sdbus::registerSignal("Closed"))
++        .forInterface("org.freedesktop.impl.portal.Session");
 diff --git a/src/shared/ScreencopyShared.hpp b/src/shared/ScreencopyShared.hpp
 --- a/src/shared/ScreencopyShared.hpp
 +++ b/src/shared/ScreencopyShared.hpp
 @@ -47,4 +47,5 @@
  SSelectionData   promptForScreencopySelection();
-+void             startScreencopyIndicator(const SSelectionData& data);
++void             startScreencopyIndicator(const SSelectionData& data, const std::string& sessionHandle);
  uint32_t         drmFourccFromSHM(wl_shm_format format);
  spa_video_format pwFromDrmFourcc(uint32_t format);
  wl_shm_format    wlSHMFromDrmFourcc(uint32_t format);
@@ -32,7 +49,7 @@ diff --git a/src/shared/ScreencopyShared.cpp b/src/shared/ScreencopyShared.cpp
 --- a/src/shared/ScreencopyShared.cpp
 +++ b/src/shared/ScreencopyShared.cpp
 @@ -241,3 +241,34 @@
-+void startScreencopyIndicator(const SSelectionData& data) {
++void startScreencopyIndicator(const SSelectionData& data, const std::string& sessionHandle) {
 +    static auto* const* PBINARY =
 +        (Hyprlang::STRING* const)g_pPortalManager->m_sConfig.config->getConfigValuePtr("screencopy:custom_indicator_binary")->getDataStaticPtr();
 +    if (std::string{*PBINARY}.empty())
@@ -58,7 +75,7 @@ diff --git a/src/shared/ScreencopyShared.cpp b/src/shared/ScreencopyShared.cpp
 +        default: return;
 +    }
 +
-+    CProcess proc(*PBINARY, {"--spawn-indicator", target});
++    CProcess proc(*PBINARY, {"--spawn-indicator", target, "--session-handle", sessionHandle});
 +    if (!proc.runSync())
 +        Debug::log(ERR, "[screencopy] Could not start sharing indicator");
 +}
