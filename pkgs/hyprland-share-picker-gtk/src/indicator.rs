@@ -431,7 +431,7 @@ fn stop_share(session_handle: String, stopping: Rc<std::cell::Cell<bool>>) {
                 Some("org.freedesktop.impl.portal.desktop.hyprland"),
                 &session_handle,
                 "org.freedesktop.impl.portal.Session",
-                "Close",
+                "StopSharing",
                 None,
                 None,
                 gio::DBusCallFlags::NONE,

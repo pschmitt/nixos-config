@@ -22,19 +22,15 @@ diff --git a/src/portals/Screencopy.cpp b/src/portals/Screencopy.cpp
 diff --git a/src/shared/Session.cpp b/src/shared/Session.cpp
 --- a/src/shared/Session.cpp
 +++ b/src/shared/Session.cpp
-@@ -20,2 +20,2 @@
--    if (!sess)
-+    if (!sess || !sess->onDestroy)
-         return 0;
-@@ -23,3 +23,4 @@
-     auto destroy = std::move(sess->onDestroy);
-     g_pPortalManager->addTimer({0, [sess, destroy]() {
-+                                    sess->object->emitSignal("Closed").onInterface("org.freedesktop.impl.portal.Session");
-                                     sess->object.reset();
-@@ -41,1 +42,3 @@
+@@ -41,1 +41,8 @@
 -    pSession->object->addVTable(sdbus::registerMethod("Close").implementedAs([PSESSION]() { onCloseSession(PSESSION); })).forInterface("org.freedesktop.impl.portal.Session");
 +    pSession->object
-+        ->addVTable(sdbus::registerMethod("Close").implementedAs([PSESSION]() { onCloseSession(PSESSION); }), sdbus::registerSignal("Closed"))
++        ->addVTable(sdbus::registerMethod("Close").implementedAs([PSESSION]() { onCloseSession(PSESSION); }),
++                    sdbus::registerMethod("StopSharing").implementedAs([PSESSION]() {
++                        PSESSION->object->emitSignal("Closed").onInterface("org.freedesktop.impl.portal.Session");
++                        onCloseSession(PSESSION);
++                    }),
++                    sdbus::registerSignal("Closed"))
 +        .forInterface("org.freedesktop.impl.portal.Session");
 diff --git a/src/shared/ScreencopyShared.hpp b/src/shared/ScreencopyShared.hpp
 --- a/src/shared/ScreencopyShared.hpp
