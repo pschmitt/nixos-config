@@ -18,6 +18,7 @@ _termuxpp_adb_shell() {
     '(-h --help)'{-h,--help}'[show help]' \
     '--serial[ADB device serial]:serial:_termuxpp_adb_shell_serials' \
     '--mode[shell transport]:mode:(auto mtls run-as)' \
+    '--shell[override configured login shell]:shell:(bash zsh fish sh)' \
     '--completions[print shell integration]:shell:(bash zsh fish)' \
     '(--list-authorizations --revoke)--provision[enroll mTLS client]' \
     '(--provision --revoke)--list-authorizations[list approved certificates]' \

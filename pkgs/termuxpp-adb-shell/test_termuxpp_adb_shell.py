@@ -194,7 +194,7 @@ class TransportTests(unittest.TestCase):
     @mock.patch.object(cli, "supports_run_as", return_value=True)
     def test_auto_uses_run_as_without_forwarding(self, probe, shell, forward):
         self.assertEqual(self.invoke([]), 7)
-        shell.assert_called_once_with("serial")
+        shell.assert_called_once_with("serial", None)
         forward.assert_not_called()
 
     @mock.patch.object(cli, "remove_forwarding")
@@ -278,8 +278,94 @@ class TransportTests(unittest.TestCase):
         remote = cli.shlex.split(command[5])
         self.assertEqual(remote[:4], ["run-as", cli.PACKAGE, "/system/bin/sh", "-c"])
         for value in ("TERMUX_APP__DATA_DIR", "LD_LIBRARY_PATH", "libtermux-pkg-redirect.so",
-                      "/data/app/random/lib/*/", 'exec "$PREFIX/bin/bash" -l'):
+                      "/data/app/random/lib/*/", 'exec "$SHELL" -l', '"$HOME/.config/termuxpp/shell"'):
             self.assertIn(value, remote[4])
+
+
+class RunAsShellSelectionTests(unittest.TestCase):
+    def launcher(self, requested=None):
+        with mock.patch.object(cli.sys.stdin, "isatty", return_value=True), \
+                mock.patch.object(cli.sys.stdout, "isatty", return_value=True), \
+                mock.patch.object(cli.subprocess, "run") as run:
+            run.side_effect = [mock.Mock(returncode=0, stdout="package:/data/app/random/base.apk\n"),
+                               mock.Mock(returncode=0)]
+            cli.run_as_shell("serial", requested)
+            script = cli.shlex.split(run.call_args.args[0][5])[4]
+        return script[script.index("SHELL="):].replace("/system/bin/readlink", shutil.which("readlink"))
+
+    def test_configured_shell_override_and_invalid_target(self):
+        with cli.tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / "home"
+            prefix = Path(directory) / "usr"
+            home.mkdir()
+            (prefix / "bin").mkdir(parents=True)
+            for shell in ("bash", "zsh", "fish"):
+                executable = prefix / "bin" / shell
+                executable.write_text(f'#!{shutil.which("sh")}\nprintf "%s:%s\\n" "$SHELL" "$1"\n')
+                executable.chmod(0o700)
+            environment = {**os.environ, "HOME": str(home), "PREFIX": str(prefix)}
+            def launch(requested=None):
+                return subprocess.run(["sh", "-c", self.launcher(requested)], env=environment,
+                                      text=True, capture_output=True)
+            self.assertEqual(launch().stdout.strip(), f"{prefix}/bin/bash:-l")
+            config = home / ".config/termuxpp/shell"
+            config.parent.mkdir(parents=True)
+            config.symlink_to(prefix / "bin/zsh")
+            self.assertEqual(launch().stdout.strip(), f"{prefix}/bin/zsh:-l")
+            self.assertEqual(launch("fish").stdout.strip(), f"{prefix}/bin/fish:-l")
+            self.assertNotEqual(launch("missing").returncode, 0)
+            config.unlink()
+            config.symlink_to(prefix / "bin/missing")
+            self.assertNotEqual(launch().returncode, 0)
+
+
+class SessionAuthenticationTests(unittest.TestCase):
+    @mock.patch.object(cli, "request_token", side_effect=AssertionError("must not prompt"))
+    @mock.patch.object(cli, "load_tls_credentials")
+    @mock.patch.object(cli, "connect_tls")
+    @mock.patch.object(cli, "read_line", return_value=b"OK")
+    def test_certificate_session_does_not_request_token(self, line, connect, load, token):
+        self.assertIs(cli.authenticated_connection(Path("credentials")), connect.return_value)
+        connect.return_value.sendall.assert_called_once_with(b"TERMUXPP/2\n")
+        token.assert_not_called()
+
+    @mock.patch.object(cli, "load_tls_credentials")
+    @mock.patch.object(cli, "connect_tls")
+    @mock.patch.object(cli, "read_line", return_value=b"ERR")
+    def test_old_server_fails_with_upgrade_message(self, line, connect, load):
+        with self.assertRaisesRegex(RuntimeError, "update the TermuxPP app"):
+            cli.authenticated_connection(Path("credentials"))
+        connect.return_value.close.assert_called_once()
+
+
+class ShellOptionTests(unittest.TestCase):
+    def test_shell_option_rejects_protocol_injection_and_management(self):
+        for value in ("zsh\nLIST", "zsh -c id", "", "é"):
+            with mock.patch.object(cli.sys, "argv", ["cli", "--serial", "serial", "--shell", value]):
+                with self.assertRaises(SystemExit):
+                    cli.parse_args()
+        with mock.patch.object(cli.sys, "argv", ["cli", "--serial", "serial", "--shell", "zsh", "--provision"]):
+            with self.assertRaises(SystemExit):
+                cli.parse_args()
+
+    @mock.patch.object(cli, "supports_run_as", return_value=True)
+    @mock.patch.object(cli, "run_as_shell", return_value=0)
+    def test_override_reaches_run_as(self, shell, probe):
+        with mock.patch.object(cli.sys, "argv", ["cli", "--serial", "serial", "--shell", "zsh"]):
+            self.assertEqual(cli.main(), 0)
+        shell.assert_called_once_with("serial", "zsh")
+
+    @mock.patch.object(cli.sys.stdout, "isatty", return_value=True)
+    @mock.patch.object(cli.sys.stdin, "isatty", return_value=True)
+    @mock.patch.object(cli.termios, "tcgetattr")
+    @mock.patch.object(cli.termios, "tcsetattr")
+    @mock.patch.object(cli.tty, "setraw")
+    @mock.patch.object(cli, "run_terminal")
+    @mock.patch.object(cli, "read_line", return_value=b"OK")
+    @mock.patch.object(cli, "authenticated_connection")
+    def test_override_sent_as_executable_not_command(self, connect, line, terminal, raw, restore, state, stdin, stdout):
+        cli.run_shell(Path("credentials"), "zsh")
+        connect.return_value.sendall.assert_called_once_with(b"SHELL zsh\n")
 
 
 class CompletionTests(unittest.TestCase):
@@ -295,6 +381,9 @@ COMP_WORDS=(termuxpp-adb-shell --mode r)
 COMP_CWORD=2
 _termuxpp_adb_shell
 [[ "${COMPREPLY[*]}" == run-as ]] || exit 1
+COMP_WORDS=(termuxpp-adb-shell --shell z)
+_termuxpp_adb_shell
+[[ "${COMPREPLY[*]}" == zsh ]] || exit 1
 COMP_WORDS=(termuxpp-adb-shell.py --serial '')
 _termuxpp_adb_shell
 [[ "${COMPREPLY[*]}" == ready ]]

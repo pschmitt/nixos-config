@@ -41,7 +41,13 @@ def parse_args():
                         help="private directory for this device's mTLS credentials (default: per device)")
     parser.add_argument("--mode", choices=("auto", "mtls", "run-as"), default="auto",
                         help="shell transport (default: auto tries run-as, then mTLS for non-debuggable apps)")
+    parser.add_argument("--shell", help="shell executable name or absolute path (default: configured login shell)")
     args = parser.parse_args()
+    if args.shell is not None and (not args.shell or len(args.shell) > 4000 or not args.shell.isascii()
+                                   or any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in args.shell)):
+        parser.error("--shell must be an ASCII executable name or path without whitespace")
+    if args.shell and (args.provision or args.list_authorizations or args.revoke is not None):
+        parser.error("--shell is only valid for shell sessions")
     if not args.completions and not args.serial:
         parser.error("--serial is required for device operations")
     if args.mode == "run-as" and (args.provision or args.list_authorizations or args.revoke is not None):
@@ -340,28 +346,27 @@ def connect_tls(context):
 
 def authenticated_connection(credential_dir):
     context = load_tls_credentials(credential_dir)
-    token = request_token()
     connection = connect_tls(context)
     try:
-        connection.sendall(b"TERMUXPP/1 " + token + b"\n")
+        connection.sendall(b"TERMUXPP/2\n")
         if read_line(connection) != b"OK":
-            raise RuntimeError("Authentication failed; check the token and that ADB shell access is enabled.")
+            raise RuntimeError("Certificate authentication failed; update the TermuxPP app for token-free sessions.")
         return connection
     except BaseException:
         connection.close()
         raise
 
 
-def run_shell(credential_dir):
+def run_shell(credential_dir, shell=None):
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         raise RuntimeError("This command requires an interactive terminal.")
     connection = None
     terminal_state = termios.tcgetattr(sys.stdin.fileno())
     try:
         connection = authenticated_connection(credential_dir)
-        connection.sendall(b"SHELL\n")
+        connection.sendall(("SHELL" + (" " + shell if shell else "") + "\n").encode("ascii"))
         if read_line(connection) != b"OK":
-            raise RuntimeError("The device rejected shell access.")
+            raise RuntimeError("The device rejected shell access; check the configured shell or --shell executable.")
         connection.settimeout(None)
         tty.setraw(sys.stdin.fileno())
         run_terminal(connection)
@@ -386,7 +391,7 @@ def supports_run_as(serial):
     raise RuntimeError("Could not probe run-as; check the ADB connection and installed TermuxPP package.")
 
 
-def run_as_shell(serial):
+def run_as_shell(serial, shell=None):
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         raise RuntimeError("This command requires an interactive terminal.")
     result = subprocess.run(["adb", "-s", serial, "shell", "pm", "path", PACKAGE],
@@ -420,7 +425,35 @@ then
   export LD_PRELOAD="$LD_PRELOAD:$PREFIX/lib/libtermux-exec.so"
 fi
 cd "$HOME" || exit 1
-exec "$PREFIX/bin/bash" -l
+SHELL={shlex.quote(shell or '')}
+if [ -z "$SHELL" ]
+then
+  for config in "$HOME/.config/termuxpp/shell" "$HOME/.config/termux/shell" "$HOME/.termux/shell"
+  do
+    if [ -e "$config" ] || [ -L "$config" ]
+    then
+      SHELL="$config"
+      break
+    fi
+  done
+fi
+if [ -z "$SHELL" ]
+then
+  SHELL="$PREFIX/bin/bash"
+  [ -x "$SHELL" ] || SHELL="$PREFIX/bin/sh"
+fi
+case "$SHELL" in
+  /*) ;;
+  *) SHELL="$PREFIX/bin/$SHELL" ;;
+esac
+SHELL=$(/system/bin/readlink -f "$SHELL") || exit 1
+if [ ! -f "$SHELL" ] || [ ! -x "$SHELL" ]
+then
+  printf '%s\\n' 'Selected shell is not executable.' >&2
+  exit 1
+fi
+export SHELL
+exec "$SHELL" -l
 """
     command = shlex.join(["run-as", PACKAGE, "/system/bin/sh", "-c", script])
     print("Using run-as (debuggable TermuxPP).", file=sys.stderr)
@@ -446,7 +479,7 @@ def main():
     try:
         if not management and args.mode != "mtls":
             if supports_run_as(args.serial):
-                return run_as_shell(args.serial)
+                return run_as_shell(args.serial, args.shell)
             if args.mode == "run-as":
                 raise RuntimeError("run-as requires a debuggable TermuxPP APK; use --mode mtls instead.")
             print("TermuxPP is not debuggable; using mTLS.", file=sys.stderr)
@@ -471,7 +504,7 @@ def main():
         elif args.revoke or args.list_authorizations:
             manage_authorizations(args.credential_dir, args.revoke)
         else:
-            run_shell(args.credential_dir)
+            run_shell(args.credential_dir, args.shell)
         return 0
     except (OSError, RuntimeError, ssl.SSLError, termios.error) as error:
         print(f"ADB shell failed: {error}", file=sys.stderr)
