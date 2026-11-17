@@ -368,6 +368,104 @@ class ShellOptionTests(unittest.TestCase):
         connect.return_value.sendall.assert_called_once_with(b"SHELL zsh\n")
 
 
+class CommandTests(unittest.TestCase):
+    def test_parser_keeps_command_arguments_literal(self):
+        with mock.patch.object(cli.sys, "argv", ["cli", "--serial", "serial", "--shell", "zsh", "--",
+                                                "printf", "%s", "two words", "$(id)", "--help", ""]):
+            args = cli.parse_args()
+        self.assertEqual(args.command, ["printf", "%s", "two words", "$(id)", "--help", ""])
+        self.assertEqual(args.shell, "zsh")
+
+    def test_management_and_oversized_commands_rejected(self):
+        for options in (["--provision", "--", "id"], ["--", "echo", "a" * 65536]):
+            with mock.patch.object(cli.sys, "argv", ["cli", "--serial", "serial", *options]):
+                with self.assertRaises(SystemExit):
+                    cli.parse_args()
+
+    @mock.patch.object(cli.sys.stdin, "isatty", return_value=False)
+    @mock.patch.object(cli.subprocess, "run")
+    def test_run_as_command_does_not_require_tty_and_preserves_arguments(self, run, tty):
+        run.side_effect = [mock.Mock(returncode=0, stdout="package:/data/app/test/base.apk\n"),
+                           mock.Mock(returncode=7)]
+        argv = ["printf", "%s", "two words", "$(id)", ""]
+        self.assertEqual(cli.run_as_shell("serial", "zsh", argv), 7)
+        remote = run.call_args.args[0]
+        self.assertEqual(remote[:5], ["adb", "-s", "serial", "shell", "-T"])
+        script = cli.shlex.split(remote[5])[4]
+        suffix = next(line for line in script.splitlines() if line.startswith('  *) exec')).removeprefix('  *) ').removesuffix(' ;;')
+        self.assertEqual(cli.shlex.split(suffix), ["exec", "$SHELL", "-l", "-c", 'exec "$@"',
+                                                 "termuxpp-command", *argv])
+
+    @mock.patch.object(cli, "supports_run_as", return_value=True)
+    @mock.patch.object(cli, "run_as_shell", return_value=7)
+    def test_main_returns_remote_command_exit(self, run, probe):
+        with mock.patch.object(cli.sys, "argv", ["cli", "--serial", "serial", "--", "false"]):
+            self.assertEqual(cli.main(), 7)
+        run.assert_called_once_with("serial", None, ["false"])
+
+    def test_mtls_streams_input_separates_output_and_returns_status(self):
+        client, server = socket.socketpair()
+        input_read, input_write = os.pipe()
+        os.write(input_write, b"stdin payload")
+        os.close(input_write)
+        errors = []
+        def serve():
+            try:
+                self.assertEqual(cli.receive_exact(server, 5), b"EXEC\n")
+                size = int.from_bytes(cli.receive_exact(server, 4), "big")
+                request = cli.json.loads(cli.receive_exact(server, size))
+                self.assertEqual(request, {"shell": "zsh", "argv": ["printf", "two words", "$(id)"]})
+                server.sendall(b"OK\n")
+                received = b""
+                while True:
+                    kind = cli.receive_exact(server, 1)
+                    size = int.from_bytes(cli.receive_exact(server, 4), "big")
+                    chunk = cli.receive_exact(server, size)
+                    if kind == b"E":
+                        self.assertEqual(size, 0)
+                        break
+                    self.assertEqual(kind, b"I")
+                    received += chunk
+                self.assertEqual(received, b"stdin payload")
+                for kind, data in ((b"O", b"stdout"), (b"R", b"stderr"), (b"X", (7).to_bytes(4, "big"))):
+                    server.sendall(kind + len(data).to_bytes(4, "big") + data)
+            except BaseException as error:
+                errors.append(error)
+            finally:
+                server.close()
+        thread = threading.Thread(target=serve)
+        thread.start()
+        stdout, stderr = mock.Mock(), mock.Mock()
+        with os.fdopen(input_read, "rb") as stdin:
+            with mock.patch.object(cli, "authenticated_connection", return_value=client), \
+                    mock.patch.object(cli.sys, "stdin", stdin), \
+                    mock.patch.object(cli.sys, "stdout", stdout), mock.patch.object(cli.sys, "stderr", stderr):
+                self.assertEqual(cli.run_command(Path("unused"), "zsh", ["printf", "two words", "$(id)"]), 7)
+        thread.join(5)
+        self.assertFalse(thread.is_alive())
+        if errors:
+            raise errors[0]
+        stdout.buffer.write.assert_called_once_with(b"stdout")
+        stderr.buffer.write.assert_called_once_with(b"stderr")
+
+    def test_mtls_rejects_invalid_response_frames(self):
+        for kind, size in ((b"?", 0), (b"X", 3), (b"O", 65537)):
+            client, server = socket.socketpair()
+            server.sendall(b"OK\n" + kind + size.to_bytes(4, "big"))
+            with mock.patch.object(cli, "authenticated_connection", return_value=client), \
+                    mock.patch.object(cli.select, "select", return_value=([], [], [])):
+                with self.assertRaisesRegex(RuntimeError, "invalid command response"):
+                    cli.run_command(Path("unused"), None, ["id"])
+            server.close()
+
+    @mock.patch.object(cli.time, "sleep")
+    @mock.patch.object(cli.socket, "create_connection", side_effect=cli.ssl.SSLEOFError())
+    def test_unavailable_listener_has_actionable_error(self, connect, sleep):
+        with self.assertRaisesRegex(RuntimeError, "mTLS listener is unavailable"):
+            cli.connect_tls(mock.Mock())
+        self.assertEqual(connect.call_count, 4)
+
+
 class CompletionTests(unittest.TestCase):
     def completion_path(self, shell):
         return Path(cli.__file__).parent / "completions" / f"termuxpp-adb-shell.{shell}"
@@ -418,6 +516,30 @@ _termuxpp-adb-shell
         with cli.tempfile.TemporaryDirectory() as directory:
             shutil.copyfile(self.completion_path("zsh"), Path(directory) / "_termuxpp-adb-shell")
             subprocess.run(["zsh", "-fc", script, "test", directory], check=True)
+
+    @unittest.skipUnless(shutil.which("bash"), "bash not installed")
+    def test_bash_completes_command_after_separator(self):
+        script = r'''
+source "$1"
+termuxpp_completion_probe() { :; }
+COMP_WORDS=(termuxpp-adb-shell --shell zsh -- termuxpp_completion_pr)
+COMP_CWORD=4
+_termuxpp_adb_shell
+[[ " ${COMPREPLY[*]} " == *' termuxpp_completion_probe '* ]]
+'''
+        subprocess.run(["bash", "-c", script, "test", str(self.completion_path("bash"))], check=True)
+
+    @unittest.skipUnless(shutil.which("fish"), "fish not installed")
+    def test_fish_completes_command_not_wrapper_options_after_separator(self):
+        script = r'''
+source $argv[1]
+function termuxpp_completion_probe
+end
+complete -C 'termuxpp-adb-shell -- termuxpp_completion_pr' | string match -q 'termuxpp_completion_probe*'; or exit 1
+set -l matches (complete -C 'termuxpp-adb-shell -- printf --mo')
+not string match -q -- '--mode*' $matches
+'''
+        subprocess.run(["fish", "-c", script, str(self.completion_path("fish"))], check=True)
 
     @unittest.skipUnless(shutil.which("fish"), "fish not installed")
     def test_fish_completion_syntax(self):

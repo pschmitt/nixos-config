@@ -9,6 +9,8 @@ import hmac
 import json
 import os
 import selectors
+import select
+import threading
 import shlex
 import socket
 import ssl
@@ -42,7 +44,18 @@ def parse_args():
     parser.add_argument("--mode", choices=("auto", "mtls", "run-as"), default="auto",
                         help="shell transport (default: auto tries run-as, then mTLS for non-debuggable apps)")
     parser.add_argument("--shell", help="shell executable name or absolute path (default: configured login shell)")
+    parser.add_argument("command", nargs=argparse.REMAINDER, metavar="COMMAND",
+                        help="run command and arguments without a PTY (use -- before the command)")
     args = parser.parse_args()
+    if args.command[:1] == ["--"]:
+        args.command = args.command[1:]
+    if args.command and (args.provision or args.list_authorizations or args.revoke is not None or args.completions):
+        parser.error("commands cannot be combined with provisioning, authorization management or completions")
+    if args.command and (len(args.command) > 4096 or any("\0" in arg for arg in args.command)
+                         or not args.command[0] or args.command[0].startswith("-")):
+        parser.error("command requires an executable (not an option), no NULs and at most 4096 arguments")
+    if len(json.dumps({"shell": args.shell, "argv": args.command}, ensure_ascii=False).encode("utf-8")) > 65536:
+        parser.error("command request exceeds 64 KiB")
     if args.shell is not None and (not args.shell or len(args.shell) > 4000 or not args.shell.isascii()
                                    or any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in args.shell)):
         parser.error("--shell must be an ASCII executable name or path without whitespace")
@@ -125,7 +138,7 @@ def receive_exact(connection, count):
     while len(data) < count:
         chunk = connection.recv(count - len(data))
         if not chunk:
-            raise RuntimeError("The device closed the mTLS provisioning connection.")
+            raise RuntimeError("The device closed the mTLS connection before completing the operation.")
         data.extend(chunk)
     return bytes(data)
 
@@ -340,7 +353,13 @@ def connect_tls(context):
                 raise
         except (ConnectionRefusedError, ConnectionResetError, ssl.SSLEOFError):
             if attempt == 3:
-                raise
+                raise RuntimeError(
+                    "TermuxPP's mTLS listener is unavailable or closed the TLS handshake. "
+                    "Open the updated TermuxPP app to restore enabled access, and check "
+                    "Settings > Debugging > ADB shell access. Do not toggle enabled access off "
+                    "just to restart it: that revokes approvals. If the listener is running, check "
+                    "that this client's certificate is still approved."
+                ) from None
             time.sleep(1)
 
 
@@ -376,6 +395,67 @@ def run_shell(credential_dir, shell=None):
             connection.close()
 
 
+def run_command(credential_dir, shell, argv):
+    request = json.dumps({"shell": shell, "argv": argv}, ensure_ascii=False).encode("utf-8")
+    if not 1 <= len(request) <= 65536:
+        raise RuntimeError("Command request exceeds 64 KiB.")
+    stopped = threading.Event()
+    input_errors = []
+    with authenticated_connection(credential_dir) as connection:
+        connection.sendall(b"EXEC\n" + len(request).to_bytes(4, "big") + request)
+        if read_line(connection) != b"OK":
+            raise RuntimeError("The device rejected command execution; update TermuxPP and check the selected shell.")
+        connection.settimeout(None)
+
+        def send_input():
+            try:
+                while not stopped.is_set():
+                    if not select.select([sys.stdin.fileno()], [], [], 0.1)[0]:
+                        continue
+                    data = os.read(sys.stdin.fileno(), 8192)
+                    if stopped.is_set():
+                        return
+                    connection.sendall((b"I" if data else b"E") + len(data).to_bytes(4, "big") + data)
+                    if not data:
+                        return
+            except (OSError, ValueError) as error:
+                if not stopped.is_set():
+                    input_errors.append(error)
+                    try:
+                        connection.shutdown(socket.SHUT_RDWR)
+                    except OSError:
+                        pass
+
+        writer = threading.Thread(target=send_input, daemon=True)
+        writer.start()
+        try:
+            while True:
+                kind = receive_exact(connection, 1)
+                length = int.from_bytes(receive_exact(connection, 4), "big")
+                if kind not in (b"O", b"R", b"X") or length > 65536 or (kind == b"X" and length != 4):
+                    raise RuntimeError("The device sent an invalid command response.")
+                data = receive_exact(connection, length)
+                if kind == b"X":
+                    returncode = int.from_bytes(data, "big", signed=True)
+                    if not 0 <= returncode <= 255:
+                        raise RuntimeError("The device sent an invalid command exit status.")
+                    return returncode
+                stream = sys.stdout.buffer if kind == b"O" else sys.stderr.buffer
+                stream.write(data)
+                stream.flush()
+        except RuntimeError:
+            if input_errors:
+                raise RuntimeError("Could not stream command input.") from None
+            raise
+        finally:
+            stopped.set()
+            try:
+                connection.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            writer.join(timeout=1)
+
+
 PACKAGE = "dev.pschmitt.termux"
 
 
@@ -391,8 +471,8 @@ def supports_run_as(serial):
     raise RuntimeError("Could not probe run-as; check the ADB connection and installed TermuxPP package.")
 
 
-def run_as_shell(serial, shell=None):
-    if not sys.stdin.isatty() or not sys.stdout.isatty():
+def run_as_shell(serial, shell=None, command=None):
+    if not command and (not sys.stdin.isatty() or not sys.stdout.isatty()):
         raise RuntimeError("This command requires an interactive terminal.")
     result = subprocess.run(["adb", "-s", serial, "shell", "pm", "path", PACKAGE],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
@@ -455,9 +535,16 @@ fi
 export SHELL
 exec "$SHELL" -l
 """
-    command = shlex.join(["run-as", PACKAGE, "/system/bin/sh", "-c", script])
+    if command:
+        arguments = shlex.join(command)
+        script = script.replace('exec "$SHELL" -l\n', f'''case "${{SHELL##*/}}" in
+  fish) exec "$SHELL" -l -c 'exec $argv' {arguments} ;;
+  *) exec "$SHELL" -l -c 'exec "$@"' termuxpp-command {arguments} ;;
+esac
+''')
+    remote = shlex.join(["run-as", PACKAGE, "/system/bin/sh", "-c", script])
     print("Using run-as (debuggable TermuxPP).", file=sys.stderr)
-    return subprocess.run(["adb", "-s", serial, "shell", "-tt", command]).returncode
+    return subprocess.run(["adb", "-s", serial, "shell", "-T" if command else "-tt", remote]).returncode
 
 
 def main():
@@ -479,6 +566,8 @@ def main():
     try:
         if not management and args.mode != "mtls":
             if supports_run_as(args.serial):
+                if args.command:
+                    return run_as_shell(args.serial, args.shell, args.command)
                 return run_as_shell(args.serial, args.shell)
             if args.mode == "run-as":
                 raise RuntimeError("run-as requires a debuggable TermuxPP APK; use --mode mtls instead.")
@@ -504,6 +593,8 @@ def main():
         elif args.revoke or args.list_authorizations:
             manage_authorizations(args.credential_dir, args.revoke)
         else:
+            if args.command:
+                return run_command(args.credential_dir, args.shell, args.command)
             run_shell(args.credential_dir, args.shell)
         return 0
     except (OSError, RuntimeError, ssl.SSLError, termios.error) as error:

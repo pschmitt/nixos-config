@@ -14,7 +14,7 @@ _termuxpp_adb_shell_serials() {
 }
 
 _termuxpp_adb_shell() {
-  _arguments \
+  _arguments -S \
     '(-h --help)'{-h,--help}'[show help]' \
     '--serial[ADB device serial]:serial:_termuxpp_adb_shell_serials' \
     '--mode[shell transport]:mode:(auto mtls run-as)' \
@@ -24,7 +24,8 @@ _termuxpp_adb_shell() {
     '(--provision --revoke)--list-authorizations[list approved certificates]' \
     '(--provision --list-authorizations)--revoke[revoke approved certificate]:SHA256:' \
     '--name[client display name]:name:' \
-    '--credential-dir[private mTLS credential directory]:directory:_directories'
+    '--credential-dir[private mTLS credential directory]:directory:_directories' \
+    '*::command:_normal'
 }
 
 compdef _termuxpp_adb_shell termuxpp-adb-shell termuxpp-adb-shell.py

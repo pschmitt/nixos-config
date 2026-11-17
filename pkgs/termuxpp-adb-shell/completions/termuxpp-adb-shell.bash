@@ -1,8 +1,22 @@
 _termuxpp_adb_shell() {
-  local current previous serial state rest
+  local current previous serial state rest i
   current="${COMP_WORDS[COMP_CWORD]}"
   previous="${COMP_WORDS[COMP_CWORD-1]}"
   COMPREPLY=()
+  for ((i = 1; i < COMP_CWORD; i++))
+  do
+    if [[ "${COMP_WORDS[i]}" == -- ]]
+    then
+      if ((COMP_CWORD == i + 1))
+      then
+        mapfile -t COMPREPLY < <(compgen -c -- "$current")
+      else
+        mapfile -t COMPREPLY < <(compgen -f -- "$current")
+        compopt -o filenames
+      fi
+      return
+    fi
+  done
   case "$previous" in
     --mode)
       mapfile -t COMPREPLY < <(compgen -W 'auto mtls run-as' -- "$current")
