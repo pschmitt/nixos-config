@@ -63,8 +63,8 @@ public_keys = [
   "rofl-16:BASE64_PUBLIC_KEY",
   "gh-actions:BASE64_PUBLIC_KEY",
 ]
-aws_credentials_command = ["rbw", "get", "--raw", "--exact", "nixpp Niks3 cache"]
-cache_pins = { p11 = "gh-main-packages.x86_64-linux.termux-native-p11-bundle-0", zf10 = "gh-main-packages.x86_64-linux.termux-native-zf10-bundle-0" }
+cache_profile = "zf10"
+cache_pins = { p11 = "nixbot-pschmitt-nixos-config-packages.x86_64-linux.termux-native-p11-bundle", zf10 = "nixbot-pschmitt-nixos-config-packages.x86_64-linux.termux-native-zf10-bundle" }
 ```
 
 `--cache`, `--flake`, `--builder`, and `--public-key` override these defaults.
@@ -72,7 +72,7 @@ Builders are tried in order; nixpp uses the first one that can build the
 configured flake. `--builder` selects one machine for a single `switch`.
 If neither a `--public-key` nor `NIXPP_PUBLIC_KEY` is set, all configured
 public keys are tried. For S3, nixpp uses `defaults.aws_credentials_command`
-when configured, otherwise it reads the selected `profile` from
+when configured (the generated Termux config leaves it unset), otherwise it reads the selected `profile` from
 `defaults.aws_credentials_file`, `AWS_SHARED_CREDENTIALS_FILE`, or
 `~/.aws/credentials`. The command is an argv array, never a shell string. Its
 stdout must be rbw JSON for a Login item: the username is the AWS access key,
@@ -84,13 +84,16 @@ credentials or curl-auth file.
 The Termux bootstrap links the active generation's config file to
 `~/.config/nixpp/config.toml`, nixpp's default config path. Its first-stage
 verifier, checksum, channel manifest, signed package prefix, and managed
-generation all come directly from Niks3. The bootstrap and nixpp read AWS
-credentials from rbw and keep them in memory. The flake URL points to the
+generation all come directly from Niks3. The generated nixpp config sets no
+`aws_credentials_command`: nixpp reads the read-only `[niks3]` profile from
+`~/.aws/credentials` (mode 0600 required), so unattended runs need neither rbw
+nor an unlocked vault. The flake URL points to the
 `pschmitt/nixos-config` GitHub repository; `nixpp upgrade` asks the configured
 builders to evaluate that flake, so each builder needs its usual GitHub access
 token for the private flake input. The bootstrap restores the personal SSH
-identity during yadm setup. Later nixpp operations also retrieve Niks3
-credentials from rbw when needed; rbw must be unlocked for `nixpp upgrade`.
+identity during yadm setup. `nixpp upgrade --from-cache` (below) needs only
+that credentials file; the builder-backed `nixpp upgrade` additionally needs SSH
+access to a builder.
 
 ## Build and switch from Termux
 
@@ -144,6 +147,66 @@ active when the upgrade started. Run `nixpp upgrade --dry-run` to build and
 fetch the candidate, run the bundle preflight in a temporary home, and show the
 proposed diff without activating or retaining a generation.
 
+### Unattended upgrade from the cache
+
+`nixpp upgrade --from-cache [--dry-run]` installs the bundle that the cache
+pin selected by `defaults.cache_profile` points at. It needs no SSH, no builder
+and no flake evaluation, only read access to the S3 cache. The generated
+Termux config sets `cache_profile` to the device hostname, which must be a
+label in `defaults.cache_pins`. nixpp fails closed before any download when
+`cache_profile` is unset or malformed, when the label is not a configured pin,
+when `public_keys` is empty, or when the substituter is not `s3://`; the
+error lists the configured labels. A pin object that is missing is reported as
+such, and a pin naming a store path the cache no longer holds is reported as
+stale. The narinfo signature, NAR hash and size, reference-free check, and the
+`SHA256SUMS` digest of `environment.tar.gz` are verified by the same code as
+`upgrade`, followed by the same preflight, activation and diff. `--dry-run`
+runs the preflight in a temporary home and activates nothing.
+
+When the pin still resolves to the bundle that the last successful
+`--from-cache` install activated (same signed store path and NAR hash, and
+that generation is still current), nixpp prints that the generation is already
+active and skips the NAR download. The hint is stored in
+`~/.local/share/termux-native/cache-upgrade-state.json`, written only after a
+successful install, and is ignored if it is missing, unreadable or stale. The
+digest check still decides "already active" for every other case.
+
+Pin names must match what a publisher actually writes. nixbot publishes every
+flake package, including the TermuxPP fork's `termuxpp-native-<host>-bundle`
+variants, as `pins/nixbot-pschmitt-nixos-config-packages.x86_64-linux.<attr>`
+(no suffix). GitHub CI publishes only the stock `termux-native-<host>-bundle`
+as `pins/gh-main-packages.x86_64-linux.<attr>-0`. The fork relocation rewrites
+`termux-native-` to `termuxpp-native-` in the generated config, so the one
+`cache_pins` entry above resolves to the right variant on both builds. A pin
+that no publisher writes reports as missing; nixpp never substitutes another
+pin, a stock bundle on a fork device, or an older generation. Check with
+`nixpp cache list`.
+
+Limits to know before running it unattended:
+
+- Pin objects (`pins/<name>`) are not signed. Only the narinfo and NAR they
+  lead to are authenticated, against the configured `public_keys`. Anyone who
+  can write the bucket can point a pin at, or replay, an older bundle that was
+  signed by a trusted key; the channel has no freshness or rollback
+  protection, so a pin is "latest" only as far as the bucket is trusted.
+  Nobody without a trusted signing key can introduce new content.
+- The read-only `[niks3]` credential sits unencrypted in the configured
+  `aws_credentials_file` (otherwise `~/.aws/credentials`) with mode 0600, so
+  anything that can read the Termux app's data can read it. Keep that profile
+  read-only and revocable. It replaces the rbw lookup; an operator who wants
+  the vault back can set `aws_credentials_command`.
+- A private configuration can set `termux.cache.credentialsSopsFile` to a
+  narrow SOPS payload containing only `access_key` and `secret_key`. Native
+  activation decrypts it with the existing Termux SSH host identity and
+  atomically installs `~/.config/nixpp/cache-credentials`; generated nixpp
+  configuration selects that file. Plaintext never enters the bundle or Nix
+  store. First cache access still needs initial credential provisioning; a
+  bundle cannot bootstrap the credential needed to download itself. Rotation
+  must overlap old and new credentials until clients have activated the new
+  payload.
+- Failure never activates anything: any error leaves the current generation
+  selected.
+
 `nixpp fetch latest` is a short alias for `nixpp upgrade`: it builds the
 configured flake, fetches its published bundle from S3, verifies it, and
 activates it. `nixpp cache list` reads the configured Niks3 pin objects from
@@ -153,7 +216,7 @@ configured latest pin for each device, not every historical NAR retained by
 S3.
 
 Run `nixpp doctor` to validate the config and trusted keys, retrieve and check
-the rbw credentials, verify authenticated access to the S3 cache, and check
+the configured AWS credentials, verify authenticated access to the S3 cache, and check
 SSH/Nix availability on the configured builders; it succeeds if one or more
 are reachable.
 

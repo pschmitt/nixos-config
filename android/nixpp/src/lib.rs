@@ -38,6 +38,8 @@ struct ConfigDefaults {
     aws_credentials_file: Option<PathBuf>,
     aws_credentials_command: Option<Vec<String>>,
     cache_pins: BTreeMap<String, String>,
+    /// Label in `cache_pins` that `upgrade --from-cache` consumes.
+    cache_profile: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -706,15 +708,7 @@ pub fn doctor() -> Result<()> {
                 scope.spawn(move || {
                     let started = Instant::now();
                     let result = (|| {
-                        let output = Command::new("ssh")
-                            .args([
-                                "-o",
-                                "BatchMode=yes",
-                                "-o",
-                                "ConnectTimeout=10",
-                                builder,
-                                "command -v nix >/dev/null",
-                            ])
+                        let output = ssh_command(builder, "command -v nix >/dev/null")
                             .output()
                             .context("start SSH check")?;
                         ensure!(
@@ -1200,21 +1194,7 @@ pub fn fetch(
             .pop_if_empty()
             .push(&format!("{store_hash}.narinfo"));
         let narinfo = curl_read(info_url.as_str(), &auth, MAX_NARINFO_SIZE)?;
-        let info = parse_nar_info_response(&narinfo)?;
-        ensure!(
-            info.store_path == store_path,
-            "narinfo StorePath does not match requested store path"
-        );
-        ensure!(
-            info.references.is_empty(),
-            "refusing cache output with Nix store references"
-        );
-        verify_any_signature(&info, &public_keys)?;
-        ensure!(
-            matches!(info.compression.as_str(), "none" | "gzip" | "xz" | "zstd"),
-            "unsupported cache compression {:?}; supported formats are none, gzip, xz, and zstd",
-            info.compression
-        );
+        let info = verify_cache_narinfo(&narinfo, store_path, &public_keys)?;
         let archive_url = safe_cache_url(&target.base, &info.url)?;
         download_and_extract(&archive_url, &auth, &info, destination)
     })();
@@ -1222,6 +1202,84 @@ pub fn fetch(
         fs::remove_file(&path).with_context(|| format!("remove temporary netrc {}", path.display()))
     });
     result.and(cleanup_result)
+}
+
+/// Parse the narinfo of a requested output and require everything nixpp
+/// relies on before it downloads the NAR: the requested store path, no Nix
+/// references, a trusted signature, and a supported compression.
+fn verify_cache_narinfo(data: &[u8], store_path: &str, public_keys: &[String]) -> Result<NarInfo> {
+    let info = parse_nar_info_response(data)?;
+    ensure!(
+        info.store_path == store_path,
+        "narinfo StorePath does not match requested store path"
+    );
+    ensure!(
+        info.references.is_empty(),
+        "refusing cache output with Nix store references"
+    );
+    verify_any_signature(&info, public_keys)?;
+    ensure!(
+        matches!(info.compression.as_str(), "none" | "gzip" | "xz" | "zstd"),
+        "unsupported cache compression {:?}; supported formats are none, gzip, xz, and zstd",
+        info.compression
+    );
+    Ok(info)
+}
+
+fn validate_cache_pin_label(label: &str) -> Result<()> {
+    ensure!(
+        !label.is_empty()
+            && label
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric() || "-_".contains(character)),
+        "invalid cache pin label {label:?}"
+    );
+    Ok(())
+}
+
+fn validate_niks3_pin_name(label: &str, pin: &str) -> Result<()> {
+    ensure!(
+        !pin.is_empty()
+            && pin
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric() || "-_.".contains(character)),
+        "invalid Niks3 pin name for {label:?}"
+    );
+    Ok(())
+}
+
+/// Resolve `defaults.cache_profile` to its Niks3 pin name, failing closed on
+/// an unset, malformed, or unknown selection.
+fn select_cache_pin(defaults: &ConfigDefaults) -> Result<(&str, &str)> {
+    let label = defaults
+        .cache_profile
+        .as_deref()
+        .context("no cache profile selected; set defaults.cache_profile in the nixpp config")?;
+    validate_cache_pin_label(label)?;
+    let pin = defaults.cache_pins.get(label).with_context(|| {
+        let known: Vec<_> = defaults.cache_pins.keys().map(String::as_str).collect();
+        format!(
+            "cache profile {label:?} has no entry in defaults.cache_pins (configured: {})",
+            if known.is_empty() {
+                "none".to_owned()
+            } else {
+                known.join(", ")
+            }
+        )
+    })?;
+    validate_niks3_pin_name(label, pin)?;
+    Ok((label, pin))
+}
+
+/// Read the store path a Niks3 pin object names; `None` when the pin does not
+/// exist. The pin object itself is unsigned: trust comes from the signed
+/// narinfo of the path it names.
+fn read_cache_pin(target: &CacheTarget, auth: &CacheAuth, pin: &str) -> Result<Option<String>> {
+    let url = safe_cache_url(&target.base, &format!("pins/{pin}"))?;
+    curl_read_optional(&url, auth, 4096)?
+        .map(|value| String::from_utf8(value).context("Niks3 pin is not UTF-8"))
+        .transpose()
+        .map(|value| value.map(|value| value.trim().to_owned()))
 }
 
 pub fn cache_list(json: bool) -> Result<()> {
@@ -1239,47 +1297,15 @@ pub fn cache_list(json: bool) -> Result<()> {
         .substituter
         .as_deref()
         .context("no cache configured; set defaults.substituter in the nixpp config")?;
-    let target = parse_cache_target(
-        cache,
-        config.defaults.aws_credentials_file.as_deref(),
-        config.defaults.aws_credentials_command.as_deref(),
-    )?;
-    ensure!(
-        target.s3.is_some(),
-        "nixpp cache list requires an s3:// defaults.substituter"
-    );
-    let auth = CacheAuth {
-        netrc: None,
-        curl_config: Some(make_s3_curl_config(
-            target.s3.as_ref().expect("S3 target was checked"),
-        )?),
-    };
+    let (target, auth) = s3_cache_access(&config.defaults, cache, "nixpp cache list")?;
     let pins = config
         .defaults
         .cache_pins
         .into_iter()
         .map(|(name, pin)| {
-            ensure!(
-                !name.is_empty()
-                    && name
-                        .chars()
-                        .all(|character| character.is_ascii_alphanumeric()
-                            || "-_".contains(character)),
-                "invalid cache pin label {name:?}"
-            );
-            ensure!(
-                !pin.is_empty()
-                    && pin
-                        .chars()
-                        .all(|character| character.is_ascii_alphanumeric()
-                            || "-_.".contains(character)),
-                "invalid Niks3 pin name for {name:?}"
-            );
-            let url = safe_cache_url(&target.base, &format!("pins/{pin}"))?;
-            let path = curl_read_optional(&url, &auth, 4096)?
-                .map(|value| String::from_utf8(value).context("Niks3 pin is not UTF-8"))
-                .transpose()?
-                .map(|value| value.trim().to_owned());
+            validate_cache_pin_label(&name)?;
+            validate_niks3_pin_name(&name, &pin)?;
+            let path = read_cache_pin(&target, &auth, &pin)?;
             let status = if let Some(path) = path.as_deref() {
                 let hash = store_hash(path)
                     .with_context(|| format!("Niks3 pin {pin} contains an invalid store path"))?;
@@ -1684,6 +1710,238 @@ pub fn upgrade_profile(dry_run: bool) -> Result<()> {
     switch_profile_with_source(None, None, None, true, dry_run)
 }
 
+/// What `upgrade --from-cache` needs from the config: the selected pin and the
+/// cache to read it from. There is deliberately no flake, builder or SSH
+/// setting here, so this mode can never reach for a builder.
+#[derive(Debug, PartialEq, Eq)]
+struct CacheUpgradePlan {
+    label: String,
+    pin: String,
+    substituter: String,
+    public_keys: Vec<String>,
+}
+
+fn plan_cache_upgrade(defaults: &ConfigDefaults) -> Result<CacheUpgradePlan> {
+    let (label, pin) = select_cache_pin(defaults)?;
+    ensure!(
+        !defaults.public_keys.is_empty(),
+        "no trusted public keys configured; set defaults.public_keys in the nixpp config"
+    );
+    let substituter = defaults
+        .substituter
+        .as_deref()
+        .filter(|value| !value.is_empty())
+        .context("no S3 substituter configured; set defaults.substituter in the nixpp config")?;
+    ensure!(
+        substituter.starts_with("s3://"),
+        "nixpp upgrade --from-cache requires an s3:// defaults.substituter"
+    );
+    Ok(CacheUpgradePlan {
+        label: label.to_owned(),
+        pin: pin.to_owned(),
+        substituter: substituter.to_owned(),
+        public_keys: defaults.public_keys.clone(),
+    })
+}
+
+/// Resolve the plan's pin to the signed narinfo of the bundle it names. A
+/// missing pin and a pin naming an uncached path (stale) are distinct errors;
+/// neither falls back to anything else.
+fn resolve_pinned_bundle(
+    target: &CacheTarget,
+    auth: &CacheAuth,
+    plan: &CacheUpgradePlan,
+) -> Result<NarInfo> {
+    let store_path = read_cache_pin(target, auth, &plan.pin)?.with_context(|| {
+        format!(
+            "cache pin {:?} for profile {:?} does not exist; nothing has been published for it yet",
+            plan.pin, plan.label
+        )
+    })?;
+    let hash = store_hash(&store_path)
+        .with_context(|| format!("cache pin {:?} contains an invalid store path", plan.pin))?;
+    let url = safe_cache_url(&target.base, &format!("{hash}.narinfo"))?;
+    let narinfo = curl_read_optional(&url, auth, MAX_NARINFO_SIZE)?.with_context(|| {
+        format!(
+            "cache pin {:?} for profile {:?} is stale: {store_path} is not in the cache",
+            plan.pin, plan.label
+        )
+    })?;
+    verify_cache_narinfo(&narinfo, &store_path, &plan.public_keys)
+        .with_context(|| format!("verify the bundle named by cache pin {:?}", plan.pin))
+}
+
+const CACHE_UPGRADE_STATE_FILE: &str = "cache-upgrade-state.json";
+
+/// What `upgrade --from-cache` last installed. A hint only: it lets a later
+/// run skip the NAR download when the signed narinfo is unchanged, and it is
+/// never trusted for anything else. The pair (store path, NarHash) comes from
+/// the verified narinfo, so a matching hint identifies exactly the bundle whose
+/// archive digest became this generation.
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+struct CacheUpgradeState {
+    store_path: String,
+    nar_hash: String,
+    generation: String,
+}
+
+/// The generation id that is already active when the hint matches the
+/// verified narinfo and that generation is still the current one.
+fn active_cache_generation<'a>(
+    state: Option<&CacheUpgradeState>,
+    info: &NarInfo,
+    current: Option<&'a str>,
+) -> Option<&'a str> {
+    let state = state?;
+    let current = current?;
+    (state.store_path == info.store_path
+        && state.nar_hash == info.nar_hash
+        && state.generation == current)
+        .then_some(current)
+}
+
+/// Read the hint, treating anything unreadable as "no hint": the worst case
+/// is a normal fetch.
+fn read_cache_upgrade_state(root: &Path) -> Option<CacheUpgradeState> {
+    let contents = fs::read(root.join(CACHE_UPGRADE_STATE_FILE)).ok()?;
+    serde_json::from_slice(&contents).ok()
+}
+
+fn write_cache_upgrade_state(root: &Path, state: &CacheUpgradeState) -> Result<()> {
+    let path = root.join(CACHE_UPGRADE_STATE_FILE);
+    let temp = root.join(format!("{CACHE_UPGRADE_STATE_FILE}.{}", std::process::id()));
+    let result = (|| {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .mode(0o600)
+            .open(&temp)
+            .with_context(|| format!("create {}", temp.display()))?;
+        file.write_all(&serde_json::to_vec(state)?)
+            .with_context(|| format!("write {}", temp.display()))?;
+        file.sync_all()
+            .with_context(|| format!("sync {}", temp.display()))?;
+        fs::rename(&temp, &path).with_context(|| format!("replace {}", path.display()))
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(&temp);
+    }
+    result
+}
+
+/// Upgrade from the configured cache pin only: no SSH, no builder, no flake.
+/// The pin object is unsigned; trust comes from the signed narinfo, the NAR
+/// hash and the bundle's SHA256SUMS, all checked by the same code the builder
+/// path uses.
+pub fn upgrade_from_cache(dry_run: bool) -> Result<()> {
+    let config = load_config()?;
+    let plan = plan_cache_upgrade(&config.defaults)?;
+    ensure_termux_environment()?;
+    let (target, auth) = s3_cache_access(
+        &config.defaults,
+        &plan.substituter,
+        "nixpp upgrade --from-cache",
+    )?;
+    let generation_root = termux_generation_root()?;
+    let previous_generation = inspect_generations(&generation_root)?
+        .current
+        .map(|generation| generation.id);
+
+    let ui = Progress::new();
+    ui.title();
+    let mut info = None;
+    ui.stage(
+        &format!("Resolve cache pin {} for profile {}", plan.pin, plan.label),
+        || {
+            info = Some(resolve_pinned_bundle(&target, &auth, &plan)?);
+            Ok(())
+        },
+    )?;
+    let info = info.context("cache pin resolution returned no bundle")?;
+
+    let state = read_cache_upgrade_state(&generation_root);
+    if let Some(active) =
+        active_cache_generation(state.as_ref(), &info, previous_generation.as_deref())
+    {
+        println!(
+            "Generation {} is already active; nothing to upgrade.",
+            &active[..12]
+        );
+        return Ok(());
+    }
+
+    let stage = make_staging_directory("nixpp-cache-upgrade-")?;
+    let result = (|| {
+        let bundle_dir = stage.join("bundle");
+        ui.stage("Download and verify the bundle from the S3 cache", || {
+            let archive_url = safe_cache_url(&target.base, &info.url)?;
+            download_and_extract(&archive_url, &auth, &info, &bundle_dir)
+        })?;
+        finish_bundle(
+            &ui,
+            &stage,
+            &bundle_dir,
+            dry_run,
+            previous_generation.as_deref(),
+            &generation_root,
+        )
+    })();
+    let cleanup = remove_tree(&stage)
+        .with_context(|| format!("remove local staging directory {}", stage.display()));
+    let digest = result.and_then(|digest| cleanup.map(|()| digest))?;
+    if dry_run {
+        return Ok(());
+    }
+
+    match inspect_generations(&generation_root) {
+        Ok(status) if status.current.as_ref().is_some_and(|c| c.id == digest) => {
+            let state = CacheUpgradeState {
+                store_path: info.store_path.clone(),
+                nar_hash: info.nar_hash.clone(),
+                generation: digest,
+            };
+            if let Err(error) = write_cache_upgrade_state(&generation_root, &state) {
+                ui.warning(&format!(
+                    "could not record the installed bundle; the next run will download it again: {error:#}"
+                ));
+            }
+        }
+        Ok(_) => ui.warning("the installed generation is not active; not recording the bundle"),
+        Err(error) => ui.warning(&format!(
+            "could not inspect the active generation: {error:#}"
+        )),
+    }
+    if let Some(previous) = previous_generation {
+        print_upgrade_diff(&ui, &generation_root, &previous);
+    }
+    Ok(())
+}
+
+/// Parse the configured S3 cache and build the signed-request curl config for
+/// it. Credentials come from the configured source (the shared credentials
+/// file unless `aws_credentials_command` is set).
+fn s3_cache_access(
+    defaults: &ConfigDefaults,
+    cache: &str,
+    command: &str,
+) -> Result<(CacheTarget, CacheAuth)> {
+    let target = parse_cache_target(
+        cache,
+        defaults.aws_credentials_file.as_deref(),
+        defaults.aws_credentials_command.as_deref(),
+    )?;
+    let s3 = target
+        .s3
+        .as_ref()
+        .with_context(|| format!("{command} requires an s3:// defaults.substituter"))?;
+    let auth = CacheAuth {
+        netrc: None,
+        curl_config: Some(make_s3_curl_config(s3)?),
+    };
+    Ok((target, auth))
+}
+
 fn switch_profile_with_source(
     flake: Option<&str>,
     builder: Option<&str>,
@@ -1747,22 +2005,7 @@ fn switch_profile_with_source(
             "builder must be an SSH host or user@host alias without command-line options: {builder}"
         );
     }
-    ensure!(
-        matches!(
-            env::var("PREFIX").as_deref(),
-            Ok("/data/data/com.termux/files/usr" | "/data/data/dev.pschmitt.termux/files/usr")
-        ),
-        "switch must run inside a supported Termux app shell"
-    );
-    ensure!(
-        Command::new("bash")
-            .arg("--version")
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .is_ok(),
-        "Termux bash is required to activate a generation"
-    );
+    ensure_termux_environment()?;
 
     let ui = Progress::new();
     ui.title();
@@ -1824,66 +2067,15 @@ fn switch_profile_with_source(
             })?;
         }
 
-        let archive_path = bundle_dir.join("environment.tar.gz");
-        let digest = read_archive_digest(&bundle_dir.join("SHA256SUMS"))?;
-        verify_file_sha256(&archive_path, &digest).context("verify Termux archive")?;
-        let bootstrap_path = bundle_dir.join("bootstrap.sh");
-        ensure!(
-            fs::metadata(&bootstrap_path).is_ok_and(|metadata| metadata.file_type().is_file()),
-            "Termux bundle is missing a regular bootstrap.sh"
-        );
-        if dry_run {
-            let preview_home = stage.join("preview-home");
-            fs::create_dir_all(&preview_home).context("create preview home")?;
-            ui.stage("Preflight the bundle without activating", || {
-                let status = Command::new("bash")
-                    .arg(&bootstrap_path)
-                    .args(bootstrap_preflight_args(&archive_path, &digest))
-                    .env("HOME", &preview_home)
-                    .status()
-                    .context("start upgrade preflight")?;
-                ensure!(status.success(), "upgrade preflight failed: {status}");
-                Ok(())
-            })?;
-            let preview_root = preview_home.join(".local/share/termux-native");
-            if generation_already_active(previous_generation.as_deref(), &digest) {
-                println!(
-                    "Generation {} is already active; nothing to upgrade.",
-                    &digest[..12]
-                );
-            } else if let Some(previous) = previous_generation.as_deref() {
-                let installed = generation_root.join("generations").join(previous);
-                ensure!(installed.is_dir(), "active generation directory is missing");
-                let old_numbers = generation_numbers(&generation_root)?;
-                let old_pins = generation_pins(&generation_root)?;
-                let old = inspect_generation(
-                    &generation_root,
-                    previous,
-                    old_numbers.get(previous).copied(),
-                    old_pins.contains(previous),
-                )?;
-                let new = inspect_generation(&preview_root, &digest, None, false)?;
-                print_generation_diff_infos(&generation_root, &preview_root, &old, &new)?;
-            } else {
-                println!(
-                    "Previewed generation {} (no installed generation to compare).",
-                    &digest[..12]
-                );
-            }
-            println!("Dry run complete; no generation was activated.");
-            return Ok(());
-        }
-        ui.stage("Install and health-check the new generation", || {
-            let status = Command::new("bash")
-                .arg(&bootstrap_path)
-                .arg("install")
-                .arg(&archive_path)
-                .arg(&digest)
-                .status()
-                .context("start Termux generation activation")?;
-            ensure!(status.success(), "activate Termux generation: {status}");
-            Ok(())
-        })
+        finish_bundle(
+            &ui,
+            &stage,
+            &bundle_dir,
+            dry_run,
+            previous_generation.as_deref(),
+            &generation_root,
+        )
+        .map(drop)
     })();
     let cleanup = remove_tree(&stage)
         .with_context(|| format!("remove local staging directory {}", stage.display()));
@@ -1897,33 +2089,133 @@ fn switch_profile_with_source(
     }
     result?;
     if let Some(previous) = previous_generation {
-        match inspect_generations(&generation_root) {
-            Ok(status) => {
-                if let Some(current) = status.current
-                    && current.id != previous
-                {
-                    let diff = Command::new(generation_root.join("current/bin/nixpp"))
-                        .env_remove("TERMUX_GENERATION")
-                        .arg("diff")
-                        .arg(&previous)
-                        .arg(&current.id)
-                        .status();
-                    match diff {
-                        Ok(status) if status.success() => {}
-                        Ok(status) => ui.warning(&format!(
-                            "upgrade succeeded, but generation diff exited with {status}"
-                        )),
-                        Err(error) => ui.warning(&format!(
-                            "upgrade succeeded, but could not run the new generation diff: {error}"
-                        )),
-                    }
+        print_upgrade_diff(&ui, &generation_root, &previous);
+    }
+    Ok(())
+}
+
+/// Verify the extracted bundle, then either preview it (`dry_run`) or install
+/// it, and return its archive digest. Shared by every upgrade source: the builder-backed `upgrade` and the
+/// cache-only `upgrade --from-cache`.
+fn finish_bundle(
+    ui: &Progress,
+    stage: &Path,
+    bundle_dir: &Path,
+    dry_run: bool,
+    previous_generation: Option<&str>,
+    generation_root: &Path,
+) -> Result<String> {
+    let archive_path = bundle_dir.join("environment.tar.gz");
+    let digest = read_archive_digest(&bundle_dir.join("SHA256SUMS"))?;
+    verify_file_sha256(&archive_path, &digest).context("verify Termux archive")?;
+    let bootstrap_path = bundle_dir.join("bootstrap.sh");
+    ensure!(
+        fs::metadata(&bootstrap_path).is_ok_and(|metadata| metadata.file_type().is_file()),
+        "Termux bundle is missing a regular bootstrap.sh"
+    );
+    if dry_run {
+        let preview_home = stage.join("preview-home");
+        fs::create_dir_all(&preview_home).context("create preview home")?;
+        ui.stage("Preflight the bundle without activating", || {
+            let status = Command::new("bash")
+                .arg(&bootstrap_path)
+                .args(bootstrap_preflight_args(&archive_path, &digest))
+                .env("HOME", &preview_home)
+                .status()
+                .context("start upgrade preflight")?;
+            ensure!(status.success(), "upgrade preflight failed: {status}");
+            Ok(())
+        })?;
+        let preview_root = preview_home.join(".local/share/termux-native");
+        if generation_already_active(previous_generation, &digest) {
+            println!(
+                "Generation {} is already active; nothing to upgrade.",
+                &digest[..12]
+            );
+        } else if let Some(previous) = previous_generation {
+            let installed = generation_root.join("generations").join(previous);
+            ensure!(installed.is_dir(), "active generation directory is missing");
+            let old_numbers = generation_numbers(generation_root)?;
+            let old_pins = generation_pins(generation_root)?;
+            let old = inspect_generation(
+                generation_root,
+                previous,
+                old_numbers.get(previous).copied(),
+                old_pins.contains(previous),
+            )?;
+            let new = inspect_generation(&preview_root, &digest, None, false)?;
+            print_generation_diff_infos(generation_root, &preview_root, &old, &new)?;
+        } else {
+            println!(
+                "Previewed generation {} (no installed generation to compare).",
+                &digest[..12]
+            );
+        }
+        println!("Dry run complete; no generation was activated.");
+        return Ok(digest);
+    }
+    ui.stage("Install and health-check the new generation", || {
+        let status = Command::new("bash")
+            .arg(&bootstrap_path)
+            .arg("install")
+            .arg(&archive_path)
+            .arg(&digest)
+            .status()
+            .context("start Termux generation activation")?;
+        ensure!(status.success(), "activate Termux generation: {status}");
+        Ok(())
+    })?;
+    Ok(digest)
+}
+
+/// After an install, show what changed against the generation that was active
+/// before it. Failures only warn: the upgrade itself already succeeded.
+fn print_upgrade_diff(ui: &Progress, generation_root: &Path, previous: &str) {
+    match inspect_generations(generation_root) {
+        Ok(status) => {
+            if let Some(current) = status.current
+                && current.id != previous
+            {
+                let diff = Command::new(generation_root.join("current/bin/nixpp"))
+                    .env_remove("TERMUX_GENERATION")
+                    .arg("diff")
+                    .arg(previous)
+                    .arg(&current.id)
+                    .status();
+                match diff {
+                    Ok(status) if status.success() => {}
+                    Ok(status) => ui.warning(&format!(
+                        "upgrade succeeded, but generation diff exited with {status}"
+                    )),
+                    Err(error) => ui.warning(&format!(
+                        "upgrade succeeded, but could not run the new generation diff: {error}"
+                    )),
                 }
             }
-            Err(error) => ui.warning(&format!(
-                "upgrade succeeded, but could not inspect the active generation for a diff: {error:#}"
-            )),
         }
+        Err(error) => ui.warning(&format!(
+            "upgrade succeeded, but could not inspect the active generation for a diff: {error:#}"
+        )),
     }
+}
+
+fn ensure_termux_environment() -> Result<()> {
+    ensure!(
+        matches!(
+            env::var("PREFIX").as_deref(),
+            Ok("/data/data/com.termux/files/usr" | "/data/data/dev.pschmitt.termux/files/usr")
+        ),
+        "switch must run inside a supported Termux app shell"
+    );
+    ensure!(
+        Command::new("bash")
+            .arg("--version")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .is_ok(),
+        "Termux bash is required to activate a generation"
+    );
     Ok(())
 }
 
@@ -1968,13 +2260,14 @@ fn remote_output_cache(builder: &str, store_path: &str) -> Result<String> {
 fn remote_nar(builder: &str, store_path: &str, destination: &Path, maximum: u64) -> Result<()> {
     let mut file = create_temp_file(destination)?;
     let temp_path = file.path.clone();
-    let mut child = Command::new("ssh")
-        .args(["-T", "--", builder])
-        .arg(format!("nix nar pack {}", shell_quote(store_path)))
-        .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .with_context(|| format!("start NAR transfer from {builder}"))?;
+    let mut child = ssh_command(
+        builder,
+        &format!("nix nar pack {}", shell_quote(store_path)),
+    )
+    .stdout(Stdio::piped())
+    .stderr(Stdio::inherit())
+    .spawn()
+    .with_context(|| format!("start NAR transfer from {builder}"))?;
     let mut stdout = child
         .stdout
         .take()
@@ -2005,14 +2298,37 @@ fn remote_nar(builder: &str, store_path: &str, destination: &Path, maximum: u64)
     Ok(())
 }
 
+const SSH_OPTIONS: [&str; 8] = [
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    "ConnectTimeout=10",
+    "-o",
+    "ServerAliveInterval=15",
+    "-o",
+    "ServerAliveCountMax=3",
+];
+
+fn ssh_args(builder: &str, remote_command: &str) -> Vec<String> {
+    SSH_OPTIONS
+        .iter()
+        .copied()
+        .chain(["-T", "--", builder, remote_command])
+        .map(str::to_owned)
+        .collect()
+}
+
+fn ssh_command(builder: &str, remote_command: &str) -> Command {
+    let mut command = Command::new("ssh");
+    command.args(ssh_args(builder, remote_command));
+    command
+}
+
 fn remote_output(builder: &str, remote_command: &str) -> Result<String> {
-    let output = Command::new("ssh")
-        .args(["-T", "--", builder, remote_command])
+    let output = ssh_command(builder, remote_command)
+        .stderr(Stdio::inherit())
         .output()
         .with_context(|| format!("start ssh to {builder}"))?;
-    io::stderr()
-        .write_all(&output.stderr)
-        .context("write SSH diagnostics")?;
     ensure!(
         output.status.success(),
         "ssh {builder} exited with {}",
@@ -2200,12 +2516,17 @@ fn curl_args(auth: &CacheAuth, progress: bool) -> Vec<String> {
     let mut arguments = vec![
         "--fail".to_owned(),
         "--show-error".to_owned(),
-        "--location".to_owned(),
         "--proto".to_owned(),
         "=https,http".to_owned(),
         "--max-time".to_owned(),
         "7200".to_owned(),
     ];
+    // Authenticated requests carry credentials or custom S3 token headers that
+    // must never be replayed to another origin, so only anonymous requests may
+    // follow redirects.
+    if auth.netrc.is_none() && auth.curl_config.is_none() {
+        arguments.push("--location".to_owned());
+    }
     if progress && io::stderr().is_terminal() {
         arguments.push("--progress-bar".to_owned());
     } else {
@@ -3392,6 +3713,56 @@ mod tests {
     }
 
     #[test]
+    fn authenticated_curl_requests_do_not_follow_redirects() {
+        let anonymous = CacheAuth {
+            netrc: None,
+            curl_config: None,
+        };
+        assert!(curl_args(&anonymous, false).contains(&"--location".to_owned()));
+        let netrc = CacheAuth {
+            netrc: Some(PathBuf::from("/tmp/netrc")),
+            curl_config: None,
+        };
+        assert!(!curl_args(&netrc, false).contains(&"--location".to_owned()));
+        let s3 = CacheAuth {
+            netrc: None,
+            curl_config: Some("header = \"x-amz-security-token: t\"\n".to_owned()),
+        };
+        let arguments = curl_args(&s3, true);
+        assert!(!arguments.contains(&"--location".to_owned()));
+        assert!(arguments.contains(&"--config".to_owned()));
+    }
+
+    #[test]
+    fn ssh_commands_share_non_interactive_timeout_options() {
+        let arguments = ssh_args("builder", "echo ok");
+        assert_eq!(
+            arguments,
+            [
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "ConnectTimeout=10",
+                "-o",
+                "ServerAliveInterval=15",
+                "-o",
+                "ServerAliveCountMax=3",
+                "-T",
+                "--",
+                "builder",
+                "echo ok",
+            ]
+        );
+        let command = ssh_command("builder", "echo ok");
+        assert_eq!(command.get_program(), "ssh");
+        let command_arguments: Vec<_> = command
+            .get_args()
+            .map(|argument| argument.to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(command_arguments, arguments);
+    }
+
+    #[test]
     fn validates_store_paths_ssh_targets_and_shell_quoting() {
         for path in [
             "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-termux-bundle",
@@ -3551,5 +3922,324 @@ mod tests {
         assert_eq!(stage.parent(), Some(termux_tmp.as_path()));
         fs::remove_dir(stage).unwrap();
         fs::remove_dir_all(prefix).unwrap();
+    }
+
+    const TEST_STORE_PATH: &str = "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-termux-bundle";
+    const TEST_NAR_HASH: &str = "sha256:1b8m03r63zqhnjf7l5wnldhh7c134ap5vpj0850ymkq1iyzicy5s";
+
+    fn test_signing_key() -> SigningKey {
+        SigningKey::from_bytes(&[9u8; 32])
+    }
+
+    fn test_public_key(name: &str, key: &SigningKey) -> String {
+        format!("{name}:{}", BASE64.encode(key.verifying_key().as_bytes()))
+    }
+
+    /// A signed narinfo body for `TEST_STORE_PATH` with the given references.
+    fn signed_narinfo(key: &SigningKey, references: &[&str]) -> String {
+        let fingerprint = format!(
+            "1;{TEST_STORE_PATH};{TEST_NAR_HASH};3;{}",
+            references.join(",")
+        );
+        format!(
+            "StorePath: {TEST_STORE_PATH}\nURL: nar/bundle.nar\nCompression: none\n\
+             NarHash: {TEST_NAR_HASH}\nNarSize: 3\nReferences: {}\nSig: test-1:{}\n",
+            references.join(" "),
+            BASE64.encode(key.sign(fingerprint.as_bytes()).to_bytes())
+        )
+    }
+
+    /// Serve fixed bodies over plain HTTP on loopback; every other path is a
+    /// 404. The thread lives until the test process exits.
+    fn serve_cache(routes: &[(&str, String)]) -> CacheTarget {
+        use std::io::{BufRead, BufReader};
+        let routes: HashMap<String, String> = routes
+            .iter()
+            .map(|(path, body)| ((*path).to_owned(), body.clone()))
+            .collect();
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { continue };
+                let mut request_line = String::new();
+                if BufReader::new(&stream)
+                    .read_line(&mut request_line)
+                    .is_err()
+                {
+                    continue;
+                }
+                let path = request_line
+                    .split_whitespace()
+                    .nth(1)
+                    .unwrap_or("/")
+                    .to_owned();
+                let response = match routes.get(&path) {
+                    Some(body) => format!(
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                        body.len()
+                    ),
+                    None => {
+                        "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                            .to_owned()
+                    }
+                };
+                let _ = stream.write_all(response.as_bytes());
+            }
+        });
+        CacheTarget {
+            base: Url::parse(&format!("http://127.0.0.1:{port}/cache")).unwrap(),
+            s3: None,
+        }
+    }
+
+    fn anonymous_auth() -> CacheAuth {
+        CacheAuth {
+            netrc: None,
+            curl_config: None,
+        }
+    }
+
+    fn cache_defaults() -> ConfigDefaults {
+        toml::from_str::<NixppConfig>(
+            r#"
+            [defaults]
+            substituter = "s3://bucket?endpoint=s3.example.test&region=eu&profile=niks3"
+            public_keys = ["test-1:AAAA"]
+            cache_profile = "zf10"
+            [defaults.cache_pins]
+            zf10 = "termux-zf10"
+            p11 = "termux-p11"
+            "#,
+        )
+        .unwrap()
+        .defaults
+    }
+
+    fn test_plan(pin: &str, key: &SigningKey) -> CacheUpgradePlan {
+        CacheUpgradePlan {
+            label: "zf10".into(),
+            pin: pin.into(),
+            substituter: "s3://bucket".into(),
+            public_keys: vec![test_public_key("test-1", key)],
+        }
+    }
+
+    #[test]
+    fn cache_profile_needs_no_builder_flake_or_ssh() {
+        let defaults = cache_defaults();
+        assert!(defaults.flake.is_none());
+        assert!(defaults.builder.is_none() && defaults.builders.is_empty());
+        assert!(defaults.aws_credentials_command.is_none());
+        let plan = plan_cache_upgrade(&defaults).unwrap();
+        assert_eq!(plan.label, "zf10");
+        assert_eq!(plan.pin, "termux-zf10");
+        assert!(plan.substituter.starts_with("s3://"));
+        assert_eq!(plan.public_keys, ["test-1:AAAA"]);
+    }
+
+    #[test]
+    fn cache_selection_fails_closed() {
+        let mut defaults = cache_defaults();
+        defaults.cache_profile = None;
+        let error = format!("{:#}", plan_cache_upgrade(&defaults).unwrap_err());
+        assert!(error.contains("no cache profile selected"), "{error}");
+
+        let mut defaults = cache_defaults();
+        defaults.cache_profile = Some("mp4".into());
+        let error = format!("{:#}", plan_cache_upgrade(&defaults).unwrap_err());
+        assert!(error.contains("no entry in defaults.cache_pins"), "{error}");
+        assert!(error.contains("p11, zf10"), "{error}");
+
+        for label in ["", "../zf10", "zf 10", "zf10/x"] {
+            let mut defaults = cache_defaults();
+            defaults.cache_profile = Some(label.into());
+            defaults.cache_pins.insert(label.into(), "pin".into());
+            assert!(
+                plan_cache_upgrade(&defaults).is_err(),
+                "label {label:?} must be rejected"
+            );
+        }
+        for pin in ["", "a/b", "../x", "a b", "a?b"] {
+            let mut defaults = cache_defaults();
+            defaults.cache_pins.insert("zf10".into(), pin.into());
+            assert!(
+                plan_cache_upgrade(&defaults).is_err(),
+                "pin {pin:?} must be rejected"
+            );
+        }
+
+        let mut defaults = cache_defaults();
+        defaults.public_keys.clear();
+        assert!(plan_cache_upgrade(&defaults).is_err());
+        let mut defaults = cache_defaults();
+        defaults.substituter = None;
+        assert!(plan_cache_upgrade(&defaults).is_err());
+        let mut defaults = cache_defaults();
+        defaults.substituter = Some("https://cache.example.test".into());
+        let error = format!("{:#}", plan_cache_upgrade(&defaults).unwrap_err());
+        assert!(error.contains("requires an s3://"), "{error}");
+    }
+
+    #[test]
+    fn resolves_the_selected_pin_to_a_verified_bundle() {
+        let key = test_signing_key();
+        let target = serve_cache(&[
+            ("/cache/pins/termux-zf10", format!("{TEST_STORE_PATH}\n")),
+            (
+                "/cache/0123456789abcdfghijklmnpqrsvwxyz.narinfo",
+                signed_narinfo(&key, &[]),
+            ),
+        ]);
+        let info =
+            resolve_pinned_bundle(&target, &anonymous_auth(), &test_plan("termux-zf10", &key))
+                .unwrap();
+        assert_eq!(info.store_path, TEST_STORE_PATH);
+        assert_eq!(info.nar_hash, TEST_NAR_HASH);
+    }
+
+    #[test]
+    fn missing_and_stale_pins_are_distinct_errors() {
+        let key = test_signing_key();
+        let target = serve_cache(&[
+            ("/cache/pins/termux-zf10", TEST_STORE_PATH.to_owned()),
+            ("/cache/pins/termux-bad", "not-a-store-path".to_owned()),
+        ]);
+        let auth = anonymous_auth();
+
+        let missing =
+            resolve_pinned_bundle(&target, &auth, &test_plan("termux-p11", &key)).unwrap_err();
+        assert!(
+            format!("{missing:#}").contains("does not exist"),
+            "{missing:#}"
+        );
+
+        // The pin exists but its narinfo was never pushed or was collected.
+        let stale =
+            resolve_pinned_bundle(&target, &auth, &test_plan("termux-zf10", &key)).unwrap_err();
+        assert!(format!("{stale:#}").contains("is stale"), "{stale:#}");
+
+        let invalid =
+            resolve_pinned_bundle(&target, &auth, &test_plan("termux-bad", &key)).unwrap_err();
+        assert!(
+            format!("{invalid:#}").contains("invalid store path"),
+            "{invalid:#}"
+        );
+    }
+
+    #[test]
+    fn untrusted_or_referencing_bundles_are_refused() {
+        let key = test_signing_key();
+        let other_key = SigningKey::from_bytes(&[3u8; 32]);
+        let narinfo_path = "/cache/0123456789abcdfghijklmnpqrsvwxyz.narinfo";
+        let auth = anonymous_auth();
+
+        let forged = serve_cache(&[
+            ("/cache/pins/termux-zf10", TEST_STORE_PATH.to_owned()),
+            (narinfo_path, signed_narinfo(&other_key, &[])),
+        ]);
+        let error =
+            resolve_pinned_bundle(&forged, &auth, &test_plan("termux-zf10", &key)).unwrap_err();
+        assert!(
+            format!("{error:#}").contains("no valid signature"),
+            "{error:#}"
+        );
+
+        let referencing = serve_cache(&[
+            ("/cache/pins/termux-zf10", TEST_STORE_PATH.to_owned()),
+            (
+                narinfo_path,
+                signed_narinfo(&key, &["1123456789abcdfghijklmnpqrsvwxyz-dep"]),
+            ),
+        ]);
+        let error = resolve_pinned_bundle(&referencing, &auth, &test_plan("termux-zf10", &key))
+            .unwrap_err();
+        assert!(
+            format!("{error:#}").contains("store references"),
+            "{error:#}"
+        );
+    }
+
+    #[test]
+    fn skips_the_download_only_for_the_active_unchanged_bundle() {
+        let info = NarInfo {
+            store_path: TEST_STORE_PATH.into(),
+            url: "nar/bundle.nar".into(),
+            compression: "none".into(),
+            nar_hash: TEST_NAR_HASH.into(),
+            nar_size: 3,
+            file_hash: None,
+            file_size: None,
+            references: Vec::new(),
+            signatures: Vec::new(),
+        };
+        let generation = "a".repeat(64);
+        let state = CacheUpgradeState {
+            store_path: info.store_path.clone(),
+            nar_hash: info.nar_hash.clone(),
+            generation: generation.clone(),
+        };
+        assert_eq!(
+            active_cache_generation(Some(&state), &info, Some(&generation)),
+            Some(generation.as_str())
+        );
+        // No hint, no current generation, or a rollback: fetch normally.
+        assert_eq!(
+            active_cache_generation(None, &info, Some(&generation)),
+            None
+        );
+        assert_eq!(active_cache_generation(Some(&state), &info, None), None);
+        assert_eq!(
+            active_cache_generation(Some(&state), &info, Some(&"b".repeat(64))),
+            None
+        );
+        // A republished pin (new store path or NAR hash) must be fetched.
+        let mut newer = info.clone();
+        newer.store_path = "/nix/store/1123456789abcdfghijklmnpqrsvwxyz-termux-bundle".into();
+        assert_eq!(
+            active_cache_generation(Some(&state), &newer, Some(&generation)),
+            None
+        );
+        let mut rebuilt = info;
+        rebuilt.nar_hash = "sha256:0000000000000000000000000000000000000000000000000000".into();
+        assert_eq!(
+            active_cache_generation(Some(&state), &rebuilt, Some(&generation)),
+            None
+        );
+    }
+
+    #[test]
+    fn cache_upgrade_state_round_trips_and_fails_open() {
+        let root = temp_dir("cache-state");
+        assert_eq!(read_cache_upgrade_state(&root), None);
+        let state = CacheUpgradeState {
+            store_path: TEST_STORE_PATH.into(),
+            nar_hash: TEST_NAR_HASH.into(),
+            generation: "a".repeat(64),
+        };
+        write_cache_upgrade_state(&root, &state).unwrap();
+        write_cache_upgrade_state(&root, &state).unwrap();
+        assert_eq!(read_cache_upgrade_state(&root), Some(state));
+        let mode = fs::metadata(root.join(CACHE_UPGRADE_STATE_FILE))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o600);
+        fs::write(root.join(CACHE_UPGRADE_STATE_FILE), b"{not json").unwrap();
+        assert_eq!(read_cache_upgrade_state(&root), None);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn cache_access_requires_s3() {
+        let mut defaults = cache_defaults();
+        defaults.aws_credentials_command = Some(vec!["true".into()]);
+        let error = s3_cache_access(&defaults, "https://cache.example.test", "nixpp x")
+            .err()
+            .unwrap();
+        assert!(
+            format!("{error:#}").contains("requires an s3://"),
+            "{error:#}"
+        );
     }
 }
