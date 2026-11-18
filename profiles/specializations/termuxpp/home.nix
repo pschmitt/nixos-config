@@ -76,6 +76,7 @@ in
         curl
         diffutils
         findutils
+        fping
         git
         gnugrep
         gnupg

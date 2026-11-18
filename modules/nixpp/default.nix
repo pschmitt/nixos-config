@@ -126,6 +126,8 @@ in
   };
 
   config = {
+    environment.etc.protocols.source = lib.mkDefault "${pkgs.iana-etc}/etc/protocols";
+
     assertions = lib.mapAttrsToList (name: value: {
       assertion =
         name != ""
