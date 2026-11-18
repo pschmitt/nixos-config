@@ -461,6 +461,10 @@ in
         # turn. Send mid-turn text as it is produced; keep tool progress and
         # token streaming off (they would be permanent, noisy messages).
         display.platforms.signal.interim_assistant_messages = true;
+        # Explicitly empty: the module merges settings into config.yaml and
+        # never deletes a key that was removed here, so a former prompt would
+        # otherwise linger.
+        agent.system_prompt = "";
         # The API server is only for Stricknani's link imports: no built-in tools,
         # no other MCP servers and no plugin toolsets there (imported pages are
         # untrusted). Its only tools: the throwaway-browser-only browser-daemon
