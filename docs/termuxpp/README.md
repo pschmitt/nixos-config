@@ -234,6 +234,27 @@ Both test phones passed guest-to-native ping, filtered battery status and toast.
 Those probes do not establish background-service lifetime or every companion's
 compatibility. Native recovery and native SSH configuration remain independent.
 
+### Shizuku shell
+
+Run `rish` or `rish -c 'id -u'` from an interactive TermuxPP terminal. The
+wrapper enters the native Android environment and extracts the matching
+launcher and read-only DEX from the installed Shizuku APK. Start Shizuku
+and grant TermuxPP access when prompted. Use an app terminal with its
+native parent and unredirected streams.
+
+### Native shell and shared storage
+
+From a fresh TermuxPP app terminal, run `nixpp enter --outer` for a native
+shell, or `nixpp enter --outer -- /system/bin/id` for a single command. The
+handoff uses the foreground job on the original terminal. SSH, tmux panes,
+and direct guest launchers use a different terminal or skip the native
+supervisor. Run the command in the app terminal outside tmux.
+
+Run `termux-setup-storage` there to request Android storage access. After
+granting access, run it again to create `~/storage/shared`, `~/storage/downloads`,
+and the other media shortcuts inside the guest. The shortcuts also work from
+SSH and tmux once Android grants access. Existing paths are preserved.
+
 ### Tasker execution
 
 The TermuxPP Tasker plug-in remains a native Android entry point; selecting a

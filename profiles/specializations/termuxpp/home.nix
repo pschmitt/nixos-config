@@ -69,7 +69,11 @@ in
       PAGER = "less";
       NIX_CONF_DIR = "${config.xdg.configHome}/nix";
     };
-    packages = builtins.attrValues {
+    packages = [
+      (pkgs.callPackage ../../../pkgs/nixpp/rish.nix { })
+      (pkgs.callPackage ../../../pkgs/nixpp/storage.nix { })
+    ]
+    ++ builtins.attrValues {
       inherit (pkgs) iputils;
       inherit (pkgs)
         bashInteractive

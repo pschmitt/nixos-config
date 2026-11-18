@@ -107,6 +107,8 @@ in
   inherit msoutlook-mcp;
   nixpp-termux = pkgs.callPackage ./nixpp/legacy.nix { inherit inputs; };
   nixpp = pkgs.callPackage ./nixpp { };
+  termuxpp-rish = pkgs.callPackage ./nixpp/rish.nix { };
+  termuxpp-storage = pkgs.callPackage ./nixpp/storage.nix { };
   termuxpp-api = pkgs.callPackage ./nixpp/android-api.nix { inherit inputs; };
   nixpp-system-tests = import ../modules/nixpp/tests.nix { inherit inputs pkgs; };
   nixpp-runtime-termux = import ./nixpp/native.nix {
