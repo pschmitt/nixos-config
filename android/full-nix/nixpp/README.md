@@ -64,7 +64,19 @@ We build the launcher and seed ourselves
 ([`bootstrap-seed.nix`](../bootstrap-seed.nix), package
 `nixpp-runtime-termux-seed`) from the pinned droid-nix sources (MIT): a static
 musl `launcher` and a registered chroot store with only a static `nix` and
-`busybox`. No droid-nix APK or other prebuilt binary is used. The
+`busybox`. No droid-nix APK or other prebuilt binary is used. The same package
+carries `manifest.json` ([`session-manifest.nix`](../session-manifest.nix)): the
+session packages as aarch64-linux store paths of the flake's nixpkgs, fetched
+from cache.nixos.org during init. The seed is reproducible.
+
+The launcher carries
+[`launcher-foreign-trap.patch`](../launcher-foreign-trap.patch). Android 15's
+app seccomp filter traps `openat2`. Upstream's SIGSYS handler translated and
+reissued its own reissued syscall again until the stack overflowed, so the
+first `nix copy` of a fresh runtime died with SIGSEGV or SIGSYS inside the app.
+It did not fail under `adb run-as`, which has no app filter. A trap raised by the
+launcher's exempt stub now fails with `ENOSYS`, and Nix falls back to `openat`.
+Test init inside the TermuxPP app, not only through `run-as`. The
 `nixpp-runtime-termux` build compiles in the seed's SHA-256, and init refuses
 any other seed. A nixpp built without the Nix package has no pinned seed and
 refuses to prepare a runtime.
