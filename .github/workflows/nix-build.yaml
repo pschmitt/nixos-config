@@ -12,7 +12,12 @@ on:
       - ready_for_review
   schedule:
     - cron: "17 1 * * 6" # Weekly full validation, including reverse dependencies
-  workflow_dispatch: # allows manual triggering
+  workflow_dispatch:
+    inputs:
+      termuxpp-only:
+        description: Build and publish only the managed TermuxPP guest systems
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -27,6 +32,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
+  CI_TERMUXPP_ONLY: ${{ inputs.termuxpp-only && '1' || '0' }}
   # Builds are pushed to niks3 (S3); the S3 store is also a substituter.
   NIKS3_SERVER_URL: ${{ vars.NIKS3_SERVER_URL }}
   NIKS3_S3_STORE: ${{ secrets.NIKS3_S3_STORE }}
@@ -219,7 +225,7 @@ jobs:
               --copy
 
   build-termux-bundles:
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    if: ${{ !inputs.termuxpp-only && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     name: build Termux ${{ matrix.host }} bundle
     timeout-minutes: 120
     runs-on: ubuntu-latest

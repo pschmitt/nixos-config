@@ -123,6 +123,24 @@ def main():
         help="Print whether Nix setup is needed, without invoking Nix",
     )
     args = parser.parse_args()
+    if os.environ.get("CI_TERMUXPP_ONLY") == "1":
+        if args.classify_only:
+            print("true")
+            return
+        hosts = json.loads(output(
+            "nix", "eval", "--json", ".#termuxppConfigurations",
+            "--apply", "builtins.attrNames",
+        ))
+        if not hosts:
+            raise ValueError("No TermuxPP systems configured")
+        matrix = empty_matrix()
+        matrix["pkgs"]["free"] = [
+            {"pkg": {"name": f"termuxpp-system-{host}"}, "system": GITHUB_SYSTEM}
+            for host in hosts
+        ]
+        print(json.dumps(matrix, separators=(",", ":")))
+        return
+
     base = os.environ.get("BASE_SHA", "")
     event = os.environ.get("EVENT_NAME", "workflow_dispatch")
     files = changed_files(base, event)
