@@ -64,7 +64,10 @@ in
 # https://github.com/nix-community/srvos/blob/main/nixos/common/well-known-hosts.nix
 # Avoid TOFU MITM with known forges.
 {
-  "github.com".hostNames = [ "github.com" ];
+  "github.com".hostNames = [
+    "github.com"
+    "[ssh.github.com]:443"
+  ];
   "github.com".publicKey =
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
