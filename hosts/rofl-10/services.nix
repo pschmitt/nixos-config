@@ -66,7 +66,7 @@ in
     adminUsers = [ config.mainUser.username ];
   };
 
-  programs.zsh.shellAliases.lsu = "luks-ssh-unlock tui";
+  programs.zsh.shellAliases.lsu = "luks-ssh-unlock";
 
   services.containerServices = {
     enable = true;

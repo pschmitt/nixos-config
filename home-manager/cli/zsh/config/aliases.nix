@@ -11,7 +11,7 @@ _: {
     shellAliases = {
       y = "nix search nixpkgs";
       ync = "nix-shell --packages";
-      lsu = "luks-ssh-unlock tui";
+      lsu = "luks-ssh-unlock";
     };
     initContent = ''
       for extension in html org php com net de fr png jpg gif; do
