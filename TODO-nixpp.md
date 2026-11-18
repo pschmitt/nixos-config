@@ -21,6 +21,11 @@
 - [x] Restore signed, cache-only upgrades with `nixpp upgrade --from-cache`.
 - [x] Inventory the other legacy commands, flags and diagnostics. Port the
   relevant behavior to the guest CLI and verify it against installed systems.
+- [ ] Add `nixpp gc --keep-generations 3` and `--dry-run`. Protect the active
+  and rollback generations, generations used by running guest sessions, and
+  any interrupted activation. Keep enough history for signed cache pin checks
+  to recognise an older generation after pruning. Run GC under the controller
+  lock, then wire it into nightly maintenance after a successful upgrade.
 
 ## Bootstrap
 
