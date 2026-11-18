@@ -127,10 +127,16 @@ def main():
         if args.classify_only:
             print("true")
             return
-        hosts = json.loads(output(
-            "nix", "eval", "--json", ".#termuxppConfigurations",
-            "--apply", "builtins.attrNames",
-        ))
+        hosts = json.loads(
+            output(
+                "nix",
+                "eval",
+                "--json",
+                ".#termuxppConfigurations",
+                "--apply",
+                "builtins.attrNames",
+            )
+        )
         if not hosts:
             raise ValueError("No TermuxPP systems configured")
         matrix = empty_matrix()
@@ -210,7 +216,8 @@ def main():
                 packages.add(name)
                 if name == "nixpp":
                     packages.update(
-                        package for package in package_names
+                        package
+                        for package in package_names
                         if package.startswith("termuxpp-system-")
                     )
             else:
