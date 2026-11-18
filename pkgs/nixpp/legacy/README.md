@@ -1,4 +1,11 @@
-# nixpp
+# Legacy native nixpp bundle manager
+
+This implementation is retired for migrated full-Nix hosts. The replacement
+[Rust system manager](../source) owns the declarative guest system and
+matching Home Manager generation. This source remains solely for existing native
+bootstrap/recovery bundles and unmigrated installations; it is not a second
+configuration layer for full-Nix hosts. Do not use its `upgrade` or `switch`
+commands to manage the Linux guest.
 
 `nixpp` is a small Termux-side client for reference-free Nix outputs. A trusted
 Linux host evaluates and builds Termux-compatible outputs; Termux verifies and
@@ -33,7 +40,7 @@ provides the target linker. Cargo dependencies and versions are pinned in
 the Android binary on a Termux device:
 
 ```sh
-cargo test --locked --manifest-path android/nixpp/Cargo.toml
+cargo test --locked --manifest-path pkgs/nixpp/legacy/Cargo.toml
 nix build '.#nixpp-termux'
 file result-nixpp-termux/bin/nixpp
 readelf -l -d result-nixpp-termux/bin/nixpp

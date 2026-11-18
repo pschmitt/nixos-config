@@ -36,8 +36,8 @@ rustPlatform.buildRustPackage {
   pname = "nixpp-termux";
   version = "0.4.2";
 
-  src = lib.cleanSource ./../../../android/nixpp;
-  cargoLock.lockFile = ./../../../android/nixpp/Cargo.lock;
+  src = lib.cleanSource ./legacy;
+  cargoLock.lockFile = ./legacy/Cargo.lock;
   doCheck = false;
   env = {
     CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER = "${ndkBin}/aarch64-linux-android24-clang";
@@ -68,7 +68,7 @@ rustPlatform.buildRustPackage {
 
   meta = {
     description = "Small Nix binary-cache client for Termux-managed outputs";
-    homepage = "https://github.com/pschmitt/nixos-config/tree/main/android/nixpp";
+    homepage = "https://github.com/pschmitt/nixos-config/tree/main/pkgs/nixpp/legacy";
     mainProgram = "nixpp";
     maintainers = [ lib.maintainers.pschmitt ];
     platforms = lib.platforms.linux;

@@ -24,6 +24,13 @@
       flake = false;
     };
 
+    # Sources (MIT) of the full-Nix Android launcher and bootstrap seed, built
+    # here (pkgs/nixpp/bootstrap-seed.nix); no droid-nix binary is used.
+    droid-nix-src = {
+      url = "github:lassulus/droid-nix/bb08d50117568e9994b6d87c918c4c2d7b5de9b1";
+      flake = false;
+    };
+
     # Main user's public SSH keys (mainUser.authorizedKeys); `nix flake update
     # github-keys` picks up key changes.
     github-keys = {
@@ -610,6 +617,9 @@
         extraModules: [ privateIsoHostModule ] ++ extraModules ++ [ privateIsoFlakeModule ];
     in
     {
+      homeConfigurations = import ./profiles/specializations/termuxpp/homes.nix { inherit inputs; };
+      termuxppConfigurations = import ./profiles/specializations/termuxpp/systems.nix { inherit inputs; };
+
       lib.termux = {
         mkBundle =
           {
@@ -706,7 +716,13 @@
             hostBundlePackages // forkBundlePackages
           );
         in
-        customPackages // termuxNativePackages
+        customPackages
+        // termuxNativePackages
+        // nixpkgs.lib.optionalAttrs (system == "aarch64-linux") (
+          nixpkgs.lib.mapAttrs' (
+            host: guest: nixpkgs.lib.nameValuePair "termuxpp-system-${host}" guest.system
+          ) self.termuxppConfigurations
+        )
       );
 
       # below is to make "nix fmt" work

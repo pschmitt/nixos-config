@@ -11,7 +11,7 @@ yadm configuration.
 
 Before changing a device, read the relevant sections of the
 [`termux-native README`](https://github.com/pschmitt/nixos-config/blob/main/android/termux-native/README.md)
-and [`nixpp README`](https://github.com/pschmitt/nixos-config/blob/main/android/nixpp/README.md).
+and [`nixpp README`](https://github.com/pschmitt/nixos-config/blob/main/pkgs/nixpp/legacy/README.md).
 They are the source of truth for the current bundle, bootstrap, and client
 behavior.
 

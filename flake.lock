@@ -124,11 +124,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795003397,
-        "narHash": "sha256-2Pv/bA/a0jwNmwWG2ws6Ydm/1qNOLMrRS1foO00FQio=",
+        "lastModified": 1795014542,
+        "narHash": "sha256-GAFzDdDYKbc6Ieq6tjO5dewte6cEnMJ3OWDmjEo7CC0=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "2a9db7bc9333da6c18fd1687145a5c2167f15974",
+        "rev": "cadd85c416bfd7efab3331680b009f199c472087",
         "type": "github"
       },
       "original": {
@@ -295,11 +295,11 @@
     },
     "crane_2": {
       "locked": {
-        "lastModified": 1794870543,
-        "narHash": "sha256-RQc417nQURjHvaUkVFLyvaQ6Px18G7ZHjRF9bYUkScg=",
+        "lastModified": 1794962885,
+        "narHash": "sha256-zrweT2tXbcWiJMACOhOr2eYFJKVa6g59ouRaZ3BS5Do=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "dbd1288af7a7ec997cb912c034b1a1962938173e",
+        "rev": "95e62def851e9d650f0eab63cb4f59a3306e20bd",
         "type": "github"
       },
       "original": {
@@ -426,6 +426,23 @@
       "original": {
         "owner": "nix-community",
         "repo": "disko",
+        "type": "github"
+      }
+    },
+    "droid-nix-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794321727,
+        "narHash": "sha256-dRihdv0/lU0hhJchsDU+vhoRA29WJSIivUtgqTpqp8Y=",
+        "owner": "lassulus",
+        "repo": "droid-nix",
+        "rev": "bb08d50117568e9994b6d87c918c4c2d7b5de9b1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lassulus",
+        "repo": "droid-nix",
+        "rev": "bb08d50117568e9994b6d87c918c4c2d7b5de9b1",
         "type": "github"
       }
     },
@@ -1789,11 +1806,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1794999241,
-        "narHash": "sha256-Z0vClX7fKcvH0G7+RDPmIPc9s96socd4huRTRxKuwhk=",
+        "lastModified": 1795023778,
+        "narHash": "sha256-oIKUXvLd5yt0ms+XCxVJ2b/qTtLuaDIecNEteGToF8c=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "28f21c30f08b480515b782f37a9277d4dd664f1e",
+        "rev": "a7e237901f16b82c2a4361166206aaaa474f4c56",
         "type": "github"
       },
       "original": {
@@ -2438,6 +2455,7 @@
         "colors-jq": "colors-jq",
         "declaroid": "declaroid",
         "disko": "disko",
+        "droid-nix-src": "droid-nix-src",
         "falcon-sensor": "falcon-sensor",
         "fenix": "fenix",
         "firefox-addons": "firefox-addons",
@@ -2917,11 +2935,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794996571,
-        "narHash": "sha256-hm8M/T56AVFOYY2qj4qpdSimlXb3EbwPQfL0QIhOFvE=",
+        "lastModified": 1795021125,
+        "narHash": "sha256-/zxHZOJoFIoiuWoAcmxHwxGF8QOiTvRERK7u4gAW/N8=",
         "owner": "pschmitt",
         "repo": "teams-live",
-        "rev": "f5c733d799a2436d7757746255a986784e430024",
+        "rev": "1fe870d4552579f190bbc4eb4a1cbad4a5d64233",
         "type": "github"
       },
       "original": {

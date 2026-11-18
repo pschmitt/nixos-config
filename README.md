@@ -77,11 +77,12 @@ Continue with [Deployment](docs/deploy.md) to roll out a change, or with
 | [Deployment](docs/deploy.md) | Switching hosts, automatic upgrades, known false failures |
 | [Hosts](docs/hosts.md) | Adding, installing and removing a host |
 | [Packages](docs/packages.md) | Updating the custom packages |
+| [TermuxPP](docs/termuxpp/README.md) | Managing the Android Nix guest |
 | [CI](docs/ci.md) | nixbot, GitHub workflows and the binary cache |
 | [home-manager/README.md](home-manager/README.md) | Home Manager layout and module conventions |
 | [services/harmonia/README.md](services/harmonia/README.md) | CI cache delivery and the LAN mirror |
 | [services/http-static/README.md](services/http-static/README.md) | Blob archive listing |
-| [android/nixpp/README.md](android/nixpp/README.md) | Termux client for reference-free Nix outputs |
+| [Native bundle manager](pkgs/nixpp/legacy/README.md) | Termux client for reference-free Nix outputs |
 | [android/termux-native/README.md](android/termux-native/README.md) | Native Termux environments built with Nix |
 | [AGENTS.md](AGENTS.md) | Code style, service conventions and rules for AI agents |
 

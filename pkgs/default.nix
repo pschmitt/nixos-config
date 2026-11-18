@@ -105,7 +105,18 @@ in
   mmonit = pkgs.callPackage ./mmonit { };
   inherit msteams-mcp;
   inherit msoutlook-mcp;
-  nixpp-termux = pkgs.callPackage ./termux/nixpp { inherit inputs; };
+  nixpp-termux = pkgs.callPackage ./nixpp/legacy.nix { inherit inputs; };
+  nixpp = pkgs.callPackage ./nixpp { };
+  termuxpp-api = pkgs.callPackage ./nixpp/android-api.nix { inherit inputs; };
+  nixpp-system-tests = import ../modules/nixpp/tests.nix { inherit inputs pkgs; };
+  nixpp-runtime-termux = import ./nixpp/native.nix {
+    inherit inputs pkgs;
+    inherit (pkgs) lib;
+  };
+  nixpp-runtime-termux-seed = import ./nixpp/bootstrap-seed.nix {
+    inherit inputs pkgs;
+    inherit (pkgs) lib;
+  };
   native-client = pkgs.callPackage ./native-client { };
   console-tui = pkgs.callPackage ./console-tui { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };

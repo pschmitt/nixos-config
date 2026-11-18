@@ -1,5 +1,7 @@
 { config, pkgs, ... }:
 {
+  imports = [ ./nix-tools.nix ];
+
   # Access tokens for the user's own (unprivileged) nix commands.
   # The system-level GitHub token in profiles/base/nix/secrets.nix is
   # rendered root-only, so it only helps root/nix-daemon invocations (eg.
@@ -28,15 +30,12 @@
   '';
 
   home.packages = with pkgs; [
-    alejandra
     cachix
     niv
     nix-init
-    nixfmt
     nixos-anywhere
     nixos-generators
     nixpkgs-fmt
     nvd
-    statix
   ];
 }

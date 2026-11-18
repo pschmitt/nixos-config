@@ -75,7 +75,7 @@ def probe_listener(serial, port, timeout):
 def start_daemon(serial, credential_dir, argv, timeout):
     """Run argv through the CLI's mTLS exec (existing credentials only) within a total wall-clock limit."""
     command = [sys.executable, "-I", str(CLI), "--serial", serial, "--mode", "mtls",
-               "--credential-dir", str(credential_dir), "--", *argv]
+               "--credential-dir", str(credential_dir), "--outer", "--", *argv]
     child = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=sys.stderr, stderr=sys.stderr)
     try:
         status = child.wait(timeout=timeout)

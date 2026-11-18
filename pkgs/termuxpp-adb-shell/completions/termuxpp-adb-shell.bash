@@ -61,7 +61,7 @@ _termuxpp_adb_shell() {
       return
       ;;
   esac
-  mapfile -t COMPREPLY < <(compgen -W '--help --serial --mode --shell --provision --name --credential-dir --devices-config --list-aliases --list-authorizations --revoke --completions' -- "$current")
+  mapfile -t COMPREPLY < <(compgen -W '--help --serial --mode --outer --shell --provision --name --credential-dir --devices-config --list-aliases --list-authorizations --revoke --completions' -- "$current")
 }
 complete -F _termuxpp_adb_shell termuxpp-adb-shell termuxpp-adb-shell.py
 

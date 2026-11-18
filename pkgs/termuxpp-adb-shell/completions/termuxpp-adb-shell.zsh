@@ -25,6 +25,7 @@ _termuxpp_adb_shell() {
     '--devices-config[private JSON device alias configuration]:file:_files' \
     '--list-aliases[print configured device aliases]' \
     '--mode[shell transport]:mode:(auto mtls run-as)' \
+    '--outer[use the native TermuxPP environment]' \
     '--shell[override configured login shell]:shell:(bash zsh fish sh)' \
     '--completions[print shell integration]:shell:(bash zsh fish)' \
     '(--list-authorizations --revoke)--provision[enroll mTLS client]' \
