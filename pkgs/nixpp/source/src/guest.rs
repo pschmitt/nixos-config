@@ -127,9 +127,16 @@ fn copy_file(source: &Path, destination: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Overlay `source` onto `target`, materialising file symlinks and refusing
-/// directory symlinks, special files and dangling links.
-fn copy_tree(source: &Path, target: &Path) -> Result<()> {
+// The native launcher reads this file before the guest store is mounted.
+const NATIVE_ETC_FILES: &[&str] = &["termuxpp-release"];
+
+/// Overlay regular files while refusing directory symlinks, special files and
+/// dangling links.
+fn install_etc_tree(
+    source: &Path,
+    target: &Path,
+    install_file: &impl Fn(&Path, &Path) -> Result<()>,
+) -> Result<()> {
     let mut entries = fs::read_dir(source)?.collect::<io::Result<Vec<_>>>()?;
     entries.sort_by_key(|entry| entry.file_name());
     for entry in entries {
@@ -148,14 +155,14 @@ fn copy_tree(source: &Path, target: &Path) -> Result<()> {
                 ));
             }
             create_private_dir(&destination)?;
-            copy_tree(&path, &destination)?;
+            install_etc_tree(&path, &destination, install_file)?;
         } else if kind.as_ref().is_some_and(fs::Metadata::is_file) {
             if destination.is_dir() {
                 return Err(Error::invalid(
                     "configuration file conflicts with an existing directory",
                 ));
             }
-            copy_file(&path, &destination)?;
+            install_file(&path, &destination)?;
         } else {
             return Err(Error::invalid(
                 "configuration contains a special or dangling file",
@@ -305,8 +312,20 @@ fn stage_candidate(
 ) -> Result<()> {
     let etc = stage.join("etc");
     create_private_dir(&etc)?;
-    copy_tree(&runtime.join("root/etc"), &etc)?;
-    copy_tree(&generation.join("etc"), &etc)?;
+    install_etc_tree(&runtime.join("root/etc"), &etc, &copy_file)?;
+    install_etc_tree(&generation.join("etc"), &etc, &|source, destination| {
+        if NATIVE_ETC_FILES
+            .iter()
+            .any(|name| destination == etc.join(name))
+        {
+            return copy_file(source, destination);
+        }
+        if destination.exists() {
+            fs::remove_file(destination)?;
+        }
+        symlink(source, destination)?;
+        Ok(())
+    })?;
     // Android owns numeric credentials; a generation may not replace them.
     for entry in ["passwd", "group"] {
         copy_file(&runtime.join("root/etc").join(entry), &etc.join(entry))?;
@@ -557,7 +576,7 @@ mod tests {
         );
         assert_eq!(read("session").lines().count(), 6);
         assert_eq!(mode(&result), 0o700);
-        assert_eq!(mode(&result.join("etc/example")), 0o600);
+        assert_eq!(mode(&result.join("etc/passwd")), 0o600);
         assert_eq!(mode(&result.join("session")), 0o600);
         let root = fixture.runtime.join(GCROOTS).join(fixture.name());
         assert_eq!(fs::read_link(root).unwrap(), fixture.generation);
@@ -796,15 +815,27 @@ mod tests {
     }
 
     #[test]
-    fn configuration_file_links_are_materialized() {
+    fn configuration_files_link_to_generation_except_native_release() {
         let fixture = Prepared::new();
         symlink(
             fixture.generation.join("etc/example"),
             fixture.generation.join("etc/linked"),
         )
         .unwrap();
+        let release = fixture.generation.join("etc/termuxpp-release");
+        fs::write(&release, "ID=termuxpp\n").unwrap();
         let result = fixture.prepare().unwrap();
-        assert!(!is_symlink(&result.join("etc/linked")));
+        for name in ["example", "linked"] {
+            assert_eq!(
+                fs::read_link(result.join("etc").join(name)).unwrap(),
+                fixture.generation.join("etc").join(name)
+            );
+        }
+        assert!(!is_symlink(&result.join("etc/termuxpp-release")));
+        assert_eq!(
+            fs::read_to_string(result.join("etc/termuxpp-release")).unwrap(),
+            "ID=termuxpp\n"
+        );
         assert_eq!(
             fs::read_to_string(result.join("etc/linked")).unwrap(),
             "new\n"

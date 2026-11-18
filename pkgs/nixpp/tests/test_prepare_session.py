@@ -57,7 +57,7 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual((result / 'etc/passwd').read_bytes(), (self.runtime / 'root/etc/passwd').read_bytes())
         self.assertEqual(len((result / 'session').read_text().splitlines()), 6)
         self.assertEqual(result.stat().st_mode & 0o777, 0o700)
-        self.assertEqual((result / 'etc/example').stat().st_mode & 0o777, 0o600)
+        self.assertEqual((result / 'etc/passwd').stat().st_mode & 0o777, 0o600)
         gcroot = self.runtime / 'root/nix/var/nix/gcroots/termuxpp-system-candidates' / self.generation.name
         self.assertEqual(gcroot.readlink(), self.generation)
         self.assertFalse((self.runtime / 'current-system').exists())
@@ -97,10 +97,14 @@ class PrepareTests(unittest.TestCase):
             self.prepare()
         self.assertEqual(list((self.runtime / 'system-candidates').iterdir()), [])
 
-    def test_configuration_file_links_are_materialized(self):
+    def test_configuration_files_link_to_generation_except_native_release(self):
         (self.generation / 'etc/linked').symlink_to(self.generation / 'etc/example')
+        (self.generation / 'etc/termuxpp-release').write_text('ID=termuxpp\n')
         result = self.prepare()
-        self.assertFalse((result / 'etc/linked').is_symlink())
+        self.assertEqual((result / 'etc/linked').readlink(), self.generation / 'etc/linked')
+        self.assertEqual((result / 'etc/example').readlink(), self.generation / 'etc/example')
+        self.assertFalse((result / 'etc/termuxpp-release').is_symlink())
+        self.assertEqual((result / 'etc/termuxpp-release').read_text(), 'ID=termuxpp\n')
         self.assertEqual((result / 'etc/linked').read_text(), 'new\n')
 
     def test_store_path_validation(self):

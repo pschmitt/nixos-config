@@ -83,9 +83,11 @@ Preparation validates schema, runtime ABI, identity and required session paths,
 then materializes a private `/etc` snapshot and six-line data descriptor under
 `system-candidates/HASH-termuxpp-system-HOST/`. Declared files overlay runtime
 defaults. Android-owned `passwd` and `group` cannot be overridden; symlinked
-directories and special files are rejected. Regular file symlinks are materialized
-inside the guest so native startup need not resolve virtual store links. A direct
-GC root retains the system closure and its matching HM generation. Candidates
+directories and special files are rejected. Generated files link to the guest
+store. nixpp copies `termuxpp-release` because the native launcher reads it
+before mounting the store. The snapshot also carries the Android-provided
+defaults. A direct GC root retains the system closure and its matching HM
+generation. Candidates
 are never overwritten, and failed copies are not published.
 
 Explicit `session.sh --system CANDIDATE -- COMMAND` uses that candidate without

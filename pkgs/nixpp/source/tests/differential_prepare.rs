@@ -229,13 +229,17 @@ fn scenarios() -> Vec<Scenario> {
             attempts: 2,
             setup: |_| {},
         },
-        scenario("configuration file links are materialized", |f| {
-            symlink(
-                f.generation.join("etc/example"),
-                f.generation.join("etc/linked"),
-            )
-            .unwrap();
-        }),
+        scenario(
+            "generated configuration links and the native release file",
+            |f| {
+                f.write_generation("etc/termuxpp-release", "ID=termuxpp\n");
+                symlink(
+                    f.generation.join("etc/example"),
+                    f.generation.join("etc/linked"),
+                )
+                .unwrap();
+            },
+        ),
         scenario("identity mismatch", |f| {
             f.edit(|d| {
                 d["name"] = json!("other");

@@ -19,7 +19,11 @@ def store_path(value):
     return value
 
 
-def copy_tree(source, target):
+# Read by the native launcher before the guest store is mounted.
+NATIVE_ETC_FILES = {'termuxpp-release'}
+
+
+def install_etc_tree(source, target, install_file):
     for entry in sorted(source.iterdir()):
         destination = target / entry.name
         if entry.is_dir():
@@ -28,12 +32,11 @@ def copy_tree(source, target):
             if destination.exists() and not destination.is_dir():
                 raise ValueError('configuration directory conflicts with an existing file')
             destination.mkdir(mode=0o700, exist_ok=True)
-            copy_tree(entry, destination)
+            install_etc_tree(entry, destination, install_file)
         elif entry.is_file():
             if destination.is_dir():
                 raise ValueError('configuration file conflicts with an existing directory')
-            shutil.copyfile(entry, destination)
-            destination.chmod(0o600)
+            install_file(entry, destination)
         else:
             raise ValueError('configuration contains a special or dangling file')
 
@@ -79,8 +82,19 @@ def prepare(runtime, generation):
     try:
         etc = stage / 'etc'
         etc.mkdir(mode=0o700)
-        copy_tree(runtime / 'root/etc', etc)
-        copy_tree(generation / 'etc', etc)
+        def copy_file(source, destination):
+            shutil.copyfile(source, destination)
+            destination.chmod(0o600)
+
+        def install_generated(source, destination):
+            if destination.relative_to(etc).as_posix() in NATIVE_ETC_FILES:
+                copy_file(source, destination)
+            else:
+                destination.unlink(missing_ok=True)
+                destination.symlink_to(source)
+
+        install_etc_tree(runtime / 'root/etc', etc, copy_file)
+        install_etc_tree(generation / 'etc', etc, install_generated)
         # Android owns numeric credentials; a generation may not replace them.
         for entry in ('passwd', 'group'):
             shutil.copyfile(runtime / 'root/etc' / entry, etc / entry)
