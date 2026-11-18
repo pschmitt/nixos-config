@@ -271,7 +271,9 @@ Tasker action to run it in the background and wait up to 3,600 seconds. The job
 runs on Wi-Fi while the phone is charging, and needs 512 MiB of free space.
 
 The job activates the signed cache pin with `nixpp upgrade --from-cache` and
-fast-forwards yadm. It syncs Atuin when signed in, then syncs and updates each
+fast-forwards yadm. It keeps the active generation if the signed cache still
+points to it or to a retained older generation. It syncs Atuin when signed in,
+then syncs and updates each
 configured mani workspace. Git runs without prompting. The latest two runs
 are logged under `~/.local/state/termuxpp-nightly/` in the guest. To check the
 current cache and readiness without activating anything, run
