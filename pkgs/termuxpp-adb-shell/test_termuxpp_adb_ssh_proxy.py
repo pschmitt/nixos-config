@@ -142,7 +142,7 @@ class StartDaemonTests(unittest.TestCase):
         proxy.start_daemon("S", Path("/c"), ("sh", "-c", "x"), 5)
         command = popen.call_args.args[0]
         self.assertEqual(command[:2], [proxy.sys.executable, "-I"])
-        self.assertEqual(command[3:], ["--serial", "S", "--mode", "mtls", "--credential-dir", "/c", "--",
+        self.assertEqual(command[3:], ["--serial", "S", "--mode", "mtls", "--credential-dir", "/c", "--outer", "--",
                                        "sh", "-c", "x"])
         self.assertIs(popen.call_args.kwargs["stdin"], subprocess.DEVNULL)
         self.assertIs(popen.call_args.kwargs["stdout"], proxy.sys.stderr)

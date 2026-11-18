@@ -205,8 +205,14 @@ class TransportTests(unittest.TestCase):
     @mock.patch.object(cli, "supports_run_as", return_value=True)
     def test_auto_uses_run_as_without_forwarding(self, probe, shell, forward):
         self.assertEqual(self.invoke([]), 7)
-        shell.assert_called_once_with("serial", None)
+        shell.assert_called_once_with("serial", cli.GUEST_LOGIN)
         forward.assert_not_called()
+
+    @mock.patch.object(cli, "run_as_shell", return_value=0)
+    @mock.patch.object(cli, "supports_run_as", return_value=True)
+    def test_outer_uses_native_shell_for_command(self, probe, run):
+        self.assertEqual(self.invoke(["--outer", "--", "true"]), 0)
+        run.assert_called_once_with("serial", None, ["true"])
 
     @mock.patch.object(cli, "remove_forwarding")
     @mock.patch.object(cli, "run_shell")
@@ -323,7 +329,7 @@ class AliasTests(unittest.TestCase):
         self.assertEqual(self.invoke(["--devices-config", str(path), "--serial", "one"]), 0)
         listing.assert_called_once()
         probe.assert_called_once_with("USB1")
-        shell.assert_called_once_with("USB1", None)
+        shell.assert_called_once_with("USB1", cli.GUEST_LOGIN)
 
     @mock.patch.object(cli, "setup_forwarding")
     @mock.patch.object(cli, "supports_run_as")
@@ -473,7 +479,7 @@ class CommandTests(unittest.TestCase):
     def test_main_returns_remote_command_exit(self, run, probe):
         with mock.patch.object(cli.sys, "argv", ["cli", "--serial", "serial", "--", "false"]):
             self.assertEqual(cli.main(), 7)
-        run.assert_called_once_with("serial", None, ["false"])
+        run.assert_called_once_with("serial", cli.GUEST_LOGIN, ["false"])
 
     def test_mtls_streams_input_separates_output_and_returns_status(self):
         client, server = socket.socketpair()

@@ -23,6 +23,7 @@ for cmd in termuxpp-adb-shell termuxpp-adb-shell.py
   complete -c $cmd -n 'not __termuxpp_adb_shell_command' -l devices-config -r -F -d 'Private JSON device alias configuration'
   complete -c $cmd -n 'not __termuxpp_adb_shell_command' -l list-aliases -d 'List configured device aliases'
   complete -c $cmd -n 'not __termuxpp_adb_shell_command' -l mode -r -a 'auto mtls run-as' -d 'Shell transport'
+  complete -c $cmd -n 'not __termuxpp_adb_shell_command' -l outer -d 'Use the native TermuxPP environment'
   complete -c $cmd -n 'not __termuxpp_adb_shell_command' -l shell -r -a 'bash zsh fish sh' -d 'Override configured login shell'
   complete -c $cmd -n 'not __termuxpp_adb_shell_command' -l completions -r -a 'bash zsh fish' -d 'Print shell integration'
   complete -c $cmd -n 'not __termuxpp_adb_shell_command' -l provision -d 'Enroll mTLS client'
