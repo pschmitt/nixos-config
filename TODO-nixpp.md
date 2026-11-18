@@ -26,12 +26,16 @@
   any interrupted activation. Keep enough history for signed cache pin checks
   to recognise an older generation after pruning. Run GC under the controller
   lock, then wire it into nightly maintenance after a successful upgrade.
-- [ ] Support `nixpp enter --outer` in SSH and other sessions without a
+- [x] Support `nixpp enter --outer` in SSH and other sessions without a
   per-terminal native parent. Have the native supervisor serve a separate
-  same-UID Unix socket under `/run/nixpp-runtime`, with access selected by the
-  phone profile. Relay a dedicated native PTY for interactive sessions and
+  same-UID Unix socket under `/run/nixpp-runtime`. Relay a dedicated native
+  PTY for interactive sessions and
   preserve separate stdio streams for non-interactive commands. Test `rish`
   over SSH, terminal resize, Ctrl-C, exit status and disconnect cleanup.
+- [ ] Use a Shizuku fallback for zsh helpers that need the phone's route,
+  gateway or source IP. Query Android's effective route with
+  `rish -c '/system/bin/ip -4 route get 192.0.2.1'` and keep the regular Linux
+  path on other hosts.
 
 ## Bootstrap
 

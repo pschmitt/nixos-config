@@ -240,7 +240,9 @@ Run `rish` or `rish -c 'id -u'` from an interactive TermuxPP terminal. The
 wrapper enters the native Android environment and extracts the matching
 launcher and read-only DEX from the installed Shizuku APK. Start Shizuku
 and grant TermuxPP access when prompted. A supervised TermuxPP terminal or
-an SSH connection with a PTY can run an interactive Shizuku shell.
+an SSH connection with a PTY can run an interactive Shizuku shell. Update
+the Shizuku app through Android. The next `rish` invocation reads the new
+APK and caches its matching assets automatically.
 
 ### Native shell and shared storage
 
