@@ -132,7 +132,7 @@
   programs = {
     home-manager.enable = true;
     rbw.package = lib.mkForce pkgs.rbw;
-    rbw.settings.pinentry.command = lib.mkForce (lib.getExe pkgs.pinentry-curses);
+    rbw.settings.unlockUi = "terminal";
     neovim = {
       nightly.enable = false;
       extraPackages = [
