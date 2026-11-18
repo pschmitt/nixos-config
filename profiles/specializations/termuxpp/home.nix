@@ -5,6 +5,9 @@
   pkgs,
   ...
 }:
+let
+  tmad = "${lib.getExe pkgs.tmux} -f ${lib.escapeShellArg "${config.xdg.configHome}/tmux/tmux.conf"} -u new-session -A -D -s main";
+in
 {
   imports = [
     ../../../modules/home-manager/termuxpp/appearance.nix
@@ -39,6 +42,7 @@
     ../../../home-manager/cli/zsh/config/portable.nix
     ../../../home-manager/cli/zsh/config/source-me.nix
     ../../../home-manager/cli/tmux
+    ../../base/dotfiles/tmux.nix
     ../../../home-manager/cli/zsh/config/runtime.nix
     ../../../home-manager/cli/zsh/plugins
   ];
@@ -163,16 +167,11 @@
         "--layout=reverse"
       ];
     };
-    tmux = {
-      enable = lib.mkForce true;
-      shell = "${pkgs.zsh}/bin/zsh";
-      extraConfig = lib.mkAfter ''
-        source-file -q "${config.xdg.configHome}/tmux/user.conf"
-      '';
-    };
+    tmux.shell = "${pkgs.zsh}/bin/zsh";
     zsh = {
       enable = true;
       dotDir = "${config.xdg.configHome}/zsh-nix";
+      shellAliases.tmad = tmad;
       envExtra = lib.mkBefore ''
         export LC_ALL=C.UTF-8
         : "''${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
@@ -185,6 +184,12 @@
           source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
         '')
         (lib.mkOrder 1400 ''
+          # The shared yadm tmux plugin also defines this alias.
+          zsh::termuxpp-tmux-alias() {
+            alias tmad=${lib.escapeShellArg tmad}
+          }
+          zsh_after_local_plugins+=(zsh::termuxpp-tmux-alias)
+
           if [[ ! -r "$HOME/.config/zsh/p10k.zsh" ]]
           then
             PROMPT='%F{${config.dotfiles.promptColor}}${hostname}%f %~ %# '
