@@ -1,12 +1,13 @@
 # The pinned session manifest `nixpp init` reads (share/nixpp/manifest.json).
 #
-# It names plain aarch64-linux outputs of the flake's nixpkgs, which `nixpp
-# init` copies from cache.nixos.org into the guest store. Only the store path
+# It names aarch64-linux outputs. The seed contains guest nixpp; `nixpp init`
+# copies missing packages from cache.nixos.org. Only the store path
 # strings are recorded: the build does not realise these packages, so the
 # manifest carries no references.
 {
   pkgs,
   inputs,
+  guestNixpp,
 }:
 let
   guest = import inputs.nixpkgs { system = "aarch64-linux"; };
@@ -28,6 +29,7 @@ let
     guest.ncurses
     guest.cacert
     nix
+    guestNixpp
   ];
 in
 pkgs.writeText "manifest.json" (

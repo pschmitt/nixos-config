@@ -4,8 +4,8 @@
 #
 # - share/nixpp/launcher: the static seccomp launcher (bootstrap/launcher).
 # - share/nixpp/manifest.json: the pinned session packages (session-manifest.nix).
-# - share/nixpp/bootstrap-aarch64.zip: a registered chroot store holding only
-#   a static nix and a static busybox, plus EXECUTABLES.txt and SYMLINKS.txt
+# - share/nixpp/bootstrap-aarch64.zip: a registered chroot store holding
+#   static nix and busybox plus the Linux nixpp closure, plus EXECUTABLES.txt and SYMLINKS.txt
 #   (ZIP entries cannot carry modes or links; nixpp restores both).
 #
 # Everything else comes from cache.nixos.org during `nixpp init`. nixpp writes
@@ -42,12 +42,14 @@ let
     patches = old.patches or [ ] ++ [ ./launcher-foreign-trap.patch ];
   });
 
-  manifest = import ./session-manifest.nix { inherit pkgs inputs; };
+  guestNixpp = pkgs.pkgsCross.aarch64-multiplatform.callPackage ./nixpp-package.nix { };
+  manifest = import ./session-manifest.nix { inherit pkgs inputs guestNixpp; };
 
   closure = pkgs.closureInfo {
     rootPaths = [
       nix
       busybox
+      guestNixpp
     ];
   };
 in

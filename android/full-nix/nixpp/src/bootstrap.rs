@@ -472,18 +472,31 @@ fn install_with(directory: &Path, run: &mut dyn FnMut(&Path, &[&str]) -> Result<
     }
     for (index, package) in packages.iter().copied().enumerate() {
         progress::package(index, packages.len(), package);
-        run(
+        if run(
             directory,
             &[
                 "--bootstrap",
                 "--",
-                "nix",
-                "copy",
-                "--from",
-                "https://cache.nixos.org",
+                "nix-store",
+                "--check-validity",
                 package,
             ],
-        )?;
+        )
+        .is_err()
+        {
+            run(
+                directory,
+                &[
+                    "--bootstrap",
+                    "--",
+                    "nix",
+                    "copy",
+                    "--from",
+                    "https://cache.nixos.org",
+                    package,
+                ],
+            )?;
+        }
         let gc_root = format!("/{GCROOT_DIR}/{index}");
         run(
             directory,
@@ -1618,12 +1631,15 @@ mod tests {
         let mut calls: Vec<Vec<String>> = Vec::new();
         install_with(dir.path(), &mut |_, args| {
             calls.push(args.iter().map(ToString::to_string).collect());
+            if args.contains(&"--check-validity") && args.last() == Some(&first.as_str()) {
+                bail!("package is missing");
+            }
             Ok(())
         })
         .unwrap();
-        assert_eq!(calls.len(), 6);
+        assert_eq!(calls.len(), 7);
         assert_eq!(
-            calls[0],
+            calls[1],
             [
                 "--bootstrap",
                 "--",
@@ -1635,7 +1651,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            calls[1],
+            calls[2],
             [
                 "--bootstrap",
                 "--",
@@ -1646,10 +1662,14 @@ mod tests {
                 first.as_str()
             ]
         );
-        assert_eq!(calls[2][6], second);
-        assert_eq!(calls[3][4], "/nix/var/nix/gcroots/termuxpp-session/1");
-        assert_eq!(calls[4], ["--", "nix", "--version"]);
-        assert_eq!(calls[5][..4], ["--", "python3", "-I", "-c"]);
+        assert_eq!(
+            calls[3][..4],
+            ["--bootstrap", "--", "nix-store", "--check-validity"]
+        );
+        assert_eq!(calls[3][4], second);
+        assert_eq!(calls[4][4], "/nix/var/nix/gcroots/termuxpp-session/1");
+        assert_eq!(calls[5], ["--", "nix", "--version"]);
+        assert_eq!(calls[6][..4], ["--", "python3", "-I", "-c"]);
         assert_eq!(
             fs::read_to_string(dir.path().join("ready")).unwrap(),
             "ready\n"

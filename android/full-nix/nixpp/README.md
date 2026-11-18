@@ -63,11 +63,11 @@ fresh extraction.
 We build the launcher and seed ourselves
 ([`bootstrap-seed.nix`](../bootstrap-seed.nix), package
 `nixpp-runtime-termux-seed`) from the pinned droid-nix sources (MIT): a static
-musl `launcher` and a registered chroot store with only a static `nix` and
-`busybox`. No droid-nix APK or other prebuilt binary is used. The same package
-carries `manifest.json` ([`session-manifest.nix`](../session-manifest.nix)): the
-session packages as aarch64-linux store paths of the flake's nixpkgs, fetched
-from cache.nixos.org during init. The seed is reproducible.
+musl `launcher` and a registered chroot store with static `nix`,
+`busybox`, and the glibc `nixpp` closure. The same package carries
+`manifest.json` ([`session-manifest.nix`](../session-manifest.nix)), which puts
+guest `nixpp` on the first session's PATH. Init uses the bundled closure and
+fetches missing session packages from cache.nixos.org. The seed is reproducible.
 
 The launcher carries
 [`launcher-foreign-trap.patch`](../launcher-foreign-trap.patch). Android 15's
