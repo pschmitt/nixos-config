@@ -1,0 +1,21 @@
+--- a/launcher.c	2026-11-18 12:16:40.787336926 +0100
++++ b/launcher.c	2026-11-18 12:16:40.807663277 +0100
+@@ -1169,6 +1169,18 @@
+ 		out(2, "\n");
+ 	}
+ 
++	// A syscall the handler itself reissued through the exempt stub can
++	// only have been trapped by another seccomp filter: Android's app
++	// filter, which traps what it does not allow (openat2 on Android 15).
++	// Translating and reissuing it again would recurse until the stack
++	// overflows. Fail it with ENOSYS, as a kernel without it would; libc
++	// and Nix fall back to the older syscalls.
++	uintptr_t pc = (uintptr_t)si->si_call_addr;
++	if (pc >= (uintptr_t)allow_start && pc <= (uintptr_t)allow_end) {
++		r[0] = (unsigned long)-ENOSYS;
++		return;
++	}
++
+ 	// The new image is started by re-exec'ing the loader with the guest
+ 	// target path; it canonicalises the path itself against the same cwd.
+ 	if (nr == SYS_execve)

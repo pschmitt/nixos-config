@@ -25,11 +25,11 @@ in
   imports = [ inputs.rbw.homeManagerModules.default ];
 
   sops.secrets = {
-    "rbw/private/email" = { };
-    "rbw/private/base_url" = { };
-    "rbw/unlock/webhook_url" = { };
-    "rbw/work/email" = { };
-    "rbw/work/base_url" = { };
+    "rbw/private/email".sopsFile = config.host.sopsDefaultFile;
+    "rbw/private/base_url".sopsFile = config.host.sopsDefaultFile;
+    "rbw/unlock/webhook_url".sopsFile = config.host.sopsDefaultFile;
+    "rbw/work/email".sopsFile = config.host.sopsDefaultFile;
+    "rbw/work/base_url".sopsFile = config.host.sopsDefaultFile;
   };
 
   home.packages = with pkgs; [
@@ -53,7 +53,7 @@ in
     # `rbw mcp` for the coding agents, wherever they get MCP servers
     # (home-manager/devel/ai.nix). Secrets stay masked; agents use them
     # through its secret_to_file tool.
-    mcp.enable = config.programs.mcp.enable;
+    mcp.enable = config.programs.mcp.enable or false;
     settings = {
       primaryAccount = "default";
       browser.clients = lib.mkIf guiEnable {

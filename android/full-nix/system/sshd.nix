@@ -1,0 +1,37 @@
+{ config, lib, ... }:
+let
+  home = config.home-manager.configuration.config;
+  keyNames = [
+    "ssh/host_keys/ed25519/privkey"
+    "ssh/host_keys/rsa/privkey"
+  ];
+  hostKey =
+    name:
+    lib.replaceStrings [ "%r" ] [ config.fullNix.sops.runtimeDir ] config.sops.secrets.${name}.path;
+in
+{
+  sops = {
+    age.sshKeyPaths = home.sops.age.sshKeyPaths;
+    secrets = lib.genAttrs keyNames (_: { });
+  };
+
+  environment.etc = {
+    "ssh/sshd_config".text = ''
+      Port 2222
+      ${lib.concatMapStringsSep "\n" (name: "HostKey ${hostKey name}") keyNames}
+      PidFile /tmp/sshd.pid
+      AuthenticationMethods publickey
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+      UsePAM no
+      AllowUsers ${config.user.name}
+      SetEnv PATH=${config.user.home}/.nix-profile/bin:/bin:/usr/bin
+      AuthorizedKeysFile /etc/ssh/authorized_keys %h/.ssh/authorized_keys
+      Subsystem sftp internal-sftp
+    '';
+    "ssh/authorized_keys".text = lib.concatLines (
+      builtins.filter (key: key != "") home.mainUser.authorizedKeys
+    );
+  };
+}

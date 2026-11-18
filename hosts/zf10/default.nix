@@ -1,7 +1,7 @@
 {
   imports = [
-    ./cache.nix
+    ../../profiles/specializations/termuxpp
+
     ./prompt.nix
-    ./ssh.nix
   ];
 }

@@ -1,0 +1,74 @@
+{ inputs, pkgs, ... }:
+let
+  lockedSource = {
+    type = "path";
+    path = toString inputs.nixpkgs.outPath;
+    narHash = inputs.nixpkgs.narHash;
+  };
+  lock = (pkgs.formats.json { }).generate "full-nix-flake.lock" {
+    version = 7;
+    root = "root";
+    nodes = {
+      root.inputs.nixpkgs = "nixpkgs";
+      nixpkgs = {
+        locked = lockedSource;
+        original = {
+          type = "path";
+          path = toString inputs.nixpkgs.outPath;
+        };
+      };
+    };
+  };
+  source = pkgs.runCommand "full-nix-nixpkgs" { } ''
+    mkdir -p "$out"
+    cp ${./overlay.nix} "$out/overlay.nix"
+    cp ${./eza-stack.c} "$out/eza-stack.c"
+    cp ${./rsync-search-only-ancestors.patch} "$out/rsync-search-only-ancestors.patch"
+    cp ${./neovim-treesitter-async-tests.patch} "$out/neovim-treesitter-async-tests.patch"
+    cp ${pkgs.writeText "full-nix-default.nix" ''
+      args:
+      import ${inputs.nixpkgs.outPath} (args // {
+        overlays = (args.overlays or []) ++ [ (import ./overlay.nix) ];
+      })
+    ''} "$out/default.nix"
+    cp ${pkgs.writeText "full-nix-flake.nix" ''
+      {
+        inputs.nixpkgs.url = "path:${inputs.nixpkgs.outPath}";
+        outputs = { self, nixpkgs }: {
+          legacyPackages.aarch64-linux = import nixpkgs {
+            system = "aarch64-linux";
+            config.allowUnfree = true;
+            overlays = [ (import ./overlay.nix) ];
+          };
+          lib = nixpkgs.lib;
+        };
+      }
+    ''} "$out/flake.nix"
+    cp ${lock} "$out/flake.lock"
+  '';
+  target = {
+    type = "path";
+    path = toString source;
+  };
+  registry = (pkgs.formats.json { }).generate "full-nix-registry.json" {
+    version = 2;
+    flakes = [
+      {
+        from = {
+          type = "indirect";
+          id = "nixpkgs";
+        };
+        to = target;
+        exact = true;
+      }
+    ];
+  };
+in
+{
+  nix = {
+    registry.nixpkgs.to = target;
+    settings.flake-registry = "file://${registry}";
+    nixPath = [ "nixpkgs=${source}" ];
+  };
+  home.file.".local/share/full-nix/nixpkgs".source = source;
+}

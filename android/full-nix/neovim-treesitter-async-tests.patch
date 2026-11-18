@@ -1,0 +1,81 @@
+--- a/test/functional/treesitter/fold_spec.lua
++++ b/test/functional/treesitter/fold_spec.lua
+@@ -56,6 +56,37 @@
+     end)
+   end
+ 
++  -- Folds are recomputed from an async parse (3ms budget per step, rescheduled when exceeded), so on
++  -- slow hosts the new levels land a few event loop iterations after the edit. Wait (bounded) for
++  -- the scheduled fold handlers, the root parse (foldexpr parses without injections, so children are
++  -- never valid; exclude them) and the handlers it schedules in turn.
++  local function wait_for_fold_update()
++    exec_lua(function()
++      local function drain()
++        local drained = false
++        vim.schedule(function()
++          drained = true
++        end)
++        assert(
++          vim.wait(5000, function()
++            return drained
++          end, 10),
++          'timed out draining scheduled fold updates'
++        )
++      end
++
++      local parser = vim.treesitter.get_parser(0, 'c')
++      drain()
++      assert(
++        vim.wait(5000, function()
++          return parser:is_valid(true)
++        end, 10),
++        'timed out waiting for the treesitter parse'
++      )
++      drain()
++    end)
++  end
++
+   it('can compute fold levels', function()
+     insert(test_text)
+ 
+@@ -91,6 +122,8 @@
+ 
+     command('1,2d')
+     poke_eventloop()
++    get_fold_levels() -- first foldexpr() call triggers the fold recomputation
++    wait_for_fold_update()
+ 
+     eq({
+       [1] = '0',
+@@ -114,6 +147,7 @@
+ 
+     command('1put!')
+     poke_eventloop()
++    wait_for_fold_update()
+ 
+     eq({
+       [1] = '>1',
+--- a/test/functional/treesitter/parser_spec.lua
++++ b/test/functional/treesitter/parser_spec.lua
+@@ -599,7 +599,20 @@
+   it('can run async parses with string parsers', function()
+     local ret = exec_lua(function()
+       local parser = vim.treesitter.get_string_parser('int foo = 42;', 'c')
+-      return { parser:parse(nil, function() end)[1]:root():range() }
++      -- parse() only returns the trees when it finishes within its 3ms budget; otherwise the
++      -- callback is invoked later from the event loop. Wait (bounded) for the callback either way.
++      local err, trees, done
++      parser:parse(nil, function(e, t)
++        err, trees, done = e, t, true
++      end)
++      assert(
++        vim.wait(5000, function()
++          return done
++        end, 10),
++        'timed out waiting for the async parse callback'
++      )
++      assert(err == nil, err)
++      return { trees[1]:root():range() }
+     end)
+ 
+     eq({ 0, 0, 0, 13 }, ret)
