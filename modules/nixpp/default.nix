@@ -70,7 +70,10 @@ let
   );
 in
 {
-  imports = [ ./sops.nix ];
+  imports = [
+    ./services.nix
+    ./sops.nix
+  ];
 
   options = {
     assertions = mkOption {

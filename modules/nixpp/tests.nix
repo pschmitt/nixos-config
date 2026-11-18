@@ -31,6 +31,10 @@ let
   integrated = mkSystem {
     home-manager.configuration.activationPackage = hmFixture;
     environment.etc."source.conf".source = pkgs.writeText "source.conf" "source=yes\n";
+    services.fixture = {
+      command = [ "${pkgs.hello}/bin/hello" ];
+      environment.FIXTURE = "yes";
+    };
   };
   invalidPath = mkSystem { environment.etc."../escape".text = "bad"; };
   invalidSource = mkSystem {
@@ -39,11 +43,16 @@ let
       source = pkgs.writeText "other-source" "bad";
     };
   };
+  invalidServiceName = mkSystem {
+    services."../unsafe".command = [ "${pkgs.hello}/bin/hello" ];
+  };
 in
 assert !(builtins.tryEval invalidPath.system).success;
 assert !(builtins.tryEval invalidSource.system).success;
+assert !(builtins.tryEval invalidServiceName.system).success;
 pkgs.runCommand "termuxpp-system-assembly-tests" { nativeBuildInputs = [ pkgs.python3 ]; } ''
   test -x ${valid.system}/sw/bin/hello
+  ${valid.system}/sw/bin/svc --help >/dev/null
   ${valid.system}/sw/bin/nixpp --help
   python3 -I ${../../pkgs/nixpp/tests/test_nixpp_cli.py} ${valid.system}/sw/bin/nixpp
   cp ${../../pkgs/nixpp/tests/prepare-session.py} prepare-session.py
@@ -65,6 +74,14 @@ pkgs.runCommand "termuxpp-system-assembly-tests" { nativeBuildInputs = [ pkgs.py
   test ! -e ${valid.system}/home-manager
   test "$(readlink ${integrated.system}/home-manager)" = ${hmFixture}
   test "$(cat ${integrated.system}/etc/source.conf)" = source=yes
+  test -x ${integrated.system}/sw/bin/svc
+  python3 -I - ${integrated.system}/etc/nixpp/services.json <<'PY'
+  import json, sys
+  with open(sys.argv[1]) as stream:
+      services = json.load(stream)
+  assert services['fixture']['enabled'] is True
+  assert services['fixture']['directory'].startswith('/nix/store/')
+  PY
   python3 -I - ${valid.system}/manifest.json ${integrated.system}/manifest.json ${hmFixture} <<'PY'
   import json, sys
   with open(sys.argv[1]) as stream:

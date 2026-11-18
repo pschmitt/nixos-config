@@ -75,6 +75,7 @@ pub fn login(runtime: &Path, user: &str, args: &[OsString]) -> Result<u8> {
     }
     // Keep the launch scripts in step with this nixpp.
     bootstrap::install_scripts(runtime)?;
+    crate::services::ensure_started(runtime)?;
     let mut command = if exact_command(args) {
         let mut session = Command::new(runtime.join("session.sh"));
         session.arg("--");

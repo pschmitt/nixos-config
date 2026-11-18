@@ -21,6 +21,14 @@ in
     secrets = lib.genAttrs keyNames (_: { });
   };
 
+  services.sshd.command = [
+    "${pkgs.openssh}/bin/sshd"
+    "-D"
+    "-e"
+    "-f"
+    "/etc/ssh/sshd_config"
+  ];
+
   environment.etc = {
     "ssh/sshd_config".text = ''
       Port 2222

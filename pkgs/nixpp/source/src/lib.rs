@@ -21,6 +21,7 @@ pub mod progress;
 pub mod provision;
 pub mod runner;
 pub mod server;
+pub mod services;
 pub mod store;
 pub mod ui;
 

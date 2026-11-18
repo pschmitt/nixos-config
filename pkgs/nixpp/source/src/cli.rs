@@ -146,6 +146,9 @@ pub enum Command {
     Recover,
     /// Serve system-management requests to same-UID guest clients
     Serve,
+    /// Run the persistent native guest service supervisor
+    #[command(name = "__service-supervisor", hide = true)]
+    ServiceSupervisor,
     /// Run a controller operation directly, without the socket
     Controller {
         #[command(subcommand)]
@@ -293,6 +296,13 @@ fn execute(cli: &Cli, ui: &Ui) -> Exit {
     let socket = non_empty(&cli.socket);
     match &cli.command {
         Command::Serve => native(serve_command(runtime, socket, ui)),
+        Command::ServiceSupervisor => match native_runtime(runtime) {
+            Ok(runtime) => match crate::services::run(&runtime) {
+                Ok(()) => Exit::success(),
+                Err(error) => Exit::failure(format!("service supervisor: {error:#}")),
+            },
+            Err(error) => Exit::failure(format!("service supervisor: {error:#}")),
+        },
         Command::Controller { operation } => native(operate(runtime, operation, ui)),
         Command::Init(args) => {
             crate::progress::set_json(cli.json);
@@ -517,6 +527,7 @@ fn guest_command(
         | Command::Init(_)
         | Command::Login(_)
         | Command::NativeShell
+        | Command::ServiceSupervisor
         | Command::Bootstrap { .. } => {
             unreachable!("handled before the guest commands")
         }
