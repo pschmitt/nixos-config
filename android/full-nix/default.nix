@@ -15,6 +15,12 @@ let
       modules = [
         ./home.nix
         (../../hosts + "/${hostname}/prompt.nix")
+        ({ config, lib, ... }: {
+          sops.defaultSopsFile = lib.mkDefault (
+            inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml"
+          );
+          sops.age.sshKeyPaths = lib.mkDefault [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
+        })
       ];
     };
 in
