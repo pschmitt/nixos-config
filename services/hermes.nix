@@ -434,6 +434,15 @@ in
       ]);
       settings = {
         plugins.enabled = [ "homeassistant" ];
+        # Signal is display_tier "low" (no message editing), which turns off
+        # interim assistant messages, so replies only arrive at the end of the
+        # turn. Send mid-turn text as it is produced; keep tool progress and
+        # token streaming off (they would be permanent, noisy messages).
+        display.platforms.signal.interim_assistant_messages = true;
+        # Explicitly empty: the module merges settings into config.yaml and
+        # never deletes a key that was removed here, so a former prompt would
+        # otherwise linger.
+        agent.system_prompt = "";
         # The API server is only for Stricknani's link imports: no built-in tools,
         # no other MCP servers and no plugin toolsets there (imported pages are
         # untrusted). Its only tools: the throwaway-browser-only browser-daemon
@@ -747,6 +756,12 @@ in
 
     tmpfiles.rules = [
       "d ${hermesOpsDir} 0700 ${config.services.hermes-agent.user} ${config.services.hermes-agent.group} - -"
+      # Hermes' left-core migration only checks for plugins/homeassistant, but
+      # the module links extraPlugins as plugins/nix-managed-<name>. Without
+      # this empty marker dir (no plugin.yaml, so the loader ignores it) every
+      # start tries `plugins install homeassistant`, which fails on the
+      # read-only store, and posts a warning into chat.
+      "d ${config.services.hermes-agent.stateDir}/.hermes/plugins/homeassistant 2770 ${config.services.hermes-agent.user} ${config.services.hermes-agent.group} - -"
       # Applies the linger setting below immediately on activation, instead of
       # waiting for the linger-users.service (wantedBy multi-user.target) to
       # run on next boot.

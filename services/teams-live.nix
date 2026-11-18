@@ -129,6 +129,21 @@ in
           token_file = secrets."teams-live/confluence-token".path;
         };
 
+        # Profile pictures on cards where Teams has none: Jira and Confluence are asked by
+        # default. Our own GitLab service account (the one that approves merge requests) is in
+        # no directory, so it gets the Teams logo, under its display name and, should GitLab
+        # show that instead, its username.
+        avatars.overrides =
+          map
+            (name: {
+              inherit name;
+              file = ./teams-live/ms-teams-bot.png;
+            })
+            [
+              "MS Teams bot"
+              "sa_teams_live"
+            ];
+
         opsgenie = {
           on_call_key = secretValue "opsgenie/gksv3-on-call/api-key";
           support_key = secretValue "opsgenie/gksv3-support-schedule/api-key";
