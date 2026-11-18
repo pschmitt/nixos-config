@@ -172,8 +172,8 @@
       dotDir = "${config.xdg.configHome}/zsh-nix";
       envExtra = lib.mkBefore ''
         export LC_ALL=C.UTF-8
-        export XDG_RUNTIME_DIR="/tmp/run"
-        mkdir -p -m 700 "$XDG_RUNTIME_DIR"
+        : "''${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+        export XDG_RUNTIME_DIR
         export HOST=${lib.escapeShellArg hostname}
         export HOSTNAME=$HOST
       '';

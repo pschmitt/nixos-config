@@ -65,6 +65,8 @@ let
             system.stateVersion = "1";
             fullNix.sops.runtimeDir = "${root}/run-fallback";
             sops = {
+              defaultSecretsMountPoint = "%r/termuxpp-system/secrets.d";
+              defaultSymlinkPath = "%r/termuxpp-system/sops-nix/secrets";
               defaultSopsFile = sopsFile;
               age.keyFile = keyFile;
               inherit secrets;
@@ -122,12 +124,17 @@ let
   # The real guest configurations: evaluated only, never built here.
   guestHomes = import ./. { inherit inputs; };
   guestSystems = import ./system/hosts.nix { inherit inputs; };
-  # No secret is configured in the shipped guests: no activation entry, no hook.
+  # Verify the configured system and Home Manager locations for both phones.
   guestChecks = lib.mapAttrsToList (
     hostname: guest:
-    assert !(guest.config.home.activation ? sops-nix);
-    assert guest.config.fullNix.sops.activation == null;
-    assert guestSystems.${hostname}.config.system.build.secretsActivation == null;
+    let
+      systemConfig = guestSystems.${hostname}.config;
+    in
+    assert guest.config.home.activation ? sops-nix;
+    assert guest.config.sops.defaultSecretsMountPoint == "%r/secrets.d";
+    assert systemConfig.sops.defaultSecretsMountPoint == "/run/secrets.d";
+    assert systemConfig.sops.defaultSymlinkPath == "/run/secrets";
+    assert systemConfig.system.build.secretsActivation != null;
     true
   ) guestHomes;
 

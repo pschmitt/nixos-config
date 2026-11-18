@@ -106,6 +106,14 @@ main() {
     target=$login_shell
     set -- --noprofile --rcfile /etc/bashrc -i
   fi
+  runtime_uid=$(/system/bin/id -u) || return 1
+  (umask 077; /system/bin/mkdir -p "$directory/root/run/user/$runtime_uid") || return 1
+  runtime_dir=
+  if [[ -f "$session_etc/termuxpp-release" ]] &&
+    /system/bin/grep -qx 'XDG_RUNTIME_DIR_LAYOUT=run-user' "$session_etc/termuxpp-release"
+  then
+    runtime_dir="/run/user/$runtime_uid"
+  fi
   cd "$directory/root$session_home" || return 1
   exec /system/bin/env -i \
     HOME="$session_home" USER="$session_user" LOGNAME="$session_user" \
@@ -113,6 +121,7 @@ main() {
     LANG=C.UTF-8 TMPDIR=/tmp SHELL="$login_shell" \
     NIXPP_RUNTIME="/android$directory" NIXPP_SOCKET=/tmp/nixpp.sock \
     NIXPP_OUTER_SOCKET="${NIXPP_OUTER_SOCKET:-}" \
+    XDG_RUNTIME_DIR="$runtime_dir" \
     NIX_CONF_DIR="$session_home/.config/nix" \
     PATH="$command_path" TERMINFO="$SESSION_TERMINFO" \
     NIX_SSL_CERT_FILE="$certificate" SSL_CERT_FILE="$certificate" \
@@ -128,6 +137,7 @@ auto-optimise-store = false' \
     -b "$directory/root/bin:/bin!" \
     -b "$directory/root/home:/home" \
     -b "${SESSION_TMP_DIR:-$directory/root/tmp}:/tmp" \
+    -b "$directory/root/run:/run!" \
     -b "$directory/root/usr:/usr" \
     -b "$directory/root/dev/shm:/dev/shm" \
     -b "$directory/proc-stat:/proc/stat" \

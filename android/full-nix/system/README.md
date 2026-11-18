@@ -172,12 +172,12 @@ candidate environment, after the journal is persisted and before the matching Ho
 Manager `activate`, for switch, rollback and recover. A non-zero exit fails the
 activation, so no Home Manager mutation happens after a failed system secret
 install. It uses `$XDG_RUNTIME_DIR` when set and falls back to
-`fullNix.sops.runtimeDir` (`/tmp/run`, matching the guest shell). It is idempotent
+`fullNix.sops.runtimeDir` (`/run`). It is idempotent
 and re-runnable for recovery.
 
-**Separate namespaces.** The system layer uses `%r/termuxpp-system/sops-nix/secrets`
-(link) and `%r/termuxpp-system/secrets.d` (generations); Home Manager uses
-`~/.config/sops-nix/secrets` and `%r/secrets.d`. Both run as the same Android UID,
+**Separate namespaces.** The system layer uses `/run/secrets`
+(link) and `/run/secrets.d` (generations); Home Manager uses
+`~/.config/sops-nix/secrets` and `/run/user/<uid>/secrets.d`. Both run as the same Android UID,
 so this is organization, not a security boundary: file modes are the only access
 control.
 

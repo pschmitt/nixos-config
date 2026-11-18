@@ -34,7 +34,7 @@ in
     lib.concatStringsSep ":" (lib.optional (envPath != "") envPath ++ [ "${pkgs.coreutils}/bin" ])
   }''${PATH:+:$PATH}
   ${exports}
-  : "''${XDG_RUNTIME_DIR:=${runtimeDir}}"
+  : "''${XDG_RUNTIME_DIR:=${if runtimeDir == null then "/run/user/$(id -u)" else runtimeDir}}"
   export XDG_RUNTIME_DIR
   # The umask a systemd user unit would run with: the installer applies the
   # configured modes itself and a stricter umask would silently strip them.

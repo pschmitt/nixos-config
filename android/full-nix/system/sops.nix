@@ -74,7 +74,7 @@ in
 
     fullNix.sops.runtimeDir = mkOption {
       type = types.str;
-      default = "/tmp/run";
+      default = "/run";
       description = ''
         XDG_RUNTIME_DIR used for `%r` when the activating environment does not
         set it. Persistent storage in the guest, not tmpfs.
@@ -91,7 +91,8 @@ in
 
   config = {
     # Separate from Home Manager's `%r/secrets.d`.
-    sops.defaultSecretsMountPoint = lib.mkDefault "%r/termuxpp-system/secrets.d";
+    sops.defaultSecretsMountPoint = lib.mkDefault "/run/secrets.d";
+    sops.defaultSymlinkPath = lib.mkDefault "/run/secrets";
 
     system.build.secretsActivation =
       if sops.secrets == { } then

@@ -355,14 +355,15 @@ sops = {
 };
 ```
 
-Use `fullNix.sops.runtimeDir` (default `/tmp/run`) for the `%r` fallback when
-`XDG_RUNTIME_DIR` is unset. Cleanup is upstream's and nothing more: a secret that is
+Home Manager generations live in `$XDG_RUNTIME_DIR/secrets.d`. The launcher
+sets `XDG_RUNTIME_DIR` to `/run/user/<uid>`. Override the fallback for an unset
+variable with `fullNix.sops.runtimeDir`. Cleanup is upstream's and nothing more: a secret that is
 dropped from a still-configured set disappears with the pruned generation, but a
 custom `path` symlink of it dangles, and removing every secret runs nothing, so the
 previously installed data stays until removed by hand. The declarative system layer
 has its own `sops.*` and activation executable, run by the controller before this
 one; see `system/README.md` for the contract and the limits (same Android UID,
-persistent `/tmp/run`, rollback to generations without the hook). Test with
+persistent `/run`, rollback to generations without the hook). Test with
 `sops-tests.nix`.
 
 ## Deliberately not migrated

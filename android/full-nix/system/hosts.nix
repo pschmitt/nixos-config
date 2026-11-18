@@ -27,6 +27,7 @@ builtins.mapAttrs (
         environment.etc."termuxpp-release".text = ''
           ID=termuxpp
           RUNTIME=droid-nix
+          XDG_RUNTIME_DIR_LAYOUT=run-user
           SYSTEM_STATE_VERSION=1
         '';
         home-manager.configuration = home;

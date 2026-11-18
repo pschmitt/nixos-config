@@ -29,12 +29,11 @@ in
 
   options.fullNix.sops = {
     runtimeDir = lib.mkOption {
-      type = lib.types.str;
-      default = "/tmp/run";
+      type = lib.types.nullOr lib.types.str;
+      default = null;
       description = ''
         XDG_RUNTIME_DIR used for `%r` when the activating environment does not set
-        it. Matches the guest shell's XDG_RUNTIME_DIR. Note that this directory is
-        persistent storage in the guest, not tmpfs.
+        it. A null value uses /run/user/<uid>.
       '';
     };
 
