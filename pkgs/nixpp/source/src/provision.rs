@@ -319,10 +319,11 @@ fn digest(path: &Path) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn finds_executable_when_android_directly_runs_the_linker() {
-        let fixture = tempfile::tempdir().unwrap();
+        let fixture = tempdir().unwrap();
         let bin = fixture.path().join("bin");
         fs::create_dir(&bin).unwrap();
         let executable = bin.join("nixpp");
@@ -338,10 +339,6 @@ mod tests {
         );
         assert!(redirected_executable(Some("nixpp".into()), None).is_none());
     }
-
-    use tempfile::tempdir;
-
-    use tempfile::tempdir;
 
     #[test]
     fn runtime_is_separate_from_native_prefix() {

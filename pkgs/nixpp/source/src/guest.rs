@@ -491,7 +491,7 @@ pub fn cached_upgrade(
         credentials
             .iter()
             .flat_map(|value| ["env", value.as_str()])
-            .chain(["nix", "--option", "trusted-public-keys", &keys])
+            .chain(["nix", "--refresh", "--option", "trusted-public-keys", &keys])
             .into_iter()
             .chain(arguments.iter().copied())
             .chain([path])
@@ -1156,6 +1156,7 @@ mod tests {
             builder.commands[2],
             [
                 "nix",
+                "--refresh",
                 "--option",
                 "trusted-public-keys",
                 "test:key",
