@@ -8,8 +8,10 @@ builtins.mapAttrs (
     inherit inputs;
     inherit (home) pkgs;
     modules = [
+      ./sshd.nix
       {
         networking.hostName = hostname;
+        sops.defaultSopsFile = inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml";
         user = {
           name = home.config.home.username;
           home = home.config.home.homeDirectory;
