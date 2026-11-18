@@ -123,6 +123,17 @@ the launcher. The agent is wrapped so `rbw` subprocesses retain the same stack
 policy; this does not qualify real vault authentication or long-running agent
 behavior. The source filename and derivation name retain their historical eza
 names to avoid an unnecessary rebuild of the interposer.
+
+The glibc `nixpp` executable reserves its own main-thread alternate signal stack
+at startup: 128 KiB plus the kernel's minimum signal-frame requirement, rounded
+to pages, with a lower guard page. The mapping remains allocated until exit.
+This is embedded in the Rust binary, not a wrapper or inherited preload; the
+Android/Bionic controller is unchanged. Production guest commands are currently
+single-threaded. Any future guest worker threads need equivalent reservations.
+On-device preparation succeeds with the existing enlarged-stack preload where
+the unmodified binary crashes; final acceptance of the embedded reservation is
+required separately. The launcher still does not enforce a global minimum.
+
 `overlay.nix` centralizes these targeted variants and capability-free `iputils`. A generated Nixpkgs facade with an explicitly locked local input supplies
 the pinned registry and
 `<nixpkgs>`, so `nix shell nixpkgs#eza` and `nix-shell -p eza` select the same
