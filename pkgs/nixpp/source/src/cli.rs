@@ -103,6 +103,7 @@ pub struct UpgradeArgs {
 }
 
 #[derive(Debug, Subcommand)]
+#[command(next_display_order = None)]
 pub enum Command {
     /// Prepare a candidate without selecting or activating it
     Prepare {
@@ -193,6 +194,9 @@ pub enum FetchTarget {
 #[derive(Debug, Args)]
 pub struct LoginArgs {
     /// Use the outer Android/TermuxPP environment
+    ///
+    /// From the guest, run this directly in the TermuxPP app terminal outside
+    /// tmux. From your computer, use termuxpp-adb-shell --outer for native ADB.
     #[arg(long, conflicts_with = "user")]
     outer: bool,
 
@@ -210,6 +214,7 @@ pub struct LoginArgs {
 }
 
 #[derive(Debug, Subcommand)]
+#[command(next_display_order = None)]
 pub enum Operation {
     /// Check a candidate without activating or selecting it
     Check {
@@ -791,19 +796,40 @@ mod tests {
     }
 
     #[test]
-    fn help_lists_the_documented_commands() {
+    fn help_lists_the_documented_commands_alphabetically() {
         let help = Cli::command().render_help().to_string();
-        for command in [
-            "prepare",
-            "rebuild",
-            "recover",
-            "rollback",
-            "serve",
-            "controller",
-            "init",
-        ] {
-            assert!(help.contains(command), "{command}");
-        }
+        let commands: Vec<_> = help
+            .split_once("Commands:\n")
+            .unwrap()
+            .1
+            .lines()
+            .map_while(|line| line.split_whitespace().next())
+            .collect();
+        assert_eq!(
+            commands,
+            [
+                "bootstrap",
+                "build",
+                "check",
+                "completions",
+                "controller",
+                "doctor",
+                "fetch",
+                "help",
+                "init",
+                "list-generations",
+                "login",
+                "native-shell",
+                "prepare",
+                "rebuild",
+                "recover",
+                "rollback",
+                "serve",
+                "status",
+                "switch",
+                "upgrade",
+            ]
+        );
     }
 
     #[test]

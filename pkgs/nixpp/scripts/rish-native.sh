@@ -19,6 +19,9 @@ extract_asset() {
 
 main() {
   local apk digest cache
+  # Android's app_process must load system libraries, including liblzma.
+  unset LD_LIBRARY_PATH LD_PRELOAD
+  export PATH=/system/bin
   apk=$(/system/bin/pm path moe.shizuku.privileged.api |
     /system/bin/sed -n 's@^package:\(.*\/base\.apk\)$@\1@p')
   if [ ! -r "$apk" ]

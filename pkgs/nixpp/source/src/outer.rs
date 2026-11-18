@@ -15,6 +15,7 @@ use std::time::Duration;
 
 const SOCKET_ENV: &str = "NIXPP_OUTER_SOCKET";
 const MESSAGE_LIMIT: u64 = 64 * 1024;
+const TERMINAL_HINT: &str = "Run directly in a fresh TermuxPP app terminal, outside tmux. For ADB, use termuxpp-adb-shell --outer on your computer.";
 
 pub fn supervise(guest: &mut Command) -> Result<u8> {
     let directory = std::env::var_os("TMPDIR")
@@ -58,15 +59,20 @@ pub fn supervise(guest: &mut Command) -> Result<u8> {
 }
 
 pub fn request(args: &[OsString]) -> Result<u8> {
+    let socket = std::env::var_os(SOCKET_ENV)
+        .filter(|socket| !socket.is_empty())
+        .with_context(|| {
+            format!("this guest has no native terminal supervisor (for example, over SSH or direct ADB guest login). {TERMINAL_HINT}")
+        })?;
     ensure!(
         std::io::stdin().is_terminal()
             && std::io::stdout().is_terminal()
             && std::io::stderr().is_terminal(),
-        "outer commands require the interactive terminal without redirected streams"
+        "outer commands need an interactive terminal with stdin, stdout and stderr attached. {TERMINAL_HINT}"
     );
-    let socket = std::env::var_os(SOCKET_ENV)
-        .context("this session has no native parent; reopen TermuxPP or use its failsafe shell")?;
-    let mut stream = UnixStream::connect(socket).context("cannot connect to the outer shell")?;
+    let mut stream = UnixStream::connect(socket).with_context(|| {
+        format!("cannot reach this guest's native terminal supervisor. {TERMINAL_HINT}")
+    })?;
     let args: Vec<&[u8]> = args.iter().map(|arg| OsStr::new(arg).as_bytes()).collect();
     let request = serde_json::to_vec(&args)?;
     ensure!(
@@ -105,7 +111,11 @@ fn run_request(stream: &mut UnixStream) -> Result<u8> {
             && group == terminal)
             .then_some(group)
     }
-    .context("outer commands must come from this terminal's foreground job")?;
+    .with_context(|| {
+        format!(
+            "outer commands must run in the original terminal's foreground job. {TERMINAL_HINT}"
+        )
+    })?;
     let status = crate::provision::native_command(&args)?
         .process_group(foreground)
         .status()
