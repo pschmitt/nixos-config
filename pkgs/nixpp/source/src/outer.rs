@@ -59,20 +59,21 @@ pub fn supervise(guest: &mut Command) -> Result<u8> {
 }
 
 pub fn request(args: &[OsString]) -> Result<u8> {
-    let socket = std::env::var_os(SOCKET_ENV)
-        .filter(|socket| !socket.is_empty())
-        .with_context(|| {
-            format!("this guest has no native terminal supervisor (for example, over SSH or direct ADB guest login). {TERMINAL_HINT}")
-        })?;
-    ensure!(
-        std::io::stdin().is_terminal()
-            && std::io::stdout().is_terminal()
-            && std::io::stderr().is_terminal(),
-        "outer commands need an interactive terminal with stdin, stdout and stderr attached. {TERMINAL_HINT}"
-    );
-    let mut stream = UnixStream::connect(socket).with_context(|| {
-        format!("cannot reach this guest's native terminal supervisor. {TERMINAL_HINT}")
-    })?;
+    let terminal = std::io::stdin().is_terminal()
+        && std::io::stdout().is_terminal()
+        && std::io::stderr().is_terminal();
+    let stream = std::env::var_os(SOCKET_ENV)
+        .filter(|socket| terminal && !socket.is_empty())
+        .and_then(|socket| UnixStream::connect(socket).ok())
+        .filter(|stream| {
+            crate::server::peer_credentials(stream).is_some_and(|peer| {
+                // SAFETY: getsid only queries sessions; zero denotes this process.
+                unsafe { peer.pid > 0 && libc::getsid(peer.pid) == libc::getsid(0) }
+            })
+        });
+    let Some(mut stream) = stream else {
+        return crate::outer_remote::request(args).with_context(|| TERMINAL_HINT);
+    };
     let args: Vec<&[u8]> = args.iter().map(|arg| OsStr::new(arg).as_bytes()).collect();
     let request = serde_json::to_vec(&args)?;
     ensure!(
@@ -123,7 +124,7 @@ fn run_request(stream: &mut UnixStream) -> Result<u8> {
     Ok(exit_code(status))
 }
 
-fn exit_code(status: ExitStatus) -> u8 {
+pub(crate) fn exit_code(status: ExitStatus) -> u8 {
     u8::try_from(
         status
             .code()

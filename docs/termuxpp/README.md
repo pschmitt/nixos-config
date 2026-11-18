@@ -239,16 +239,24 @@ compatibility. Native recovery and native SSH configuration remain independent.
 Run `rish` or `rish -c 'id -u'` from an interactive TermuxPP terminal. The
 wrapper enters the native Android environment and extracts the matching
 launcher and read-only DEX from the installed Shizuku APK. Start Shizuku
-and grant TermuxPP access when prompted. Use an app terminal with its
-native parent and unredirected streams.
+and grant TermuxPP access when prompted. A supervised TermuxPP terminal or
+an SSH connection with a PTY can run an interactive Shizuku shell.
 
 ### Native shell and shared storage
 
 From a fresh TermuxPP app terminal, run `nixpp enter --outer` for a native
-shell, or `nixpp enter --outer -- /system/bin/id` for a single command. The
-handoff uses the foreground job on the original terminal. SSH, tmux panes,
-and direct guest launchers use a different terminal or skip the native
-supervisor. Run the command in the app terminal outside tmux.
+shell, or `nixpp enter --outer -- /system/bin/id` for a single command.
+
+SSH and tmux sessions use the native controller's same-UID socket at
+`/run/nixpp-runtime/outer.sock`. Update both guest and native nixpp to use it.
+Interactive commands get a native PTY. Commands without a PTY keep separate
+stdin, stdout and stderr:
+
+```sh
+ssh -t phone 'nixpp enter --outer'
+ssh -t phone 'rish'
+ssh phone 'nixpp enter --outer -- /system/bin/id -u'
+```
 
 Run `termux-setup-storage` there to request Android storage access. After
 granting access, run it again to create `~/storage/shared`, `~/storage/downloads`,

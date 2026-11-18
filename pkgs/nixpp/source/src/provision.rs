@@ -116,11 +116,13 @@ pub(crate) fn native_command(args: &[OsString]) -> Result<Command> {
         cfg!(target_os = "android"),
         "open a native TermuxPP failsafe session to run outer commands"
     );
-    let executable = running_executable()?;
-    let prefix = prefix(&executable)?;
-    let package = std::env::var_os("TERMUX_APP__DATA_DIR")
-        .and_then(|directory| PathBuf::from(directory).file_name().map(OsString::from))
+    let data_dir = std::env::var_os("TERMUX_APP__DATA_DIR")
+        .map(PathBuf::from)
         .context("native-shell requires the TermuxPP app environment")?;
+    let package = data_dir
+        .file_name()
+        .context("invalid TermuxPP app data directory")?;
+    let prefix = data_dir.join("files/usr");
     let apk = Command::new("/system/bin/pm")
         .args(["path"])
         .arg(package)
@@ -151,7 +153,7 @@ pub(crate) fn native_command(args: &[OsString]) -> Result<Command> {
     }
     command
         .env("PATH", path)
-        .env("PREFIX", prefix)
+        .env("PREFIX", &prefix)
         .env("TMPDIR", prefix.join("tmp"))
         .env("LD_LIBRARY_PATH", prefix.join("lib"))
         .env("LD_PRELOAD", &redirect)

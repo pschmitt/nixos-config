@@ -17,6 +17,7 @@ pub mod error;
 pub mod fsutil;
 pub mod guest;
 mod outer;
+mod outer_remote;
 pub mod progress;
 pub mod provision;
 pub mod runner;

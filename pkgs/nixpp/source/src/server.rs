@@ -59,6 +59,23 @@ fn check_socket_directory(path: &Path) -> Result<()> {
     Ok(())
 }
 
+pub(crate) fn remove_stale_socket(path: &Path) -> Result<()> {
+    check_socket_directory(path)?;
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_socket() && metadata.uid() == own_uid() => {
+            fs::remove_file(path)?;
+        }
+        Ok(_) => {
+            return Err(Error::invalid(
+                "refusing to replace a non-socket or foreign socket",
+            ));
+        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
+    Ok(())
+}
+
 impl Server {
     /// Take the server lock and bind `path`.
     ///
@@ -71,18 +88,7 @@ impl Server {
         let Some(lock) = FileLock::try_acquire(&runtime.join(SERVER_LOCK))? else {
             return Ok(None);
         };
-        match fs::symlink_metadata(path) {
-            Ok(metadata) => {
-                if !metadata.file_type().is_socket() || metadata.uid() != own_uid() {
-                    return Err(Error::invalid(
-                        "refusing to replace a non-socket or foreign socket",
-                    ));
-                }
-                fs::remove_file(path)?;
-            }
-            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-            Err(error) => return Err(error.into()),
-        }
+        remove_stale_socket(path)?;
         let listener = UnixListener::bind(path)?;
         // Constructed before the chmod so that a failure unlinks the socket.
         let server = Self {
@@ -314,6 +320,11 @@ pub fn serve(runtime: &Path, socket: &Path, runner: &mut dyn Runner) -> Result<S
         return Ok(Served::AlreadyRunning);
     };
     let _handlers = StopHandlers::install()?;
+    if cfg!(target_os = "android")
+        && let Err(error) = crate::outer_remote::start(&server.runtime)
+    {
+        eprintln!("nixpp: could not start the native outer socket: {error:#}");
+    }
     server.run(runner, &STOP)?;
     match STOP_SIGNAL.load(Ordering::SeqCst) {
         libc::SIGINT => Err(Error::Interrupted),

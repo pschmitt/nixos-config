@@ -195,8 +195,8 @@ pub enum FetchTarget {
 pub struct LoginArgs {
     /// Use the outer Android/TermuxPP environment
     ///
-    /// From the guest, run this directly in the TermuxPP app terminal outside
-    /// tmux. From your computer, use termuxpp-adb-shell --outer for native ADB.
+    /// In SSH, allocate a terminal with ssh -t for an interactive native
+    /// shell. Use termuxpp-adb-shell --outer for a direct native ADB session.
     #[arg(long, conflicts_with = "user")]
     outer: bool,
 
