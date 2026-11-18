@@ -40,6 +40,7 @@ in
   sops.secrets = {
     "teams-live/credentials" = hostSecret;
     "teams-live/gitlab-token" = hostSecret;
+    "teams-live/gitlab-personal-token" = hostSecret;
     "teams-live/gitlab-url" = hostSecret;
     "teams-live/gitlab-group" = hostSecret;
     "teams-live/gitlab-webhook-secret" = hostSecret;
@@ -91,6 +92,7 @@ in
           host = secretValue "teams-live/gitlab-url";
           group = secretValue "teams-live/gitlab-group";
           token_file = secrets."teams-live/gitlab-token".path;
+          fallback_token_files = [ secrets."teams-live/gitlab-personal-token".path ];
           history_max_age_minutes = 15;
           webhook = {
             enable = true;
