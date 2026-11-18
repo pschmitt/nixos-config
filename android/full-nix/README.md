@@ -135,13 +135,22 @@ copies with content, mode, symlink and update verification. These
 additional checks use generated fixtures and scratch HOME/XDG directories even
 in active mode; they do not access a real vault or authenticate to a service.
 It never compiles a probe on the phone.
-Use `--thorough` for 60 eza listings and an offline pinned Nixpkgs evaluation.
+Use `--thorough` for 60 eza listings, 20 consecutive bare Neovim starts and an
+offline pinned Nixpkgs evaluation. Neovim uses LuaJIT built with JIT disabled:
+Android guest executable-memory allocation made JIT-enabled startup intermittently
+fail. The gate asserts the actual runtime's `jit.status()` is false, rather than
+relying on a build flag. A test-only upstream patch waits for asynchronous
+Tree-sitter work without changing production parsing or weakening its assertions.
+The corrected unwrapped executable passed 100 consecutive starts on the second
+phone; configured-editor and full-generation acceptance are separate checks.
 Candidate mode uses a scratch home; active mode checks the real configuration.
 Neither mode is a sandbox or proof that every installed package works.
 
-These are ordinary `homeConfigurations.zf10` and `homeConfigurations.p11`.
-Home Manager owns activation, profiles and generations; there is no separate
-Android generation manager. With the source available, the normal interface is:
+The ordinary `homeConfigurations.zf10` and `homeConfigurations.p11` remain
+available for the Home Manager layer. The [declarative guest system](system/README.md)
+coordinates system and matching Home Manager generations through `nixpp`;
+use that interface on migrated devices. For Home Manager-only environments,
+the source-based interface remains:
 
 ```sh
 home-manager switch --flake '.#zf10'

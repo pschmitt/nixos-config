@@ -90,6 +90,12 @@ esac
 FAKE
   write_tool "$dir" nvim <<'FAKE'
 #!/bin/sh
+if [ -e "${0%/*}/../../fail-second-nvim" ]; then
+  if [ -e "${0%/*}/../../nvim-started" ]; then
+    exit 1
+  fi
+  : > "${0%/*}/../../nvim-started"
+fi
 printf '%s\n' "$HOME" > "${0%/*}/../../seen-home"
 printf '%s\n' "${SECRET_TOKEN:-unset}" > "${0%/*}/../../seen-secret"
 printf '%s\n' "${FOO_PASS:-unset}" > "${0%/*}/../../seen-pass"
@@ -442,6 +448,12 @@ test_gate_isolation() {
 }
 
 test_gate_eza_crash() {
+  gate_world gate-nvim-repeated
+  : > "$W/gen/fail-second-nvim"
+  run_gate --isolated --generation "$W/gen" --thorough --skip nix
+  assert_eq 1 "$RC" "second Neovim startup failure fails thorough gate"
+  assert_contains "$W/out" '"failed": ["nvim"]' "only nvim fails"
+
   gate_world gate-eza
   : > "$W/gen/fail-eza"
   run_gate --isolated --generation "$W/gen"
@@ -689,7 +701,7 @@ cleanup() {
 }
 
 main() {
-  local test_name
+  local _declaration _flag test_name
   case "${1:-}" in
     -h|--help)
       usage
@@ -702,12 +714,14 @@ main() {
   fi
   WORK=$(mktemp -d "${TMPDIR:-/tmp}/fnxt.XXXXXX") || return 1
   trap cleanup EXIT
-  for test_name in $(compgen -A function test_)
+  while read -r _declaration _flag test_name
   do
-    "$test_name"
-  done
+    case "$test_name" in
+      test_*) "$test_name" ;;
+    esac
+  done < <(declare -F)
   printf '%d passed, %d failed\n' "$PASS" "$FAIL"
-  [[ "$FAIL" -eq 0 ]]
+  [[ "$PASS" -gt 0 && "$FAIL" -eq 0 ]]
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

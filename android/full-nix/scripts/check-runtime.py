@@ -293,13 +293,16 @@ def check_zsh(gate):
 
 def check_nvim(gate):
     nvim = gate.tool('nvim')
-    lua = 'lua io.stdout:write("FULLNIX-NVIM-" .. vim.version().major .. "\\n")'
-    res = gate.run(
-        [nvim, '--headless', '-u', 'NONE', '-i', 'NONE', '-c', lua, '-c', 'qa!']
-    )
-    gate.require(res, 'nvim -u NONE')
-    if not re.search(r'^FULLNIX-NVIM-\d+$', res.out, re.M):
-        raise CheckFailure('nvim -u NONE did not run Lua')
+    lua = ('lua assert(jit and not jit.status(), "Neovim JIT must be disabled"); '
+           'io.stdout:write("FULLNIX-NVIM-" .. vim.version().major .. "\\n")')
+    rounds = 20 if gate.args.thorough else 1
+    for _ in range(rounds):
+        res = gate.run(
+            [nvim, '--headless', '-u', 'NONE', '-i', 'NONE', '-c', lua, '-c', 'qa!']
+        )
+        gate.require(res, 'nvim -u NONE')
+        if not re.search(r'^FULLNIX-NVIM-\d+$', res.out, re.M):
+            raise CheckFailure('nvim -u NONE did not run Lua')
     details = ['bare startup ok']
     if not gate.isolated:
         res = gate.run(

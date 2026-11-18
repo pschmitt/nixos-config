@@ -36,6 +36,26 @@ in
   openstack-rs = withSignalStack prev.openstack-rs [ "osc" ];
   vivid = withSignalStack prev.vivid [ "vivid" ];
   zoxide = withSignalStack prev.zoxide [ "zoxide" ];
+  # The guest cannot reliably allocate LuaJIT executable memory at startup.
+  # The patch only touches the test suite: two treesitter tests assumed async parses finish
+  # within their 3ms budget, which does not hold when the build runs under emulation.
+  #
+  # `self` must point at the overridden interpreter: luajit derives `pkgs`/`withPackages` (which
+  # neovim's runtime Lua environment, and therefore the linked libluajit, come from) from its
+  # `self` argument, which otherwise stays the stock JIT-enabled luajit.
+  neovim-unwrapped =
+    let
+      luajitNoJit = prev.luajit.override {
+        enableJIT = false;
+        self = luajitNoJit;
+      };
+    in
+    (prev.neovim-unwrapped.override {
+      luajit = luajitNoJit;
+    }).overrideAttrs
+      (old: {
+        patches = (old.patches or [ ]) ++ [ ./neovim-treesitter-async-tests.patch ];
+      });
   rsync = prev.rsync.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./rsync-search-only-ancestors.patch ];
   });
