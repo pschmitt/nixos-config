@@ -152,7 +152,11 @@ in
   programs = {
     home-manager.enable = true;
     rbw.package = lib.mkForce pkgs.rbw;
-    rbw.settings.unlockUi = "terminal";
+    rbw.settings = {
+      unlockUi = "terminal";
+      # rbw falls back to pinentry before it has a local vault database.
+      pinentry.command = lib.mkForce (lib.getExe' pkgs.pinentry-tty "pinentry-tty");
+    };
     neovim = {
       nightly.enable = false;
       extraPackages = [
