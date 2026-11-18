@@ -180,7 +180,7 @@ fn write_string(text: &str, out: &mut String) {
 /// An exclusive advisory lock held for as long as the value lives.
 #[derive(Debug)]
 pub struct FileLock {
-    _file: File,
+    file: File,
 }
 
 impl FileLock {
@@ -196,7 +196,7 @@ impl FileLock {
         // SAFETY: the descriptor is owned by `file` and valid for this call.
         let result = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
         if result == 0 {
-            return Ok(Some(Self { _file: file }));
+            return Ok(Some(Self { file }));
         }
         let error = io::Error::last_os_error();
         if error.kind() == io::ErrorKind::WouldBlock {
@@ -217,11 +217,31 @@ impl FileLock {
     }
 }
 
+impl Drop for FileLock {
+    fn drop(&mut self) {
+        // SAFETY: the file still owns the descriptor. Explicitly unlock the
+        // open file description in case a concurrent fork inherited it and
+        // has not yet closed close-on-exec descriptors.
+        unsafe { libc::flock(self.file.as_raw_fd(), libc::LOCK_UN) };
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
     use std::os::unix::fs::{PermissionsExt, symlink};
+
+    #[test]
+    fn dropping_a_lock_releases_an_inherited_file_description() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("lock");
+        let lock = FileLock::acquire(&path).unwrap();
+        let _inherited = lock.file.try_clone().unwrap();
+        assert!(FileLock::try_acquire(&path).unwrap().is_none());
+        drop(lock);
+        FileLock::acquire(&path).unwrap();
+    }
 
     #[test]
     fn canonical_json_matches_python_sort_keys() {
