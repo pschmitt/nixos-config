@@ -119,7 +119,10 @@ journal. If the guest cannot start, invoke the native controller from recovery.
 `rollback` activates the retained previous pair, including the original HM-only
 baseline after the first migration. Prepared system GC roots retain matching
 closures; this implementation does not garbage-collect candidates or backups.
-New default sessions follow `current-system`; existing sessions are not replaced.
+New default sessions follow `current-system`. Existing sessions keep their
+selected generation. In each managed session, `/run/current-system/sw/bin`
+contains that generation's system tools. The launcher and guest SSH server add
+this directory to `PATH`.
 
 The following device results cover the earlier Python controller, not acceptance
 of the Rust replacement. The second profile's migration exercised a controlled

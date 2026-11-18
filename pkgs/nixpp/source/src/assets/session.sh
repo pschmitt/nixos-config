@@ -94,6 +94,10 @@ main() {
       printf 'Session packages are not installed; finish bootstrap first.\n' >&2
       return 1
     fi
+    if [[ -n $system_candidate ]]
+    then
+      command_path="$session_home/.nix-profile/bin:/run/current-system/sw/bin"
+    fi
   fi
   if [[ $# -gt 0 ]]
   then
@@ -114,6 +118,11 @@ main() {
     /system/bin/grep -qx 'XDG_RUNTIME_DIR_LAYOUT=run-user' "$session_etc/termuxpp-release"
   then
     runtime_dir="/run/user/$runtime_uid"
+  fi
+  set -- "$target" "$target" "$@"
+  if [[ -n $system_candidate ]]
+  then
+    set -- -b "$directory/root/nix/store/$system_candidate:/run/current-system!" "$@"
   fi
   cd "$directory/root$session_home" || return 1
   exec /system/bin/env -i \
@@ -144,7 +153,7 @@ auto-optimise-store = false' \
     -b "$directory/proc-stat:/proc/stat" \
     -b "$directory/proc-uptime:/proc/uptime" \
     -b /:/android \
-    "$target" "$target" "$@"
+    "$@"
 }
 
 main "$@"
