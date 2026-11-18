@@ -777,6 +777,12 @@ in
 
     tmpfiles.rules = [
       "d ${hermesOpsDir} 0700 ${config.services.hermes-agent.user} ${config.services.hermes-agent.group} - -"
+      # Hermes' left-core migration only checks for plugins/homeassistant, but
+      # the module links extraPlugins as plugins/nix-managed-<name>. Without
+      # this empty marker dir (no plugin.yaml, so the loader ignores it) every
+      # start tries `plugins install homeassistant`, which fails on the
+      # read-only store, and posts a warning into chat.
+      "d ${config.services.hermes-agent.stateDir}/.hermes/plugins/homeassistant 2770 ${config.services.hermes-agent.user} ${config.services.hermes-agent.group} - -"
       # Applies the linger setting below immediately on activation, instead of
       # waiting for the linger-users.service (wantedBy multi-user.target) to
       # run on next boot.
