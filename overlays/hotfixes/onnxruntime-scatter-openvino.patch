@@ -1,0 +1,11 @@
+--- a/onnxruntime/test/providers/cpu/tensor/scatter_op_test.cc
++++ b/onnxruntime/test/providers/cpu/tensor/scatter_op_test.cc
+@@ -268,7 +268,7 @@
+   test.AddOutput<float>("y", {4, 2, 1}, {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 5.0f, 0.0f});
+   test.Run(OpTester::ExpectResult::kExpectFailure,
+            "indices element out of data bounds, idx=4 must be within the inclusive range [-4,3]",
+-           {kCudaExecutionProvider, kCudaNHWCExecutionProvider, kTensorrtExecutionProvider, kQnnExecutionProvider, kWebGpuExecutionProvider});
++           {kCudaExecutionProvider, kCudaNHWCExecutionProvider, kTensorrtExecutionProvider, kQnnExecutionProvider, kWebGpuExecutionProvider, kOpenVINOExecutionProvider});
+ }
+ 
+ TEST(Scatter, InvalidIndex) {

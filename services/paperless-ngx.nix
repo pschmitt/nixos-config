@@ -8,6 +8,16 @@
 let
   paperlessPkgs = import inputs.nixpkgs-paperless {
     inherit (pkgs.stdenv.hostPlatform) system;
+    overlays = [
+      (_final: prev: {
+        # OpenVINO accepts an invalid Scatter index instead of returning an error.
+        # Keep testing the other providers until OpenVINO fixes this behavior.
+        # Observed with onnxruntime 1.27.1 at nixpkgs 6b93cd12c87540c01762ba068f30928f4f916954.
+        onnxruntime = prev.onnxruntime.overrideAttrs (old: {
+          patches = (old.patches or [ ]) ++ [ ../overlays/hotfixes/onnxruntime-scatter-openvino.patch ];
+        });
+      })
+    ];
   };
   hostnames = [
     "paperless.${config.domains.main}"
