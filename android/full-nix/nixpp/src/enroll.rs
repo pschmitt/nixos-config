@@ -93,9 +93,16 @@ pub fn enroll(
             .is_empty()
         || staged.join("system-pending.json").exists()
     {
-        activate(&staged, build_host, target)?;
+        activate(&staged, user, build_host, target)?;
     }
 
+    fs::remove_dir_all(
+        staged
+            .join("root/home")
+            .join(user)
+            .join(".config/nixpp-enrollment"),
+    )
+    .context("failed to remove initial worker SSH settings")?;
     fsutil::atomic_write(&staged.join("system.enabled"), "")?;
     fsutil::atomic_write(&staged.join("enrolled-host"), host)?;
     fsutil::atomic_write(&staged.join("enrolled-user"), user)?;
@@ -126,8 +133,8 @@ fn install_credentials(home: &Path, source: &Path) -> Result<()> {
     for (input, target, required) in [
         ("id_ed25519", ".ssh/id_ed25519", true),
         ("id_ed25519.pub", ".ssh/id_ed25519.pub", true),
-        ("ssh_config", ".ssh/config", true),
-        ("known_hosts", ".ssh/known_hosts", true),
+        ("ssh_config", ".config/nixpp-enrollment/ssh_config", true),
+        ("known_hosts", ".config/nixpp-enrollment/known_hosts", true),
         ("age_key", ".config/sops/age/keys.txt", false),
     ] {
         let source = source.join(input);
@@ -152,7 +159,7 @@ fn install_credentials(home: &Path, source: &Path) -> Result<()> {
     Ok(())
 }
 
-fn activate(runtime: &Path, build_host: &str, target: &str) -> Result<()> {
+fn activate(runtime: &Path, user: &str, build_host: &str, target: &str) -> Result<()> {
     let mut runner = SessionRunner::new();
     if runtime.join("system-pending.json").exists() {
         let status = controller::recover(runtime, &mut runner)?;
@@ -163,7 +170,18 @@ fn activate(runtime: &Path, build_host: &str, target: &str) -> Result<()> {
     // command string to the remote shell, so quote the validated target.
     let target = target.replace('\'', "'\"'\"'");
     let command = format!("nix build --no-link --print-out-paths -- '{target}'");
-    let output = session(runtime, &["ssh", "-oBatchMode=yes", build_host, &command])?;
+    let ssh_config = format!("/home/{user}/.config/nixpp-enrollment/ssh_config");
+    let output = session(
+        runtime,
+        &[
+            "ssh",
+            "-F",
+            &ssh_config,
+            "-oBatchMode=yes",
+            build_host,
+            &command,
+        ],
+    )?;
     let generation = std::str::from_utf8(&output.stdout)?.trim();
     ensure!(
         store::is_store_root(generation),
@@ -175,6 +193,8 @@ fn activate(runtime: &Path, build_host: &str, target: &str) -> Result<()> {
     session(
         runtime,
         &[
+            "env",
+            &format!("NIX_SSHOPTS=-F {ssh_config}"),
             "nix",
             "copy",
             "--no-check-sigs",
@@ -256,7 +276,7 @@ mod tests {
         install_credentials(&home, &input).unwrap();
         for name in [
             ".ssh/id_ed25519",
-            ".ssh/config",
+            ".config/nixpp-enrollment/ssh_config",
             ".config/sops/age/keys.txt",
         ] {
             let path = home.join(name);
