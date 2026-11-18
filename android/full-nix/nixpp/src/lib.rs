@@ -16,6 +16,7 @@ mod enroll;
 pub mod error;
 pub mod fsutil;
 pub mod guest;
+mod outer;
 pub mod progress;
 pub mod provision;
 pub mod runner;

@@ -69,6 +69,22 @@ musl `launcher` and a registered chroot store with static `nix`,
 guest `nixpp` on the first session's PATH. Init uses the bundled closure and
 fetches missing session packages from cache.nixos.org. The seed is reproducible.
 
+From a native session, `nixpp enter` opens the Nix guest. Use `--` to run a
+command directly, without shell evaluation:
+
+```sh
+nixpp enter -- printf '%s\n' 'two words'
+nixpp enter --outer
+nixpp enter --outer -- ls -al
+```
+
+Inside a regular interactive guest, `--outer` runs in the native TermuxPP
+environment through the terminal session's native parent. Exit an outer shell
+to return to the guest. The handoff accepts only requests from that terminal's
+foreground job, with all three streams attached to the terminal. It is separate
+from the system-management socket. A guest entered through a recovery script
+without a native parent can use the app's failsafe session instead.
+
 For personal device enrollment, close other terminal sessions and open a
 TermuxPP failsafe session. Run `"$PREFIX/bin/nixpp" native-shell` to load the
 native prefix environment, then run:

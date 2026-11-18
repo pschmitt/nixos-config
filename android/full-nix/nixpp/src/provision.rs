@@ -7,7 +7,7 @@ use anyhow::{Context, Result, anyhow, ensure};
 use sha2::{Digest, Sha256};
 use std::ffi::OsString;
 use std::fs::{self, DirBuilder, File, OpenOptions};
-use std::io::Read;
+use std::io::{IsTerminal, Read};
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -52,7 +52,7 @@ pub fn setup_state(runtime: &Path) -> Setup {
 /// Finish setting up `runtime` when needed, then replace this process with
 /// the guest login shell (`login.sh`), passing `args` to it. Returns only on
 /// failure.
-pub fn login(runtime: &Path, user: &str, args: &[OsString]) -> Result<()> {
+pub fn login(runtime: &Path, user: &str, args: &[OsString]) -> Result<u8> {
     match setup_state(runtime) {
         Setup::Ready => {}
         Setup::Resume => {
@@ -75,7 +75,18 @@ pub fn login(runtime: &Path, user: &str, args: &[OsString]) -> Result<()> {
     }
     // Keep the launch scripts in step with this nixpp.
     bootstrap::install_scripts(runtime)?;
-    let error = Command::new(runtime.join("login.sh")).args(args).exec();
+    let mut command = if exact_command(args) {
+        let mut session = Command::new(runtime.join("session.sh"));
+        session.arg("--");
+        session
+    } else {
+        Command::new(runtime.join("login.sh"))
+    };
+    command.args(args);
+    if args.is_empty() && std::io::stdin().is_terminal() {
+        return crate::outer::supervise(&mut command);
+    }
+    let error = command.exec();
     Err(anyhow!(error).context("failed to start the guest login shell"))
 }
 
@@ -94,8 +105,16 @@ pub fn native_shell() -> Result<()> {
 }
 
 /// Start a native shell from the Android failsafe environment.
-pub fn enter_native_shell() -> Result<()> {
-    ensure!(cfg!(target_os = "android"), "native-shell requires Android");
+pub fn enter_native_shell(args: &[OsString]) -> Result<()> {
+    let error = native_command(args)?.exec();
+    Err(anyhow!(error).context("failed to start the native TermuxPP shell"))
+}
+
+pub(crate) fn native_command(args: &[OsString]) -> Result<Command> {
+    ensure!(
+        cfg!(target_os = "android"),
+        "open a native TermuxPP failsafe session to run outer commands"
+    );
     let executable = fs::canonicalize(std::env::current_exe()?)?;
     let prefix = prefix(&executable)?;
     let package = std::env::var_os("TERMUX_APP__DATA_DIR")
@@ -124,17 +143,44 @@ pub fn enter_native_shell() -> Result<()> {
 
     let path = std::env::join_paths([prefix.join("bin"), PathBuf::from("/system/bin")])?;
     let shell = prefix.join("bin/bash");
-    let error = Command::new(&shell)
-        .arg("--noprofile")
-        .arg("--norc")
+    let mut command = Command::new(&shell);
+    command.args(["--noprofile", "--norc"]);
+    if !args.is_empty() {
+        command.args(["-c", "exec \"$@\"", "nixpp"]).args(args);
+    }
+    command
         .env("PATH", path)
         .env("PREFIX", prefix)
         .env("TMPDIR", prefix.join("tmp"))
         .env("LD_LIBRARY_PATH", prefix.join("lib"))
         .env("LD_PRELOAD", &redirect)
-        .env("TERMUX_PKG_REDIRECT_SO", &redirect)
-        .exec();
-    Err(anyhow!(error).context("failed to start the native TermuxPP shell"))
+        .env("TERMUX_PKG_REDIRECT_SO", &redirect);
+    Ok(command)
+}
+
+/// Execute a command or start a login shell in an already-running guest.
+pub fn enter_current_guest(args: &[OsString]) -> Result<()> {
+    ensure!(
+        std::env::var_os("NIXPP_RUNTIME").is_some(),
+        "enter requires the TermuxPP runtime"
+    );
+    let error = if exact_command(args) {
+        Command::new(&args[0]).args(&args[1..]).exec()
+    } else {
+        let shell = std::env::var_os("SHELL").context("guest SHELL is not configured")?;
+        let mut command = Command::new(shell);
+        if args.is_empty() {
+            command.arg("-l");
+        }
+        command.args(args).exec()
+    };
+    Err(anyhow!(error).context("failed to start the guest command"))
+}
+
+// Preserve the login interface's shell options, particularly `enter -c`.
+fn exact_command(args: &[OsString]) -> bool {
+    args.first()
+        .is_some_and(|arg| !arg.as_encoded_bytes().starts_with(b"-"))
 }
 
 fn prefix(executable: &Path) -> Result<&Path> {

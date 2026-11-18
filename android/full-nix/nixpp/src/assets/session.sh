@@ -112,6 +112,7 @@ main() {
     TERM="${TERM:-xterm-256color}" COLORTERM="${COLORTERM:-truecolor}" \
     LANG=C.UTF-8 TMPDIR=/tmp SHELL="$login_shell" \
     NIXPP_RUNTIME="/android$directory" NIXPP_SOCKET=/tmp/nixpp.sock \
+    NIXPP_OUTER_SOCKET="${NIXPP_OUTER_SOCKET:-}" \
     NIX_CONF_DIR="$session_home/.config/nix" \
     PATH="$command_path" TERMINFO="$SESSION_TERMINFO" \
     NIX_SSL_CERT_FILE="$certificate" SSL_CERT_FILE="$certificate" \

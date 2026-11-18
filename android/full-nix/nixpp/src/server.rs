@@ -173,6 +173,10 @@ enum Outcome {
 
 /// UID of the process on the other end of `stream` (`SO_PEERCRED`).
 pub fn peer_uid(stream: &UnixStream) -> Option<u32> {
+    peer_credentials(stream).map(|credentials| credentials.uid)
+}
+
+pub(crate) fn peer_credentials(stream: &UnixStream) -> Option<libc::ucred> {
     let mut credentials = libc::ucred {
         pid: 0,
         uid: 0,
@@ -190,7 +194,7 @@ pub fn peer_uid(stream: &UnixStream) -> Option<u32> {
             &mut length,
         )
     };
-    (result == 0).then_some(credentials.uid)
+    (result == 0).then_some(credentials)
 }
 
 fn read_request(mut stream: &UnixStream) -> std::result::Result<Value, Outcome> {

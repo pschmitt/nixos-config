@@ -129,7 +129,7 @@ pub enum Command {
         #[arg(long)]
         credentials: PathBuf,
     },
-    /// Enter the Nix guest, finishing its setup first when needed
+    /// Enter the guest or open the native TermuxPP shell
     #[command(visible_alias = "enter")]
     Login(LoginArgs),
     /// Open the native TermuxPP shell from an Android failsafe session
@@ -138,11 +138,15 @@ pub enum Command {
 
 #[derive(Debug, Args)]
 pub struct LoginArgs {
+    /// Use the outer Android/TermuxPP environment
+    #[arg(long, conflicts_with = "user")]
+    outer: bool,
+
     /// Guest user name, used only when a new runtime is set up
     #[arg(long, env = "NIXPP_USER", default_value = bootstrap::DEFAULT_USERNAME)]
     user: String,
 
-    /// Arguments for the guest login shell (default: a login shell)
+    /// Command and arguments after -- (default: an interactive shell)
     #[arg(
         trailing_var_arg = true,
         allow_hyphen_values = true,
@@ -251,7 +255,7 @@ fn execute(cli: &Cli, ui: &Ui) -> Exit {
             init_command(runtime, args)
         }
         Command::Login(args) => login_command(runtime, args),
-        Command::NativeShell => match crate::provision::enter_native_shell() {
+        Command::NativeShell => match crate::provision::enter_native_shell(&[]) {
             Ok(()) => Exit::success(),
             Err(error) => Exit::failure(format!("native-shell: {error:#}")),
         },
@@ -512,13 +516,42 @@ fn native_runtime(runtime: Option<PathBuf>) -> anyhow::Result<PathBuf> {
 /// Enter the guest; when that fails, explain and continue in the native
 /// shell instead of ending the terminal session.
 fn login_command(runtime: Option<PathBuf>, args: &LoginArgs) -> Exit {
+    if args.outer {
+        if !cfg!(target_os = "android") {
+            return match crate::outer::request(&args.args) {
+                Ok(code) => Exit {
+                    code,
+                    message: None,
+                },
+                Err(error) => Exit::failure(format!("enter --outer: {error:#}")),
+            };
+        }
+        return match crate::provision::enter_native_shell(&args.args) {
+            Ok(()) => Exit::success(),
+            Err(error) => Exit::failure(format!("enter --outer: {error:#}")),
+        };
+    }
+    if !cfg!(target_os = "android") {
+        return match crate::provision::enter_current_guest(&args.args) {
+            Ok(()) => Exit::success(),
+            Err(error) => Exit::failure(format!("enter: {error:#}")),
+        };
+    }
     let error = match native_runtime(runtime) {
         Ok(runtime) => match crate::provision::login(&runtime, &args.user, &args.args) {
-            Ok(()) => return Exit::success(),
+            Ok(code) => {
+                return Exit {
+                    code,
+                    message: None,
+                };
+            }
             Err(error) => error,
         },
         Err(error) => error,
     };
+    if !args.args.is_empty() {
+        return Exit::failure(format!("cannot start guest command: {error:#}"));
+    }
     eprintln!("nixpp: cannot enter the Nix guest: {error:#}");
     eprintln!("Starting the native shell instead; run `nixpp enter` to retry.");
     match crate::provision::native_shell() {
@@ -831,6 +864,14 @@ mod tests {
             panic!("not login");
         };
         assert!(args.args.is_empty());
+        let Command::Login(args) = parse(&["enter", "--outer", "--", "ls", "-al", "two words"])
+            .unwrap()
+            .command
+        else {
+            panic!("not login");
+        };
+        assert!(args.outer);
+        assert_eq!(args.args, ["ls", "-al", "two words"]);
     }
 
     #[test]
