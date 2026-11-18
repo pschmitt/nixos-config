@@ -8,6 +8,7 @@ builtins.mapAttrs (
     inherit inputs;
     inherit (home) pkgs;
     modules = [
+      ../../../modules/nixpp/ssh-client.nix
       ../../../modules/nixpp/sshd.nix
       {
         networking.hostName = hostname;
