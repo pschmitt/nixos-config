@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 use std::fs;
 use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Sets the Home Manager profile; the store path is a positional argument.
 pub const PROFILE_SET: &str = "exec nix-env --profile \"${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles/home-manager\" --set \"$1\"";
@@ -77,6 +77,8 @@ struct Journal<'a> {
 /// One entry of `list-generations`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Generation {
+    pub number: Option<usize>,
+    pub date: Option<String>,
     pub generation: String,
     #[serde(rename = "homeManager")]
     pub home_manager: String,
@@ -472,7 +474,6 @@ pub fn generations(runtime: &Path) -> Result<Vec<Generation>> {
             names.push(name);
         }
     }
-    names.sort();
     let mut result = Vec::new();
     for name in names {
         if name.starts_with('.') {
@@ -480,13 +481,80 @@ pub fn generations(runtime: &Path) -> Result<Vec<Generation>> {
         }
         let data = candidate_manifest(runtime, &name)?;
         result.push(Generation {
+            number: None,
+            date: None,
             home_manager: data.home_manager,
             current: Some(name.as_str()) == current,
             previous: Some(name.as_str()) == previous,
             generation: name,
         });
     }
-    Ok(result)
+    annotate_generations(runtime, result)
+}
+
+/// Number retained candidates by preparation time. The generation record is
+/// created during preparation and remains untouched by switches and rollbacks.
+pub(crate) fn annotate_generations(
+    runtime: &Path,
+    generations: Vec<Generation>,
+) -> Result<Vec<Generation>> {
+    let candidates = runtime.join("system-candidates");
+    let mut dated: Vec<_> = generations
+        .into_iter()
+        .map(|generation| {
+            let candidate = candidates.join(&generation.generation);
+            let record = candidate.join("generation");
+            if !is_candidate_name(&generation.generation)
+                || is_symlink(&candidates)
+                || is_symlink(&candidate)
+                || regular_file_size(&record).is_none()
+            {
+                return Err(Error::invalid("invalid candidate generation record"));
+            }
+            Ok((fs::metadata(record)?.modified()?, generation))
+        })
+        .collect::<Result<_>>()?;
+    dated.sort_by(|(left_time, left), (right_time, right)| {
+        left_time
+            .cmp(right_time)
+            .then_with(|| left.generation.cmp(&right.generation))
+    });
+    Ok(dated
+        .into_iter()
+        .enumerate()
+        .map(|(index, (time, mut generation))| {
+            generation.number = Some(index + 1);
+            generation.date = utc_date(time);
+            generation
+        })
+        .collect())
+}
+
+fn utc_date(time: SystemTime) -> Option<String> {
+    let seconds: libc::time_t = time
+        .duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_secs()
+        .try_into()
+        .ok()?;
+    let mut result = std::mem::MaybeUninit::<libc::tm>::uninit();
+    // SAFETY: seconds is an initialized time_t, and result points to writable
+    // storage for one tm. gmtime_r initializes the result on success.
+    let date = unsafe {
+        if libc::gmtime_r(&seconds, result.as_mut_ptr()).is_null() {
+            return None;
+        }
+        result.assume_init()
+    };
+    Some(format!(
+        "{:04}-{:02}-{:02} {:02}:{:02}:{:02}Z",
+        i64::from(date.tm_year) + 1900,
+        date.tm_mon + 1,
+        date.tm_mday,
+        date.tm_hour,
+        date.tm_min,
+        date.tm_sec
+    ))
 }
 
 /// Serve one management request: an allowlist of exactly five commands.
@@ -1098,9 +1166,17 @@ mod tests {
         let fixture = Fixture::new();
         do_switch(&fixture, &mut MockRunner::returning(0)).unwrap();
         fs::create_dir(fixture.path("system-candidates/.prepare-stage")).unwrap();
+        fs::File::options()
+            .write(true)
+            .open(fixture.path(&format!("system-candidates/{}/generation", fixture.name)))
+            .unwrap()
+            .set_modified(UNIX_EPOCH + Duration::from_secs(1))
+            .unwrap();
         assert_eq!(
             generations(&fixture.runtime).unwrap(),
             vec![Generation {
+                number: Some(1),
+                date: Some("1970-01-01 00:00:01Z".into()),
                 generation: fixture.name.clone(),
                 home_manager: fixture.home.clone(),
                 current: true,

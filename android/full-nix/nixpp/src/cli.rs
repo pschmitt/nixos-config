@@ -349,7 +349,15 @@ fn guest_command(
         }
         Command::ListGenerations => {
             let response = guest::manage(&socket, "list-generations", None)?;
-            let list = response.get("generations").cloned().unwrap_or(Value::Null);
+            let list = guest::generations(&response)?;
+            let list = match runtime.as_deref() {
+                // An already-running native controller may predate the columns.
+                Some(runtime) if list.iter().any(|item| item.number.is_none()) => {
+                    controller::annotate_generations(runtime, list)?
+                }
+                _ => list,
+            };
+            let list = serde_json::to_value(list)?;
             let table = !ui.json() && Ui::stdout_is_terminal();
             ui.print(&render_generations(ui, &list, table)?);
         }
@@ -403,6 +411,10 @@ fn generations_table(ui: &Ui, generations: &[controller::Generation]) -> String 
                 state.push("previous");
             }
             vec![
+                generation
+                    .number
+                    .map_or_else(|| "-".into(), |n| n.to_string()),
+                generation.date.as_deref().unwrap_or("-").into(),
                 generation.generation.clone(),
                 generation.home_manager.clone(),
                 state.join(", "),
@@ -410,11 +422,11 @@ fn generations_table(ui: &Ui, generations: &[controller::Generation]) -> String 
         })
         .collect();
     ui.table(
-        &["GENERATION", "HOME MANAGER", "STATE"],
+        &["GEN", "DATE (UTC)", "SYSTEM", "HOME MANAGER", "STATE"],
         &rows,
         &|column, text| match (column, text) {
-            (2, text) if text.starts_with("current") => Some(Style::Green),
-            (2, "previous") => Some(Style::Yellow),
+            (4, text) if text.starts_with("current") => Some(Style::Green),
+            (4, "previous") => Some(Style::Yellow),
             _ => None,
         },
     )
@@ -779,16 +791,25 @@ mod tests {
     fn generation_table_lists_states() {
         let ui = Ui::new(false, false, false, false);
         let list = json!([
-            {"generation": "g1", "homeManager": "h1", "current": true, "previous": false},
+            {"number": 1, "date": "2026-11-18 14:00:00Z", "generation": "g1", "homeManager": "h1", "current": true, "previous": false},
             {"generation": "g2", "homeManager": "h2", "current": false, "previous": true},
             {"generation": "g3", "homeManager": "h3", "current": false, "previous": false},
         ]);
         let table = render_generations(&ui, &list, true).unwrap();
         let lines: Vec<&str> = table.lines().collect();
-        assert_eq!(lines[0], "GENERATION  HOME MANAGER  STATE");
-        assert_eq!(lines[1], "g1          h1            current");
-        assert_eq!(lines[2], "g2          h2            previous");
-        assert_eq!(lines[3], "g3          h3");
+        assert_eq!(
+            lines[0],
+            "GEN  DATE (UTC)            SYSTEM  HOME MANAGER  STATE"
+        );
+        assert_eq!(
+            lines[1],
+            "1    2026-11-18 14:00:00Z  g1      h1            current"
+        );
+        assert_eq!(
+            lines[2],
+            "-    -                     g2      h2            previous"
+        );
+        assert_eq!(lines[3], "-    -                     g3      h3");
         assert!(render_generations(&ui, &json!("nope"), true).is_err());
     }
 
