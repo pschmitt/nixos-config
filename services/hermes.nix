@@ -20,29 +20,13 @@ let
   hermesOpsDir = "${config.services.hermes-agent.stateDir}/ops";
   hermesNixFlakeDir = "${config.services.hermes-agent.workingDirectory}/nixos-config";
 
-  # Upstream packaging bug (NousResearch/hermes-agent pyproject.toml,
-  # [tool.setuptools] py-modules): some root-level modules exist in the repo
-  # and are imported by other modules, but py-modules never got them added
-  # alongside their siblings (utils/hermes_constants/etc), so uv2nix's sealed
-  # venv never installs them:
-  #   - registration_lifecycle.py, imported (unguarded, module-level) by
-  #     hermes_cli/plugins.py -- `hermes dashboard`/gateway crash-loop with
-  #     "ModuleNotFoundError: No module named 'registration_lifecycle'".
-  #   - hermes_state_registry.py and hermes_state_holders.py, imported
-  #     (unguarded, module-level) by hermes_state.py -- hermes-agent
-  #     crash-loops with "ModuleNotFoundError: No module named
-  #     'hermes_state_registry'" (then 'hermes_state_holders' next).
-  # All three modules only import stdlib, so a plain PYTHONPATH supplement is
-  # sufficient until the one-line py-modules fix lands upstream. (Checked for
-  # other root-level .py files missing from py-modules: only mini_swe_runner
-  # is also missing, but it's test-only, never imported at runtime.)
   # Upstream's flake never passes `version` to nix/hermes-agent.nix, so the
   # install stamp reports baseVersion "0.0.0" and every plugin gated by
   # `requires_hermes` (e.g. the homeassistant plugin, which left core) refuses
   # to install: "requires hermes >=0.21.5, running 0.0.0". Stamp the latest
   # release tag reachable from the locked hermes-agent rev; bump it alongside
   # the flake input.
-  hermesVersion = "0.21.6";
+  hermesVersion = "0.23.2";
   # Hermes applies a patch for patchelf 0.19.2 to its pinned binaries. Nixpkgs
   # currently supplies 0.15.2, where that patch does not apply. Remove when
   # Hermes handles the selected patchelf version itself. Reviewed 2026-11-10
@@ -57,12 +41,6 @@ let
   hermesPmPackages = lib.filterAttrs (_: lib.isDerivation) (
     pkgs.callPackage (inputs.hermes-agent + "/nix/pm-packages.nix") { patchelf = hermesPatchelf; }
   );
-  hermesPyModulesShim = pkgs.runCommand "hermes-py-modules-shim" { } ''
-    mkdir -p $out
-    cp ${inputs.hermes-agent}/registration_lifecycle.py $out/
-    cp ${inputs.hermes-agent}/hermes_state_registry.py $out/
-    cp ${inputs.hermes-agent}/hermes_state_holders.py $out/
-  '';
   ghBrknLol = pkgs.writeShellScriptBin "gh-brkn-lol" ''
     export GH_CONFIG_DIR="${ghConfigRoot}/gh-brkn-lol"
     export GH_TOKEN="''${GH_BRKN_LOL_TOKEN:?GH_BRKN_LOL_TOKEN is not set}"
@@ -621,13 +599,6 @@ in
 
   systemd = {
     services = {
-      # hermes-agent.service itself (the gateway that actually answers
-      # Signal/etc) is defined by the upstream module -- it hits the same
-      # py-modules gap as hermes-dashboard below, via gateway/run.py's
-      # _install_plugin_message_injector -> hermes_cli.plugins, and also
-      # imports hermes_state_registry via hermes_state.py at startup.
-      hermes-agent.environment.PYTHONPATH = hermesPyModulesShim;
-
       # The upstream module runs the gateway natively. Its dashboard is a
       # separate process, bound to loopback and protected by a two-factor
       # Authelia policy.
@@ -643,7 +614,6 @@ in
           HOME = config.services.hermes-agent.stateDir;
           HERMES_HOME = "${config.services.hermes-agent.stateDir}/.hermes";
           HERMES_MANAGED = "true";
-          PYTHONPATH = hermesPyModulesShim;
         };
         serviceConfig = {
           User = config.services.hermes-agent.user;

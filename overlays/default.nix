@@ -36,6 +36,7 @@
 
     master = import inputs.nixpkgs-master {
       inherit (final.stdenv.hostPlatform) system;
+      overlays = [ (_final: prev: import ./hotfixes/onnxruntime.nix { inherit prev; }) ];
       config = {
         allowUnfree = true;
         allowBroken = true;

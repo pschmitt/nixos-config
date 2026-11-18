@@ -8,6 +8,7 @@
 let
   paperlessPkgs = import inputs.nixpkgs-paperless {
     inherit (pkgs.stdenv.hostPlatform) system;
+    overlays = [ (_final: prev: import ../overlays/hotfixes/onnxruntime.nix { inherit prev; }) ];
   };
   hostnames = [
     "paperless.${config.domains.main}"
