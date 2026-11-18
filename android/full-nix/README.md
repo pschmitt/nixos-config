@@ -32,6 +32,18 @@ bash android/full-nix/scripts/rworker-nix-test.sh
 nix shell --inputs-from . 'nixpkgs#python3' -c bash android/full-nix/scripts/test-check-runtime.sh
 ```
 
+After building the generated Nixpkgs source, check both its legacy and flake
+entry points on the worker. This forces evaluation of rsync, Neovim and the
+transitive rsync dependency of `nixos-rebuild-ng`, including their patch paths:
+
+```sh
+nix build --impure --expr \
+  '(builtins.getFlake (toString ./.)).homeConfigurations.zf10.config.home.file.".local/share/full-nix/nixpkgs".source' \
+  -o full-nix-nixpkgs
+nix eval --impure --json --file android/full-nix/package-set-tests.nix \
+  --apply "test: test { source = $(readlink -f full-nix-nixpkgs); }"
+```
+
 Standard flake builds use pure evaluation, so the editor module cannot scan the
 build host's home for user plugins. The expression-based assertions above use
 restricted evaluation for the same reason. Private runtime dotfiles must not

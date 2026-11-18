@@ -23,6 +23,8 @@ let
     mkdir -p "$out"
     cp ${./overlay.nix} "$out/overlay.nix"
     cp ${./eza-stack.c} "$out/eza-stack.c"
+    cp ${./rsync-search-only-ancestors.patch} "$out/rsync-search-only-ancestors.patch"
+    cp ${./neovim-treesitter-async-tests.patch} "$out/neovim-treesitter-async-tests.patch"
     cp ${pkgs.writeText "full-nix-default.nix" ''
       args:
       import ${inputs.nixpkgs.outPath} (args // {
