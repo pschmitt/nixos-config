@@ -143,11 +143,11 @@ flag logs --lines=count number of lines per job
 flag logs --follow follow all jobs on all workers
 flag logs --no-events suppress lifecycle events while following
 flag logs --quiet suppress all status messages (timestamped, italic) while following
-flag logs --topic=topic limit to workers whose topic matches this regex
-flag logs --agent=agent limit to workers whose creating agent matches this regex
+flag logs --topic=topic limit to workers whose topic matches this regex (prefix with ! to invert)
+flag logs --agent=agent limit to workers whose creating agent matches this regex (prefix with ! to invert)
 flag events --interval=interval event polling interval
-flag events --topic=topic limit to workers whose topic matches this regex
-flag events --agent=agent limit to workers whose creating agent matches this regex
+flag events --topic=topic limit to workers whose topic matches this regex (prefix with ! to invert)
+flag events --agent=agent limit to workers whose creating agent matches this regex (prefix with ! to invert)
 flag register --log=path absolute path to an existing log file
 values job
 values count 50 200 1000
@@ -2202,6 +2202,7 @@ REMOTE_JOBS
 
 validate_regex() {
   local flag="$1" pattern="$2"
+  pattern="${pattern#!}"
   if ! jq -n --arg re "$pattern" '"" | test($re)' >/dev/null 2>&1
   then
     printf 'invalid %s regex: %s\n' "$flag" "$pattern" >&2
@@ -2216,10 +2217,15 @@ filter_workers() {
     printf '%s\n' "$workers"
     return 0
   fi
+  # A leading "!" inverts the match: "!foo" keeps workers NOT matching foo.
   jq -c --arg topic_re "$topic" --arg agent_re "$agent" '
+    def m($v; $re):
+      if $re == "" then true
+      elif ($re | startswith("!")) then ($v | test($re[1:]) | not)
+      else ($v | test($re)) end;
     [.[] | select(
-      ($topic_re == "" or ((.topic // "") | test($topic_re))) and
-      ($agent_re == "" or ((.agent // "") | test($agent_re)))
+      m(.topic // ""; $topic_re) and
+      m(.agent // ""; $agent_re)
     )]
   ' <<< "$workers"
 }
