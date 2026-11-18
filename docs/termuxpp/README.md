@@ -263,6 +263,20 @@ outside its allowlisted directory; using that directory passed without enabling
 not changed. This does not qualify unattended maintenance, vault authentication,
 Android background lifetime or arbitrary native helpers inside the guest.
 
+### Nightly maintenance
+
+The managed profile installs a native Tasker launcher at
+`~/.config/termuxpp/tasker/nightly-update.sh`. Configure the bundled TermuxPP
+Tasker action to run it in the background and wait up to 3,600 seconds. The job
+runs on Wi-Fi while the phone is charging, and needs 512 MiB of free space.
+
+The job activates the signed cache pin with `nixpp upgrade --from-cache` and
+fast-forwards yadm. It syncs Atuin when signed in, then syncs and updates each
+configured mani workspace. Git runs without prompting. The latest two runs
+are logged under `~/.local/state/termuxpp-nightly/` in the guest. To check the
+current cache and readiness without activating anything, run
+`termuxpp-nightly-update --check`.
+
 ### Functional audit qualification
 
 The overlay now wraps `vivid` and `zoxide` with the targeted signal-stack shim.
