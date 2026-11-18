@@ -2,6 +2,7 @@
 
 use crate::{bootstrap, controller, fsutil, guest, provision, runner::SessionRunner, store};
 use anyhow::{Context, Result, ensure};
+use sha2::{Digest, Sha256};
 use std::fs::{self, DirBuilder};
 use std::os::unix::fs::DirBuilderExt;
 use std::path::{Path, PathBuf};
@@ -85,6 +86,9 @@ pub fn enroll(
         )?,
     }
 
+    // Guest sockets are translated to native paths. The staging directory
+    // suffix would push tmux and other Unix sockets past Android's limit.
+    use_short_tmp(&staged, runtime)?;
     // Enrollment only writes into the newly created private guest home.
     install_credentials(&staged.join("root/home").join(user), credentials)?;
     if !staged.join("current-system").is_file()
@@ -127,6 +131,40 @@ fn sibling(path: &Path, suffix: &str) -> Result<PathBuf> {
         .to_os_string();
     name.push(suffix);
     Ok(path.with_file_name(name))
+}
+
+fn use_short_tmp(staged: &Path, runtime: &Path) -> Result<()> {
+    let file = staged.join("session.env");
+    let mut environment = fs::read_to_string(&file)?;
+    if environment
+        .lines()
+        .any(|line| line.starts_with("SESSION_TMP_DIR="))
+    {
+        return Ok(());
+    }
+    let data = std::env::var_os("TERMUX_APP__DATA_DIR")
+        .context("enrollment requires the TermuxPP app data directory")?;
+    let files = fs::canonicalize(PathBuf::from(data).join("files"))?;
+    let key = format!(
+        "{:x}",
+        Sha256::digest(runtime.as_os_str().as_encoded_bytes())
+    );
+    let temp = files.join(format!(".npt-{}", &key[..8]));
+    DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(&temp)?;
+    ensure!(
+        fs::symlink_metadata(&temp)?.is_dir(),
+        "guest temp must be a directory"
+    );
+    let temp = temp.to_str().context("guest temp path must be UTF-8")?;
+    environment.push_str(&format!(
+        "SESSION_TMP_DIR={}\n",
+        bootstrap::shell_quote(temp)
+    ));
+    fsutil::atomic_write(&file, &environment)?;
+    Ok(())
 }
 
 fn install_credentials(home: &Path, source: &Path) -> Result<()> {

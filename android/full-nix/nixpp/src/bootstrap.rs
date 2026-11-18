@@ -590,7 +590,7 @@ fn validate_manifest(manifest: &Manifest) -> Result<()> {
 }
 
 /// POSIX single-quote quoting for values written to `session.env`.
-fn shell_quote(value: &str) -> String {
+pub(crate) fn shell_quote(value: &str) -> String {
     let safe = |c: char| {
         c.is_ascii_alphanumeric()
             || matches!(c, '_' | '@' | '%' | '+' | '=' | ':' | ',' | '.' | '/' | '-')
