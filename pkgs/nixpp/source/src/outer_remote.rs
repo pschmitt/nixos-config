@@ -9,7 +9,7 @@ use std::mem::{self, MaybeUninit};
 use std::os::fd::{AsFd, AsRawFd, FromRawFd, OwnedFd, RawFd};
 use std::os::unix::{
     ffi::OsStringExt,
-    fs::PermissionsExt,
+    fs::{FileTypeExt, PermissionsExt},
     net::{UnixListener, UnixStream},
     process::CommandExt,
 };
@@ -193,7 +193,7 @@ fn serve_connection(
     if let Some(term) = request.term {
         command.env("TERM", term);
     }
-    let (mut child, master) = match request.terminal {
+    let (mut child, master, output_watch) = match request.terminal {
         Some(size) => {
             let (master, slave) = open_pty(size)?;
             let (stdin, stdout) = (slave.try_clone()?, slave.try_clone()?);
@@ -213,18 +213,21 @@ fn serve_connection(
                     Ok(())
                 });
             }
-            (command.spawn()?, Some(master))
+            (command.spawn()?, Some(master), Vec::new())
         }
         None => {
             let [stdin, stdout, stderr]: [OwnedFd; 3] = receive_fds(stream, 3)?
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("expected three native stream descriptors"))?;
+            let stdout = File::from(stdout);
+            let stderr = File::from(stderr);
+            let output_watch = watch_outputs([&stdout, &stderr])?;
             command
                 .stdin(Stdio::from(stdin))
                 .stdout(Stdio::from(stdout))
                 .stderr(Stdio::from(stderr))
                 .process_group(0);
-            (command.spawn()?, None)
+            (command.spawn()?, None, output_watch)
         }
     };
     // Command keeps its Stdio handles until dropped, including the PTY slave.
@@ -234,7 +237,7 @@ fn serve_connection(
         if let Some(master) = master {
             send_fds(stream, &[master.as_raw_fd()])?;
         }
-        let status = wait_for_client(stream, &mut child)?;
+        let status = wait_for_client(stream, &output_watch, &mut child)?;
         stream.write_all(&[status])?;
         Ok(())
     })();
@@ -251,8 +254,20 @@ fn serve_connection(
     result
 }
 
-fn wait_for_client(stream: &UnixStream, child: &mut Child) -> Result<u8> {
-    let mut control = [pollfd(stream.as_raw_fd(), libc::POLLIN)];
+fn watch_outputs(outputs: [&File; 2]) -> io::Result<Vec<File>> {
+    let mut watched = Vec::new();
+    for output in outputs {
+        let kind = output.metadata()?.file_type();
+        if kind.is_fifo() || kind.is_socket() || output.is_terminal() {
+            watched.push(output.try_clone()?);
+        }
+    }
+    Ok(watched)
+}
+
+fn wait_for_client(stream: &UnixStream, outputs: &[File], child: &mut Child) -> Result<u8> {
+    let mut control = vec![pollfd(stream.as_raw_fd(), libc::POLLIN)];
+    control.extend(outputs.iter().map(|output| pollfd(output.as_raw_fd(), 0)));
     loop {
         if let Some(status) = child.try_wait()? {
             return Ok(super::outer::exit_code(status));
@@ -261,6 +276,17 @@ fn wait_for_client(stream: &UnixStream, child: &mut Child) -> Result<u8> {
         ensure!(
             control[0].revents == 0,
             "native command client disconnected"
+        );
+        // OpenSSH can leave the command alive after dropping its streams.
+        // Monitor the output peers too, without consuming input or output.
+        for output in &mut control[1..] {
+            if output.revents & (libc::POLLERR | libc::POLLHUP | libc::POLLNVAL) != 0 {
+                output.fd = -1;
+            }
+        }
+        ensure!(
+            outputs.is_empty() || control[1..].iter().any(|output| output.fd >= 0),
+            "native command output disconnected"
         );
     }
 }
@@ -578,5 +604,26 @@ mod tests {
         assert_eq!(ready, [0]);
         drop(client);
         assert!(worker.join().unwrap().is_err());
+    }
+
+    #[test]
+    fn remote_command_stops_when_ssh_closes_output_but_keeps_the_client_alive() {
+        let (mut server, mut client) = UnixStream::pair().unwrap();
+        let null = File::open("/dev/null").unwrap();
+        let (stdout, stdout_reader) = UnixStream::pair().unwrap();
+        let (stderr, stderr_reader) = UnixStream::pair().unwrap();
+        let worker = std::thread::spawn(move || serve_connection(&mut server, command));
+        client_request(&mut client, "exec sleep 30", None);
+        send_fds(
+            &client,
+            &[null.as_raw_fd(), stdout.as_raw_fd(), stderr.as_raw_fd()],
+        )
+        .unwrap();
+        let mut ready = [255];
+        client.read_exact(&mut ready).unwrap();
+        assert_eq!(ready, [0]);
+        drop((stdout_reader, stderr_reader));
+        let error = worker.join().unwrap().unwrap_err();
+        assert_eq!(error.to_string(), "native command output disconnected");
     }
 }
