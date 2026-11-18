@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -35,7 +36,10 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ android-bridge ];
+    home.packages = [
+      android-bridge
+      (pkgs.callPackage ../../../pkgs/nixpp/android-api.nix { inherit inputs; })
+    ];
     home.sessionVariables.ANDROID_BRIDGE_SOCKET = cfg.socket;
   };
 }
