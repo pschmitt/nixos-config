@@ -14,6 +14,7 @@
     ./bridge.nix
     ./lifecycle.nix
     ./sops.nix
+    ./yadm.nix
     ../../modules/dotfiles.nix
     ../../modules/domains.nix
     ../../modules/main-user.nix
