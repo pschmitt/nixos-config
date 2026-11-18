@@ -25,3 +25,9 @@
   it fetch and run yadm-init from `https://y.brkn.lol` and let yadm-init handle
   credentials at runtime. Keep the ZIP free of embedded credentials and test
   the launcher from a fresh install.
+
+## Services
+
+- [ ] Add declarative service definitions for the managed Nix guest, with
+  supervision and a Termux `svc`-style CLI for status, start, stop, and restart.
+  Add a page in TermuxPP settings for the same controls and service logs.
