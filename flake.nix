@@ -9,7 +9,7 @@
     # Paperless 3.4.2 requires torch < 2.15; keep its compatible package set
     # until nixpkgs supplies a matching pair. Deliberately independent of nixpkgs.
     nixpkgs-paperless = {
-      url = "github:NixOS/nixpkgs/d4f25a3e562008648d45bcf2d70bcc7422cad84e";
+      url = "github:NixOS/nixpkgs/6b93cd12c87540c01762ba068f30928f4f916954";
       flake = false;
     };
 
