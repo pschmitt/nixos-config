@@ -69,8 +69,9 @@ musl `launcher` and a registered chroot store with static `nix`,
 guest `nixpp` on the first session's PATH. Init uses the bundled closure and
 fetches missing session packages from cache.nixos.org. The seed is reproducible.
 
-For personal device enrollment, run the native TermuxPP command after closing
-other terminal sessions:
+For personal device enrollment, close other terminal sessions and open a
+TermuxPP failsafe session. Run `"$PREFIX/bin/nixpp" native-shell` to load the
+native prefix environment, then run:
 
 ```sh
 nixpp bootstrap --host PHONE --user USER --flake FLAKE --credentials PRIVATE_DIR

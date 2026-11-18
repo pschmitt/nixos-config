@@ -93,6 +93,50 @@ pub fn native_shell() -> Result<()> {
     Err(anyhow!(error).context(format!("failed to start {}", shell.display())))
 }
 
+/// Start a native shell from the Android failsafe environment.
+pub fn enter_native_shell() -> Result<()> {
+    ensure!(cfg!(target_os = "android"), "native-shell requires Android");
+    let executable = fs::canonicalize(std::env::current_exe()?)?;
+    let prefix = prefix(&executable)?;
+    let package = std::env::var_os("TERMUX_APP__DATA_DIR")
+        .and_then(|directory| PathBuf::from(directory).file_name().map(OsString::from))
+        .context("native-shell requires the TermuxPP app environment")?;
+    let apk = Command::new("/system/bin/pm")
+        .args(["path"])
+        .arg(package)
+        .output()?;
+    ensure!(apk.status.success(), "unable to locate the TermuxPP APK");
+    let apk = std::str::from_utf8(&apk.stdout)?
+        .lines()
+        .find_map(|line| {
+            line.strip_prefix("package:")
+                .filter(|path| path.ends_with("/base.apk"))
+        })
+        .context("unable to locate the base TermuxPP APK")?;
+    let redirect = Path::new(apk)
+        .parent()
+        .context("invalid TermuxPP APK path")?
+        .join("lib/arm64/libtermux-pkg-redirect.so");
+    ensure!(
+        redirect.is_file(),
+        "unable to locate the TermuxPP prefix redirect library"
+    );
+
+    let path = std::env::join_paths([prefix.join("bin"), PathBuf::from("/system/bin")])?;
+    let shell = prefix.join("bin/bash");
+    let error = Command::new(&shell)
+        .arg("--noprofile")
+        .arg("--norc")
+        .env("PATH", path)
+        .env("PREFIX", prefix)
+        .env("TMPDIR", prefix.join("tmp"))
+        .env("LD_LIBRARY_PATH", prefix.join("lib"))
+        .env("LD_PRELOAD", &redirect)
+        .env("TERMUX_PKG_REDIRECT_SO", &redirect)
+        .exec();
+    Err(anyhow!(error).context("failed to start the native TermuxPP shell"))
+}
+
 fn prefix(executable: &Path) -> Result<&Path> {
     executable
         .parent()

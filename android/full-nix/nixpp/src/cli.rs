@@ -132,6 +132,8 @@ pub enum Command {
     /// Enter the Nix guest, finishing its setup first when needed
     #[command(visible_alias = "enter")]
     Login(LoginArgs),
+    /// Open the native TermuxPP shell from an Android failsafe session
+    NativeShell,
 }
 
 #[derive(Debug, Args)]
@@ -249,6 +251,10 @@ fn execute(cli: &Cli, ui: &Ui) -> Exit {
             init_command(runtime, args)
         }
         Command::Login(args) => login_command(runtime, args),
+        Command::NativeShell => match crate::provision::enter_native_shell() {
+            Ok(()) => Exit::success(),
+            Err(error) => Exit::failure(format!("native-shell: {error:#}")),
+        },
         Command::Bootstrap {
             flake,
             host,
@@ -347,6 +353,7 @@ fn guest_command(
         | Command::Controller { .. }
         | Command::Init(_)
         | Command::Login(_)
+        | Command::NativeShell
         | Command::Bootstrap { .. } => {
             unreachable!("handled before the guest commands")
         }
