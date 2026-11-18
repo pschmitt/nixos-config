@@ -39,5 +39,8 @@ in
   # The umask a systemd user unit would run with: the installer applies the
   # configured modes itself and a stricter umask would silently strip them.
   umask 022
+  # Concurrent Go GC can corrupt memory under the Android guest runtime.
+  # Scope the workaround to the short-lived secrets installer.
+  export GOGC=off
   exec ${lib.concatStringsSep " " (lib.toList installer)}
 ''
