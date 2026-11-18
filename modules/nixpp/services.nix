@@ -50,6 +50,7 @@ let
         else
           "cd ${lib.escapeShellArg service.workingDirectory}";
       run = pkgs.writeShellScript "nixpp-service-${name}-run" ''
+        exec 2>&1
         ${workingDirectory}
         exec ${pkgs.coreutils}/bin/env -i "XDG_RUNTIME_DIR=/run/user/$(id -u)" ${environmentArguments} ${lib.escapeShellArgs service.command}
       '';

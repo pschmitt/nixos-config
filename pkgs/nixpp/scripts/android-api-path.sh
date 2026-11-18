@@ -35,6 +35,11 @@ main() {
       ;;
     /home|/home/*|/nix|/nix/*)
       local runtime_path=${NIXPP_RUNTIME:-}
+      local app_runtime=/android/data/data/dev.pschmitt.termux/files/home/.local/share/termuxpp-nix
+      if [[ "$runtime_path" == /run/nixpp-runtime && "$runtime_path" -ef "$app_runtime" ]]
+      then
+        runtime_path=$app_runtime
+      fi
       if [[ "$runtime_path" != /android/* ]]
       then
         printf 'NIXPP_RUNTIME must be an /android/... path\n' >&2
