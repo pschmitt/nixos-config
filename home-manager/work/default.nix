@@ -10,7 +10,6 @@
     ./browser.nix
     ./devel.nix
     ./glab.nix
-    ./gui.nix
     ./hashicorp.nix
     ./jcalapi.nix
     ./k8s.nix
