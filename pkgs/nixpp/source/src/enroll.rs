@@ -90,15 +90,26 @@ pub fn enroll(
     // suffix would push tmux and other Unix sockets past Android's limit.
     use_short_tmp(&staged, runtime)?;
     // Enrollment only writes into the newly created private guest home.
-    install_credentials(&staged.join("root/home").join(user), credentials)?;
-    if !staged.join("current-system").is_file()
+    let home = staged.join("root/home").join(user);
+    let cache = EnrollmentCache::read(credentials)?;
+    install_credentials(&home, credentials)?;
+    let activate_result = if !staged.join("current-system").is_file()
         || fs::read_to_string(staged.join("current-system"))?
             .trim()
             .is_empty()
         || staged.join("system-pending.json").exists()
     {
-        activate(&staged, user, build_host, target)?;
+        activate(&staged, user, build_host, target, cache.as_ref())
+    } else {
+        Ok(())
+    };
+    let cached_credentials = home.join(".config/nixpp-enrollment/cache_credentials");
+    match fs::remove_file(cached_credentials) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error).context("remove temporary cache credentials"),
     }
+    activate_result?;
 
     fs::remove_dir_all(
         staged
@@ -167,6 +178,59 @@ fn use_short_tmp(staged: &Path, runtime: &Path) -> Result<()> {
     Ok(())
 }
 
+struct EnrollmentCache {
+    store: String,
+    public_keys: String,
+}
+
+impl EnrollmentCache {
+    fn read(source: &Path) -> Result<Option<Self>> {
+        if !source.join("cache_credentials").is_file() {
+            return Ok(None);
+        }
+        let read = |name: &str| {
+            String::from_utf8(fsutil::read_bounded(&source.join(name), 4096)?)
+                .map(|value| value.trim().to_owned())
+                .context("enrollment cache settings must be UTF-8")
+        };
+        let store = read("cache_store")?;
+        let public_keys = read("cache_public_keys")?;
+        ensure!(
+            store.starts_with("s3://"),
+            "expected an S3 enrollment cache"
+        );
+        ensure!(
+            !public_keys.is_empty(),
+            "enrollment cache signing keys are missing"
+        );
+        Ok(Some(Self { store, public_keys }))
+    }
+
+    fn copy(&self, runtime: &Path, user: &str, generation: &str) -> Result<()> {
+        session(
+            runtime,
+            &[
+                "env",
+                &format!(
+                    "AWS_SHARED_CREDENTIALS_FILE=/home/{user}/.config/nixpp-enrollment/cache_credentials"
+                ),
+                "nix",
+                "--option",
+                "trusted-public-keys",
+                &self.public_keys,
+                "--option",
+                "require-sigs",
+                "true",
+                "copy",
+                "--from",
+                &self.store,
+                generation,
+            ],
+        )?;
+        Ok(())
+    }
+}
+
 fn install_credentials(home: &Path, source: &Path) -> Result<()> {
     for (input, target, required) in [
         ("id_ed25519", ".ssh/id_ed25519", true),
@@ -174,6 +238,11 @@ fn install_credentials(home: &Path, source: &Path) -> Result<()> {
         ("ssh_config", ".config/nixpp-enrollment/ssh_config", true),
         ("known_hosts", ".config/nixpp-enrollment/known_hosts", true),
         ("age_key", ".config/sops/age/keys.txt", false),
+        (
+            "cache_credentials",
+            ".config/nixpp-enrollment/cache_credentials",
+            false,
+        ),
     ] {
         let source = source.join(input);
         if !required && !source.try_exists()? {
@@ -197,7 +266,13 @@ fn install_credentials(home: &Path, source: &Path) -> Result<()> {
     Ok(())
 }
 
-fn activate(runtime: &Path, user: &str, build_host: &str, target: &str) -> Result<()> {
+fn activate(
+    runtime: &Path,
+    user: &str,
+    build_host: &str,
+    target: &str,
+    cache: Option<&EnrollmentCache>,
+) -> Result<()> {
     let mut runner = SessionRunner::new();
     if runtime.join("system-pending.json").exists() {
         let status = controller::recover(runtime, &mut runner)?;
@@ -225,22 +300,34 @@ fn activate(runtime: &Path, user: &str, build_host: &str, target: &str) -> Resul
         store::is_store_root(generation),
         "Nix returned an invalid generation"
     );
-    // This is the same pinned worker that returned the verified store path.
-    // Its disposable store does not sign locally built outputs.
-    let store = format!("ssh://{build_host}");
-    session(
-        runtime,
-        &[
-            "env",
-            &format!("NIX_SSHOPTS=-F {ssh_config}"),
-            "nix",
-            "copy",
-            "--no-check-sigs",
-            "--from",
-            &store,
-            generation,
-        ],
-    )?;
+    let copied_from_cache = cache.is_some_and(|cache| {
+        eprintln!("Checking the signed enrollment cache…");
+        match cache.copy(runtime, user, generation) {
+            Ok(()) => true,
+            Err(_) => {
+                eprintln!("Could not use the signed cache. Copying from the pinned worker.");
+                false
+            }
+        }
+    });
+    if !copied_from_cache {
+        // This is the same pinned worker that returned the verified store path.
+        // Its disposable store does not sign locally built outputs.
+        let store = format!("ssh://{build_host}");
+        session(
+            runtime,
+            &[
+                "env",
+                &format!("NIX_SSHOPTS=-F {ssh_config}"),
+                "nix",
+                "copy",
+                "--no-check-sigs",
+                "--from",
+                &store,
+                generation,
+            ],
+        )?;
+    }
     let candidate = generation
         .strip_prefix("/nix/store/")
         .context("invalid candidate path")?;

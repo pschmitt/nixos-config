@@ -449,7 +449,7 @@ pub fn upgrade_target(
 
 pub fn plan_upgrade(target: &UpgradeTarget, builder: &mut dyn Builder) -> Result<()> {
     let mut command = build_command(&target.flake, &target.host, false)?;
-    command.insert(2, "--dry-run".to_owned());
+    command.splice(2..2, ["--refresh", "--dry-run"].map(str::to_owned));
     builder.output(&command)?;
     Ok(())
 }
@@ -537,6 +537,67 @@ pub fn cached_upgrade(
     Ok(PathBuf::from(path))
 }
 
+pub fn probe_store(builder: &mut dyn Builder, store: Option<&str>) -> Result<()> {
+    let mut command = ["timeout", "8", "nix", "store", "ping"]
+        .map(str::to_owned)
+        .to_vec();
+    if let Some(store) = store {
+        command.extend(["--store".to_owned(), store.to_owned()]);
+    }
+    builder.output(&command)?;
+    Ok(())
+}
+
+pub fn probe_builders(builder: &mut dyn Builder) -> Result<()> {
+    let config = builder.output(&["nix", "config", "show", "builders"].map(str::to_owned))?;
+    let config = if let Some(path) = config.trim().strip_prefix('@') {
+        String::from_utf8(read_bounded(Path::new(path), 65536)?)
+            .map_err(|_| Error::invalid("builder list is not valid UTF-8"))?
+    } else {
+        config
+    };
+    let stores: std::collections::BTreeSet<_> = config
+        .split([';', '\n'])
+        .filter_map(|line| line.split_whitespace().next())
+        .filter(|store| store.starts_with("ssh-ng://") || store.starts_with("ssh://"))
+        .collect();
+    if stores.is_empty() {
+        return Err(Error::invalid("no remote SSH builders configured"));
+    }
+    let unavailable = std::thread::scope(|scope| {
+        let tasks: Vec<_> = stores
+            .into_iter()
+            .map(|store| {
+                (
+                    store,
+                    scope.spawn(move || probe_store(&mut ProcessBuilder, Some(store))),
+                )
+            })
+            .collect();
+        tasks
+            .into_iter()
+            .filter_map(|(store, task)| (!matches!(task.join(), Ok(Ok(())))).then_some(store))
+            .collect::<Vec<_>>()
+    });
+    if !unavailable.is_empty() {
+        return Err(Error::invalid(format!(
+            "unreachable: {}",
+            unavailable.join(", ")
+        )));
+    }
+    Ok(())
+}
+
+pub fn build_upgrade(
+    target: &UpgradeTarget,
+    rworker: bool,
+    builder: &mut dyn Builder,
+) -> Result<PathBuf> {
+    let mut command = build_command(&target.flake, &target.host, rworker)?;
+    command.insert(2, "--refresh".to_owned());
+    built_system(&command, builder)
+}
+
 /// Build the system of `host` and return its store path.
 pub fn build_system(
     flake: &str,
@@ -544,7 +605,11 @@ pub fn build_system(
     rworker: bool,
     builder: &mut dyn Builder,
 ) -> Result<PathBuf> {
-    let output = builder.output(&build_command(flake, host, rworker)?)?;
+    built_system(&build_command(flake, host, rworker)?, builder)
+}
+
+fn built_system(command: &[String], builder: &mut dyn Builder) -> Result<PathBuf> {
+    let output = builder.output(command)?;
     let mut paths = output.lines();
     let (Some(path), None) = (paths.next(), paths.next()) else {
         return Err(Error::invalid(
@@ -1037,6 +1102,7 @@ mod tests {
             [
                 "nix",
                 "build",
+                "--refresh",
                 "--dry-run",
                 "--max-jobs",
                 "0",

@@ -46,6 +46,8 @@ sources) remain upstream tools, not reimplementations inside the manager.
 
 ```sh
 # In the guest, with the matching native controller running:
+nixpp status
+nixpp doctor
 nixpp list-generations
 nixpp check HASH-termuxpp-system-HOST
 nixpp switch HASH-termuxpp-system-HOST
@@ -67,6 +69,11 @@ nixpp rebuild --flake /path/to/config --host HOST
 nixpp rebuild --flake /path/to/config --host HOST --rworker
 ```
 
+`status` shows the active and previous systems. Use `status --all` or
+`generations` to list all retained systems. `doctor` checks the native
+controller, the local Nix store, configured SSH builders and the signed cache
+pin. `fetch latest` runs the configured upgrade.
+
 `upgrade` selects the host and flake from the system configuration. It accepts
 `--flake` and `--host` overrides, and `--rworker` to select the disposable worker.
 `--dry-run` runs Nix's build planner without contacting the native controller.
@@ -87,6 +94,12 @@ This is a guest-system rebuild, not `nixos-rebuild` or Android OS management.
 both. `rebuild --runtime PATH` can override the former. The native service runs
 outside the guest, permits only same-UID clients and fixed management operations,
 and executes no arbitrary client-supplied native command.
+
+Guest services are declared with `services.<name>.command` in a TermuxPP system
+configuration. Enabled services start when a guest session opens. The `svc`
+command lists their state, starts, stops or restarts one service, and returns
+its most recent 200 log lines with `svc logs NAME`. Service processes run under
+the guest user and are supervised with runit.
 
 ## Candidate preparation
 

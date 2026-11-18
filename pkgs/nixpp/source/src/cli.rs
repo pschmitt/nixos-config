@@ -78,7 +78,7 @@ pub struct BuildArgs {
     rworker: bool,
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Default)]
 pub struct UpgradeArgs {
     /// Override the configured flake URI, without an output fragment
     #[arg(long)]
@@ -114,6 +114,19 @@ pub enum Command {
     Rebuild(BuildArgs),
     /// Build and activate the latest configured system
     Upgrade(UpgradeArgs),
+    /// Fetch and activate the latest configured system
+    Fetch {
+        #[arg(value_enum)]
+        target: FetchTarget,
+    },
+    /// Check the native controller, Nix store, builders and signed cache
+    Doctor,
+    /// Show the active and previous system generations
+    Status {
+        /// Show all retained generations
+        #[arg(long)]
+        all: bool,
+    },
     /// Activate a prepared system through the native controller
     Switch {
         /// Candidate name (store basename)
@@ -125,6 +138,7 @@ pub enum Command {
         candidate: String,
     },
     /// List prepared system generations
+    #[command(visible_alias = "generations")]
     ListGenerations,
     /// Activate the retained previous generation
     Rollback,
@@ -159,6 +173,11 @@ pub enum Command {
     Login(LoginArgs),
     /// Open the native TermuxPP shell from an Android failsafe session
     NativeShell,
+}
+
+#[derive(Debug, Clone, Copy, clap::ValueEnum)]
+pub enum FetchTarget {
+    Latest,
 }
 
 #[derive(Debug, Args)]
@@ -342,6 +361,94 @@ fn rebuild_system(
     Ok(())
 }
 
+const UPGRADE_CONFIG: &str = "/etc/nixpp/upgrade.json";
+
+fn upgrade_system(
+    ui: &Ui,
+    runtime: Option<PathBuf>,
+    socket: &Path,
+    args: &UpgradeArgs,
+) -> Result<()> {
+    let target = guest::upgrade_target(
+        Path::new(UPGRADE_CONFIG),
+        args.flake.clone(),
+        args.host.clone(),
+    )?;
+    if args.from_cache {
+        let runtime = if args.dry_run {
+            None
+        } else {
+            Some(require(
+                runtime,
+                "upgrade requires NIXPP_RUNTIME or --runtime",
+            )?)
+        };
+        ui.step("verifying the cache pin");
+        let generation = guest::cached_upgrade(&target, args.dry_run, &mut ProcessBuilder)?;
+        if let Some(runtime) = runtime {
+            guest::activate_system(&runtime, socket, &generation, &mut |stage| {
+                report_stage(ui, stage);
+            })?;
+            ui.ok("system switched");
+        }
+        ui.print(&path_output(ui, &generation));
+    } else if args.dry_run {
+        guest::plan_upgrade(&target, &mut ProcessBuilder)?;
+    } else {
+        let runtime = require(runtime, "upgrade requires NIXPP_RUNTIME or --runtime")?;
+        report_stage(ui, Stage::Build);
+        let generation = guest::build_upgrade(&target, args.rworker, &mut ProcessBuilder)?;
+        guest::activate_system(&runtime, socket, &generation, &mut |stage| {
+            report_stage(ui, stage);
+        })?;
+        ui.ok("system switched");
+        ui.print(&path_output(ui, &generation));
+    }
+    Ok(())
+}
+
+fn doctor(ui: &Ui, socket: &Path) -> Result<()> {
+    let mut builder = ProcessBuilder;
+    let controller = guest::manage(socket, "list-generations", None).map(|_| ());
+    let store = guest::probe_store(&mut builder, None);
+    let builders = guest::probe_builders(&mut builder);
+    let cache = guest::upgrade_target(Path::new(UPGRADE_CONFIG), None, None)
+        .and_then(|target| guest::cached_upgrade(&target, true, &mut builder))
+        .map(|_| ());
+    let checks = [
+        ("native controller", controller),
+        ("local Nix store", store),
+        ("remote builders", builders),
+        ("signed cache pin", cache),
+    ];
+    let mut results = serde_json::Map::new();
+    let mut ok = true;
+    for (name, result) in checks {
+        if let Err(error) = result {
+            ok = false;
+            results.insert(
+                name.to_owned(),
+                json!({ "ok": false, "error": error.to_string() }),
+            );
+            if !ui.json() {
+                ui.warn(&format!("{name}: {error}"));
+            }
+        } else {
+            results.insert(name.to_owned(), json!({ "ok": true }));
+            if !ui.json() {
+                ui.ok(name);
+            }
+        }
+    }
+    if ui.json() {
+        ui.print(&canonical_json(&json!({ "ok": ok, "checks": results })));
+    }
+    if !ok {
+        return Err(Error::invalid("one or more checks failed"));
+    }
+    Ok(())
+}
+
 fn guest_command(
     command: &Command,
     runtime: Option<PathBuf>,
@@ -361,45 +468,11 @@ fn guest_command(
                 guest::build_system(&args.flake, &args.host, args.rworker, &mut ProcessBuilder)?;
             ui.print(&path_output(ui, &generation));
         }
-        Command::Upgrade(args) => {
-            let target = guest::upgrade_target(
-                Path::new("/etc/nixpp/upgrade.json"),
-                args.flake.clone(),
-                args.host.clone(),
-            )?;
-            if args.from_cache {
-                let runtime = if args.dry_run {
-                    None
-                } else {
-                    Some(require(
-                        runtime,
-                        "upgrade requires NIXPP_RUNTIME or --runtime",
-                    )?)
-                };
-                ui.step("verifying the cache pin");
-                let generation = guest::cached_upgrade(&target, args.dry_run, &mut ProcessBuilder)?;
-                if let Some(runtime) = runtime {
-                    guest::activate_system(&runtime, &socket, &generation, &mut |stage| {
-                        report_stage(ui, stage);
-                    })?;
-                    ui.ok("system switched");
-                }
-                ui.print(&path_output(ui, &generation));
-            } else if args.dry_run {
-                guest::plan_upgrade(&target, &mut ProcessBuilder)?;
-            } else {
-                rebuild_system(
-                    ui,
-                    runtime,
-                    &socket,
-                    &BuildArgs {
-                        flake: target.flake,
-                        host: target.host,
-                        rworker: args.rworker,
-                    },
-                )?;
-            }
-        }
+        Command::Upgrade(args) => upgrade_system(ui, runtime, &socket, args)?,
+        Command::Fetch {
+            target: FetchTarget::Latest,
+        } => upgrade_system(ui, runtime, &socket, &UpgradeArgs::default())?,
+        Command::Doctor => doctor(ui, &socket)?,
         Command::Rebuild(args) => rebuild_system(ui, runtime, &socket, args)?,
         Command::Switch { candidate } => {
             let response = guest::manage(&socket, "switch", Some(candidate))?;
@@ -421,7 +494,7 @@ fn guest_command(
             ui.ok("interrupted activation recovered");
             print_response(ui, &response);
         }
-        Command::ListGenerations => {
+        Command::ListGenerations | Command::Status { .. } => {
             let response = guest::manage(&socket, "list-generations", None)?;
             let list = guest::generations(&response)?;
             let list = match runtime.as_deref() {
@@ -431,6 +504,10 @@ fn guest_command(
                 }
                 _ => list,
             };
+            let mut list = list;
+            if matches!(command, Command::Status { all: false }) {
+                list.retain(|generation| generation.current || generation.previous);
+            }
             let list = serde_json::to_value(list)?;
             let table = !ui.json() && Ui::stdout_is_terminal();
             ui.print(&render_generations(ui, &list, table)?);
