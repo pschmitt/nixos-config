@@ -94,9 +94,9 @@ nixpp bootstrap --host PHONE --user USER --flake FLAKE --credentials PRIVATE_DIR
 ```
 
 The private directory contains `id_ed25519`, `id_ed25519.pub`, `ssh_config`,
-`known_hosts`, `nix.conf`, `rbw_config` and optionally `age_key`. The Nix
-configuration must name a remote builder and provide read access to the
-flake's private inputs. SSH host keys must already be pinned in `known_hosts`.
+`known_hosts` and `build_host`, with an optional `age_key`. The build host is
+an SSH alias with access to the flake inputs. Pin its key in `known_hosts`.
+The initial generation is copied directly from this trusted worker.
 The age identity, when supplied, is installed as `~/.config/sops/age/keys.txt`
 for profiles that declare SOPS secrets. Credential files stay in the guest's
 private home.

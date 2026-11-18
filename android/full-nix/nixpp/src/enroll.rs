@@ -21,6 +21,14 @@ pub fn enroll(
     ensure!(runtime.is_absolute(), "the runtime path must be absolute");
     ensure!(store::is_user_name(user), "invalid guest user");
     let build = guest::build_command(flake, host, false)?;
+    let build_host = fsutil::read_bounded(&credentials.join("build_host"), 4096)
+        .context("missing initial build worker")?;
+    let build_host = std::str::from_utf8(&build_host)?.trim();
+    ensure!(
+        store::is_host_name(build_host),
+        "invalid initial build worker SSH alias"
+    );
+    let target = build.last().context("missing Nix build target")?;
     let parent = runtime
         .parent()
         .context("runtime requires a parent directory")?;
@@ -85,7 +93,7 @@ pub fn enroll(
             .is_empty()
         || staged.join("system-pending.json").exists()
     {
-        activate(&staged, &build)?;
+        activate(&staged, build_host, target)?;
     }
 
     fsutil::atomic_write(&staged.join("system.enabled"), "")?;
@@ -120,8 +128,6 @@ fn install_credentials(home: &Path, source: &Path) -> Result<()> {
         ("id_ed25519.pub", ".ssh/id_ed25519.pub", true),
         ("ssh_config", ".ssh/config", true),
         ("known_hosts", ".ssh/known_hosts", true),
-        ("nix.conf", ".config/nix/nix.conf", true),
-        ("rbw_config", ".config/rbw/config.json", true),
         ("age_key", ".config/sops/age/keys.txt", false),
     ] {
         let source = source.join(input);
@@ -146,19 +152,37 @@ fn install_credentials(home: &Path, source: &Path) -> Result<()> {
     Ok(())
 }
 
-fn activate(runtime: &Path, build: &[String]) -> Result<()> {
+fn activate(runtime: &Path, build_host: &str, target: &str) -> Result<()> {
     let mut runner = SessionRunner::new();
     if runtime.join("system-pending.json").exists() {
         let status = controller::recover(runtime, &mut runner)?;
         ensure!(status == 0, "enrollment recovery failed ({status})");
     }
     eprintln!("Building the guest configuration through Nix…");
-    let output = session(runtime, build)?;
+    // Keep private flake access on the initial worker. OpenSSH passes a
+    // command string to the remote shell, so quote the validated target.
+    let target = target.replace('\'', "'\"'\"'");
+    let command = format!("nix build --no-link --print-out-paths -- '{target}'");
+    let output = session(runtime, &["ssh", "-oBatchMode=yes", build_host, &command])?;
     let generation = std::str::from_utf8(&output.stdout)?.trim();
     ensure!(
         store::is_store_root(generation),
         "Nix returned an invalid generation"
     );
+    // This is the same pinned worker that returned the verified store path.
+    // Its disposable store does not sign locally built outputs.
+    let store = format!("ssh://{build_host}");
+    session(
+        runtime,
+        &[
+            "nix",
+            "copy",
+            "--no-check-sigs",
+            "--from",
+            &store,
+            generation,
+        ],
+    )?;
     let candidate = generation
         .strip_prefix("/nix/store/")
         .context("invalid candidate path")?;
@@ -223,14 +247,7 @@ mod tests {
         let input = fixture.path().join("input");
         let home = fixture.path().join("home");
         fs::create_dir(&input).unwrap();
-        for name in [
-            "id_ed25519",
-            "id_ed25519.pub",
-            "ssh_config",
-            "known_hosts",
-            "nix.conf",
-            "rbw_config",
-        ] {
+        for name in ["id_ed25519", "id_ed25519.pub", "ssh_config", "known_hosts"] {
             fs::write(input.join(name), format!("fixture for {name}\n")).unwrap();
         }
         install_credentials(&home, &input).unwrap();
@@ -240,8 +257,6 @@ mod tests {
         for name in [
             ".ssh/id_ed25519",
             ".ssh/config",
-            ".config/nix/nix.conf",
-            ".config/rbw/config.json",
             ".config/sops/age/keys.txt",
         ] {
             let path = home.join(name);
