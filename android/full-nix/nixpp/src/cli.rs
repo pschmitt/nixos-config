@@ -1,0 +1,742 @@
+//! The `nixpp` command line.
+//!
+//! One executable plays three roles:
+//!
+//! * the guest client (`prepare`, `build`, `rebuild`, `switch`, `check`,
+//!   `list-generations`, `rollback`, `recover`), which talks to the native
+//!   controller over a Unix socket;
+//! * the native service (`serve`) and the socket-less local controller
+//!   (`controller ...`), which run outside the guest;
+//! * first-time setup (`init`).
+
+use crate::bootstrap;
+use crate::controller;
+use crate::error::{Error, Result};
+use crate::fsutil::canonical_json;
+use crate::guest::{self, ProcessBuilder, Stage};
+use crate::runner::SessionRunner;
+use crate::server::{self, Served};
+use crate::ui::{ColorChoice, Style, Ui};
+use clap::builder::Styles;
+use clap::builder::styling::AnsiColor;
+use clap::{Args, Parser, Subcommand};
+use serde_json::{Value, json};
+use std::path::{Path, PathBuf};
+use std::process::ExitCode;
+
+const DEFAULT_SOCKET: &str = "/tmp/nixpp.sock";
+
+fn styles() -> Styles {
+    Styles::styled()
+        .header(AnsiColor::Green.on_default().bold())
+        .usage(AnsiColor::Green.on_default().bold())
+        .literal(AnsiColor::Cyan.on_default().bold())
+        .placeholder(AnsiColor::Cyan.on_default())
+}
+
+/// Manage the Nix system of a TermuxPP guest.
+#[derive(Debug, Parser)]
+#[command(name = "nixpp", version, styles = styles(), arg_required_else_help = true)]
+pub struct Cli {
+    /// Native runtime directory
+    #[arg(long, global = true, env = "NIXPP_RUNTIME", value_name = "DIR")]
+    runtime: Option<PathBuf>,
+
+    /// Management socket (guest default: /tmp/nixpp.sock)
+    #[arg(long, global = true, env = "NIXPP_SOCKET", value_name = "PATH")]
+    socket: Option<PathBuf>,
+
+    /// Print machine-readable JSON, never colour
+    #[arg(long, global = true)]
+    json: bool,
+
+    /// Suppress progress and success messages
+    #[arg(short, long, global = true)]
+    quiet: bool,
+
+    /// When to use colour
+    #[arg(long, global = true, value_enum, default_value_t = ColorChoice::Auto, value_name = "WHEN")]
+    color: ColorChoice,
+
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Debug, Args)]
+pub struct BuildArgs {
+    /// Flake URI, without an output fragment
+    #[arg(long)]
+    flake: String,
+
+    /// Host name of the system configuration
+    #[arg(long)]
+    host: String,
+
+    /// Build on the configured disposable worker
+    #[arg(long)]
+    rworker: bool,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum Command {
+    /// Prepare a candidate without selecting or activating it
+    Prepare {
+        /// Store path of the system generation
+        generation: PathBuf,
+    },
+    /// Build a system remotely and print its store path
+    Build(BuildArgs),
+    /// Build, prepare and switch to a system
+    Rebuild(BuildArgs),
+    /// Activate a prepared system through the native controller
+    Switch {
+        /// Candidate name (store basename)
+        candidate: String,
+    },
+    /// Check a prepared system through the native controller
+    Check {
+        /// Candidate name (store basename)
+        candidate: String,
+    },
+    /// List prepared system generations
+    ListGenerations,
+    /// Activate the retained previous generation
+    Rollback,
+    /// Restore the generation recorded before an interrupted activation
+    Recover,
+    /// Serve system-management requests to same-UID guest clients
+    Serve,
+    /// Run a controller operation directly, without the socket
+    Controller {
+        #[command(subcommand)]
+        operation: Operation,
+    },
+    /// Set up a new runtime from a verified bootstrap
+    Init(InitArgs),
+}
+
+#[derive(Debug, Subcommand)]
+pub enum Operation {
+    /// Check a candidate without activating or selecting it
+    Check {
+        candidate: String,
+        /// Run the thorough runtime check
+        #[arg(long)]
+        thorough: bool,
+    },
+    /// Activate the matching Home Manager, then select the system
+    Switch {
+        candidate: String,
+        /// Verified active Home Manager store path; first migration only
+        #[arg(long, value_name = "PATH")]
+        previous_home_manager: Option<String>,
+    },
+    /// Restore the generation recorded before an interrupted activation
+    Recover,
+    /// Activate and select the retained previous generation
+    Rollback,
+    /// List prepared system generations
+    ListGenerations,
+}
+
+#[derive(Debug, Args)]
+pub struct InitArgs {
+    /// Bootstrap APK
+    #[arg(
+        long,
+        value_name = "FILE",
+        required_unless_present = "resume",
+        conflicts_with = "resume"
+    )]
+    apk: Option<PathBuf>,
+
+    /// Pinned package manifest
+    #[arg(
+        long,
+        value_name = "FILE",
+        required_unless_present = "resume",
+        conflicts_with = "resume"
+    )]
+    manifest: Option<PathBuf>,
+
+    /// Native CA certificate bundle
+    #[arg(
+        long,
+        value_name = "FILE",
+        required_unless_present = "resume",
+        conflicts_with = "resume"
+    )]
+    certificate: Option<PathBuf>,
+
+    /// Guest user name
+    #[arg(long, default_value = bootstrap::DEFAULT_USERNAME, conflicts_with = "resume")]
+    user: String,
+
+    /// Continue an interrupted setup
+    #[arg(long)]
+    resume: bool,
+}
+
+/// How a command ends: an exit code and an optional message for stderr.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Exit {
+    code: u8,
+    message: Option<String>,
+}
+
+impl Exit {
+    fn success() -> Self {
+        Self {
+            code: 0,
+            message: None,
+        }
+    }
+
+    fn failure(message: impl Into<String>) -> Self {
+        Self {
+            code: 1,
+            message: Some(message.into()),
+        }
+    }
+}
+
+/// Entry point of the binary.
+pub fn run() -> ExitCode {
+    let cli = Cli::parse();
+    let ui = Ui::detect(cli.color, cli.json, cli.quiet);
+    let exit = execute(&cli, &ui);
+    if let Some(message) = &exit.message {
+        ui.error(message);
+    }
+    ExitCode::from(exit.code)
+}
+
+fn non_empty(path: &Option<PathBuf>) -> Option<PathBuf> {
+    path.clone().filter(|path| !path.as_os_str().is_empty())
+}
+
+fn execute(cli: &Cli, ui: &Ui) -> Exit {
+    let runtime = non_empty(&cli.runtime);
+    let socket = non_empty(&cli.socket);
+    match &cli.command {
+        Command::Serve => native(serve_command(runtime, socket, ui)),
+        Command::Controller { operation } => native(operate(runtime, operation, ui)),
+        Command::Init(args) => init_command(runtime, args),
+        command => {
+            // Guest files are private to the user.
+            // SAFETY: umask only changes the process file-creation mask.
+            unsafe { libc::umask(0o077) };
+            match guest_command(command, runtime, socket, ui) {
+                Ok(()) => Exit::success(),
+                Err(error) => Exit::failure(error.to_string()),
+            }
+        }
+    }
+}
+
+fn require(value: Option<PathBuf>, message: &str) -> Result<PathBuf> {
+    value.ok_or_else(|| Error::invalid(message))
+}
+
+fn guest_command(
+    command: &Command,
+    runtime: Option<PathBuf>,
+    socket: Option<PathBuf>,
+    ui: &Ui,
+) -> Result<()> {
+    let socket = socket.unwrap_or_else(|| PathBuf::from(DEFAULT_SOCKET));
+    match command {
+        Command::Prepare { generation } => {
+            let runtime = require(runtime, "prepare requires --runtime or NIXPP_RUNTIME")?;
+            let candidate = guest::prepare(&runtime, generation)?;
+            ui.print(&path_output(ui, &candidate));
+        }
+        Command::Build(args) => {
+            ui.step(&format!("building {} remotely", args.host));
+            let generation =
+                guest::build_system(&args.flake, &args.host, args.rworker, &mut ProcessBuilder)?;
+            ui.print(&path_output(ui, &generation));
+        }
+        Command::Rebuild(args) => {
+            let runtime = require(runtime, "rebuild requires NIXPP_RUNTIME or --runtime")?;
+            let generation = guest::rebuild(
+                &runtime,
+                &socket,
+                &args.flake,
+                &args.host,
+                args.rworker,
+                &mut ProcessBuilder,
+                &mut |stage| {
+                    ui.step(match stage {
+                        Stage::Build => "building the system",
+                        Stage::Prepare => "preparing the candidate",
+                        Stage::Switch => "switching to the candidate",
+                    });
+                },
+            )?;
+            ui.ok("system switched");
+            ui.print(&path_output(ui, &generation));
+        }
+        Command::Switch { candidate } => {
+            let response = guest::manage(&socket, "switch", Some(candidate))?;
+            ui.ok(&format!("switched to {candidate}"));
+            print_response(ui, &response);
+        }
+        Command::Check { candidate } => {
+            let response = guest::manage(&socket, "check", Some(candidate))?;
+            ui.ok(&format!("{candidate} passed the runtime check"));
+            print_response(ui, &response);
+        }
+        Command::Rollback => {
+            let response = guest::manage(&socket, "rollback", None)?;
+            ui.ok("rolled back to the previous generation");
+            print_response(ui, &response);
+        }
+        Command::Recover => {
+            let response = guest::manage(&socket, "recover", None)?;
+            ui.ok("interrupted activation recovered");
+            print_response(ui, &response);
+        }
+        Command::ListGenerations => {
+            let response = guest::manage(&socket, "list-generations", None)?;
+            let list = response.get("generations").cloned().unwrap_or(Value::Null);
+            let table = !ui.json() && Ui::stdout_is_terminal();
+            ui.print(&render_generations(ui, &list, table)?);
+        }
+        Command::Serve | Command::Controller { .. } | Command::Init(_) => {
+            unreachable!("handled before the guest commands")
+        }
+    }
+    Ok(())
+}
+
+/// A path as plain text, or `{"path": ...}` with `--json`.
+fn path_output(ui: &Ui, path: &Path) -> String {
+    if ui.json() {
+        canonical_json(&json!({ "path": path.to_string_lossy() }))
+    } else {
+        path.display().to_string()
+    }
+}
+
+/// Only machine-readable mode echoes the controller response.
+fn print_response(ui: &Ui, response: &Value) {
+    if ui.json() {
+        ui.print(&canonical_json(response));
+    }
+}
+
+/// The generation list: a table for people, sorted-key JSON otherwise.
+fn render_generations(ui: &Ui, list: &Value, table: bool) -> Result<String> {
+    if !table {
+        return Ok(canonical_json(list));
+    }
+    let generations: Vec<controller::Generation> = serde_json::from_value(list.clone())
+        .map_err(|_| Error::invalid("invalid native controller response"))?;
+    Ok(generations_table(ui, &generations))
+}
+
+fn generations_table(ui: &Ui, generations: &[controller::Generation]) -> String {
+    let rows: Vec<Vec<String>> = generations
+        .iter()
+        .map(|generation| {
+            let mut state = Vec::new();
+            if generation.current {
+                state.push("current");
+            }
+            if generation.previous {
+                state.push("previous");
+            }
+            vec![
+                generation.generation.clone(),
+                generation.home_manager.clone(),
+                state.join(", "),
+            ]
+        })
+        .collect();
+    ui.table(
+        &["GENERATION", "HOME MANAGER", "STATE"],
+        &rows,
+        &|column, text| match (column, text) {
+            (2, text) if text.starts_with("current") => Some(Style::Green),
+            (2, "previous") => Some(Style::Yellow),
+            _ => None,
+        },
+    )
+}
+
+/// The directory of the running executable, the default native runtime.
+fn executable_directory() -> Result<PathBuf> {
+    let executable = std::env::current_exe()?.canonicalize()?;
+    executable
+        .parent()
+        .map(Path::to_path_buf)
+        .ok_or_else(|| Error::invalid("cannot determine the runtime directory"))
+}
+
+fn serve_command(runtime: Option<PathBuf>, socket: Option<PathBuf>, ui: &Ui) -> Result<u8> {
+    let socket = require(socket, "serve requires --socket or NIXPP_SOCKET")?;
+    let runtime = match runtime {
+        Some(runtime) => runtime,
+        None => executable_directory()?,
+    };
+    match server::serve(&runtime, &socket, &mut SessionRunner::new())? {
+        Served::AlreadyRunning => {
+            ui.warn("a native controller already serves this runtime");
+            Ok(0)
+        }
+    }
+}
+
+fn operate(runtime: Option<PathBuf>, operation: &Operation, ui: &Ui) -> Result<u8> {
+    let runtime = match runtime {
+        Some(runtime) => runtime,
+        None => executable_directory()?,
+    };
+    let mut runner = SessionRunner::new();
+    let status = match operation {
+        Operation::Check {
+            candidate,
+            thorough,
+        } => controller::check(&runtime, candidate, *thorough, &mut runner)?,
+        Operation::Switch {
+            candidate,
+            previous_home_manager,
+        } => controller::switch(
+            &runtime,
+            candidate,
+            previous_home_manager.as_deref(),
+            &mut runner,
+            None,
+        )?,
+        Operation::Recover => controller::recover(&runtime, &mut runner)?,
+        Operation::Rollback => controller::rollback(&runtime, &mut runner)?,
+        Operation::ListGenerations => {
+            let list = serde_json::to_value(controller::generations(&runtime)?)?;
+            let table = !ui.json() && Ui::stdout_is_terminal();
+            ui.print(&render_generations(ui, &list, table)?);
+            0
+        }
+    };
+    Ok(controller::exit_code(status))
+}
+
+/// Map a native controller outcome to the historical exit codes and texts.
+fn native(result: Result<u8>) -> Exit {
+    match result {
+        Ok(code) => Exit {
+            code,
+            message: None,
+        },
+        Err(error) => native_failure(&error),
+    }
+}
+
+fn native_failure(error: &Error) -> Exit {
+    let (code, message) = match error {
+        Error::Timeout { .. } => (
+            124,
+            "System candidate check exceeded its execution budget.".to_owned(),
+        ),
+        Error::Interrupted => (130, "System candidate check interrupted.".to_owned()),
+        Error::Terminated => (143, "System candidate check terminated.".to_owned()),
+        other => (1, format!("Cannot manage system candidate: {other}")),
+    };
+    Exit {
+        code,
+        message: Some(message),
+    }
+}
+
+fn init_command(runtime: Option<PathBuf>, args: &InitArgs) -> Exit {
+    let Some(runtime) = runtime else {
+        return Exit::failure("init requires --runtime or NIXPP_RUNTIME");
+    };
+    let result = match (&args.apk, &args.manifest, &args.certificate) {
+        (Some(apk), Some(manifest), Some(certificate)) if !args.resume => {
+            bootstrap::init(&runtime, apk, manifest, certificate, &args.user)
+        }
+        _ => bootstrap::resume(&runtime),
+    };
+    match result {
+        Ok(()) => Exit::success(),
+        Err(error) => Exit::failure(format!("{error:#}")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    fn parse(arguments: &[&str]) -> std::result::Result<Cli, clap::Error> {
+        Cli::try_parse_from(std::iter::once("nixpp").chain(arguments.iter().copied()))
+    }
+
+    #[test]
+    fn command_definition_is_consistent() {
+        Cli::command().debug_assert();
+    }
+
+    #[test]
+    fn help_lists_the_documented_commands() {
+        let help = Cli::command().render_help().to_string();
+        for command in [
+            "prepare",
+            "rebuild",
+            "recover",
+            "rollback",
+            "serve",
+            "controller",
+            "init",
+        ] {
+            assert!(help.contains(command), "{command}");
+        }
+    }
+
+    #[test]
+    fn launcher_syntax_parses() {
+        let cli = parse(&["--runtime", "/rt", "serve", "--socket", "/rt/nixpp.sock"]).unwrap();
+        assert_eq!(cli.runtime, Some(PathBuf::from("/rt")));
+        assert_eq!(cli.socket, Some(PathBuf::from("/rt/nixpp.sock")));
+        assert!(matches!(cli.command, Command::Serve));
+    }
+
+    #[test]
+    fn native_controller_syntax_parses() {
+        let cli = parse(&[
+            "--runtime",
+            "/rt",
+            "controller",
+            "check",
+            "cand",
+            "--thorough",
+        ])
+        .unwrap();
+        assert!(matches!(
+            cli.command,
+            Command::Controller {
+                operation: Operation::Check { thorough: true, .. }
+            }
+        ));
+        let cli = parse(&[
+            "--runtime",
+            "/rt",
+            "controller",
+            "switch",
+            "cand",
+            "--previous-home-manager",
+            "/nix/store/x",
+        ])
+        .unwrap();
+        let Command::Controller {
+            operation:
+                Operation::Switch {
+                    previous_home_manager,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("not a switch");
+        };
+        assert_eq!(previous_home_manager.as_deref(), Some("/nix/store/x"));
+        for operation in ["recover", "rollback", "list-generations"] {
+            parse(&["--runtime", "/rt", "controller", operation]).unwrap();
+        }
+    }
+
+    #[test]
+    fn global_options_work_after_the_subcommand() {
+        let cli = parse(&["prepare", "--runtime", "/rt", "/nix/store/g"]).unwrap();
+        assert_eq!(cli.runtime, Some(PathBuf::from("/rt")));
+        let cli = parse(&["--json", "-q", "--color", "never", "list-generations"]).unwrap();
+        assert!(cli.json && cli.quiet);
+        assert_eq!(cli.color, ColorChoice::Never);
+    }
+
+    #[test]
+    fn build_requires_flake_and_host() {
+        assert!(parse(&["build", "--flake", "x"]).is_err());
+        assert!(parse(&["build", "--host", "h"]).is_err());
+        assert!(parse(&["rebuild", "--flake", "x", "--host", "h", "--rworker"]).is_ok());
+    }
+
+    #[test]
+    fn init_arguments() {
+        assert!(parse(&["init"]).is_err());
+        assert!(matches!(
+            parse(&["init", "--resume"]).unwrap().command,
+            Command::Init(_)
+        ));
+        assert!(
+            parse(&[
+                "init",
+                "--apk",
+                "a",
+                "--manifest",
+                "m",
+                "--certificate",
+                "c"
+            ])
+            .is_ok()
+        );
+        assert!(parse(&["init", "--apk", "a"]).is_err());
+        assert!(parse(&["init", "--resume", "--apk", "a"]).is_err());
+    }
+
+    #[test]
+    fn unknown_commands_are_rejected() {
+        assert!(parse(&["frobnicate"]).is_err());
+        assert!(parse(&["--color", "sometimes", "recover"]).is_err());
+    }
+
+    #[test]
+    fn empty_paths_count_as_unset() {
+        assert_eq!(non_empty(&Some(PathBuf::new())), None);
+        assert_eq!(non_empty(&None), None);
+        assert_eq!(
+            non_empty(&Some(PathBuf::from("/x"))),
+            Some(PathBuf::from("/x"))
+        );
+    }
+
+    #[test]
+    fn native_failures_keep_the_historical_exit_codes() {
+        let cases = [
+            (
+                Error::invalid("nope"),
+                1,
+                "Cannot manage system candidate: nope",
+            ),
+            (
+                Error::Timeout { seconds: 3 },
+                124,
+                "System candidate check exceeded its execution budget.",
+            ),
+            (
+                Error::Interrupted,
+                130,
+                "System candidate check interrupted.",
+            ),
+            (Error::Terminated, 143, "System candidate check terminated."),
+        ];
+        for (error, code, message) in cases {
+            let exit = native_failure(&error);
+            assert_eq!(exit.code, code);
+            assert_eq!(exit.message.as_deref(), Some(message));
+        }
+        assert_eq!(
+            native(Ok(7)),
+            Exit {
+                code: 7,
+                message: None
+            }
+        );
+    }
+
+    #[test]
+    fn signal_statuses_map_to_shell_exit_codes() {
+        assert_eq!(controller::exit_code(0), 0);
+        assert_eq!(controller::exit_code(3), 3);
+        assert_eq!(controller::exit_code(-15), 143);
+        assert_eq!(controller::exit_code(-2), 130);
+    }
+
+    #[test]
+    fn generation_list_is_sorted_key_json_when_not_a_table() {
+        let ui = Ui::new(false, false, false, false);
+        let list =
+            json!([{"generation": "g", "homeManager": "h", "current": true, "previous": false}]);
+        assert_eq!(
+            render_generations(&ui, &list, false).unwrap(),
+            r#"[{"current": true, "generation": "g", "homeManager": "h", "previous": false}]"#
+        );
+        assert_eq!(render_generations(&ui, &json!([]), false).unwrap(), "[]");
+    }
+
+    #[test]
+    fn generation_table_lists_states() {
+        let ui = Ui::new(false, false, false, false);
+        let list = json!([
+            {"generation": "g1", "homeManager": "h1", "current": true, "previous": false},
+            {"generation": "g2", "homeManager": "h2", "current": false, "previous": true},
+            {"generation": "g3", "homeManager": "h3", "current": false, "previous": false},
+        ]);
+        let table = render_generations(&ui, &list, true).unwrap();
+        let lines: Vec<&str> = table.lines().collect();
+        assert_eq!(lines[0], "GENERATION  HOME MANAGER  STATE");
+        assert_eq!(lines[1], "g1          h1            current");
+        assert_eq!(lines[2], "g2          h2            previous");
+        assert_eq!(lines[3], "g3          h3");
+        assert!(render_generations(&ui, &json!("nope"), true).is_err());
+    }
+
+    #[test]
+    fn json_outputs() {
+        let json_ui = Ui::new(false, false, false, true);
+        let plain = Ui::new(false, false, false, false);
+        assert_eq!(path_output(&json_ui, Path::new("/x")), r#"{"path": "/x"}"#);
+        assert_eq!(path_output(&plain, Path::new("/x")), "/x");
+    }
+
+    #[test]
+    fn guest_commands_need_their_runtime() {
+        let ui = Ui::new(false, false, true, false);
+        let prepare = Command::Prepare {
+            generation: PathBuf::from("/nix/store/x"),
+        };
+        let error = guest_command(&prepare, None, None, &ui).unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "prepare requires --runtime or NIXPP_RUNTIME"
+        );
+        let rebuild = Command::Rebuild(BuildArgs {
+            flake: "source".to_owned(),
+            host: "host".to_owned(),
+            rworker: false,
+        });
+        let error = guest_command(&rebuild, None, None, &ui).unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "rebuild requires NIXPP_RUNTIME or --runtime"
+        );
+    }
+
+    #[test]
+    fn invalid_candidates_fail_before_any_socket_access() {
+        let ui = Ui::new(false, false, true, false);
+        for candidate in ["../escape", "/absolute", "short"] {
+            let command = Command::Switch {
+                candidate: candidate.to_owned(),
+            };
+            let error = guest_command(
+                &command,
+                None,
+                Some(PathBuf::from("/nonexistent/sock")),
+                &ui,
+            )
+            .unwrap_err();
+            assert_eq!(error.to_string(), "invalid system candidate name");
+        }
+    }
+
+    #[test]
+    fn serve_requires_a_socket() {
+        let ui = Ui::new(false, false, true, false);
+        let error = serve_command(Some(PathBuf::from("/rt")), None, &ui).unwrap_err();
+        assert_eq!(error.to_string(), "serve requires --socket or NIXPP_SOCKET");
+    }
+
+    #[test]
+    fn init_requires_a_runtime() {
+        let Command::Init(args) = parse(&["init", "--resume"]).unwrap().command else {
+            panic!("not init");
+        };
+        let exit = init_command(None, &args);
+        assert_eq!(exit.code, 1);
+        assert_eq!(
+            exit.message.as_deref(),
+            Some("init requires --runtime or NIXPP_RUNTIME")
+        );
+    }
+}

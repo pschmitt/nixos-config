@@ -32,8 +32,17 @@ nix build '.#termuxppConfigurations.p11.system'
 
 ## Guest command: nixpp
 
-The user-facing interface is **`nixpp`**, recycling the native tool's name without
-replacing the independently retained native recovery tool.
+The user-facing interface is **`nixpp`**, a Rust executable built for the Linux
+guest and Android/Bionic from the same source in `../nixpp`. The guest client and
+native controller no longer require a Python interpreter. The native executable
+runs independently of the guest so broken guest activation cannot disable recovery.
+The old native bundle manager is retained only for unmigrated installations and
+existing recovery; it is not the manager for this declarative guest system.
+
+Human-readable output uses restrained terminal colors; redirected output and
+`NO_COLOR` disable automatic styling. Use `--json` for machine-readable results.
+Nix, Home Manager activation and the droid-nix runtime remain upstream tools, not
+reimplementations inside the manager.
 
 ```sh
 # In the guest, with the matching native controller running:
@@ -97,7 +106,8 @@ The matching native TermuxPP controller serializes mutations with a lock:
    and generation state. Remove the journal only after publication succeeds.
 
 First migration requires a verified old HM generation, passed to the native
-controller's `switch --previous-home-manager STORE_PATH`. A direct GC root retains
+`nixpp --runtime DIR controller switch CANDIDATE --previous-home-manager STORE_PATH`.
+A direct GC root retains
 that baseline. Subsequent guest `nixpp switch` operations use recorded state.
 
 Activation cannot make arbitrary HM file changes atomic. Failure or interruption
@@ -111,8 +121,9 @@ baseline after the first migration. Prepared system GC roots retain matching
 closures; this implementation does not garbage-collect candidates or backups.
 New default sessions follow `current-system`; existing sessions are not replaced.
 
-The second profile's migration exercised a controlled pre-activation interruption
-and recovery. Its original HM-only baseline rollback then failed during active
+The following device results cover the earlier Python controller, not acceptance
+of the Rust replacement. The second profile's migration exercised a controlled
+pre-activation interruption and recovery. Its original HM-only baseline rollback then failed during active
 acceptance on that baseline's known JIT-enabled Neovim startup fault, after HM
 had changed files. Recovery restored the corrected system/HM generation and
 passed acceptance; the old baseline was not retried until it happened to pass.

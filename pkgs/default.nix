@@ -106,6 +106,12 @@ in
   inherit msteams-mcp;
   inherit msoutlook-mcp;
   nixpp-termux = pkgs.callPackage ./termux/nixpp { inherit inputs; };
+  nixpp = pkgs.callPackage ../android/full-nix/nixpp-package.nix { };
+  nixpp-system-tests = import ../android/full-nix/system/tests.nix { inherit inputs pkgs; };
+  nixpp-runtime-termux = import ../android/full-nix/nixpp-native.nix {
+    inherit inputs pkgs;
+    inherit (pkgs) lib;
+  };
   native-client = pkgs.callPackage ./native-client { };
   console-tui = pkgs.callPackage ./console-tui { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };

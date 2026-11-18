@@ -25,11 +25,7 @@ let
     inherit name;
     path = if value.text != null then pkgs.writeText "guest-etc-file" value.text else value.source;
   }) cfg.environment.etc;
-  systemTools = pkgs.runCommand "nixpp-system-tools" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
-    mkdir -p "$out/bin"
-    makeWrapper ${pkgs.python3}/bin/python3 "$out/bin/nixpp" \
-      --add-flags "-I ${./prepare-session.py}"
-  '';
+  systemTools = pkgs.callPackage ../nixpp-package.nix { };
   systemPath = pkgs.buildEnv {
     name = "termuxpp-system-path";
     paths = cfg.environment.systemPackages ++ [ systemTools ];

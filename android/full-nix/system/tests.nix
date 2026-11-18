@@ -1,10 +1,9 @@
-{ pkgs }:
+{ pkgs, inputs }:
 let
   mkSystem =
     extra:
     import ./. {
-      inputs = { };
-      inherit pkgs;
+      inherit inputs pkgs;
       modules = [
         {
           networking.hostName = "guest-test";
@@ -46,9 +45,12 @@ assert !(builtins.tryEval invalidSource.system).success;
 pkgs.runCommand "termuxpp-system-assembly-tests" { nativeBuildInputs = [ pkgs.python3 ]; } ''
   test -x ${valid.system}/sw/bin/hello
   ${valid.system}/sw/bin/nixpp --help
+  python3 -I ${./test_nixpp_cli.py} ${valid.system}/sw/bin/nixpp
   cp ${./prepare-session.py} prepare-session.py
   cp ${./test_prepare_session.py} test_prepare_session.py
   python3 -I test_prepare_session.py
+  python3 -I ${./test_nixpp_parity.py} ${./prepare-session.py} \
+    ${valid.system}/sw/bin/nixpp ${valid.system} ${integrated.system}
   mkdir -p runtime/root/etc
   cp ${runtimeManifest} runtime/session.json
   printf 'guest:x:123:456:Guest:/home/guest:/bin/sh\n' > runtime/root/etc/passwd
