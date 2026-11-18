@@ -3,8 +3,9 @@
 The deliverable is a standalone Rust executable, compiled separately for the
 Linux/glibc guest and Android/Bionic native runtime. There are no Python bindings
 and no delegation to a Python implementation of setup or system management.
-Upstream Nix, Home Manager activation and the droid-nix launcher remain external
-runtime dependencies.
+Upstream Nix, Home Manager activation and the launcher (built here from pinned
+droid-nix sources, see `../bootstrap-seed.nix`) remain external runtime
+dependencies.
 
 ## Observable boundaries
 

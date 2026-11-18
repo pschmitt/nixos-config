@@ -429,6 +429,23 @@
         "type": "github"
       }
     },
+    "droid-nix-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794321727,
+        "narHash": "sha256-dRihdv0/lU0hhJchsDU+vhoRA29WJSIivUtgqTpqp8Y=",
+        "owner": "lassulus",
+        "repo": "droid-nix",
+        "rev": "bb08d50117568e9994b6d87c918c4c2d7b5de9b1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lassulus",
+        "repo": "droid-nix",
+        "rev": "bb08d50117568e9994b6d87c918c4c2d7b5de9b1",
+        "type": "github"
+      }
+    },
     "falcon-sensor": {
       "inputs": {
         "nixpkgs": [
@@ -2438,6 +2455,7 @@
         "colors-jq": "colors-jq",
         "declaroid": "declaroid",
         "disko": "disko",
+        "droid-nix-src": "droid-nix-src",
         "falcon-sensor": "falcon-sensor",
         "fenix": "fenix",
         "firefox-addons": "firefox-addons",

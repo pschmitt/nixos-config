@@ -17,6 +17,7 @@ use crate::guest::{self, ProcessBuilder, Stage};
 use crate::runner::SessionRunner;
 use crate::server::{self, Served};
 use crate::ui::{ColorChoice, Style, Ui};
+use anyhow::Context;
 use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
 use clap::{Args, Parser, Subcommand};
@@ -141,32 +142,21 @@ pub enum Operation {
 
 #[derive(Debug, Args)]
 pub struct InitArgs {
-    /// Bootstrap APK
-    #[arg(
-        long,
-        value_name = "FILE",
-        required_unless_present = "resume",
-        conflicts_with = "resume"
-    )]
-    apk: Option<PathBuf>,
+    /// Bootstrap seed ZIP (default: bundled assets directory/bootstrap-aarch64.zip)
+    #[arg(long, value_name = "FILE", conflicts_with = "resume")]
+    bootstrap: Option<PathBuf>,
 
     /// Pinned package manifest
-    #[arg(
-        long,
-        value_name = "FILE",
-        required_unless_present = "resume",
-        conflicts_with = "resume"
-    )]
+    #[arg(long, value_name = "FILE", conflicts_with = "resume")]
     manifest: Option<PathBuf>,
 
     /// Native CA certificate bundle
-    #[arg(
-        long,
-        value_name = "FILE",
-        required_unless_present = "resume",
-        conflicts_with = "resume"
-    )]
+    #[arg(long, value_name = "FILE", conflicts_with = "resume")]
     certificate: Option<PathBuf>,
+
+    /// Bundled launcher, seed and manifest directory (default: native prefix/share/nixpp)
+    #[arg(long, value_name = "DIR", conflicts_with = "resume")]
+    bootstrap_dir: Option<PathBuf>,
 
     /// Guest user name
     #[arg(long, default_value = bootstrap::DEFAULT_USERNAME, conflicts_with = "resume")]
@@ -449,14 +439,29 @@ fn native_failure(error: &Error) -> Exit {
 }
 
 fn init_command(runtime: Option<PathBuf>, args: &InitArgs) -> Exit {
-    let Some(runtime) = runtime else {
-        return Exit::failure("init requires --runtime or NIXPP_RUNTIME");
+    let runtime = match runtime {
+        Some(runtime) => runtime,
+        None => match std::env::var_os("HOME")
+            .context("init requires HOME or --runtime")
+            .and_then(|home| crate::provision::default_runtime(Path::new(&home)))
+        {
+            Ok(runtime) => runtime,
+            Err(error) => return Exit::failure(format!("{error:#}")),
+        },
     };
-    let result = match (&args.apk, &args.manifest, &args.certificate) {
-        (Some(apk), Some(manifest), Some(certificate)) if !args.resume => {
-            bootstrap::init(&runtime, apk, manifest, certificate, &args.user)
-        }
-        _ => bootstrap::resume(&runtime),
+    let result = if args.resume {
+        bootstrap::resume(&runtime)
+    } else {
+        crate::provision::init(
+            &runtime,
+            crate::provision::Inputs {
+                seed: args.bootstrap.as_deref(),
+                manifest: args.manifest.as_deref(),
+                certificate: args.certificate.as_deref(),
+                bootstrap_dir: args.bootstrap_dir.as_deref(),
+                user: &args.user,
+            },
+        )
     };
     match result {
         Ok(()) => Exit::success(),
@@ -563,7 +568,7 @@ mod tests {
 
     #[test]
     fn init_arguments() {
-        assert!(parse(&["init"]).is_err());
+        assert!(parse(&["init"]).is_ok());
         assert!(matches!(
             parse(&["init", "--resume"]).unwrap().command,
             Command::Init(_)
@@ -571,7 +576,7 @@ mod tests {
         assert!(
             parse(&[
                 "init",
-                "--apk",
+                "--bootstrap",
                 "a",
                 "--manifest",
                 "m",
@@ -580,8 +585,8 @@ mod tests {
             ])
             .is_ok()
         );
-        assert!(parse(&["init", "--apk", "a"]).is_err());
-        assert!(parse(&["init", "--resume", "--apk", "a"]).is_err());
+        assert!(parse(&["init", "--bootstrap", "a"]).is_ok());
+        assert!(parse(&["init", "--resume", "--bootstrap", "a"]).is_err());
     }
 
     #[test]
@@ -728,15 +733,8 @@ mod tests {
     }
 
     #[test]
-    fn init_requires_a_runtime() {
-        let Command::Init(args) = parse(&["init", "--resume"]).unwrap().command else {
-            panic!("not init");
-        };
-        let exit = init_command(None, &args);
-        assert_eq!(exit.code, 1);
-        assert_eq!(
-            exit.message.as_deref(),
-            Some("init requires --runtime or NIXPP_RUNTIME")
-        );
+    fn init_bootstrap_directory_is_not_a_resume_input() {
+        assert!(parse(&["init", "--bootstrap-dir", "/seed"]).is_ok());
+        assert!(parse(&["init", "--resume", "--bootstrap-dir", "/seed"]).is_err());
     }
 }

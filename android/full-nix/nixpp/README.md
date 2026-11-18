@@ -36,12 +36,12 @@ colors on terminals; redirected output and `NO_COLOR` are plain. `--color` selec
 
 ## Native setup and recovery
 
-Stage the Android build as `nixpp` beside the pinned droid-nix launcher and runtime
+Stage the Android build as `nixpp` beside the launcher, bootstrap seed and runtime
 manifest. The executable contains the managed shell resources; it does not embed
-the Linux package closure or the launcher binary.
+the Linux package closure, the seed or the launcher binary.
 
 ```sh
-./nixpp init --runtime /path/to/runtime --apk /path/to/bootstrap.apk \
+./nixpp init --runtime /path/to/runtime --bootstrap /path/to/bootstrap-aarch64.zip \
   --manifest /path/to/manifest.json --certificate /path/to/cert.pem --user guest
 ./nixpp init --runtime /path/to/runtime --resume
 ./nixpp --runtime /path/to/runtime serve --socket /private/tmp/nixpp.sock
@@ -49,6 +49,30 @@ the Linux package closure or the launcher binary.
 ./nixpp --runtime /path/to/runtime controller recover
 ./nixpp --runtime /path/to/runtime controller rollback
 ```
+
+A provisioning-first TermuxPP bootstrap installs `bin/nixpp` plus
+`share/nixpp/{launcher,bootstrap-aarch64.zip,manifest.json}`. With those
+trusted inputs bundled, run `nixpp init --user guest` from the native shell.
+Init defaults to `$HOME/.local/share/termuxpp-nix`, finds assets relative to
+the executable's native prefix, and uses `etc/tls/cert.pem`. `--bootstrap-dir`
+overrides only the bundled-assets directory. Explicit input paths above remain
+supported. Init downloads nothing besides the pinned packages from
+cache.nixos.org. An interrupted package import uses `nixpp init --resume`, not
+fresh extraction.
+
+We build the launcher and seed ourselves
+([`bootstrap-seed.nix`](../bootstrap-seed.nix), package
+`nixpp-runtime-termux-seed`) from the pinned droid-nix sources (MIT): a static
+musl `launcher` and a registered chroot store with only a static `nix` and
+`busybox`. No droid-nix APK or other prebuilt binary is used. The
+`nixpp-runtime-termux` build compiles in the seed's SHA-256, and init refuses
+any other seed. A nixpp built without the Nix package has no pinned seed and
+refuses to prepare a runtime.
+
+This initializes the base runtime only: it does not activate a host system,
+fabricate a Home Manager baseline, replace the native shell or enable guest
+login. System activation still uses the journaled controller and its gates.
+No vault, SSH keys, cache credentials or private configuration are embedded.
 
 Run native commands outside the guest. The socket requires an owned directory
 that is not writable by other users, and accepts only clients with the same UID.
@@ -71,7 +95,8 @@ cargo test --all-features
 python3 -I ../system/test_nixpp_cli.py /path/to/compiled/nixpp
 ```
 
-The Nix package outputs are `nixpp` and `nixpp-runtime-termux`. The system assembly
+The Nix package outputs are `nixpp`, `nixpp-runtime-termux` and
+`nixpp-runtime-termux-seed`. The system assembly
 test also exercises the packaged CLI. See [the parity contract](PARITY.md) for the
 preserved state, protocol and recovery guarantees and cut-over criteria. A
 successful host build alone does not qualify Android activation or recovery.

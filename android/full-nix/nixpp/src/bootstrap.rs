@@ -33,9 +33,12 @@ use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 use zip::ZipArchive;
 
-/// SHA-256 of the droid-nix v0.9.0 bootstrap APK, the only accepted bootstrap.
-pub const BOOTSTRAP_SHA256: &str =
-    "f74f0de161fb51ccc9a6ffd1a839150c1c88fd88f1b7176e320ec564fc696ea2";
+/// SHA-256 of the bootstrap seed built alongside this executable, the only
+/// accepted seed. The Nix package build sets it; a build without it refuses
+/// to prepare a runtime.
+pub const BOOTSTRAP_SHA256: Option<&str> = option_env!("NIXPP_BOOTSTRAP_SHA256");
+/// File name of the bootstrap seed in the bundled assets directory.
+pub const BOOTSTRAP_NAME: &str = "bootstrap-aarch64.zip";
 /// Default guest username.
 pub const DEFAULT_USERNAME: &str = "nix";
 /// Name of the externally provided launcher binary inside the runtime directory.
@@ -64,7 +67,6 @@ pub const SCRIPTS: [(&str, &str); 5] = [
     ),
 ];
 
-const BOOTSTRAP_ENTRY: &str = "assets/bootstrap-aarch64.zip";
 const GCROOT_DIR: &str = "nix/var/nix/gcroots/termuxpp-session";
 const MAX_BOOTSTRAP_ARCHIVE_BYTES: u64 = 1 << 30;
 const MAX_EXTRACTED_BYTES: u64 = 512 << 20;
@@ -75,7 +77,7 @@ const MAX_NAME_BYTES: usize = 4096;
 
 #[derive(Clone, Copy, Debug)]
 struct Limits {
-    /// Largest accepted inner bootstrap ZIP inside the APK.
+    /// Largest accepted bootstrap seed ZIP.
     archive_bytes: u64,
     /// Largest accepted total of extracted file bytes.
     extracted_bytes: u64,
@@ -135,7 +137,7 @@ fn platform_ok(arch: &str, page_size: &str) -> Result<()> {
     Ok(())
 }
 
-/// Full first-time setup: `nixpp init --runtime DIR --apk APK --manifest FILE
+/// Full first-time setup: `nixpp init --runtime DIR --bootstrap ZIP --manifest FILE
 /// --certificate FILE --user USER`.
 ///
 /// Checks the platform and that the externally provided `launcher` is already
@@ -144,7 +146,7 @@ fn platform_ok(arch: &str, page_size: &str) -> Result<()> {
 /// interrupted, continue with [`resume`].
 pub fn init(
     directory: &Path,
-    apk: &Path,
+    seed: &Path,
     manifest: &Path,
     certificate: &Path,
     username: &str,
@@ -156,7 +158,7 @@ pub fn init(
         "the pinned launcher must be staged at {} before init",
         launcher.display()
     );
-    prepare(directory, apk, manifest, certificate, username)?;
+    prepare(directory, seed, manifest, certificate, username)?;
     stage_executable(directory)?;
     install(directory)
 }
@@ -192,25 +194,28 @@ pub fn resume(directory: &Path) -> Result<()> {
 /// overwritten or removed.
 pub fn prepare(
     directory: &Path,
-    apk: &Path,
+    seed: &Path,
     manifest: &Path,
     certificate: &Path,
     username: &str,
 ) -> Result<()> {
+    validate_username(username)?;
+    let expected = BOOTSTRAP_SHA256
+        .context("this nixpp build has no pinned bootstrap seed; use the Nix-built package")?;
     prepare_with(
         directory,
-        apk,
+        seed,
         manifest,
         certificate,
         username,
-        BOOTSTRAP_SHA256,
+        expected,
         Limits::default(),
     )
 }
 
 fn prepare_with(
     directory: &Path,
-    apk: &Path,
+    seed: &Path,
     manifest_path: &Path,
     certificate: &Path,
     username: &str,
@@ -234,7 +239,6 @@ fn prepare_with(
     let root = directory.join("root");
     let outputs = [
         root.clone(),
-        directory.join("bootstrap.zip"),
         directory.join("session.env"),
         directory.join("packages.txt"),
         directory.join("session.json"),
@@ -246,7 +250,7 @@ fn prepare_with(
     }
     private_dirs(directory)?;
 
-    extract_bootstrap(apk, &root, expected_sha256, limits)?;
+    extract_bootstrap(seed, &root, expected_sha256, limits)?;
     let root_real =
         fs::canonicalize(&root).with_context(|| format!("failed to resolve {}", root.display()))?;
     let store = root.join("nix/store");
@@ -795,48 +799,35 @@ fn find_store_dir(store: &Path, marker: &str) -> Result<String> {
     Ok(found.remove(0))
 }
 
-/// Verify the APK hash, then extract its embedded bootstrap ZIP into a new
-/// `root`. Nothing is created when the hash does not match; an existing `root`
-/// is never touched. A failed extraction leaves the partial `root` for
+/// Verify the seed hash, then extract the seed ZIP into a new `root`.
+/// Nothing is created when the hash does not match; an existing `root` is
+/// never touched. A failed extraction leaves the partial `root` for
 /// inspection.
-fn extract_bootstrap(apk: &Path, root: &Path, expected_sha256: &str, limits: Limits) -> Result<()> {
+fn extract_bootstrap(
+    seed: &Path,
+    root: &Path,
+    expected_sha256: &str,
+    limits: Limits,
+) -> Result<()> {
     // Hash and read the very same open file so the verified bytes are the used bytes.
-    let mut file = File::open(apk).with_context(|| format!("failed to open {}", apk.display()))?;
+    let mut file =
+        File::open(seed).with_context(|| format!("failed to open {}", seed.display()))?;
+    ensure!(
+        file.metadata()?.len() <= limits.archive_bytes,
+        "bootstrap too large"
+    );
     ensure!(
         sha256_hex(&mut file)? == expected_sha256,
-        "bootstrap APK checksum mismatch"
+        "bootstrap seed checksum mismatch"
     );
     file.seek(SeekFrom::Start(0))?;
-    let mut package = ZipArchive::new(file).context("bootstrap APK is not a ZIP archive")?;
-    let mut entry = package
-        .by_name(BOOTSTRAP_ENTRY)
-        .with_context(|| format!("bootstrap APK has no {BOOTSTRAP_ENTRY}"))?;
-    ensure!(entry.size() <= limits.archive_bytes, "bootstrap too large");
+    let mut inner = ZipArchive::new(file).context("bootstrap seed is not a ZIP archive")?;
 
-    let parent = root.parent().context("runtime root has no parent")?;
     DirBuilder::new()
         .mode(0o700)
         .create(root)
         .with_context(|| format!("failed to create runtime root {}", root.display()))?;
 
-    // The inner archive needs random access; stage it next to the runtime.
-    let archive_path = parent.join("bootstrap.zip");
-    let mut staged = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(&archive_path)
-        .with_context(|| format!("failed to create {}", archive_path.display()))?;
-    let _cleanup = RemoveOnDrop(archive_path.clone());
-    let mut budget = limits.archive_bytes;
-    copy_bounded(&mut entry, &mut staged, &mut budget)?;
-    staged.flush()?;
-    drop(staged);
-    drop(entry);
-
-    let inner_file = File::open(&archive_path)?;
-    let mut inner =
-        ZipArchive::new(inner_file).context("bootstrap archive is not a ZIP archive")?;
     ensure!(
         inner.len() <= limits.entries,
         "bootstrap has too many entries"
@@ -913,15 +904,6 @@ fn extract_bootstrap(apk: &Path, root: &Path, expected_sha256: &str, limits: Lim
     Ok(())
 }
 
-/// Removes a file this process created, also on early return.
-struct RemoveOnDrop(PathBuf);
-
-impl Drop for RemoveOnDrop {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.0);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -979,11 +961,10 @@ mod tests {
         writer.finish().unwrap().into_inner()
     }
 
-    /// Write an APK wrapping `members` as the inner bootstrap archive.
-    fn apk(directory: &Path, members: &[Member]) -> (PathBuf, String) {
-        let inner = zip_bytes(members);
-        let bytes = zip_bytes(&[Member::File(BOOTSTRAP_ENTRY, &inner)]);
-        let path = directory.join("bootstrap.apk");
+    /// Write a bootstrap seed ZIP holding `members`.
+    fn seed(directory: &Path, members: &[Member]) -> (PathBuf, String) {
+        let bytes = zip_bytes(members);
+        let path = directory.join(BOOTSTRAP_NAME);
         fs::write(&path, &bytes).unwrap();
         let digest = sha256_hex(&mut Cursor::new(bytes)).unwrap();
         (path, digest)
@@ -1046,14 +1027,14 @@ mod tests {
         let directory = dir.path().join("runtime");
         let sources = dir.path().join("sources");
         fs::create_dir_all(&sources).unwrap();
-        let (apk_path, digest) = apk(&sources, &fixture_members());
+        let (seed_path, digest) = seed(&sources, &fixture_members());
         let manifest = sources.join("manifest.json");
         fs::write(&manifest, manifest_json(&[package('a', "session")], None)).unwrap();
         let certificate = sources.join("cert.pem");
         fs::write(&certificate, "cert").unwrap();
         prepare_with(
             &directory,
-            &apk_path,
+            &seed_path,
             &manifest,
             &certificate,
             username,
@@ -1161,12 +1142,25 @@ mod tests {
     }
 
     #[test]
+    fn unpinned_build_refuses_to_prepare() {
+        if BOOTSTRAP_SHA256.is_some() {
+            return;
+        }
+        let dir = TestDir::new("unpinned");
+        let missing = dir.path().join("missing");
+        let error =
+            prepare(&dir.path().join("rt"), &missing, &missing, &missing, "nix").unwrap_err();
+        assert!(error.to_string().contains("no pinned bootstrap seed"));
+        assert!(!dir.path().join("rt").exists());
+    }
+
+    #[test]
     fn bad_hash_does_not_create_root() {
         let dir = TestDir::new("hash");
-        let (apk_path, _) = apk(dir.path(), &fixture_members());
+        let (seed_path, _) = seed(dir.path(), &fixture_members());
         let root = dir.path().join("root");
         let error =
-            extract_bootstrap(&apk_path, &root, BOOTSTRAP_SHA256, Limits::default()).unwrap_err();
+            extract_bootstrap(&seed_path, &root, &"0".repeat(64), Limits::default()).unwrap_err();
         assert!(error.to_string().contains("checksum"));
         assert!(!root.exists());
         assert!(!dir.path().join("bootstrap.zip").exists());
@@ -1180,9 +1174,9 @@ mod tests {
             Member::File("EXECUTABLES.txt", b"bin/tool\n"),
             Member::File("SYMLINKS.txt", "tool←bin/link\n".as_bytes()),
         ];
-        let (apk_path, digest) = apk(dir.path(), &members);
+        let (seed_path, digest) = seed(dir.path(), &members);
         let root = dir.path().join("root");
-        extract_bootstrap(&apk_path, &root, &digest, Limits::default()).unwrap();
+        extract_bootstrap(&seed_path, &root, &digest, Limits::default()).unwrap();
         assert_eq!(fs::read_to_string(root.join("bin/link")).unwrap(), "ok");
         assert_eq!(
             fs::metadata(root.join("bin/tool"))
@@ -1199,10 +1193,10 @@ mod tests {
     fn traversal_rejected() {
         for name in ["../escape", "a/../../escape", "/abs/escape"] {
             let dir = TestDir::new("traversal");
-            let (apk_path, digest) = apk(dir.path(), &[Member::File(name, b"bad")]);
+            let (seed_path, digest) = seed(dir.path(), &[Member::File(name, b"bad")]);
             let root = dir.path().join("root");
             let error =
-                extract_bootstrap(&apk_path, &root, &digest, Limits::default()).unwrap_err();
+                extract_bootstrap(&seed_path, &root, &digest, Limits::default()).unwrap_err();
             assert!(error.to_string().contains("unsafe"), "{name}: {error}");
             assert!(!dir.path().join("escape").exists());
             assert!(!Path::new("/abs/escape").exists());
@@ -1224,9 +1218,9 @@ mod tests {
     #[test]
     fn zip_symlink_member_rejected() {
         let dir = TestDir::new("zip-symlink");
-        let (apk_path, digest) = apk(dir.path(), &[Member::Symlink("link", "/etc")]);
+        let (seed_path, digest) = seed(dir.path(), &[Member::Symlink("link", "/etc")]);
         let error = extract_bootstrap(
-            &apk_path,
+            &seed_path,
             &dir.path().join("root"),
             &digest,
             Limits::default(),
@@ -1241,8 +1235,8 @@ mod tests {
         let root = dir.path().join("root");
         fs::create_dir(&root).unwrap();
         fs::write(root.join("keep"), "preserved").unwrap();
-        let (apk_path, digest) = apk(dir.path(), &fixture_members());
-        let error = extract_bootstrap(&apk_path, &root, &digest, Limits::default()).unwrap_err();
+        let (seed_path, digest) = seed(dir.path(), &fixture_members());
+        let error = extract_bootstrap(&seed_path, &root, &digest, Limits::default()).unwrap_err();
         assert!(format!("{error:#}").contains("exists"), "{error:#}");
         assert_eq!(fs::read_to_string(root.join("keep")).unwrap(), "preserved");
 
@@ -1253,7 +1247,7 @@ mod tests {
         fs::write(&manifest, manifest_json(&[package('a', "session")], None)).unwrap();
         let error = prepare_with(
             dir.path(),
-            &apk_path,
+            &seed_path,
             &manifest,
             &manifest,
             "nix",
@@ -1276,9 +1270,9 @@ mod tests {
                 "/outside←escape\ntarget←escape/file\n".as_bytes(),
             ),
         ];
-        let (apk_path, digest) = apk(dir.path(), &members);
+        let (seed_path, digest) = seed(dir.path(), &members);
         let error = extract_bootstrap(
-            &apk_path,
+            &seed_path,
             &dir.path().join("root"),
             &digest,
             Limits::default(),
@@ -1291,13 +1285,13 @@ mod tests {
     #[test]
     fn extraction_is_bounded() {
         let dir = TestDir::new("bounded");
-        let (apk_path, digest) = apk(dir.path(), &fixture_members());
+        let (seed_path, digest) = seed(dir.path(), &fixture_members());
         let root = dir.path().join("root");
         let small = Limits {
             extracted_bytes: 4,
             ..Limits::default()
         };
-        let error = extract_bootstrap(&apk_path, &root, &digest, small).unwrap_err();
+        let error = extract_bootstrap(&seed_path, &root, &digest, small).unwrap_err();
         assert!(error.to_string().contains("too large"));
 
         let few = Limits {
@@ -1305,7 +1299,7 @@ mod tests {
             ..Limits::default()
         };
         let error =
-            extract_bootstrap(&apk_path, &dir.path().join("root2"), &digest, few).unwrap_err();
+            extract_bootstrap(&seed_path, &dir.path().join("root2"), &digest, few).unwrap_err();
         assert!(error.to_string().contains("too many"));
 
         let tiny = Limits {
@@ -1313,7 +1307,7 @@ mod tests {
             ..Limits::default()
         };
         let error =
-            extract_bootstrap(&apk_path, &dir.path().join("root3"), &digest, tiny).unwrap_err();
+            extract_bootstrap(&seed_path, &dir.path().join("root3"), &digest, tiny).unwrap_err();
         assert!(error.to_string().contains("too large"));
         assert!(!dir.path().join("root3").exists());
     }

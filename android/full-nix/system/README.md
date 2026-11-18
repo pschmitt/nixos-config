@@ -41,8 +41,8 @@ existing recovery; it is not the manager for this declarative guest system.
 
 Human-readable output uses restrained terminal colors; redirected output and
 `NO_COLOR` disable automatic styling. Use `--json` for machine-readable results.
-Nix, Home Manager activation and the droid-nix runtime remain upstream tools, not
-reimplementations inside the manager.
+Nix, Home Manager activation and the launcher (built from pinned droid-nix
+sources) remain upstream tools, not reimplementations inside the manager.
 
 ```sh
 # In the guest, with the matching native controller running:

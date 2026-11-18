@@ -112,6 +112,10 @@ in
     inherit inputs pkgs;
     inherit (pkgs) lib;
   };
+  nixpp-runtime-termux-seed = import ../android/full-nix/bootstrap-seed.nix {
+    inherit inputs pkgs;
+    inherit (pkgs) lib;
+  };
   native-client = pkgs.callPackage ./native-client { };
   console-tui = pkgs.callPackage ./console-tui { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
