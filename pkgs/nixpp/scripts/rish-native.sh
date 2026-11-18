@@ -18,15 +18,21 @@ extract_asset() {
 }
 
 main() {
-  local apk digest cache
+  local apk_paths apk digest cache
   # Android's app_process must load system libraries, including liblzma.
   unset LD_LIBRARY_PATH LD_PRELOAD
   export PATH=/system/bin
-  apk=$(/system/bin/pm path moe.shizuku.privileged.api |
+  # Package Manager cannot use the app's PTY descriptors across Binder.
+  if ! apk_paths=$(/system/bin/pm path moe.shizuku.privileged.api </dev/null 2>&1)
+  then
+    printf 'rish: Android could not look up the Shizuku APK. Is Shizuku installed in this Android profile?\n' >&2
+    return 1
+  fi
+  apk=$(printf '%s\n' "$apk_paths" |
     /system/bin/sed -n 's@^package:\(.*\/base\.apk\)$@\1@p')
   if [ ! -r "$apk" ]
   then
-    printf 'rish: install Shizuku before using rish.\n' >&2
+    printf 'rish: Android did not expose a readable Shizuku base APK.\n' >&2
     return 1
   fi
 
