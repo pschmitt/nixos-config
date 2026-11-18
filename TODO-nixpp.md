@@ -13,9 +13,8 @@
 
 ## nixpp
 
-- [ ] Restore legacy upgrade workflows for managed guest generations. Finish
-  validating the remote build and switch path and restore signed, cache-only
-  upgrades.
+- [x] Restore `nixpp upgrade` for remote builds and managed guest activation.
+- [ ] Restore signed, cache-only upgrades with `nixpp upgrade --from-cache`.
 - [ ] Inventory the other legacy commands, flags and diagnostics. Port the
   relevant behavior to the guest CLI and verify it against installed systems.
 
