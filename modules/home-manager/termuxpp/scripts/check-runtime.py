@@ -305,13 +305,15 @@ def check_nvim(gate):
             raise CheckFailure('nvim -u NONE did not run Lua')
     details = ['bare startup ok']
     if not gate.isolated:
-        res = gate.run(
-            [nvim, '--headless', '-c', lua.replace('NVIM', 'NVIMCFG'), '-c', 'qa!'],
-            timeout=gate.args.login_timeout,
-        )
-        gate.require(res, 'nvim with user config')
-        if 'FULLNIX-NVIMCFG-' not in res.out:
-            raise CheckFailure('nvim with user config did not run Lua')
+        command = [nvim, '--headless', '-c', lua.replace('NVIM', 'NVIMCFG'), '-c', 'qa!']
+        # Fresh plugin setup can exit successfully before running the probe.
+        for _ in range(2):
+            res = gate.run(command, timeout=gate.args.login_timeout)
+            gate.require(res, 'nvim with user config')
+            if 'FULLNIX-NVIMCFG-' in res.out:
+                break
+        else:
+            raise CheckFailure('nvim with user config did not run Lua after two starts')
         details.append('configured startup ok')
     return details
 
@@ -463,7 +465,9 @@ def check_go(gate):
     used. The check keeps the name "go" for compatibility with existing callers.
     """
     kubectl = gate.tool('kubectl')
-    env = {'KUBECONFIG': str(gate.scratch / 'no-kubeconfig')}
+    # The Android guest can corrupt memory during concurrent Go GC. This is
+    # a short-lived version probe and does not configure the user's kubectl.
+    env = {'KUBECONFIG': str(gate.scratch / 'no-kubeconfig'), 'GOGC': 'off'}
     res = gate.run([kubectl, 'version', '--client', '--output=json'], extra_env=env)
     gate.require(res, 'kubectl version --client')
     try:
