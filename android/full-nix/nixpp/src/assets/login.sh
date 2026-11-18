@@ -20,8 +20,17 @@ fi
 # HOME is assigned by session.sh inside the guest, not by the native shell.
 # shellcheck disable=SC2016
 exec "$directory/session.sh" -- /bin/sh -c '
-  export SHELL="$HOME/.nix-profile/bin/zsh"
-  export POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
+  if [ -x "$HOME/.nix-profile/bin/zsh" ]; then
+    export SHELL="$HOME/.nix-profile/bin/zsh"
+    export POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
+    exec "$SHELL" "$@"
+  fi
+  # No Home Manager profile yet (a new runtime): the pinned session bash.
+  SHELL=$(command -v bash) || exit 127
+  export SHELL
+  if [ "$#" -eq 1 ] && [ "$1" = -l ]; then
+    exec "$SHELL" --noprofile --rcfile /etc/bashrc -i
+  fi
   exec "$SHELL" "$@"
 ' sh "$@"
 

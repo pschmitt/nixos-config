@@ -114,6 +114,24 @@ pub enum Command {
     },
     /// Set up a new runtime from a verified bootstrap
     Init(InitArgs),
+    /// Enter the Nix guest, finishing its setup first when needed
+    #[command(visible_alias = "enter")]
+    Login(LoginArgs),
+}
+
+#[derive(Debug, Args)]
+pub struct LoginArgs {
+    /// Guest user name, used only when a new runtime is set up
+    #[arg(long, env = "NIXPP_USER", default_value = bootstrap::DEFAULT_USERNAME)]
+    user: String,
+
+    /// Arguments for the guest login shell (default: a login shell)
+    #[arg(
+        trailing_var_arg = true,
+        allow_hyphen_values = true,
+        value_name = "ARG"
+    )]
+    args: Vec<std::ffi::OsString>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -211,7 +229,11 @@ fn execute(cli: &Cli, ui: &Ui) -> Exit {
     match &cli.command {
         Command::Serve => native(serve_command(runtime, socket, ui)),
         Command::Controller { operation } => native(operate(runtime, operation, ui)),
-        Command::Init(args) => init_command(runtime, args),
+        Command::Init(args) => {
+            crate::progress::set_json(cli.json);
+            init_command(runtime, args)
+        }
+        Command::Login(args) => login_command(runtime, args),
         command => {
             // Guest files are private to the user.
             // SAFETY: umask only changes the process file-creation mask.
@@ -293,7 +315,7 @@ fn guest_command(
             let table = !ui.json() && Ui::stdout_is_terminal();
             ui.print(&render_generations(ui, &list, table)?);
         }
-        Command::Serve | Command::Controller { .. } | Command::Init(_) => {
+        Command::Serve | Command::Controller { .. } | Command::Init(_) | Command::Login(_) => {
             unreachable!("handled before the guest commands")
         }
     }
@@ -438,16 +460,38 @@ fn native_failure(error: &Error) -> Exit {
     }
 }
 
-fn init_command(runtime: Option<PathBuf>, args: &InitArgs) -> Exit {
-    let runtime = match runtime {
-        Some(runtime) => runtime,
-        None => match std::env::var_os("HOME")
-            .context("init requires HOME or --runtime")
-            .and_then(|home| crate::provision::default_runtime(Path::new(&home)))
-        {
-            Ok(runtime) => runtime,
-            Err(error) => return Exit::failure(format!("{error:#}")),
+/// `--runtime`/`NIXPP_RUNTIME`, else the default below `HOME`.
+fn native_runtime(runtime: Option<PathBuf>) -> anyhow::Result<PathBuf> {
+    match runtime {
+        Some(runtime) => Ok(runtime),
+        None => std::env::var_os("HOME")
+            .context("requires HOME or --runtime")
+            .and_then(|home| crate::provision::default_runtime(Path::new(&home))),
+    }
+}
+
+/// Enter the guest; when that fails, explain and continue in the native
+/// shell instead of ending the terminal session.
+fn login_command(runtime: Option<PathBuf>, args: &LoginArgs) -> Exit {
+    let error = match native_runtime(runtime) {
+        Ok(runtime) => match crate::provision::login(&runtime, &args.user, &args.args) {
+            Ok(()) => return Exit::success(),
+            Err(error) => error,
         },
+        Err(error) => error,
+    };
+    eprintln!("nixpp: cannot enter the Nix guest: {error:#}");
+    eprintln!("Starting the native shell instead; run `nixpp enter` to retry.");
+    match crate::provision::native_shell() {
+        Ok(()) => Exit::success(),
+        Err(error) => Exit::failure(format!("{error:#}")),
+    }
+}
+
+fn init_command(runtime: Option<PathBuf>, args: &InitArgs) -> Exit {
+    let runtime = match native_runtime(runtime) {
+        Ok(runtime) => runtime,
+        Err(error) => return Exit::failure(format!("init {error:#}")),
     };
     let result = if args.resume {
         bootstrap::resume(&runtime)
@@ -730,6 +774,24 @@ mod tests {
         let ui = Ui::new(false, false, true, false);
         let error = serve_command(Some(PathBuf::from("/rt")), None, &ui).unwrap_err();
         assert_eq!(error.to_string(), "serve requires --socket or NIXPP_SOCKET");
+    }
+
+    #[test]
+    fn login_has_an_enter_alias_and_passes_shell_arguments() {
+        for name in ["login", "enter"] {
+            let Command::Login(args) = parse(&[name, "--user", "guest", "-c", "true"])
+                .unwrap()
+                .command
+            else {
+                panic!("not login");
+            };
+            assert_eq!(args.user, "guest");
+            assert_eq!(args.args, ["-c", "true"]);
+        }
+        let Command::Login(args) = parse(&["enter"]).unwrap().command else {
+            panic!("not login");
+        };
+        assert!(args.args.is_empty());
     }
 
     #[test]

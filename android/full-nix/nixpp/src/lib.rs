@@ -15,6 +15,7 @@ pub mod controller;
 pub mod error;
 pub mod fsutil;
 pub mod guest;
+pub mod progress;
 pub mod provision;
 pub mod runner;
 pub mod server;

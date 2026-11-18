@@ -33,6 +33,8 @@ use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 use zip::ZipArchive;
 
+use crate::progress;
+
 /// SHA-256 of the bootstrap seed built alongside this executable, the only
 /// accepted seed. The Nix package build sets it; a build without it refuses
 /// to prepare a runtime.
@@ -250,6 +252,7 @@ fn prepare_with(
     }
     private_dirs(directory)?;
 
+    progress::extract();
     extract_bootstrap(seed, &root, expected_sha256, limits)?;
     let root_real =
         fs::canonicalize(&root).with_context(|| format!("failed to resolve {}", root.display()))?;
@@ -368,7 +371,7 @@ fn prepare_with(
         fs::set_permissions(&launcher, fs::Permissions::from_mode(0o700))
             .with_context(|| format!("failed to chmod {}", launcher.display()))?;
     }
-    println!("Prepared isolated runtime; package import is still required.");
+    progress::prepared();
     Ok(())
 }
 
@@ -406,14 +409,44 @@ fn stage_executable_from(directory: &Path, source: &Path) -> Result<()> {
     })
 }
 
+/// Run `command` with its output reported line by line as progress, so
+/// stdout carries only JSON. Both streams are read concurrently.
+fn run_reporting(command: &mut Command) -> Result<std::process::ExitStatus> {
+    use std::io::{BufRead, BufReader};
+    use std::process::Stdio;
+    let mut child = command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .context("failed to run session.sh")?;
+    let stdout = child.stdout.take().context("session.sh stdout")?;
+    let reader = std::thread::spawn(move || {
+        for line in BufReader::new(stdout).lines().map_while(Result::ok) {
+            progress::output_line(&line);
+        }
+    });
+    if let Some(stderr) = child.stderr.take() {
+        for line in BufReader::new(stderr).lines().map_while(Result::ok) {
+            progress::output_line(&line);
+        }
+    }
+    let status = child.wait().context("failed to wait for session.sh")?;
+    let _ = reader.join();
+    Ok(status)
+}
+
 /// Import the pinned packages and run the final checks (also the resume
 /// operation after an interrupted download). Writes `ready` only on success.
 pub fn install(directory: &Path) -> Result<()> {
     install_with(directory, &mut |directory, args| {
-        let status = Command::new(directory.join("session.sh"))
-            .args(args)
-            .status()
-            .context("failed to run session.sh")?;
+        let mut command = Command::new(directory.join("session.sh"));
+        command.args(args);
+        let status = if progress::json() {
+            run_reporting(&mut command)?
+        } else {
+            command.status().context("failed to run session.sh")?
+        };
         ensure!(
             status.success(),
             "session.sh {} failed: {status}",
@@ -438,6 +471,7 @@ fn install_with(directory: &Path, run: &mut dyn FnMut(&Path, &[&str]) -> Result<
         validate_store_path(package)?;
     }
     for (index, package) in packages.iter().copied().enumerate() {
+        progress::package(index, packages.len(), package);
         run(
             directory,
             &[
@@ -464,6 +498,7 @@ fn install_with(directory: &Path, run: &mut dyn FnMut(&Path, &[&str]) -> Result<
             ],
         )?;
     }
+    progress::check();
     run(directory, &["--", "nix", "--version"])?;
     run(
         directory,
@@ -476,8 +511,7 @@ fn install_with(directory: &Path, run: &mut dyn FnMut(&Path, &[&str]) -> Result<
         ],
     )?;
     write_file(&directory.join("ready"), b"ready\n", 0o600)?;
-    println!("Runtime ready: {}/session.sh", directory.display());
-    println!("The normal TermuxPP shell and prefix have not been changed.");
+    progress::ready(directory);
     Ok(())
 }
 

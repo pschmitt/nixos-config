@@ -3,12 +3,15 @@
 //! Every input (nixpp, the launcher, the seed and the manifest) comes from the
 //! signed TermuxPP bundle; nothing is fetched from third parties.
 
-use anyhow::{Context, Result, ensure};
+use anyhow::{Context, Result, anyhow, ensure};
 use sha2::{Digest, Sha256};
+use std::ffi::OsString;
 use std::fs::{self, DirBuilder, File, OpenOptions};
 use std::io::Read;
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use crate::bootstrap;
 
@@ -23,6 +26,71 @@ pub struct Inputs<'a> {
 pub fn default_runtime(home: &Path) -> Result<PathBuf> {
     ensure!(home.is_absolute(), "HOME must be an absolute path");
     Ok(home.join(".local/share/termuxpp-nix"))
+}
+
+/// What `nixpp login` has to do before it can enter the guest.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Setup {
+    /// The runtime is ready.
+    Ready,
+    /// A prepared runtime still needs its package import.
+    Resume,
+    /// There is no runtime yet.
+    Init,
+}
+
+pub fn setup_state(runtime: &Path) -> Setup {
+    if runtime.join("ready").is_file() {
+        Setup::Ready
+    } else if runtime.join("session.env").is_file() && runtime.join("packages.txt").is_file() {
+        Setup::Resume
+    } else {
+        Setup::Init
+    }
+}
+
+/// Finish setting up `runtime` when needed, then replace this process with
+/// the guest login shell (`login.sh`), passing `args` to it. Returns only on
+/// failure.
+pub fn login(runtime: &Path, user: &str, args: &[OsString]) -> Result<()> {
+    match setup_state(runtime) {
+        Setup::Ready => {}
+        Setup::Resume => {
+            eprintln!("Finishing the Nix setup…");
+            bootstrap::resume(runtime)?;
+        }
+        Setup::Init => {
+            eprintln!("Setting up Nix (first start)…");
+            init(
+                runtime,
+                Inputs {
+                    seed: None,
+                    manifest: None,
+                    certificate: None,
+                    bootstrap_dir: None,
+                    user,
+                },
+            )?;
+        }
+    }
+    // Keep the launch scripts in step with this nixpp.
+    bootstrap::install_scripts(runtime)?;
+    let error = Command::new(runtime.join("login.sh")).args(args).exec();
+    Err(anyhow!(error).context("failed to start the guest login shell"))
+}
+
+/// Replace this process with the native TermuxPP shell, the fallback when
+/// the guest cannot start. Returns only on failure.
+pub fn native_shell() -> Result<()> {
+    let executable = fs::canonicalize(std::env::current_exe()?)?;
+    let login = prefix(&executable)?.join("bin/login");
+    let shell = if login.is_file() {
+        login
+    } else {
+        PathBuf::from("/system/bin/sh")
+    };
+    let error = Command::new(&shell).exec();
+    Err(anyhow!(error).context(format!("failed to start {}", shell.display())))
 }
 
 fn prefix(executable: &Path) -> Result<&Path> {
@@ -142,6 +210,18 @@ mod tests {
             Path::new("/native/home/.local/share/termuxpp-nix")
         );
         assert!(default_runtime(Path::new("relative")).is_err());
+    }
+
+    #[test]
+    fn login_setup_state_follows_the_runtime_files() {
+        let dir = tempdir().unwrap();
+        assert_eq!(setup_state(dir.path()), Setup::Init);
+        fs::write(dir.path().join("session.env"), b"").unwrap();
+        assert_eq!(setup_state(dir.path()), Setup::Init);
+        fs::write(dir.path().join("packages.txt"), b"").unwrap();
+        assert_eq!(setup_state(dir.path()), Setup::Resume);
+        fs::write(dir.path().join("ready"), b"ready\n").unwrap();
+        assert_eq!(setup_state(dir.path()), Setup::Ready);
     }
 
     #[test]
