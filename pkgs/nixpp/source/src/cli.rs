@@ -20,8 +20,9 @@ use crate::ui::{ColorChoice, Style, Ui};
 use anyhow::Context;
 use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, CommandFactory, Parser, Subcommand};
 use serde_json::{Value, json};
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
@@ -107,6 +108,12 @@ pub enum Command {
     Prepare {
         /// Store path of the system generation
         generation: PathBuf,
+    },
+    /// Print a shell completion script
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
     },
     /// Build a system remotely and print its store path
     Build(BuildArgs),
@@ -295,6 +302,14 @@ fn execute(cli: &Cli, ui: &Ui) -> Exit {
     let runtime = non_empty(&cli.runtime);
     let socket = non_empty(&cli.socket);
     match &cli.command {
+        Command::Completions { shell } => {
+            let mut script = Vec::new();
+            clap_complete::generate(*shell, &mut Cli::command(), "nixpp", &mut script);
+            match io::stdout().lock().write_all(&script) {
+                Ok(()) => Exit::success(),
+                Err(error) => Exit::failure(format!("completions: {error}")),
+            }
+        }
         Command::Serve => native(serve_command(runtime, socket, ui)),
         Command::ServiceSupervisor => match native_runtime(runtime) {
             Ok(runtime) => match crate::services::run(&runtime) {
@@ -522,7 +537,8 @@ fn guest_command(
             let table = !ui.json() && Ui::stdout_is_terminal();
             ui.print(&render_generations(ui, &list, table)?);
         }
-        Command::Serve
+        Command::Completions { .. }
+        | Command::Serve
         | Command::Controller { .. }
         | Command::Init(_)
         | Command::Login(_)

@@ -151,3 +151,13 @@ The Nix package outputs are `nixpp`, `nixpp-runtime-termux` and
 test also exercises the packaged CLI. See [the parity contract](PARITY.md) for the
 preserved state, protocol and recovery guarantees and cut-over criteria. A
 successful host build alone does not qualify Android activation or recovery.
+
+## Shell completion
+
+The Linux package installs completion scripts for Bash, Zsh and Fish. The
+managed TermuxPP Zsh profile picks up the script automatically on a new shell.
+
+Run `nixpp completions bash`, `nixpp completions zsh` or
+`nixpp completions fish` to write the script to stdout. This also works from
+the native shell and does not require a running guest. Put the Zsh script in
+a directory on `fpath`, with the name `_nixpp`, before running `compinit`.

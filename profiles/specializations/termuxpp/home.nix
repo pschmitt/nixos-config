@@ -6,6 +6,7 @@
   ...
 }:
 let
+  nixpp = pkgs.callPackage ../../../pkgs/nixpp { };
   tmad = "${lib.getExe pkgs.tmux} -f ${lib.escapeShellArg "${config.xdg.configHome}/tmux/tmux.conf"} -u new-session -A -D -s main";
 in
 {
@@ -115,15 +116,18 @@ in
     fi
   '';
   dotfiles.zsh.nixShell.default = true;
-  xdg.enable = true;
-  xdg.configFile."nvim/lua/plugins/full-nix.lua".text = ''
-    return {
-      {
-        "neovim/nvim-lspconfig",
-        opts = { servers = { nil_ls = { enabled = false }, nixd = {} } },
-      },
-    }
-  '';
+  xdg = {
+    enable = true;
+    configFile."zsh/completions/_nixpp".source = "${nixpp}/share/zsh/site-functions/_nixpp";
+    configFile."nvim/lua/plugins/full-nix.lua".text = ''
+      return {
+        {
+          "neovim/nvim-lspconfig",
+          opts = { servers = { nil_ls = { enabled = false }, nixd = {} } },
+        },
+      }
+    '';
+  };
   sops = {
     secrets."nix/github_token".sopsFile = config.host.sopsDefaultFile;
     templates."nix-access-tokens".content = ''
