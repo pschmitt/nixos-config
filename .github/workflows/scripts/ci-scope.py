@@ -190,6 +190,11 @@ def main():
                 name = parts[2]
             if name in package_names:
                 packages.add(name)
+                if name == "nixpp":
+                    packages.update(
+                        package for package in package_names
+                        if package.startswith("termuxpp-system-")
+                    )
             else:
                 broad = True
         else:
