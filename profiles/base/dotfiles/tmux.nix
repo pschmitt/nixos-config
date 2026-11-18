@@ -1,4 +1,17 @@
-{ pkgs, ... }:
+{
+  lib,
+  options,
+  pkgs,
+  ...
+}:
+let
+  hasConfigBeforePlugins = options.programs.tmux ? extraConfigBeforePlugins;
+  initialConfig = ''
+    set -g set-titles on
+    set -g mouse on
+    set -g default-shell ${pkgs.zsh}/bin/zsh
+  '';
+in
 {
   programs.tmux = {
     enable = true;
@@ -9,12 +22,7 @@
     # Set prefix to Ctrl-a
     shortcut = "a";
     keyMode = "vi";
-    extraConfigBeforePlugins = ''
-      set -g set-titles on
-      set -g mouse on
-      set -g default-shell ${pkgs.zsh}/bin/zsh
-    '';
-    extraConfig = ''
+    extraConfig = lib.optionalString (!hasConfigBeforePlugins) initialConfig + ''
       # binds
       # switch to main session
       unbind M
@@ -40,5 +48,8 @@
       pain-control
       sensible
     ];
+  }
+  // lib.optionalAttrs hasConfigBeforePlugins {
+    extraConfigBeforePlugins = initialConfig;
   };
 }

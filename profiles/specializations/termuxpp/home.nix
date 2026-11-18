@@ -167,7 +167,10 @@ in
         "--layout=reverse"
       ];
     };
-    tmux.shell = "${pkgs.zsh}/bin/zsh";
+    tmux = {
+      enable = lib.mkForce true;
+      shell = "${pkgs.zsh}/bin/zsh";
+    };
     zsh = {
       enable = true;
       dotDir = "${config.xdg.configHome}/zsh-nix";
