@@ -26,6 +26,7 @@ in
       PermitRootLogin no
       UsePAM no
       AllowUsers ${config.user.name}
+      SetEnv PATH=${config.user.home}/.nix-profile/bin:/bin:/usr/bin
       AuthorizedKeysFile /etc/ssh/authorized_keys %h/.ssh/authorized_keys
       Subsystem sftp internal-sftp
     '';

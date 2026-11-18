@@ -96,6 +96,13 @@
 
   # The guest has no yadm-owned root startup file to select the Nix dotDir.
   home.file.".zshenv".enable = lib.mkOverride 40 true;
+  # OpenSSH starts the guest account's Bash login shell from /etc/passwd.
+  home.file.".bash_profile".text = ''
+    if [[ -n ''${SSH_CONNECTION:-} && $- == *i* ]]
+    then
+      exec "$HOME/.nix-profile/bin/zsh" -l
+    fi
+  '';
   dotfiles.zsh.nixShell.default = true;
   xdg.enable = true;
   xdg.configFile."nvim/lua/plugins/full-nix.lua".text = ''
