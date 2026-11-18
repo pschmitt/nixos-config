@@ -32,6 +32,7 @@ in
     ../../../home-manager/cli/fd.nix
     ../../../home-manager/cli/ripgrep.nix
     ../../../home-manager/cli/nvim
+    ../../../home-manager/cli/ssh-tools.nix
     ../../../home-manager/cli/zsh/atuin.nix
     ../../../home-manager/cli/zsh/direnv.nix
     ../../../home-manager/cli/zsh/vivid.nix

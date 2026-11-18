@@ -11,6 +11,7 @@ in
   imports = [
     ./core.nix
     ./nvim
+    ./ssh-tools.nix
   ];
 
   home.packages = lib.optionals (!termuxMode) [

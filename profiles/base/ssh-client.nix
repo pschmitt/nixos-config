@@ -1,6 +1,8 @@
 {
   config,
   inputs,
+  lib,
+  options,
   pkgs,
   ...
 }:
@@ -10,10 +12,12 @@
     inherit (config) domains;
   };
 
-  environment.systemPackages = with pkgs; [
-    autossh
-    mosh
-    sshfs
-    sshpass
+  environment.systemPackages = [
+    pkgs.sshfs
+    pkgs.sshpass
+  ]
+  ++ lib.optionals (!(options ? home-manager)) [
+    pkgs.autossh
+    pkgs.mosh
   ];
 }
