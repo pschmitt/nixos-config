@@ -26,6 +26,12 @@
   any interrupted activation. Keep enough history for signed cache pin checks
   to recognise an older generation after pruning. Run GC under the controller
   lock, then wire it into nightly maintenance after a successful upgrade.
+- [ ] Support `nixpp enter --outer` in SSH and other sessions without a
+  per-terminal native parent. Have the native supervisor serve a separate
+  same-UID Unix socket under `/run/nixpp-runtime`, with access selected by the
+  phone profile. Relay a dedicated native PTY for interactive sessions and
+  preserve separate stdio streams for non-interactive commands. Test `rish`
+  over SSH, terminal resize, Ctrl-C, exit status and disconnect cleanup.
 
 ## Bootstrap
 
