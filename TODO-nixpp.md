@@ -18,3 +18,10 @@
   upgrades.
 - [ ] Inventory the other legacy commands, flags and diagnostics. Port the
   relevant behavior to the guest CLI and verify it against installed systems.
+
+## Bootstrap
+
+- [ ] Ship a simple second-stage launcher in the TermuxPP bootstrap ZIP. Have
+  it fetch and run yadm-init from `https://y.brkn.lol` and let yadm-init handle
+  credentials at runtime. Keep the ZIP free of embedded credentials and test
+  the launcher from a fresh install.
