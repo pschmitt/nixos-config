@@ -247,7 +247,10 @@ The `rsync` patch uses search-only ancestor descriptors while retaining symlink
 and ownership checks. The runtime gate covers these previously failing operations.
 On the test phone, the thorough active gate and a separate 90-probe offline
 fixture audit passed after migration to the declarative guest system plus HM.
-The second phone still requires qualification of these fixes and migration.
+Both profiles have now activated the final declarative system plus matching HM
+and passed the thorough runtime gate, including configured Neovim, `vivid`,
+`zoxide` and `rsync`. The separate 90-probe audit above was on the test phone,
+not a repeated 90-probe result for both final generations.
 The audit used disposable HOME/XDG directories, no real vault or remote cloud
 operations, and no compilation on the phones.
 

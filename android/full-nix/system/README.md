@@ -2,8 +2,10 @@
 
 This experimental system layer sits beneath Home Manager on the droid-nix
 runtime. It does not replace Android, run systemd, or claim NixOS compatibility.
-Assembly, candidate preparation and the management protocol have worker tests;
-the coordinated activation path is not yet Android-qualified.
+Assembly, candidate preparation and the management protocol have worker tests.
+Coordinated system/Home Manager activation has also passed on both Android
+profiles, including configured-editor and thorough runtime acceptance. This is
+not a claim of NixOS compatibility or qualification of every Android lifecycle.
 
 ## Interface
 
@@ -108,6 +110,21 @@ journal. If the guest cannot start, invoke the native controller from recovery.
 baseline after the first migration. Prepared system GC roots retain matching
 closures; this implementation does not garbage-collect candidates or backups.
 New default sessions follow `current-system`; existing sessions are not replaced.
+
+The second profile's migration exercised a controlled pre-activation interruption
+and recovery. Its original HM-only baseline rollback then failed during active
+acceptance on that baseline's known JIT-enabled Neovim startup fault, after HM
+had changed files. Recovery restored the corrected system/HM generation and
+passed acceptance; the old baseline was not retried until it happened to pass.
+The original baseline remains retained, but is not a qualified editor fallback.
+Native recovery is independent of that old HM generation. A subsequent controlled
+interruption deliberately moved the upstream HM profile to the baseline while
+retaining the journal. Recovery automatically reconciled the profile with the
+restored generation using upstream `nix-env --set`; fresh-session profile/state
+consistency and thorough active acceptance passed. Both native controllers were
+reloaded with this correction. App UI relaunch and arbitrary Android background
+lifetime are not covered by these shell tests.
+
 `--legacy` ignores selection and uses original runtime configuration, while
 `--bootstrap` always retains independent native bootstrap recovery. A NixOS
 `system` profile is deliberately not fabricated.
