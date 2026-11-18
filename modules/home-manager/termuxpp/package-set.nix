@@ -21,10 +21,10 @@ let
   };
   source = pkgs.runCommand "full-nix-nixpkgs" { } ''
     mkdir -p "$out"
-    cp ${./overlay.nix} "$out/overlay.nix"
-    cp ${./eza-stack.c} "$out/eza-stack.c"
-    cp ${./rsync-search-only-ancestors.patch} "$out/rsync-search-only-ancestors.patch"
-    cp ${./neovim-treesitter-async-tests.patch} "$out/neovim-treesitter-async-tests.patch"
+    cp ${../../../overlays/termuxpp/default.nix} "$out/overlay.nix"
+    cp ${../../../overlays/termuxpp/eza-stack.c} "$out/eza-stack.c"
+    cp ${../../../overlays/termuxpp/rsync-search-only-ancestors.patch} "$out/rsync-search-only-ancestors.patch"
+    cp ${../../../overlays/termuxpp/neovim-treesitter-async-tests.patch} "$out/neovim-treesitter-async-tests.patch"
     cp ${pkgs.writeText "full-nix-default.nix" ''
       args:
       import ${inputs.nixpkgs.outPath} (args // {

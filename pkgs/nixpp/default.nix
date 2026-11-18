@@ -6,9 +6,9 @@
 rustPlatform.buildRustPackage {
   pname = "nixpp";
   version = "0.5.0";
-  src = lib.cleanSource ./nixpp;
-  cargoLock.lockFile = ./nixpp/Cargo.lock;
-  NIXPP_REFERENCE_PREPARE = ./system/prepare-session.py;
+  src = lib.cleanSource ./source;
+  cargoLock.lockFile = ./source/Cargo.lock;
+  NIXPP_REFERENCE_PREPARE = ./tests/prepare-session.py;
   NIXPP_REFERENCE_PYTHON = "${python3}/bin/python3";
 
   meta = {

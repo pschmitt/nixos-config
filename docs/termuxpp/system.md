@@ -33,7 +33,7 @@ nix build '.#termuxppConfigurations.p11.system'
 ## Guest command: nixpp
 
 The user-facing interface is **`nixpp`**, a Rust executable built for the Linux
-guest and Android/Bionic from the same source in `../nixpp`. The guest client and
+guest and Android/Bionic from the same source in `pkgs/nixpp/source`. The guest client and
 native controller no longer require a Python interpreter. The native executable
 runs independently of the guest so broken guest activation cannot disable recovery.
 The old native bundle manager is retained only for unmigrated installations and
@@ -157,7 +157,7 @@ its manifest and its installer script. It is evaluated against inert option sink
 for the few Home Manager and systemd options that module writes; nothing reads
 them and no systemd is run or faked. The installer script is read from the unit's
 `ExecStart`, and `sops.environment` is applied from its literal values. Home
-Manager keeps its own `sops.*` (see `../README.md`).
+Manager keeps its own `sops.*` (see `README.md`).
 
 **Contract with the runtime.** The manifest gains an optional field
 
@@ -196,7 +196,7 @@ they do survive reboots until removed. `sops.environment` values are literal str
 (not pre-quoted as for systemd units). `home.nix` imports `sops.nix`, which adds
 nothing to a guest without secrets.
 
-Tests: `../sops-tests.nix` (ephemeral age key and synthetic sops file generated
+Tests: `profiles/specializations/termuxpp/sops-tests.nix` (ephemeral age key and synthetic sops file generated
 inside the build) covers install, modes, templates in both layers, namespace
 separation, the `%r` fallback, the exact `systemSecrets` hook in the built manifest,
 failure propagation (wrong or missing key keeps what is installed), a removed
@@ -206,7 +206,7 @@ worker:
 
 ```sh
 nix build --impure --no-link -L --expr \
-  'import ./android/full-nix/sops-tests.nix { inputs = (builtins.getFlake (toString ./.)).inputs; }'
+  'import ./profiles/specializations/termuxpp/sops-tests.nix { inputs = (builtins.getFlake (toString ./.)).inputs; }'
 ```
 
 ## Upstream assessment

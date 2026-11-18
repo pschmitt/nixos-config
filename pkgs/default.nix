@@ -105,14 +105,14 @@ in
   mmonit = pkgs.callPackage ./mmonit { };
   inherit msteams-mcp;
   inherit msoutlook-mcp;
-  nixpp-termux = pkgs.callPackage ./termux/nixpp { inherit inputs; };
-  nixpp = pkgs.callPackage ../android/full-nix/nixpp-package.nix { };
-  nixpp-system-tests = import ../android/full-nix/system/tests.nix { inherit inputs pkgs; };
-  nixpp-runtime-termux = import ../android/full-nix/nixpp-native.nix {
+  nixpp-termux = pkgs.callPackage ./nixpp/legacy.nix { inherit inputs; };
+  nixpp = pkgs.callPackage ./nixpp { };
+  nixpp-system-tests = import ../modules/nixpp/tests.nix { inherit inputs pkgs; };
+  nixpp-runtime-termux = import ./nixpp/native.nix {
     inherit inputs pkgs;
     inherit (pkgs) lib;
   };
-  nixpp-runtime-termux-seed = import ../android/full-nix/bootstrap-seed.nix {
+  nixpp-runtime-termux-seed = import ./nixpp/bootstrap-seed.nix {
     inherit inputs pkgs;
     inherit (pkgs) lib;
   };

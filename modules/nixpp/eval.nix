@@ -10,7 +10,7 @@ let
     specialArgs = specialArgs // {
       inherit inputs pkgs;
     };
-    modules = [ ./module.nix ] ++ modules;
+    modules = [ ./. ] ++ modules;
   };
   failed = builtins.filter (item: !item.assertion) evaluated.config.assertions;
 in

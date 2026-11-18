@@ -10,7 +10,7 @@
 # the matching Home Manager activation. A non-zero exit fails that activation.
 #
 # Ownership: the system layer owns `sops.*` here, Home Manager owns its own
-# `sops.*` (../sops.nix). Both run as the same Android UID, so the separate
+# `sops.*` (../home-manager/termuxpp/sops.nix). Both run as the same Android UID, so the separate
 # paths are organization, not a security boundary: file modes are the only
 # access control and apply to that one UID.
 {
@@ -23,7 +23,7 @@
 let
   inherit (lib) mkOption types;
   inherit (config) sops;
-  script = import ../sops-activation.nix { inherit lib pkgs; };
+  script = import ./sops-activation.nix { inherit lib pkgs; };
   sink =
     type:
     mkOption {

@@ -31,11 +31,11 @@ let
               ''-o "ControlPath=''${STATE_DIR}/control-%C"''
             ]
             [ "-o ControlMaster=no" "-o ControlPath=none" ]
-            (builtins.readFile ../../home-manager/devel/skills/rworker/scripts/rworker.sh);
+            (builtins.readFile ../../../home-manager/devel/skills/rworker/scripts/rworker.sh);
       })
       (pkgs.runCommand "rworker-completions" { } ''
-        install -Dm644 ${../../home-manager/devel/skills/rworker/completions/_rworker} $out/share/zsh/site-functions/_rworker
-        install -Dm644 ${../../home-manager/devel/skills/rworker/completions/rworker.bash} $out/share/bash-completion/completions/rworker
+        install -Dm644 ${../../../home-manager/devel/skills/rworker/completions/_rworker} $out/share/zsh/site-functions/_rworker
+        install -Dm644 ${../../../home-manager/devel/skills/rworker/completions/rworker.bash} $out/share/bash-completion/completions/rworker
       '')
     ];
   };

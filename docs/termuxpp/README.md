@@ -20,16 +20,16 @@ nix build '.#homeConfigurations.p11.activationPackage' -o p11-home
 
 nix eval --impure --option restrict-eval true \
   --option allowed-uris 'github: gitlab: https: git+https:' -I . --json --expr '
-  import ./android/full-nix/tests.nix {
+  import ./profiles/specializations/termuxpp/tests.nix {
     inputs = (builtins.getFlake (toString ./.)).inputs;
   }'
 
-nix develop --command nixfmt --check android/full-nix/*.nix
-nix develop --command statix check android/full-nix
-nix develop --command deadnix android/full-nix
-nix shell --inputs-from . 'nixpkgs#shellcheck' -c shellcheck android/full-nix/scripts/*.sh
-bash android/full-nix/scripts/rworker-nix-test.sh
-nix shell --inputs-from . 'nixpkgs#python3' -c bash android/full-nix/scripts/test-check-runtime.sh
+nix develop --command nixfmt --check profiles/specializations/termuxpp/*.nix
+nix develop --command statix check profiles/specializations/termuxpp
+nix develop --command deadnix profiles/specializations/termuxpp
+nix shell --inputs-from . 'nixpkgs#shellcheck' -c shellcheck modules/home-manager/termuxpp/scripts/*.sh
+bash modules/home-manager/termuxpp/scripts/rworker-nix-test.sh
+nix shell --inputs-from . 'nixpkgs#python3' -c bash modules/home-manager/termuxpp/scripts/test-check-runtime.sh
 ```
 
 After building the generated Nixpkgs source, check both its legacy and flake
@@ -40,7 +40,7 @@ transitive rsync dependency of `nixos-rebuild-ng`, including their patch paths:
 nix build --impure --expr \
   '(builtins.getFlake (toString ./.)).homeConfigurations.zf10.config.home.file.".local/share/full-nix/nixpkgs".source' \
   -o full-nix-nixpkgs
-nix eval --impure --json --file android/full-nix/package-set-tests.nix \
+nix eval --impure --json --file profiles/specializations/termuxpp/package-set-tests.nix \
   --apply "test: test { source = $(readlink -f full-nix-nixpkgs); }"
 ```
 
@@ -140,7 +140,7 @@ the pinned registry and
 Android-aware variant. Explicit upstream URLs or another registry bypass this
 overlay and are not covered by the compatibility guarantee.
 
-Run `python3 -I android/full-nix/scripts/check-eza.py` inside the activated guest
+Run `python3 -I modules/home-manager/termuxpp/scripts/check-eza.py` inside the activated guest
 for 60 real listings covering threads, long/icon/tree/Git output and symlinks.
 It creates and removes its own fixture. Linux builds and profile assertions do
 not replace this Android acceptance check. Keep future runtime-specific package
@@ -170,7 +170,7 @@ Candidate mode uses a scratch home; active mode checks the real configuration.
 Neither mode is a sandbox or proof that every installed package works.
 
 The ordinary `homeConfigurations.zf10` and `homeConfigurations.p11` remain
-available for the Home Manager layer. The [declarative guest system](system/README.md)
+available for the Home Manager layer. The [declarative guest system](system.md)
 coordinates system and matching Home Manager generations through `nixpp`;
 use that interface on migrated devices. For Home Manager-only environments,
 the source-based interface remains:
@@ -362,7 +362,7 @@ dropped from a still-configured set disappears with the pruned generation, but a
 custom `path` symlink of it dangles, and removing every secret runs nothing, so the
 previously installed data stays until removed by hand. The declarative system layer
 has its own `sops.*` and activation executable, run by the controller before this
-one; see `system/README.md` for the contract and the limits (same Android UID,
+one; see [system configuration](system.md) for the contract and the limits (same Android UID,
 persistent `/run`, rollback to generations without the hook). Test with
 `sops-tests.nix`.
 

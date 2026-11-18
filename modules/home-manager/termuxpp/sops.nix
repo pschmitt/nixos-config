@@ -5,7 +5,7 @@
 # is replaced: upstream restarts a systemd user unit, which does not exist here.
 # Instead the installer runs inside Home Manager activation, so a failure aborts
 # the activation. Runs as the guest's single Android UID, like the system layer
-# (see system/sops.nix); the two layers use separate paths.
+# (see ../../nixpp/sops.nix); the two layers use separate paths.
 {
   config,
   inputs,
@@ -17,7 +17,7 @@ let
   cfg = config.fullNix.sops;
   inherit (config) sops;
   hasSecrets = sops.secrets != { };
-  script = import ./sops-activation.nix { inherit lib pkgs; };
+  script = import ../../nixpp/sops-activation.nix { inherit lib pkgs; };
   activation = pkgs.writeShellScript "sops-nix-activate-hm" (script {
     installer = config.systemd.user.services.sops-nix.Service.ExecStart;
     inherit (sops) environment;

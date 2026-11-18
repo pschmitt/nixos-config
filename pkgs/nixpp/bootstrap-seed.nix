@@ -42,7 +42,7 @@ let
     patches = old.patches or [ ] ++ [ ./launcher-foreign-trap.patch ];
   });
 
-  guestNixpp = pkgs.pkgsCross.aarch64-multiplatform.callPackage ./nixpp-package.nix { };
+  guestNixpp = pkgs.pkgsCross.aarch64-multiplatform.callPackage ./. { };
   manifest = import ./session-manifest.nix { inherit pkgs inputs guestNixpp; };
 
   closure = pkgs.closureInfo {

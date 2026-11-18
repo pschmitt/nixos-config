@@ -1,7 +1,7 @@
 # Worker tests for the sops-nix support of both guest layers.
 #
 #   nix build --impure --expr \
-#     'import ./android/full-nix/sops-tests.nix { inputs = (builtins.getFlake (toString ./.)).inputs; }'
+#     'import ./profiles/specializations/termuxpp/sops-tests.nix { inputs = (builtins.getFlake (toString ./.)).inputs; }'
 #
 # Behavior is architecture independent, so the scripts are run natively on
 # x86_64 (no emulation); the real guest configurations are only evaluated.
@@ -51,7 +51,7 @@ let
   };
   mkSystem =
     secrets: templates:
-    import ./system {
+    import ../../../modules/nixpp/eval.nix {
       inherit inputs pkgs;
       modules = [
         (
@@ -90,7 +90,7 @@ let
       inherit pkgs;
       extraSpecialArgs = { inherit inputs; };
       modules = [
-        ./sops.nix
+        ../../../modules/home-manager/termuxpp/sops.nix
         (
           { config, ... }:
           {
@@ -122,8 +122,8 @@ let
   homeNone = mkHome { } { };
 
   # The real guest configurations: evaluated only, never built here.
-  guestHomes = import ./. { inherit inputs; };
-  guestSystems = import ./system/hosts.nix { inherit inputs; };
+  guestHomes = import ./homes.nix { inherit inputs; };
+  guestSystems = import ./systems.nix { inherit inputs; };
   # Verify the configured system and Home Manager locations for both phones.
   guestChecks = lib.mapAttrsToList (
     hostname: guest:
@@ -142,7 +142,7 @@ let
   rejected =
     sops:
     !(builtins.tryEval
-      (import ./system {
+      (import ../../../modules/nixpp/eval.nix {
         inherit inputs pkgs;
         modules = [
           {

@@ -25,7 +25,7 @@ let
     inherit name;
     path = if value.text != null then pkgs.writeText "guest-etc-file" value.text else value.source;
   }) cfg.environment.etc;
-  systemTools = pkgs.callPackage ../nixpp-package.nix { };
+  systemTools = pkgs.callPackage ../../pkgs/nixpp { };
   systemPath = pkgs.buildEnv {
     name = "termuxpp-system-path";
     paths = cfg.environment.systemPackages ++ [ systemTools ];

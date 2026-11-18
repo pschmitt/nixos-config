@@ -1,14 +1,14 @@
 { inputs }:
 let
-  homes = import ../default.nix { inherit inputs; };
+  homes = import ./homes.nix { inherit inputs; };
 in
 builtins.mapAttrs (
   hostname: home:
-  import ./. {
+  import ../../../modules/nixpp/eval.nix {
     inherit inputs;
     inherit (home) pkgs;
     modules = [
-      ./sshd.nix
+      ../../../modules/nixpp/sshd.nix
       {
         networking.hostName = hostname;
         sops.defaultSopsFile = inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml";

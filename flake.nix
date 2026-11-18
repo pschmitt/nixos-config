@@ -25,7 +25,7 @@
     };
 
     # Sources (MIT) of the full-Nix Android launcher and bootstrap seed, built
-    # here (android/full-nix/bootstrap-seed.nix); no droid-nix binary is used.
+    # here (pkgs/nixpp/bootstrap-seed.nix); no droid-nix binary is used.
     droid-nix-src = {
       url = "github:lassulus/droid-nix/bb08d50117568e9994b6d87c918c4c2d7b5de9b1";
       flake = false;
@@ -617,8 +617,8 @@
         extraModules: [ privateIsoHostModule ] ++ extraModules ++ [ privateIsoFlakeModule ];
     in
     {
-      homeConfigurations = import ./android/full-nix { inherit inputs; };
-      termuxppConfigurations = import ./android/full-nix/system/hosts.nix { inherit inputs; };
+      homeConfigurations = import ./profiles/specializations/termuxpp/homes.nix { inherit inputs; };
+      termuxppConfigurations = import ./profiles/specializations/termuxpp/systems.nix { inherit inputs; };
 
       lib.termux = {
         mkBundle =

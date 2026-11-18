@@ -3,8 +3,8 @@ let
   pkgs = import inputs.nixpkgs {
     system = "aarch64-linux";
     config.allowUnfree = true;
-    overlays = builtins.attrValues (import ../../overlays { inherit inputs; }) ++ [
-      (import ./overlay.nix)
+    overlays = builtins.attrValues (import ../../../overlays { inherit inputs; }) ++ [
+      (import ../../../overlays/termuxpp)
     ];
   };
   mkHome =
@@ -18,7 +18,7 @@ let
       modules = [
         ./home.nix
         (inputs.nixos-config-private.outPath + "/modules/main-user.nix")
-        (../../hosts + "/${hostname}/prompt.nix")
+        (../../../hosts + "/${hostname}/prompt.nix")
         ({ config, lib, ... }: {
           sops.defaultSopsFile = lib.mkDefault (
             inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml"

@@ -7,38 +7,38 @@
 }:
 {
   imports = [
-    ./operations.nix
-    ./eza.nix
-    ./rworker.nix
-    ./package-set.nix
-    ./bridge.nix
-    ./lifecycle.nix
-    ./sops.nix
-    ./yadm.nix
-    ../../modules/dotfiles.nix
-    ../../modules/domains.nix
-    ../../modules/main-user.nix
-    ../../home-manager/host.nix
-    ../../home-manager/bitwarden.nix
-    ../../home-manager/devel/nix-tools.nix
-    ../../home-manager/termux-options.nix
-    ../../home-manager/cli/bat.nix
-    ../../home-manager/cli/fd.nix
-    ../../home-manager/cli/ripgrep.nix
-    ../../home-manager/cli/nvim
-    ../../home-manager/cli/zsh/atuin.nix
-    ../../home-manager/cli/zsh/direnv.nix
-    ../../home-manager/cli/zsh/vivid.nix
-    ../../home-manager/cli/zsh/zoxide.nix
-    ../../home-manager/cli/zsh/config/core.nix
-    ../../home-manager/cli/zsh/config/zhj.nix
-    ../../home-manager/cli/zsh/plugins/local-path.nix
-    ../../home-manager/cli/zsh/plugins/local-yadm.nix
-    ../../home-manager/cli/zsh/config/portable.nix
-    ../../home-manager/cli/zsh/config/source-me.nix
-    ../../home-manager/cli/tmux
-    ../../home-manager/cli/zsh/config/runtime.nix
-    ../../home-manager/cli/zsh/plugins
+    ../../../modules/home-manager/termuxpp/operations.nix
+    ../../../modules/home-manager/termuxpp/eza.nix
+    ../../../modules/home-manager/termuxpp/rworker.nix
+    ../../../modules/home-manager/termuxpp/package-set.nix
+    ../../../modules/home-manager/termuxpp/bridge.nix
+    ../../../modules/home-manager/termuxpp/lifecycle.nix
+    ../../../modules/home-manager/termuxpp/sops.nix
+    ../../../modules/home-manager/termuxpp/yadm.nix
+    ../../../modules/dotfiles.nix
+    ../../../modules/domains.nix
+    ../../../modules/main-user.nix
+    ../../../home-manager/host.nix
+    ../../../home-manager/bitwarden.nix
+    ../../../home-manager/devel/nix-tools.nix
+    ../../../home-manager/termux-options.nix
+    ../../../home-manager/cli/bat.nix
+    ../../../home-manager/cli/fd.nix
+    ../../../home-manager/cli/ripgrep.nix
+    ../../../home-manager/cli/nvim
+    ../../../home-manager/cli/zsh/atuin.nix
+    ../../../home-manager/cli/zsh/direnv.nix
+    ../../../home-manager/cli/zsh/vivid.nix
+    ../../../home-manager/cli/zsh/zoxide.nix
+    ../../../home-manager/cli/zsh/config/core.nix
+    ../../../home-manager/cli/zsh/config/zhj.nix
+    ../../../home-manager/cli/zsh/plugins/local-path.nix
+    ../../../home-manager/cli/zsh/plugins/local-yadm.nix
+    ../../../home-manager/cli/zsh/config/portable.nix
+    ../../../home-manager/cli/zsh/config/source-me.nix
+    ../../../home-manager/cli/tmux
+    ../../../home-manager/cli/zsh/config/runtime.nix
+    ../../../home-manager/cli/zsh/plugins
   ];
 
   fullNix = {
