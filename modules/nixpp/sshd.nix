@@ -1,6 +1,12 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   home = config.home-manager.configuration.config;
+  certificate = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
   keyNames = [
     "ssh/host_keys/ed25519/privkey"
     "ssh/host_keys/rsa/privkey"
@@ -26,7 +32,7 @@ in
       PermitRootLogin no
       UsePAM no
       AllowUsers ${config.user.name}
-      SetEnv PATH=${config.user.home}/.nix-profile/bin:/run/current-system/sw/bin:/bin:/usr/bin NIXPP_RUNTIME=/run/nixpp-runtime NIX_CONF_DIR=${home.xdg.configHome}/nix
+      SetEnv PATH=${config.user.home}/.nix-profile/bin:/run/current-system/sw/bin:/bin:/usr/bin NIXPP_RUNTIME=/run/nixpp-runtime NIX_CONF_DIR=${home.xdg.configHome}/nix NIX_SSL_CERT_FILE=${certificate} SSL_CERT_FILE=${certificate}
       AuthorizedKeysFile /etc/ssh/authorized_keys %h/.ssh/authorized_keys
       Subsystem sftp internal-sftp
     '';
