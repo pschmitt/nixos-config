@@ -392,7 +392,8 @@ pub fn install_scripts(directory: &Path) -> Result<()> {
 /// scripts find the controller even when `nixpp` was started from elsewhere.
 /// Does nothing when `DIR/nixpp` already is the running executable.
 pub fn stage_executable(directory: &Path) -> Result<()> {
-    let current = std::env::current_exe().context("failed to locate the running executable")?;
+    let current = crate::provision::running_executable()
+        .context("failed to locate the running executable")?;
     stage_executable_from(directory, &current)
 }
 

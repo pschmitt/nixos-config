@@ -585,7 +585,8 @@ fn generations_table(ui: &Ui, generations: &[controller::Generation]) -> String 
 
 /// The directory of the running executable, the default native runtime.
 fn executable_directory() -> Result<PathBuf> {
-    let executable = std::env::current_exe()?.canonicalize()?;
+    let executable = crate::provision::running_executable()
+        .map_err(|error| Error::invalid(format!("locate nixpp: {error}")))?;
     executable
         .parent()
         .map(Path::to_path_buf)

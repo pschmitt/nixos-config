@@ -13,7 +13,7 @@ let
   guest = import inputs.nixpkgs { system = "aarch64-linux"; };
   path = drv: builtins.unsafeDiscardStringContext (toString drv);
 
-  nix = guest.nixVersions.nix_2_34;
+  nix = guest.nixVersions.nix_2_35;
   shell = guest.bashInteractive;
   packages = [
     shell

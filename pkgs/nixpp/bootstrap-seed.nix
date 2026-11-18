@@ -26,7 +26,7 @@ let
   # The nix command alone: nix-everything also pulls in nix-nswrapper, which
   # the runtime cannot use (no user namespaces, sandbox = false).
   nix =
-    (static.nixVersions.nixComponents_2_34.overrideScope (
+    (static.nixVersions.nixComponents_2_35.overrideScope (
       _: prev: {
         nix-util = prev.nix-util.overrideAttrs (old: {
           patches = old.patches or [ ] ++ [ "${src}/bootstrap/nix-util-syscall-h.patch" ];

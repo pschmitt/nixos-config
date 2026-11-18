@@ -93,7 +93,7 @@ pub fn login(runtime: &Path, user: &str, args: &[OsString]) -> Result<u8> {
 /// Replace this process with the native TermuxPP shell, the fallback when
 /// the guest cannot start. Returns only on failure.
 pub fn native_shell() -> Result<()> {
-    let executable = fs::canonicalize(std::env::current_exe()?)?;
+    let executable = running_executable()?;
     let login = prefix(&executable)?.join("bin/login");
     let shell = if login.is_file() {
         login
@@ -115,7 +115,7 @@ pub(crate) fn native_command(args: &[OsString]) -> Result<Command> {
         cfg!(target_os = "android"),
         "open a native TermuxPP failsafe session to run outer commands"
     );
-    let executable = fs::canonicalize(std::env::current_exe()?)?;
+    let executable = running_executable()?;
     let prefix = prefix(&executable)?;
     let package = std::env::var_os("TERMUX_APP__DATA_DIR")
         .and_then(|directory| PathBuf::from(directory).file_name().map(OsString::from))
@@ -183,6 +183,34 @@ fn exact_command(args: &[OsString]) -> bool {
         .is_some_and(|arg| !arg.as_encoded_bytes().starts_with(b"-"))
 }
 
+/// Termux's exec interception can start the program through Android's
+/// linker, in which case /proc/self/exe describes the linker.
+pub(crate) fn running_executable() -> Result<PathBuf> {
+    let current = std::env::current_exe()?.canonicalize()?;
+    if cfg!(target_os = "android")
+        && matches!(
+            current.file_name().and_then(|name| name.to_str()),
+            Some("linker" | "linker64")
+        )
+    {
+        return redirected_executable(std::env::args_os().next(), std::env::var_os("PREFIX"))
+            .context("could not locate nixpp behind the Android linker");
+    }
+    Ok(current)
+}
+
+fn redirected_executable(arg0: Option<OsString>, prefix: Option<OsString>) -> Option<PathBuf> {
+    [
+        arg0.map(PathBuf::from),
+        prefix.map(|prefix| PathBuf::from(prefix).join("bin/nixpp")),
+    ]
+    .into_iter()
+    .flatten()
+    .filter(|path| path.is_absolute() && path.file_name().is_some_and(|name| name == "nixpp"))
+    .filter_map(|path| path.canonicalize().ok())
+    .find(|path| path.is_file() && path.file_name().is_some_and(|name| name == "nixpp"))
+}
+
 fn prefix(executable: &Path) -> Result<&Path> {
     executable
         .parent()
@@ -196,7 +224,7 @@ pub fn init(runtime: &Path, inputs: Inputs<'_>) -> Result<()> {
         !runtime.join("root").exists(),
         "runtime already exists; use nixpp init --resume for an interrupted package import"
     );
-    let executable = fs::canonicalize(std::env::current_exe()?)?;
+    let executable = running_executable()?;
     let prefix = prefix(&executable)?;
     let seed = inputs
         .bootstrap_dir
@@ -291,6 +319,28 @@ fn digest(path: &Path) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn finds_executable_when_android_directly_runs_the_linker() {
+        let fixture = tempfile::tempdir().unwrap();
+        let bin = fixture.path().join("bin");
+        fs::create_dir(&bin).unwrap();
+        let executable = bin.join("nixpp");
+        fs::write(&executable, "").unwrap();
+        let expected = Some(executable.canonicalize().unwrap());
+        assert_eq!(
+            redirected_executable(Some(executable.into_os_string()), None),
+            expected
+        );
+        assert_eq!(
+            redirected_executable(Some("linker64".into()), Some(fixture.path().into())),
+            expected
+        );
+        assert!(redirected_executable(Some("nixpp".into()), None).is_none());
+    }
+
+    use tempfile::tempdir;
+
     use tempfile::tempdir;
 
     #[test]
