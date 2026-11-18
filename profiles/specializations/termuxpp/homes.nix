@@ -18,6 +18,7 @@ let
       modules = [
         ./home.nix
         (inputs.nixos-config-private.outPath + "/hm/termuxpp-builders.nix")
+        (inputs.nixos-config-private.outPath + "/hm/termuxpp-cache.nix")
         (inputs.nixos-config-private.outPath + "/modules/main-user.nix")
         (../../../hosts + "/${hostname}/prompt.nix")
         ({ config, lib, ... }: {

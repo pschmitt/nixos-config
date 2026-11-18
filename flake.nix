@@ -716,7 +716,13 @@
             hostBundlePackages // forkBundlePackages
           );
         in
-        customPackages // termuxNativePackages
+        customPackages
+        // termuxNativePackages
+        // nixpkgs.lib.optionalAttrs (system == "aarch64-linux") (
+          nixpkgs.lib.mapAttrs' (
+            host: guest: nixpkgs.lib.nameValuePair "termuxpp-system-${host}" guest.system
+          ) self.termuxppConfigurations
+        )
       );
 
       # below is to make "nix fmt" work

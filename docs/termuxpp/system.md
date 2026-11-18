@@ -56,6 +56,10 @@ nixpp recover
 nixpp upgrade --dry-run
 nixpp upgrade
 
+# Check or install the system published for this guest in the signed cache:
+nixpp upgrade --from-cache --dry-run
+nixpp upgrade --from-cache
+
 # Build or rebuild an explicit target using configured remote builders:
 nixpp build --flake /path/to/config --host HOST
 nixpp rebuild --flake /path/to/config --host HOST
@@ -66,6 +70,11 @@ nixpp rebuild --flake /path/to/config --host HOST --rworker
 `upgrade` selects the host and flake from the system configuration. It accepts
 `--flake` and `--host` overrides, and `--rworker` to select the disposable worker.
 `--dry-run` runs Nix's build planner without contacting the native controller.
+
+`upgrade --from-cache` reads the host's published pin, verifies the system
+against the configured cache signing keys, and copies its closure. It uses
+the read-only cache credentials rendered by SOPS. It does not fetch or
+evaluate the flake and does not require SSH to a builder.
 
 `build` returns a store path. `rebuild` builds, prepares a candidate if needed,
 then requests a coordinated switch. `--max-jobs 0` prevents phone-side compilation

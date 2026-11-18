@@ -31,6 +31,7 @@ builtins.mapAttrs (
             "nixpp/upgrade.json".text = builtins.toJSON {
               flake = "github:pschmitt/nixos-config/main";
               host = hostname;
+              cache = home.config.fullNix.upgradeCache;
             };
             "termuxpp-release".text = ''
               ID=termuxpp

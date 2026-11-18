@@ -92,6 +92,10 @@ pub struct UpgradeArgs {
     #[arg(long, conflicts_with = "dry_run")]
     rworker: bool,
 
+    /// Upgrade from the host's signed binary cache without evaluating the flake
+    #[arg(long, conflicts_with_all = ["flake", "host", "rworker"])]
+    from_cache: bool,
+
     /// Show what Nix would build or fetch without activating a generation
     #[arg(long)]
     dry_run: bool,
@@ -309,6 +313,14 @@ fn require(value: Option<PathBuf>, message: &str) -> Result<PathBuf> {
     value.ok_or_else(|| Error::invalid(message))
 }
 
+fn report_stage(ui: &Ui, stage: Stage) {
+    ui.step(match stage {
+        Stage::Build => "building the system",
+        Stage::Prepare => "preparing the candidate",
+        Stage::Switch => "switching to the candidate",
+    });
+}
+
 fn rebuild_system(
     ui: &Ui,
     runtime: Option<PathBuf>,
@@ -323,13 +335,7 @@ fn rebuild_system(
         &args.host,
         args.rworker,
         &mut ProcessBuilder,
-        &mut |stage| {
-            ui.step(match stage {
-                Stage::Build => "building the system",
-                Stage::Prepare => "preparing the candidate",
-                Stage::Switch => "switching to the candidate",
-            });
-        },
+        &mut |stage| report_stage(ui, stage),
     )?;
     ui.ok("system switched");
     ui.print(&path_output(ui, &generation));
@@ -361,7 +367,25 @@ fn guest_command(
                 args.flake.clone(),
                 args.host.clone(),
             )?;
-            if args.dry_run {
+            if args.from_cache {
+                let runtime = if args.dry_run {
+                    None
+                } else {
+                    Some(require(
+                        runtime,
+                        "upgrade requires NIXPP_RUNTIME or --runtime",
+                    )?)
+                };
+                ui.step("verifying the cache pin");
+                let generation = guest::cached_upgrade(&target, args.dry_run, &mut ProcessBuilder)?;
+                if let Some(runtime) = runtime {
+                    guest::activate_system(&runtime, &socket, &generation, &mut |stage| {
+                        report_stage(ui, stage);
+                    })?;
+                    ui.ok("system switched");
+                }
+                ui.print(&path_output(ui, &generation));
+            } else if args.dry_run {
                 guest::plan_upgrade(&target, &mut ProcessBuilder)?;
             } else {
                 rebuild_system(

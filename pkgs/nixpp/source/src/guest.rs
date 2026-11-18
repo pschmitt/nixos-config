@@ -413,6 +413,15 @@ pub fn build_command(flake: &str, host: &str, rworker: bool) -> Result<Vec<Strin
 pub struct UpgradeTarget {
     pub flake: String,
     pub host: String,
+    pub cache: Option<UpgradeCache>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpgradeCache {
+    pub store: String,
+    pub pin_reader: PathBuf,
+    pub public_keys: Vec<String>,
+    pub credentials_file: Option<PathBuf>,
 }
 
 pub fn upgrade_target(
@@ -424,6 +433,7 @@ pub fn upgrade_target(
         return Ok(UpgradeTarget {
             flake: flake.clone(),
             host: host.clone(),
+            cache: None,
         });
     }
     let data = read_bounded(config, 4096)
@@ -433,6 +443,7 @@ pub fn upgrade_target(
     Ok(UpgradeTarget {
         flake: flake.unwrap_or(defaults.flake),
         host: host.unwrap_or(defaults.host),
+        cache: defaults.cache,
     })
 }
 
@@ -441,6 +452,89 @@ pub fn plan_upgrade(target: &UpgradeTarget, builder: &mut dyn Builder) -> Result
     command.insert(2, "--dry-run".to_owned());
     builder.output(&command)?;
     Ok(())
+}
+
+/// Resolve a host-specific pin and require Nix to verify it at the configured
+/// cache, even when a path bearing the same name is already installed.
+pub fn cached_upgrade(
+    target: &UpgradeTarget,
+    dry_run: bool,
+    builder: &mut dyn Builder,
+) -> Result<PathBuf> {
+    let cache = target
+        .cache
+        .as_ref()
+        .ok_or_else(|| Error::invalid("no binary cache configured for upgrades"))?;
+    if !is_host_name(&target.host)
+        || cache.public_keys.is_empty()
+        || !cache.pin_reader.is_absolute()
+    {
+        return Err(Error::invalid("invalid binary cache configuration"));
+    }
+
+    let pin = builder.output(&[path_str(&cache.pin_reader)?.to_owned()])?;
+    let path = pin.trim();
+    let name = path.strip_prefix("/nix/store/").unwrap_or_default();
+    if !is_candidate_name(name) || !name.ends_with(&format!("-termuxpp-system-{}", target.host)) {
+        return Err(Error::invalid(
+            "cache pin does not select this host's system",
+        ));
+    }
+    let keys = cache.public_keys.join(" ");
+    let credentials = cache
+        .credentials_file
+        .as_deref()
+        .map(path_str)
+        .transpose()?
+        .map(|path| format!("AWS_SHARED_CREDENTIALS_FILE={path}"));
+    let command = |arguments: &[&str]| {
+        credentials
+            .iter()
+            .flat_map(|value| ["env", value.as_str()])
+            .chain(["nix", "--option", "trusted-public-keys", &keys])
+            .into_iter()
+            .chain(arguments.iter().copied())
+            .chain([path])
+            .map(str::to_owned)
+            .collect::<Vec<_>>()
+    };
+    let metadata = builder.output(&command(&[
+        "path-info",
+        "--json",
+        "--json-format",
+        "1",
+        "--store",
+        &cache.store,
+    ]))?;
+    let metadata: Value = serde_json::from_str(&metadata)?;
+    let entry = &metadata[path];
+    // Nix trusts content-addressed paths and ultimately trusted paths without
+    // signatures. Neither is a signed release from this cache.
+    if entry.get("ca") != Some(&Value::Null) || entry.get("ultimate") != Some(&Value::Bool(false)) {
+        return Err(Error::invalid(
+            "cache pin does not select a signed system release",
+        ));
+    }
+    builder.output(&command(&[
+        "store",
+        "verify",
+        "--store",
+        &cache.store,
+        "--no-contents",
+        "--sigs-needed",
+        "1",
+    ]))?;
+    if !dry_run {
+        builder.output(&command(&[
+            "copy",
+            "--from",
+            &cache.store,
+            "--option",
+            "require-sigs",
+            "true",
+        ]))?;
+    }
+    Ok(PathBuf::from(path))
 }
 
 /// Build the system of `host` and return its store path.
@@ -481,6 +575,16 @@ pub fn rebuild(
 ) -> Result<PathBuf> {
     on_stage(Stage::Build);
     let generation = build_system(flake, host, rworker, builder)?;
+    activate_system(runtime, socket, &generation, on_stage)?;
+    Ok(generation)
+}
+
+pub fn activate_system(
+    runtime: &Path,
+    socket: &Path,
+    generation: &Path,
+    on_stage: &mut dyn FnMut(Stage),
+) -> Result<()> {
     let name = generation
         .file_name()
         .and_then(|name| name.to_str())
@@ -488,11 +592,11 @@ pub fn rebuild(
         .to_owned();
     if !runtime.join("system-candidates").join(&name).exists() {
         on_stage(Stage::Prepare);
-        prepare(runtime, &generation)?;
+        prepare(runtime, generation)?;
     }
     on_stage(Stage::Switch);
     manage(socket, "switch", Some(&name))?;
-    Ok(generation)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -941,6 +1045,78 @@ mod tests {
                 "/source#termuxppConfigurations.phone.system",
             ]
         );
+    }
+
+    #[test]
+    fn cache_only_upgrade_checks_the_host_and_signatures_before_downloading() {
+        let target = UpgradeTarget {
+            host: "test".to_owned(),
+            flake: "unused".to_owned(),
+            cache: Some(UpgradeCache {
+                store: "file:///cache".to_owned(),
+                pin_reader: "/pinned/read-pin".into(),
+                public_keys: vec!["test:key".to_owned()],
+                credentials_file: None,
+            }),
+        };
+        struct CacheFixture {
+            results: std::vec::IntoIter<String>,
+            commands: Vec<Vec<String>>,
+        }
+
+        impl Builder for CacheFixture {
+            fn output(&mut self, command: &[String]) -> Result<String> {
+                self.commands.push(command.to_vec());
+                Ok(self.results.next().unwrap())
+            }
+        }
+
+        let path = system_path();
+        let mut builder = CacheFixture {
+            results: vec![
+                path.clone(),
+                json!({path.clone(): {"ca": null, "ultimate": false}}).to_string(),
+                String::new(),
+            ]
+            .into_iter(),
+            commands: Vec::new(),
+        };
+        assert_eq!(
+            cached_upgrade(&target, true, &mut builder).unwrap(),
+            Path::new(&path)
+        );
+        assert_eq!(builder.commands[0], ["/pinned/read-pin"]);
+        assert_eq!(
+            builder.commands[2],
+            [
+                "nix",
+                "--option",
+                "trusted-public-keys",
+                "test:key",
+                "store",
+                "verify",
+                "--store",
+                "file:///cache",
+                "--no-contents",
+                "--sigs-needed",
+                "1",
+                &path,
+            ]
+        );
+        assert_eq!(builder.commands.len(), 3);
+        let mut builder = Scripted::new(&path.replace("-test", "-other"));
+        assert!(cached_upgrade(&target, false, &mut builder).is_err());
+        assert_eq!(builder.commands.len(), 1);
+        let mut builder = CacheFixture {
+            results: vec![
+                path.clone(),
+                json!({path: {"ca": "fixed:sha256:123", "ultimate": false}}).to_string(),
+            ]
+            .into_iter(),
+            commands: Vec::new(),
+        };
+        assert!(cached_upgrade(&target, false, &mut builder).is_err());
+        assert_eq!(builder.commands.len(), 2);
     }
 
     #[test]
