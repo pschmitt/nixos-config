@@ -1,5 +1,6 @@
 #!/system/bin/sh
 
+# shellcheck source-path=SCRIPTDIR
 usage() {
   printf 'Usage: %s [--bootstrap | --legacy | --system CANDIDATE] [-- COMMAND ARG...]\n' "$0"
 }

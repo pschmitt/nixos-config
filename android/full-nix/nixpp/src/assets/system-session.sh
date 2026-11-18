@@ -1,5 +1,7 @@
 #!/system/bin/sh
 
+# This file is sourced by session.sh, which owns and uses these variables.
+# shellcheck disable=SC2034,SC2154
 load_system_candidate() {
   candidate_name=$2
   case $candidate_name in
