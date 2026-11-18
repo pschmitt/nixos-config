@@ -114,6 +114,21 @@ pub enum Command {
     },
     /// Set up a new runtime from a verified bootstrap
     Init(InitArgs),
+    /// Build and activate the first managed guest from a native TermuxPP session
+    Bootstrap {
+        /// Flake URI, without an output fragment
+        #[arg(long)]
+        flake: String,
+        /// Host name of the system configuration
+        #[arg(long)]
+        host: String,
+        /// Guest account expected by the configuration
+        #[arg(long)]
+        user: String,
+        /// Private directory containing the SSH identity and Nix configuration
+        #[arg(long)]
+        credentials: PathBuf,
+    },
     /// Enter the Nix guest, finishing its setup first when needed
     #[command(visible_alias = "enter")]
     Login(LoginArgs),
@@ -234,6 +249,19 @@ fn execute(cli: &Cli, ui: &Ui) -> Exit {
             init_command(runtime, args)
         }
         Command::Login(args) => login_command(runtime, args),
+        Command::Bootstrap {
+            flake,
+            host,
+            user,
+            credentials,
+        } => {
+            match native_runtime(runtime)
+                .and_then(|runtime| crate::enroll::enroll(&runtime, user, flake, host, credentials))
+            {
+                Ok(()) => Exit::success(),
+                Err(error) => Exit::failure(format!("bootstrap: {error:#}")),
+            }
+        }
         command => {
             // Guest files are private to the user.
             // SAFETY: umask only changes the process file-creation mask.
@@ -315,7 +343,11 @@ fn guest_command(
             let table = !ui.json() && Ui::stdout_is_terminal();
             ui.print(&render_generations(ui, &list, table)?);
         }
-        Command::Serve | Command::Controller { .. } | Command::Init(_) | Command::Login(_) => {
+        Command::Serve
+        | Command::Controller { .. }
+        | Command::Init(_)
+        | Command::Login(_)
+        | Command::Bootstrap { .. } => {
             unreachable!("handled before the guest commands")
         }
     }

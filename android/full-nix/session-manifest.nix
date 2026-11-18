@@ -25,6 +25,7 @@ let
     guest.gawk
     guest.less
     guest.gitMinimal
+    guest.openssh
     guest.python3
     guest.ncurses
     guest.cacert

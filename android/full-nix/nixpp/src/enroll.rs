@@ -1,0 +1,255 @@
+//! Enroll a new managed guest beside the current runtime.
+
+use crate::{bootstrap, controller, fsutil, guest, provision, runner::SessionRunner, store};
+use anyhow::{Context, Result, ensure};
+use std::fs::{self, DirBuilder};
+use std::os::unix::fs::DirBuilderExt;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Output, Stdio};
+
+pub fn enroll(
+    runtime: &Path,
+    user: &str,
+    flake: &str,
+    host: &str,
+    credentials: &Path,
+) -> Result<()> {
+    ensure!(
+        cfg!(target_os = "android"),
+        "run bootstrap in a native TermuxPP session"
+    );
+    ensure!(runtime.is_absolute(), "the runtime path must be absolute");
+    ensure!(store::is_user_name(user), "invalid guest user");
+    let build = guest::build_command(flake, host, false)?;
+    let parent = runtime
+        .parent()
+        .context("runtime requires a parent directory")?;
+    fs::create_dir_all(parent)?;
+    let staged = sibling(runtime, ".enrollment")?;
+    let previous = sibling(runtime, ".before-enrollment")?;
+    let _lock = fsutil::FileLock::acquire(&sibling(runtime, ".enrollment.lock")?)?;
+
+    if runtime.join("system-state.json").is_file() {
+        ensure!(
+            fs::read_to_string(runtime.join("enrolled-host"))
+                .unwrap_or_default()
+                .trim()
+                == host
+                && fs::read_to_string(runtime.join("enrolled-user"))
+                    .unwrap_or_default()
+                    .trim()
+                    == user,
+            "this runtime is already managed; use nixpp rebuild in the guest"
+        );
+        println!("The guest is already enrolled. Open a new TermuxPP session.");
+        return Ok(());
+    }
+    ensure!(
+        runtime.try_exists()? || !previous.try_exists()? || staged.try_exists()?,
+        "an earlier enrollment backup exists without a staged runtime"
+    );
+    ensure!(
+        !runtime.try_exists()? || !previous.try_exists()?,
+        "the enrollment backup path is already occupied"
+    );
+
+    let staged_config = staged.join("session.env");
+    if staged_config.is_file() {
+        ensure!(
+            fs::read_to_string(staged_config)?
+                .lines()
+                .any(|line| line == format!("SESSION_USER={user}")),
+            "an incomplete enrollment exists for a different user"
+        );
+    }
+    match provision::setup_state(&staged) {
+        provision::Setup::Ready => {}
+        provision::Setup::Resume => bootstrap::resume(&staged)?,
+        provision::Setup::Init => provision::init(
+            &staged,
+            provision::Inputs {
+                seed: None,
+                manifest: None,
+                certificate: None,
+                bootstrap_dir: None,
+                user,
+            },
+        )?,
+    }
+
+    // Enrollment only writes into the newly created private guest home.
+    install_credentials(&staged.join("root/home").join(user), credentials)?;
+    if !staged.join("current-system").is_file()
+        || fs::read_to_string(staged.join("current-system"))?
+            .trim()
+            .is_empty()
+        || staged.join("system-pending.json").exists()
+    {
+        activate(&staged, &build)?;
+    }
+
+    fsutil::atomic_write(&staged.join("system.enabled"), "")?;
+    fsutil::atomic_write(&staged.join("enrolled-host"), host)?;
+    fsutil::atomic_write(&staged.join("enrolled-user"), user)?;
+    if runtime.try_exists()? {
+        fs::rename(runtime, &previous).context("failed to retain the previous guest")?;
+    }
+    if let Err(error) = fs::rename(&staged, runtime) {
+        if previous.try_exists()? {
+            fs::rename(&previous, runtime)
+                .context("failed to restore previous guest after enrollment")?;
+        }
+        return Err(error).context("failed to select the enrolled guest");
+    }
+    println!("Enrollment complete. Open a new TermuxPP session.");
+    Ok(())
+}
+
+fn sibling(path: &Path, suffix: &str) -> Result<PathBuf> {
+    let mut name = path
+        .file_name()
+        .context("invalid runtime directory")?
+        .to_os_string();
+    name.push(suffix);
+    Ok(path.with_file_name(name))
+}
+
+fn install_credentials(home: &Path, source: &Path) -> Result<()> {
+    for (input, target, required) in [
+        ("id_ed25519", ".ssh/id_ed25519", true),
+        ("id_ed25519.pub", ".ssh/id_ed25519.pub", true),
+        ("ssh_config", ".ssh/config", true),
+        ("known_hosts", ".ssh/known_hosts", true),
+        ("nix.conf", ".config/nix/nix.conf", true),
+        ("rbw_config", ".config/rbw/config.json", true),
+        ("age_key", ".config/sops/age/keys.txt", false),
+    ] {
+        let source = source.join(input);
+        if !required && !source.try_exists()? {
+            continue;
+        }
+        let bytes = fsutil::read_bounded(&source, 128 * 1024)
+            .with_context(|| format!("cannot read enrollment credential {input}"))?;
+        let value = std::str::from_utf8(&bytes).context("enrollment credential must be text")?;
+        ensure!(
+            !value.trim().is_empty(),
+            "empty enrollment credential {input}"
+        );
+        let target = home.join(target);
+        let parent = target.parent().context("invalid credential destination")?;
+        DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(parent)?;
+        fsutil::atomic_write(&target, value)?;
+    }
+    Ok(())
+}
+
+fn activate(runtime: &Path, build: &[String]) -> Result<()> {
+    let mut runner = SessionRunner::new();
+    if runtime.join("system-pending.json").exists() {
+        let status = controller::recover(runtime, &mut runner)?;
+        ensure!(status == 0, "enrollment recovery failed ({status})");
+    }
+    eprintln!("Building the guest configuration through Nix…");
+    let output = session(runtime, build)?;
+    let generation = std::str::from_utf8(&output.stdout)?.trim();
+    ensure!(
+        store::is_store_root(generation),
+        "Nix returned an invalid generation"
+    );
+    let candidate = generation
+        .strip_prefix("/nix/store/")
+        .context("invalid candidate path")?;
+    if !runtime.join("system-candidates").join(candidate).is_dir() {
+        session(runtime, &["nixpp", "prepare", generation])?;
+    }
+    let data = controller::candidate_manifest(runtime, candidate)?;
+    let home = data.home_manager;
+    let has_state = runtime.join("system-state.json").is_file();
+    if !has_state {
+        eprintln!("Activating the initial Home Manager generation…");
+        session(
+            runtime,
+            &[
+                "bash",
+                "-c",
+                r#"set -eu
+if [ ! -e "$HOME/.nix-profile" ]; then
+  nix profile add "$1/home-path"
+fi
+exec "$1/activate""#,
+                "nixpp",
+                &home,
+            ],
+        )?;
+    }
+    let status = controller::switch(
+        runtime,
+        candidate,
+        (!has_state).then_some(home.as_str()),
+        &mut runner,
+        None,
+    )?;
+    ensure!(status == 0, "system activation checks failed ({status})");
+    Ok(())
+}
+
+fn session(runtime: &Path, args: &[impl AsRef<std::ffi::OsStr>]) -> Result<Output> {
+    let output = Command::new(runtime.join("session.sh"))
+        .args(["--legacy", "--"])
+        .args(args)
+        .stdin(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()
+        .context("unable to start the enrollment guest")?;
+    ensure!(
+        output.status.success(),
+        "enrollment guest command failed ({})",
+        output.status
+    );
+    Ok(output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn credentials_install_with_private_permissions_and_support_retry() {
+        let fixture = tempfile::tempdir().unwrap();
+        let input = fixture.path().join("input");
+        let home = fixture.path().join("home");
+        fs::create_dir(&input).unwrap();
+        for name in [
+            "id_ed25519",
+            "id_ed25519.pub",
+            "ssh_config",
+            "known_hosts",
+            "nix.conf",
+            "rbw_config",
+        ] {
+            fs::write(input.join(name), format!("fixture for {name}\n")).unwrap();
+        }
+        install_credentials(&home, &input).unwrap();
+        assert!(!home.join(".config/sops/age/keys.txt").exists());
+        fs::write(input.join("age_key"), "fixture age key\n").unwrap();
+        install_credentials(&home, &input).unwrap();
+        for name in [
+            ".ssh/id_ed25519",
+            ".ssh/config",
+            ".config/nix/nix.conf",
+            ".config/rbw/config.json",
+            ".config/sops/age/keys.txt",
+        ] {
+            let path = home.join(name);
+            assert_eq!(
+                fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+                0o600
+            );
+            assert!(fs::read_to_string(path).unwrap().starts_with("fixture"));
+        }
+    }
+}

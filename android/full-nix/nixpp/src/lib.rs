@@ -12,6 +12,7 @@
 pub mod bootstrap;
 pub mod cli;
 pub mod controller;
+mod enroll;
 pub mod error;
 pub mod fsutil;
 pub mod guest;

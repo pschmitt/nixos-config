@@ -69,6 +69,28 @@ musl `launcher` and a registered chroot store with static `nix`,
 guest `nixpp` on the first session's PATH. Init uses the bundled closure and
 fetches missing session packages from cache.nixos.org. The seed is reproducible.
 
+For personal device enrollment, run the native TermuxPP command after closing
+other terminal sessions:
+
+```sh
+nixpp bootstrap --host PHONE --user USER --flake FLAKE --credentials PRIVATE_DIR
+```
+
+The private directory contains `id_ed25519`, `id_ed25519.pub`, `ssh_config`,
+`known_hosts`, `nix.conf`, `rbw_config` and optionally `age_key`. The Nix
+configuration must name a remote builder and provide read access to the
+flake's private inputs. SSH host keys must already be pinned in `known_hosts`.
+The age identity, when supplied, is installed as `~/.config/sops/age/keys.txt`
+for profiles that declare SOPS secrets. Credential files stay in the guest's
+private home.
+
+Enrollment sets up the requested user beside the current guest. It builds
+the selected system with Nix and phone compilation disabled, activates the
+initial Home Manager generation, then switches through the native controller.
+The previous guest is retained at the runtime path with a `.before-enrollment`
+suffix. Open a new TermuxPP session after enrollment to enter the managed
+guest. Retry the same command to continue an interrupted enrollment.
+
 The launcher carries
 [`launcher-foreign-trap.patch`](../launcher-foreign-trap.patch). Android 15's
 app seccomp filter traps `openat2`. Upstream's SIGSYS handler translated and
