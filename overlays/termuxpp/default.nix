@@ -23,6 +23,14 @@ let
         wrapProgram $out/bin/${program} --prefix LD_PRELOAD : ${signalStack}/lib/stack.so
       '') programs;
     };
+  flakeComma = prev.comma.overrideAttrs (old: {
+    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
+    postFixup = (old.postFixup or "") + ''
+      for program in comma ,; do
+        wrapProgram "$out/bin/$program" --unset NIX_PATH
+      done
+    '';
+  });
 in
 {
   eza = withSignalStack prev.eza [ "eza" ];
@@ -40,14 +48,19 @@ in
   });
   # A channel is not available in the managed guest. Keep comma on the
   # pinned flake registry even when other tools export a NIX_PATH entry.
-  comma = prev.comma.overrideAttrs (old: {
-    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
-    postFixup = (old.postFixup or "") + ''
-      for program in comma ,; do
-        wrapProgram "$out/bin/$program" --unset NIX_PATH
-      done
-    '';
-  });
+  comma = final.lib.makeOverridable (
+    args:
+    let
+      package = flakeComma.override args;
+    in
+    (withSignalStack package [
+      ","
+      "comma"
+    ])
+    // {
+      inherit (package) version;
+    }
+  ) { };
   rbw = withSignalStack prev.rbw [
     "rbw"
     "rbw-agent"
