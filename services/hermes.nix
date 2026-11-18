@@ -461,13 +461,6 @@ in
         # turn. Send mid-turn text as it is produced; keep tool progress and
         # token streaming off (they would be permanent, noisy messages).
         display.platforms.signal.interim_assistant_messages = true;
-        # The model otherwise emits tool calls with no text, so there is nothing
-        # to send as an interim message. Ask it to say what it is doing first.
-        agent.system_prompt = ''
-          In chat conversations, before you start tool calls, send one short
-          sentence saying what you are about to do (in the user's language),
-          then work. Do not narrate every step, and keep the final answer brief.
-        '';
         # The API server is only for Stricknani's link imports: no built-in tools,
         # no other MCP servers and no plugin toolsets there (imported pages are
         # untrusted). Its only tools: the throwaway-browser-only browser-daemon
