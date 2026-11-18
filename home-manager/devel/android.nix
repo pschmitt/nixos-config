@@ -25,19 +25,27 @@ in
 {
   imports = [ inputs.declaroid.homeManagerModules.default ];
 
-  sops.secrets."google-play/service-account-json" = {
-    mode = "0600";
-    sopsFile = config.host.sopsDefaultFile;
-  };
+  sops = {
+    secrets."termuxpp/adb_devices" = {
+      mode = "0600";
+      path = "${config.xdg.configHome}/termuxpp/adb-devices.json";
+      sopsFile = config.host.sopsDefaultFile;
+    };
 
-  sops.templates."gpc-config" = {
-    path = gpcConfigPath;
-    mode = "0600";
-    content = builtins.toJSON {
-      default_profile = "default";
-      profiles.default = {
-        name = "default";
-        credentials_path = config.sops.secrets."google-play/service-account-json".path;
+    secrets."google-play/service-account-json" = {
+      mode = "0600";
+      sopsFile = config.host.sopsDefaultFile;
+    };
+
+    templates."gpc-config" = {
+      path = gpcConfigPath;
+      mode = "0600";
+      content = builtins.toJSON {
+        default_profile = "default";
+        profiles.default = {
+          name = "default";
+          credentials_path = config.sops.secrets."google-play/service-account-json".path;
+        };
       };
     };
   };

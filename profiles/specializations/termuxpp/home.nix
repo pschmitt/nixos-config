@@ -7,6 +7,8 @@
 }:
 {
   imports = [
+    ../../../modules/home-manager/termuxpp/appearance.nix
+    ../../../modules/home-manager/termuxpp/gpg.nix
     ../../../modules/home-manager/termuxpp/operations.nix
     ../../../modules/home-manager/termuxpp/eza.nix
     ../../../modules/home-manager/termuxpp/rworker.nix

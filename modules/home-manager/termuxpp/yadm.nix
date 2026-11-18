@@ -1,14 +1,18 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
-  configure = pkgs.writeShellApplication {
-    name = "termuxpp-yadm-configure";
-    runtimeInputs = [ pkgs.yadm ];
-    text = builtins.readFile ./scripts/yadm-configure.sh;
-  };
+  yadm = lib.getExe pkgs.yadm;
 in
 {
-  home.packages = [ configure ];
-  home.activation.yadmConfigure = lib.hm.dag.entryAfter [ "androidAcceptance" ] ''
-    run ${lib.getExe configure}
+  home.activation.yadmRemoveTermuxppClass = lib.hm.dag.entryAfter [ "androidAcceptance" ] ''
+    if [[ -d ${lib.escapeShellArg "${config.xdg.dataHome}/yadm/repo.git"} ]] &&
+      ${yadm} config --get-all local.class '^termuxpp$' >/dev/null
+    then
+      run ${yadm} config --unset-all local.class '^termuxpp$'
+    fi
   '';
 }
