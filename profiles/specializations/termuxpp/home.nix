@@ -27,6 +27,7 @@ in
     ../../../home-manager/host.nix
     ../../../home-manager/bitwarden.nix
     ../../../home-manager/devel/nix-tools.nix
+    ../../../home-manager/nix-index-database.nix
     ../../../home-manager/termux-options.nix
     ../../../home-manager/cli/bat.nix
     ../../../home-manager/cli/fd.nix
