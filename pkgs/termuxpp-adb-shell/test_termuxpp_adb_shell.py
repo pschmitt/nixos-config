@@ -128,6 +128,7 @@ class ConnectionTests(unittest.TestCase):
         context.wrap_socket.side_effect = [cli.ssl.SSLEOFError(), connected]
         self.assertIs(cli.connect_tls(context), connected)
         self.assertEqual(create_connection.call_count, 2)
+        self.assertEqual(raw.sendall.call_args_list, [mock.call(b"TERMUXPP/TLS/1\n")] * 2)
         raw.close.assert_called_once()
         sleep.assert_called_once_with(1)
 
@@ -171,16 +172,14 @@ class AuthorizationTests(unittest.TestCase):
 
 class ForwardingTests(unittest.TestCase):
     @mock.patch.object(cli.subprocess, "run")
-    def test_forwards_are_dynamic_and_cleanup_is_scoped(self, run):
-        run.side_effect = [mock.Mock(stdout="41001\n"), mock.Mock(stdout="41002\n"), mock.Mock(), mock.Mock()]
-        forwards = cli.setup_forwarding("test-serial")
-        cli.remove_forwarding("test-serial", forwards)
-        self.assertEqual(forwards, [41001, 41002])
+    def test_single_forward_is_dynamic_and_cleanup_is_scoped(self, run):
+        run.side_effect = [mock.Mock(stdout="41001\n"), mock.Mock()]
+        port = cli.setup_forwarding("test-serial")
+        cli.remove_forwarding("test-serial", port)
+        self.assertEqual(port, 41001)
         self.assertEqual([call.args[0] for call in run.call_args_list], [
-            ["adb", "-s", "test-serial", "forward", "tcp:0", "tcp:8022"],
-            ["adb", "-s", "test-serial", "forward", "tcp:0", "tcp:8023"],
+            ["adb", "-s", "test-serial", "forward", "tcp:0", "tcp:5522"],
             ["adb", "-s", "test-serial", "forward", "--remove", "tcp:41001"],
-            ["adb", "-s", "test-serial", "forward", "--remove", "tcp:41002"],
         ])
 
 
@@ -216,12 +215,12 @@ class TransportTests(unittest.TestCase):
 
     @mock.patch.object(cli, "remove_forwarding")
     @mock.patch.object(cli, "run_shell")
-    @mock.patch.object(cli, "setup_forwarding", return_value=[41001, 41002])
+    @mock.patch.object(cli, "setup_forwarding", return_value=41001)
     @mock.patch.object(cli, "supports_run_as", return_value=False)
     def test_auto_falls_back_for_non_debuggable_app(self, probe, forward, shell, cleanup):
         self.assertEqual(self.invoke([]), 0)
         shell.assert_called_once()
-        cleanup.assert_called_once_with("serial", [41001, 41002])
+        cleanup.assert_called_once_with("serial", 41001)
 
     @mock.patch.object(cli, "setup_forwarding")
     @mock.patch.object(cli, "supports_run_as", side_effect=RuntimeError("offline"))
@@ -244,7 +243,7 @@ class TransportTests(unittest.TestCase):
 
     @mock.patch.object(cli, "remove_forwarding")
     @mock.patch.object(cli, "run_shell")
-    @mock.patch.object(cli, "setup_forwarding", return_value=[41001, 41002])
+    @mock.patch.object(cli, "setup_forwarding", return_value=41001)
     @mock.patch.object(cli, "supports_run_as")
     def test_explicit_mtls_skips_probe(self, probe, forward, shell, cleanup):
         self.assertEqual(self.invoke(["--mode", "mtls"]), 0)
@@ -253,7 +252,7 @@ class TransportTests(unittest.TestCase):
 
     @mock.patch.object(cli, "remove_forwarding")
     @mock.patch.object(cli, "create_credentials")
-    @mock.patch.object(cli, "setup_forwarding", return_value=[41001, 41002])
+    @mock.patch.object(cli, "setup_forwarding", return_value=41001)
     @mock.patch.object(cli, "supports_run_as")
     def test_auto_provision_uses_mtls(self, probe, forward, create, cleanup):
         self.assertEqual(self.invoke(["--provision"]), 0)
@@ -343,7 +342,7 @@ class AliasTests(unittest.TestCase):
 
     @mock.patch.object(cli, "remove_forwarding")
     @mock.patch.object(cli, "create_credentials")
-    @mock.patch.object(cli, "setup_forwarding", return_value=[41001, 41002])
+    @mock.patch.object(cli, "setup_forwarding", return_value=41001)
     @mock.patch.object(cli.devices, "list_adb_devices", return_value=[("USB1", "device", {})])
     def test_alias_provision_targets_stable_credential_dir(self, listing, forward, create, cleanup):
         path = self.config({"one": {"serials": ["USB1"]}})

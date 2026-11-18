@@ -28,8 +28,9 @@ import termuxpp_adb_devices as devices
 
 
 HOST = "127.0.0.1"
-BOOTSTRAP_PORT = 8022
-TLS_PORT = 8023
+DEVICE_PORT = 5522
+HOST_PORT = DEVICE_PORT
+TLS_PREFACE = b"TERMUXPP/TLS/1\n"
 DEFAULT_CREDENTIAL_DIR = devices.DEFAULT_CREDENTIAL_DIR
 
 
@@ -114,25 +115,20 @@ def run_terminal(connection):
 
 
 def setup_forwarding(serial):
-    forwards = []
     try:
-        for remote_port in (8022, 8023):
-            result = subprocess.run(["adb", "-s", serial, "forward", "tcp:0", f"tcp:{remote_port}"],
-                                    check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-            port = int(result.stdout.strip())
-            if not 1 <= port <= 65535:
-                raise RuntimeError("adb returned an invalid forwarding port.")
-            forwards.append(port)
-        return forwards
-    except (FileNotFoundError, subprocess.CalledProcessError, ValueError, RuntimeError) as error:
-        remove_forwarding(serial, forwards)
+        result = subprocess.run(["adb", "-s", serial, "forward", "tcp:0", f"tcp:{DEVICE_PORT}"],
+                                check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        port = int(result.stdout.strip())
+        if not 1 <= port <= 65535:
+            raise ValueError("invalid forwarding port")
+        return port
+    except (OSError, subprocess.CalledProcessError, ValueError) as error:
         raise RuntimeError("adb port forwarding failed.") from error
 
 
-def remove_forwarding(serial, forwards):
-    for port in forwards:
-        subprocess.run(["adb", "-s", serial, "forward", "--remove", f"tcp:{port}"], check=False,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+def remove_forwarding(serial, port):
+    subprocess.run(["adb", "-s", serial, "forward", "--remove", f"tcp:{port}"], check=False,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def request_token():
@@ -166,7 +162,7 @@ def send_frame(connection, data):
 
 
 def bootstrap(token, operation, material_factory=None):
-    with socket.create_connection((HOST, BOOTSTRAP_PORT), timeout=10) as connection:
+    with socket.create_connection((HOST, HOST_PORT), timeout=10) as connection:
         connection.settimeout(10)
         client_nonce = os.urandom(32)
         operation_bytes = operation.encode("ascii")
@@ -354,8 +350,9 @@ def load_tls_credentials(credential_dir):
 def connect_tls(context):
     for attempt in range(4):
         try:
-            raw_connection = socket.create_connection((HOST, TLS_PORT), timeout=10)
+            raw_connection = socket.create_connection((HOST, HOST_PORT), timeout=10)
             try:
+                raw_connection.sendall(TLS_PREFACE)
                 return context.wrap_socket(raw_connection, server_hostname=HOST)
             except BaseException:
                 raw_connection.close()
@@ -558,7 +555,7 @@ esac
 
 
 def main():
-    global BOOTSTRAP_PORT, TLS_PORT
+    global HOST_PORT
     os.umask(0o077)
     args = parse_args()
     if args.completions:
@@ -609,10 +606,10 @@ def main():
     if args.credential_dir.exists() and not args.credential_dir.is_dir():
         print("Credential path is not a directory.", file=sys.stderr)
         return 2
-    forwards = []
+    forward = None
     try:
-        forwards = setup_forwarding(args.serial)
-        BOOTSTRAP_PORT, TLS_PORT = forwards
+        forward = setup_forwarding(args.serial)
+        HOST_PORT = forward
         if args.provision:
             create_credentials(args.credential_dir, args.name)
             print(f"mTLS credentials installed in {args.credential_dir}", file=sys.stderr)
@@ -629,7 +626,8 @@ def main():
     except KeyboardInterrupt:
         return 130
     finally:
-        remove_forwarding(args.serial, forwards)
+        if forward is not None:
+            remove_forwarding(args.serial, forward)
 
 
 if __name__ == "__main__":
