@@ -148,6 +148,7 @@ auto-optimise-store = false' \
     -b "$directory/root/home:/home" \
     -b "${SESSION_TMP_DIR:-$directory/root/tmp}:/tmp" \
     -b "$directory/root/run:/run!" \
+    -b "$directory:/run/nixpp-runtime!" \
     -b "$directory/root/usr:/usr" \
     -b "$directory/root/dev/shm:/dev/shm" \
     -b "$directory/proc-stat:/proc/stat" \

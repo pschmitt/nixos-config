@@ -52,12 +52,20 @@ nixpp switch HASH-termuxpp-system-HOST
 nixpp rollback
 nixpp recover
 
-# Builds disallow local compilation; use configured remote builders:
+# Upgrade the host from the flake configured in /etc/nixpp/upgrade.json:
+nixpp upgrade --dry-run
+nixpp upgrade
+
+# Build or rebuild an explicit target using configured remote builders:
 nixpp build --flake /path/to/config --host HOST
 nixpp rebuild --flake /path/to/config --host HOST
 # Alternatively lease a worker through the existing rworker-nix integration:
 nixpp rebuild --flake /path/to/config --host HOST --rworker
 ```
+
+`upgrade` selects the host and flake from the system configuration. It accepts
+`--flake` and `--host` overrides, and `--rworker` to select the disposable worker.
+`--dry-run` runs Nix's build planner without contacting the native controller.
 
 `build` returns a store path. `rebuild` builds, prepares a candidate if needed,
 then requests a coordinated switch. `--max-jobs 0` prevents phone-side compilation

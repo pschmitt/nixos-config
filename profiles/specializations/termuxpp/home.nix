@@ -120,9 +120,18 @@ in
       },
     }
   '';
+  sops = {
+    secrets."nix/github_token".sopsFile = config.host.sopsDefaultFile;
+    templates."nix-access-tokens".content = ''
+      access-tokens = github.com=${config.sops.placeholder."nix/github_token"}
+    '';
+  };
   nix = {
     enable = true;
     package = pkgs.nix;
+    extraOptions = ''
+      !include ${config.sops.templates."nix-access-tokens".path}
+    '';
     settings = {
       experimental-features = [
         "nix-command"
@@ -130,7 +139,8 @@ in
       ];
       max-jobs = 0;
       builders-use-substitutes = true;
-      builders = "@${config.xdg.configHome}/nix/machines";
+      sandbox = false;
+      build-users-group = "";
     };
   };
   systemd.user.startServices = false;

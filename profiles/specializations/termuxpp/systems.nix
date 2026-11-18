@@ -18,19 +18,28 @@ builtins.mapAttrs (
           home = home.config.home.homeDirectory;
         };
         system.stateVersion = "1";
-        environment.systemPackages = with home.pkgs; [
-          bashInteractive
-          coreutils
-          nix
-          openssh
-          cacert
-        ];
-        environment.etc."termuxpp-release".text = ''
-          ID=termuxpp
-          RUNTIME=droid-nix
-          XDG_RUNTIME_DIR_LAYOUT=run-user
-          SYSTEM_STATE_VERSION=1
-        '';
+        environment = {
+          systemPackages = with home.pkgs; [
+            bashInteractive
+            coreutils
+            nix
+            openssh
+            cacert
+          ];
+          etc = {
+            "ssh/termuxpp-client.conf".text = "ControlPath none\n";
+            "nixpp/upgrade.json".text = builtins.toJSON {
+              flake = "github:pschmitt/nixos-config/main";
+              host = hostname;
+            };
+            "termuxpp-release".text = ''
+              ID=termuxpp
+              RUNTIME=droid-nix
+              XDG_RUNTIME_DIR_LAYOUT=run-user
+              SYSTEM_STATE_VERSION=1
+            '';
+          };
+        };
         home-manager.configuration = home;
       }
     ];

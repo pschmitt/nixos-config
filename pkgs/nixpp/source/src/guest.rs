@@ -8,6 +8,7 @@ use crate::controller::Generation;
 use crate::error::{Error, Result};
 use crate::fsutil::{canonical_json, is_symlink, path_str, read_bounded};
 use crate::store::{guest_store_path, is_candidate_name, is_host_name, is_user_name};
+use serde::Deserialize;
 use serde_json::{Map, Value};
 use std::fs::{self, DirBuilder, OpenOptions};
 use std::io::{self, Read, Write};
@@ -406,6 +407,40 @@ pub fn build_command(flake: &str, host: &str, rworker: bool) -> Result<Vec<Strin
     command.extend(["--no-link", "--print-out-paths"].map(str::to_owned));
     command.push(target);
     Ok(command)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpgradeTarget {
+    pub flake: String,
+    pub host: String,
+}
+
+pub fn upgrade_target(
+    config: &Path,
+    flake: Option<String>,
+    host: Option<String>,
+) -> Result<UpgradeTarget> {
+    if let (Some(flake), Some(host)) = (&flake, &host) {
+        return Ok(UpgradeTarget {
+            flake: flake.clone(),
+            host: host.clone(),
+        });
+    }
+    let data = read_bounded(config, 4096)
+        .map_err(|error| Error::invalid(format!("cannot read {}: {error}", config.display())))?;
+    let defaults: UpgradeTarget = serde_json::from_slice(&data)
+        .map_err(|error| Error::invalid(format!("invalid {}: {error}", config.display())))?;
+    Ok(UpgradeTarget {
+        flake: flake.unwrap_or(defaults.flake),
+        host: host.unwrap_or(defaults.host),
+    })
+}
+
+pub fn plan_upgrade(target: &UpgradeTarget, builder: &mut dyn Builder) -> Result<()> {
+    let mut command = build_command(&target.flake, &target.host, false)?;
+    command.insert(2, "--dry-run".to_owned());
+    builder.output(&command)?;
+    Ok(())
 }
 
 /// Build the system of `host` and return its store path.
@@ -879,6 +914,33 @@ mod tests {
 
     fn system_path() -> String {
         format!("/nix/store/{}-termuxpp-system-test", "a".repeat(32))
+    }
+
+    #[test]
+    fn upgrade_uses_configured_defaults_and_plans_without_building() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = dir.path().join("upgrade.json");
+        fs::write(
+            &config,
+            r#"{"flake":"github:example/config/main","host":"phone"}"#,
+        )
+        .unwrap();
+        let target = upgrade_target(&config, Some("/source".to_owned()), None).unwrap();
+        let mut builder = Scripted::new("");
+        plan_upgrade(&target, &mut builder).unwrap();
+        assert_eq!(
+            builder.commands[0],
+            [
+                "nix",
+                "build",
+                "--dry-run",
+                "--max-jobs",
+                "0",
+                "--no-link",
+                "--print-out-paths",
+                "/source#termuxppConfigurations.phone.system",
+            ]
+        );
     }
 
     #[test]

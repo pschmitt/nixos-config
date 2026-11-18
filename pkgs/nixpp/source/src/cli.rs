@@ -2,7 +2,7 @@
 //!
 //! One executable plays three roles:
 //!
-//! * the guest client (`prepare`, `build`, `rebuild`, `switch`, `check`,
+//! * the guest client (`prepare`, `build`, `rebuild`, `upgrade`, `switch`, `check`,
 //!   `list-generations`, `rollback`, `recover`), which talks to the native
 //!   controller over a Unix socket;
 //! * the native service (`serve`) and the socket-less local controller
@@ -78,6 +78,25 @@ pub struct BuildArgs {
     rworker: bool,
 }
 
+#[derive(Debug, Args)]
+pub struct UpgradeArgs {
+    /// Override the configured flake URI, without an output fragment
+    #[arg(long)]
+    flake: Option<String>,
+
+    /// Override the configured host name
+    #[arg(long)]
+    host: Option<String>,
+
+    /// Build on the configured disposable worker
+    #[arg(long, conflicts_with = "dry_run")]
+    rworker: bool,
+
+    /// Show what Nix would build or fetch without activating a generation
+    #[arg(long)]
+    dry_run: bool,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Prepare a candidate without selecting or activating it
@@ -89,6 +108,8 @@ pub enum Command {
     Build(BuildArgs),
     /// Build, prepare and switch to a system
     Rebuild(BuildArgs),
+    /// Build and activate the latest configured system
+    Upgrade(UpgradeArgs),
     /// Activate a prepared system through the native controller
     Switch {
         /// Candidate name (store basename)
@@ -288,6 +309,33 @@ fn require(value: Option<PathBuf>, message: &str) -> Result<PathBuf> {
     value.ok_or_else(|| Error::invalid(message))
 }
 
+fn rebuild_system(
+    ui: &Ui,
+    runtime: Option<PathBuf>,
+    socket: &Path,
+    args: &BuildArgs,
+) -> Result<()> {
+    let runtime = require(runtime, "rebuild requires NIXPP_RUNTIME or --runtime")?;
+    let generation = guest::rebuild(
+        &runtime,
+        socket,
+        &args.flake,
+        &args.host,
+        args.rworker,
+        &mut ProcessBuilder,
+        &mut |stage| {
+            ui.step(match stage {
+                Stage::Build => "building the system",
+                Stage::Prepare => "preparing the candidate",
+                Stage::Switch => "switching to the candidate",
+            });
+        },
+    )?;
+    ui.ok("system switched");
+    ui.print(&path_output(ui, &generation));
+    Ok(())
+}
+
 fn guest_command(
     command: &Command,
     runtime: Option<PathBuf>,
@@ -307,26 +355,28 @@ fn guest_command(
                 guest::build_system(&args.flake, &args.host, args.rworker, &mut ProcessBuilder)?;
             ui.print(&path_output(ui, &generation));
         }
-        Command::Rebuild(args) => {
-            let runtime = require(runtime, "rebuild requires NIXPP_RUNTIME or --runtime")?;
-            let generation = guest::rebuild(
-                &runtime,
-                &socket,
-                &args.flake,
-                &args.host,
-                args.rworker,
-                &mut ProcessBuilder,
-                &mut |stage| {
-                    ui.step(match stage {
-                        Stage::Build => "building the system",
-                        Stage::Prepare => "preparing the candidate",
-                        Stage::Switch => "switching to the candidate",
-                    });
-                },
+        Command::Upgrade(args) => {
+            let target = guest::upgrade_target(
+                Path::new("/etc/nixpp/upgrade.json"),
+                args.flake.clone(),
+                args.host.clone(),
             )?;
-            ui.ok("system switched");
-            ui.print(&path_output(ui, &generation));
+            if args.dry_run {
+                guest::plan_upgrade(&target, &mut ProcessBuilder)?;
+            } else {
+                rebuild_system(
+                    ui,
+                    runtime,
+                    &socket,
+                    &BuildArgs {
+                        flake: target.flake,
+                        host: target.host,
+                        rworker: args.rworker,
+                    },
+                )?;
+            }
         }
+        Command::Rebuild(args) => rebuild_system(ui, runtime, &socket, args)?,
         Command::Switch { candidate } => {
             let response = guest::manage(&socket, "switch", Some(candidate))?;
             ui.ok(&format!("switched to {candidate}"));
