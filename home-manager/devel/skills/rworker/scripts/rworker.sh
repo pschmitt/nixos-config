@@ -660,7 +660,7 @@ remote() {
   # calls (ls --watch, the completions' cache refresh) skip the handshake.
   mkdir -p "$STATE_DIR" 2>/dev/null
   # shellcheck disable=SC2029 # arguments are meant to expand locally
-  ssh -o BatchMode=yes \
+  ssh -q -o BatchMode=yes \
     -o ControlMaster=auto -o ControlPersist=10m \
     -o "ControlPath=${STATE_DIR}/control-%C" \
     "$CONTROL_HOST" rworker "$(printf '%q ' "$@")"
@@ -839,6 +839,7 @@ ssh_opts() {
     printf '%s %s\n' "$name" "$key" >> "$KNOWN_HOSTS"
   fi
   printf '%s\n' \
+    -q \
     -o "UserKnownHostsFile=${KNOWN_HOSTS}" \
     -o "HostKeyAlias=${name}" \
     -o StrictHostKeyChecking=yes \
