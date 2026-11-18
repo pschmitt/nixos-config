@@ -17,7 +17,10 @@ let
     final.symlinkJoin {
       name = "${package.pname or package.name}-full-nix";
       paths = [ package ];
-      passthru.fullNixSignalStackPrograms = programs;
+      passthru = {
+        fullNixSignalStackPrograms = programs;
+      }
+      // final.lib.optionalAttrs (package ? version) { inherit (package) version; };
       nativeBuildInputs = [ final.makeWrapper ];
       postBuild = final.lib.concatMapStringsSep "\n" (program: ''
         wrapProgram $out/bin/${program} --prefix LD_PRELOAD : ${signalStack}/lib/stack.so
@@ -29,6 +32,21 @@ in
   bat = withSignalStack prev.bat [ "bat" ];
   fd = withSignalStack prev.fd [ "fd" ];
   ripgrep = withSignalStack prev.ripgrep [ "rg" ];
+  # The Pixel's seccomp pathname handler overflows nix-locate's Rust signal stack.
+  nix-index-unwrapped = withSignalStack prev.nix-index-unwrapped [
+    "nix-index"
+    "nix-locate"
+  ];
+  # A channel is not available in the managed guest. Keep comma on the
+  # pinned flake registry even when other tools export a NIX_PATH entry.
+  comma = prev.comma.overrideAttrs (old: {
+    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
+    postFixup = (old.postFixup or "") + ''
+      for program in comma ,; do
+        wrapProgram "$out/bin/$program" --unset NIX_PATH
+      done
+    '';
+  });
   rbw = withSignalStack prev.rbw [
     "rbw"
     "rbw-agent"
