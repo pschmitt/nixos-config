@@ -11,9 +11,13 @@ let
     hostname:
     inputs.home-manager.lib.homeManagerConfiguration {
       inherit pkgs;
-      extraSpecialArgs = { inherit inputs hostname; };
+      extraSpecialArgs = {
+        inherit inputs hostname;
+        guiEnable = false;
+      };
       modules = [
         ./home.nix
+        (inputs.nixos-config-private.outPath + "/modules/main-user.nix")
         (../../hosts + "/${hostname}/prompt.nix")
         ({ config, lib, ... }: {
           sops.defaultSopsFile = lib.mkDefault (

@@ -16,6 +16,10 @@
     ./sops.nix
     ../../modules/dotfiles.nix
     ../../modules/domains.nix
+    ../../modules/main-user.nix
+    ../../home-manager/host.nix
+    ../../home-manager/bitwarden.nix
+    ../../home-manager/devel/nix-tools.nix
     ../../home-manager/termux-options.nix
     ../../home-manager/cli/bat.nix
     ../../home-manager/cli/fd.nix
@@ -77,7 +81,6 @@
         openssh
         procps
         python3
-        rbw
         rsync
         shellcheck
         sops
@@ -120,6 +123,8 @@
   news.display = "silent";
   programs = {
     home-manager.enable = true;
+    rbw.package = lib.mkForce pkgs.rbw;
+    rbw.settings.pinentry.command = lib.mkForce (lib.getExe pkgs.pinentry-curses);
     neovim = {
       nightly.enable = false;
       extraPackages = [
