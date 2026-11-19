@@ -262,8 +262,8 @@ in
               zle accept-line
             }
             zle -N _termuxpp_triple_tap_command
-            bindkey -M emacs $'\e[24;7~' _termuxpp_triple_tap_command
-            bindkey -M viins $'\e[24;7~' _termuxpp_triple_tap_command
+            bindkey -M emacs $'\e[24;6~' _termuxpp_triple_tap_command
+            bindkey -M viins $'\e[24;6~' _termuxpp_triple_tap_command
           fi
         '')
       ];
