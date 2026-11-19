@@ -87,6 +87,12 @@ layers, failure causes and principles.
 - [ ] Update-transition tests: new APK on an old runtime and the reverse,
   with the real start scripts, on a worker.
 
+## CLI
+
+- [ ] `termuxpp-self-update`: update the TermuxPP APK from the CLI, like
+  Settings > About does (same release source and checks; Android shows the
+  install prompt, or Shizuku installs without one).
+
 ## Acceptance
 
 - The combined APK installs alongside the old companions. With the old

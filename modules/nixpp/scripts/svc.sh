@@ -9,6 +9,7 @@ Commands:
   start SERVICE        Start a service
   stop SERVICE         Stop a service
   restart SERVICE      Restart a service
+  show SERVICE         Show a service: state, PID, uptime, ports and settings
   logs SERVICE         Show recent service output
   supervise            Internal foreground runit supervisor
 EOF_USAGE
@@ -141,17 +142,49 @@ main() {
   generation=$(active_generation) || return 1
   mkdir -p "$services_dir" "$desired_dir" "$logs_dir" || return 1
 
-  # The TermuxPP app's services page writes per-service lists here; an entry
-  # (even an empty list, meaning no restriction) replaces the configured one.
-  local overrides=${NIXPP_SVC_SSID_OVERRIDES:-$runtime/allowed-ssids.json}
+  # Per-service settings from the TermuxPP app's services page. Each key is
+  # optional and replaces the configured value: enabled (start on boot),
+  # wifiRestricted (stop outside the allowed networks, restart when back)
+  # and allowedSsids.
+  local settings=${NIXPP_SVC_SETTINGS:-$runtime/settings.json}
+
+  # Prints the JSON value of KEY in SERVICE's settings, nothing when unset.
+  setting() {
+    [[ -r $settings ]] || return 0
+    jq -c --arg name "$1" --arg key "$2" \
+      '(.[$name] // {}) | if type == "object" and has($key) then .[$key] else empty end' \
+      "$settings" 2>/dev/null || true
+  }
+
+  service_enabled() {
+    local value
+    value=$(setting "$1" enabled)
+    [[ -n $value ]] || value=$(jq -c --arg name "$1" '.[$name].enabled' "$manifest")
+    [[ $value == true ]]
+  }
 
   # Prints the effective allow-list of SERVICE, one name per line.
   allowed_ssids() {
-    if [[ -r $overrides ]] && jq -e --arg name "$1" 'has($name)' "$overrides" >/dev/null 2>&1
+    local value
+    value=$(setting "$1" allowedSsids)
+    if [[ -n $value ]]
     then
-      jq -r --arg name "$1" '.[$name][]? | strings' "$overrides"
+      jq -r '.[]? | strings' <<<"$value"
     else
       jq -r --arg name "$1" '.[$name].allowedSsids // [] | .[]' "$manifest"
+    fi
+  }
+
+  # The restriction is on when the app says so, otherwise when the
+  # configuration lists networks. On with an empty list allows no network.
+  network_restricted() {
+    local value
+    value=$(setting "$1" wifiRestricted)
+    if [[ -n $value ]]
+    then
+      [[ $value == true ]]
+    else
+      jq -e --arg name "$1" '(.[$name].allowedSsids // []) | length > 0' "$manifest" >/dev/null
     fi
   }
 
@@ -170,10 +203,6 @@ main() {
       [[ $allowed == "$ssid" ]] && return 0
     done < <(allowed_ssids "$name")
     return 1
-  }
-
-  network_restricted() {
-    [[ -n $(allowed_ssids "$1") ]]
   }
 
   service_exists() {
@@ -208,6 +237,9 @@ main() {
       ln -s "$logs_dir/$name" "$temporary/log/main" || return 1
       mv -T -- "$temporary" "$destination" || return 1
     fi
+    # runsv starts a service only on `sv up` from svc, never by itself, so
+    # start on boot and stops by hand or for the network hold across runs.
+    : >"$destination/down" || return 1
   }
 
   wait_for_supervisor() {
@@ -324,21 +356,31 @@ main() {
     fi
     while IFS= read -r service
     do
-      if [[ $(jq -r --arg name "$service" '.[$name].enabled' "$manifest") == true &&
-        ! -e "$desired_dir/$service.stopped" ]]
+      if service_enabled "$service" && [[ ! -e "$desired_dir/$service.stopped" ]]
       then
         copy_service "$service" || return 1
       fi
     done < <(jq -r 'keys[]' "$manifest")
+    # Directories from older runs lack the down file; without it runsvdir
+    # would start every service, ignoring start on boot.
+    for directory in "$services_dir"/*
+    do
+      [[ -d $directory ]] && : >"$directory/down"
+    done
     exec 9>&-
 
     runsvdir -P "$services_dir" 8>&- &
     runsvdir_pid=$!
     while IFS= read -r service
     do
-      if [[ $(jq -r --arg name "$service" '.[$name].enabled' "$manifest") == true &&
-        ! -e "$desired_dir/$service.stopped" ]] && network_allows "$service"
+      if service_enabled "$service" && [[ ! -e "$desired_dir/$service.stopped" ]]
       then
+        if ! network_allows "$service"
+        then
+          # Starts once the network allows it.
+          : >"$desired_dir/$service.network-down"
+          continue
+        fi
         start_service "$service" || {
           shutdown_supervisors "$runsvdir_pid"
           return 1
@@ -346,14 +388,8 @@ main() {
       fi
     done < <(jq -r 'keys[]' "$manifest")
 
-    local enabled_services=()
-    while IFS= read -r service
-    do
-      if [[ $(jq -r --arg name "$service" '.[$name].enabled' "$manifest") == true ]]
-      then
-        enabled_services+=("$service")
-      fi
-    done < <(jq -r 'keys[]' "$manifest")
+    local all_services=()
+    mapfile -t all_services < <(jq -r 'keys[]' "$manifest")
 
     while kill -0 "$runsvdir_pid" 2>/dev/null
     do
@@ -363,27 +399,33 @@ main() {
       then
         break
       fi
-      # Follow Wi-Fi changes; the allow-lists may change at any time (the
-      # app's services page). A manual `svc stop` (.stopped) always wins; a
-      # network stop leaves .network-down, so only those restart once allowed.
-      if ((${#enabled_services[@]}))
+      # Follow Wi-Fi changes; the settings may change at any time (the app's
+      # services page). Stop a running restricted service outside its
+      # networks and mark it .network-down; restart only those once allowed.
+      # Services that are off or were stopped by hand (.stopped) stay off.
+      if ((${#all_services[@]}))
       then
         exec 9>"$lock_file"
         flock 9
-        for service in "${enabled_services[@]}"
+        for service in "${all_services[@]}"
         do
-          [[ -e "$desired_dir/$service.stopped" ]] && continue
+          if [[ -e "$desired_dir/$service.stopped" ]]
+          then
+            rm -f -- "${desired_dir:?}/${service:?}.network-down"
+            continue
+          fi
           if network_allows "$service"
           then
-            if network_restricted "$service" || [[ -e "$desired_dir/$service.network-down" ]]
+            if [[ -e "$desired_dir/$service.network-down" ]]
             then
               [[ $(service_status "$service") == running ]] || start_service "$service" || true
+              rm -f -- "${desired_dir:?}/${service:?}.network-down"
             fi
-            rm -f -- "$desired_dir/$service.network-down"
           elif [[ $(service_status "$service") != down ]]
           then
-            stop_service "$service" || true
+            # Mark first: readers never see it stopped but unmarked.
             : >"$desired_dir/$service.network-down"
+            stop_service "$service" || true
           fi
         done
         exec 9>&-
@@ -400,6 +442,126 @@ main() {
     return 75
   }
 
+  # Prints "pid seconds" of a running service, nothing otherwise.
+  service_process() {
+    local status
+    supervisor_present "$services_dir/$1" || return 0
+    status=$(sv status "$services_dir/$1" 2>/dev/null) || return 0
+    if [[ $status =~ ^run:\ [^:]+:\ \(pid\ ([0-9]+)\)\ ([0-9]+)s ]]
+    then
+      printf '%s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+    fi
+  }
+
+  # Prints "protocol address:port" for each listening socket of PID and its
+  # children. Android may withhold /proc/net; then nothing is printed.
+  listening_ports() {
+    local pid=$1 process fd target inode
+    local -A inodes=()
+    for process in "$pid" $(pgrep -P "$pid" 2>/dev/null)
+    do
+      for fd in /proc/"$process"/fd/*
+      do
+        target=$(readlink "$fd" 2>/dev/null) || continue
+        [[ $target =~ ^socket:\[([0-9]+)\]$ ]] && inodes[${BASH_REMATCH[1]}]=1
+      done
+    done
+    ((${#inodes[@]})) || return 0
+    local protocol table
+    local -a line
+    for protocol in tcp tcp6 udp udp6
+    do
+      table=/proc/net/$protocol
+      [[ -r $table ]] || continue
+      while read -r -a line
+      do
+        inode=${line[9]:-}
+        [[ -n $inode && -n ${inodes[$inode]:-} ]] || continue
+        # TCP sockets count only while listening (state 0A).
+        [[ $protocol == udp* || ${line[3]} == 0A ]] || continue
+        local address=${line[1]%:*} port=$((16#${line[1]#*:}))
+        if [[ $address =~ ^0+$ ]]
+        then
+          address='*'
+        elif ((${#address} == 8))
+        then
+          address=$((16#${address:6:2})).$((16#${address:4:2})).$((16#${address:2:2})).$((16#${address:0:2}))
+        fi
+        printf '%s %s:%s\n' "$protocol" "$address" "$port"
+      done < <(tail -n +2 "$table")
+    done | sort -u
+  }
+
+  # One service as JSON: state, process and the effective settings, with the
+  # app's settings and the configured values for comparison.
+  service_json() {
+    local name=$1 status pid='' uptime='' network=null ssids ports='[]' command=''
+    status=$(service_status "$name")
+    read -r pid uptime < <(service_process "$name") || true
+    if [[ -n $pid ]]
+    then
+      ports=$(listening_ports "$pid" | jq -R . | jq -sc .)
+      command=$(tr '\0' ' ' 2>/dev/null <"/proc/$pid/cmdline" || true)
+    fi
+    if network_restricted "$name"
+    then
+      network='"blocked"'
+      network_allows "$name" && network='"allowed"'
+    fi
+    ssids=$(allowed_ssids "$name" | jq -R . | jq -sc .)
+    local enabled=false restricted=false waiting=false stopped=false own='{}'
+    service_enabled "$name" && enabled=true
+    network_restricted "$name" && restricted=true
+    [[ -e "$desired_dir/$name.network-down" ]] && waiting=true
+    [[ -e "$desired_dir/$name.stopped" ]] && stopped=true
+    if [[ -r $settings ]]
+    then
+      own=$(jq -c --arg name "$name" '.[$name] // {}' "$settings" 2>/dev/null) || own='{}'
+    fi
+    jq -cn --arg name "$name" --arg status "$status" \
+      --arg pid "$pid" --arg uptime "$uptime" --arg command "${command% }" \
+      --argjson ports "$ports" --argjson enabled "$enabled" --argjson restricted "$restricted" \
+      --argjson ssids "$ssids" --argjson network "$network" --argjson settings "$own" \
+      --argjson configured "$(jq -c --arg name "$name" '.[$name] | {enabled, allowedSsids: (.allowedSsids // [])}' "$manifest")" \
+      --argjson waiting "$waiting" --argjson stopped "$stopped" \
+      '{name: $name, status: $status, enabled: $enabled, wifiRestricted: $restricted,
+        allowedSsids: $ssids, waitingForNetwork: $waiting, stoppedByUser: $stopped,
+        settings: $settings, configured: $configured,
+        ssidsOverridden: ($settings | has("allowedSsids"))}
+       + (if $network == null then {} else {network: $network} end)
+       + (if $pid == "" then {} else {pid: ($pid | tonumber), uptimeSeconds: ($uptime | tonumber),
+          command: $command, listening: $ports} end)'
+  }
+
+  show_service() {
+    local json
+    json=$(service_json "$1") || return 1
+    if ((json_output))
+    then
+      printf '%s\n' "$json"
+      return
+    fi
+    jq -r --arg log "$logs_dir/$1/current" '
+      def origin(key): if .settings | has(key) then " (set in the app)" else " (configuration)" end;
+      def duration: if . >= 86400 then "\(. / 86400 | floor)d \(. % 86400 / 3600 | floor)h"
+        elif . >= 3600 then "\(. / 3600 | floor)h \(. % 3600 / 60 | floor)m"
+        elif . >= 60 then "\(. / 60 | floor)m \(. % 60)s" else "\(.)s" end;
+      "\(.name)",
+      "  status:        \(.status)"
+        + (if .pid then " (pid \(.pid), up \(.uptimeSeconds | duration))" else "" end)
+        + (if .stoppedByUser then ", stopped by hand"
+           elif .waitingForNetwork then ", waiting for an allowed Wi-Fi network" else "" end),
+      "  start on boot: \(if .enabled then "yes" else "no" end)" + origin("enabled"),
+      "  wifi:          " + (if .wifiRestricted
+          then "only on \(if (.allowedSsids | length) == 0 then "(no network)" else .allowedSsids | join(", ") end)"
+            + (if .network == "allowed" then ", allowed here"
+               elif .network == "blocked" then ", not allowed here" else "" end)
+          else "any network" end) + origin("wifiRestricted"),
+      (if (.listening // []) | length > 0 then "  listening:     \(.listening | join(", "))" else empty end),
+      (if .command then "  command:       \(.command)" else empty end),
+      "  log:           \($log)"' <<<"$json"
+  }
+
   case $command in
     list)
       if [[ $# -ne 0 ]]
@@ -412,23 +574,7 @@ main() {
         local result='[]'
         while IFS= read -r service_name
         do
-          local enabled status network=null
-          enabled=$(jq -r --arg name "$service_name" '.[$name].enabled' "$manifest")
-          status=$(service_status "$service_name")
-          if network_restricted "$service_name"
-          then
-            network='"blocked"'
-            network_allows "$service_name" && network='"allowed"'
-          fi
-          local ssids overridden=false
-          ssids=$(allowed_ssids "$service_name" | jq -R . | jq -sc .)
-          if [[ -r $overrides ]] && jq -e --arg name "$service_name" 'has($name)' "$overrides" >/dev/null 2>&1
-          then
-            overridden=true
-          fi
-          result=$(jq -cn --argjson items "$result" --arg name "$service_name" --arg status "$status" --argjson enabled "$enabled" \
-            --argjson network "$network" --argjson ssids "$ssids" --argjson overridden "$overridden" \
-            '$items + [{name:$name,status:$status,enabled:$enabled,allowedSsids:$ssids,ssidsOverridden:$overridden} + (if $network == null then {} else {network:$network} end)]')
+          result=$(jq -cn --argjson items "$result" --argjson item "$(service_json "$service_name")" '$items + [$item]')
         done < <(jq -r 'keys[]' "$manifest")
         result=$(jq -cn --argjson items "$result" --arg status "$(adb_shell_status)" \
           '$items + [{name:"adb-shell",status:$status,enabled:true,external:true}]')
@@ -437,16 +583,19 @@ main() {
         while IFS= read -r service_name
         do
           local note=
-          if network_restricted "$service_name" && ! network_allows "$service_name"
+          if [[ -e "$desired_dir/$service_name.network-down" ]]
           then
             note=' (waiting for an allowed Wi-Fi network)'
+          elif network_restricted "$service_name" && ! network_allows "$service_name"
+          then
+            note=' (not on an allowed Wi-Fi network)'
           fi
           printf '%-24s %s%s\n' "$service_name" "$(service_status "$service_name")" "$note"
         done < <(jq -r 'keys[]' "$manifest")
         printf '%-24s %s\n' adb-shell "$(adb_shell_status) (managed by the TermuxPP app)"
       fi
       ;;
-    start|stop|restart|logs)
+    start|stop|restart|logs|show)
       if [[ $# -ne 1 ]]
       then
         usage >&2
@@ -454,6 +603,11 @@ main() {
       fi
       service_name=$1
       service_exists "$service_name" || return 1
+      if [[ $command == show ]]
+      then
+        show_service "$service_name"
+        return
+      fi
       if [[ $command == logs ]]
       then
         local log_file=$logs_dir/$service_name/current
@@ -480,6 +634,7 @@ main() {
         stop)
           stop_service "$service_name" || return 1
           : >"$desired_dir/$service_name.stopped"
+          rm -f -- "${desired_dir:?}/${service_name:?}.network-down"
           ;;
         restart)
           stop_service "$service_name" || return 1

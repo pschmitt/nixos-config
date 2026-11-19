@@ -119,22 +119,31 @@ svc start restricted
 expect restricted running "manual start on the allowed Wi-Fi"
 expect free running "unrestricted service is unaffected throughout"
 
-# The app's services page overrides the configured lists at run time.
-overrides=$work/state/allowed-ssids.json
+# svc show reports the process and where each setting comes from.
+svc show free >"$work/show.txt"
+grep -q 'status:        running (pid [0-9]*, up ' "$work/show.txt" || fail "show lacks the process: $(cat "$work/show.txt")"
+grep -q 'start on boot: yes (configuration)' "$work/show.txt" || fail "show lacks start on boot"
+grep -q 'wifi:          any network (configuration)' "$work/show.txt" || fail "show lacks the Wi-Fi setting"
+[[ $(svc --json show restricted | jq -c '[.wifiRestricted, .allowedSsids, .network, (.pid > 0)]') == '[true,["home"],"allowed",true]' ]] ||
+  fail "show --json is wrong: $(svc --json show restricted)"
+
+# The app's services page changes the settings at run time.
+settings=$work/state/settings.json
 network other
-expect restricted down "configured list applies before any override"
-printf '{"free":["home"]}\n' >"$overrides"
-expect free down "an override restricts an unrestricted service"
+expect restricted down "the configured restriction applies before any app setting"
+printf '{"free":{"wifiRestricted":true,"allowedSsids":["home"]}}\n' >"$settings"
+expect free down "the app restricts an unrestricted service"
 svc --json list >"$work/list.json"
-[[ $(jq -c '.[] | select(.name == "free") | [.allowedSsids, .ssidsOverridden, .network]' "$work/list.json") == '[["home"],true,"blocked"]' ]] ||
-  fail "list does not show the override: $(cat "$work/list.json")"
-printf '{}\n' >"$overrides"
-expect free running "removing the override restores the network-stopped service"
-printf '{"restricted":[]}\n' >"$overrides"
-expect restricted running "an empty override lifts the configured restriction"
-rm -f "$overrides"
-expect restricted down "the configured list applies again"
+[[ $(jq -c '.[] | select(.name == "free") | [.allowedSsids, .ssidsOverridden, .network, .waitingForNetwork]' "$work/list.json") == '[["home"],true,"blocked",true]' ]] ||
+  fail "list does not show the app setting: $(cat "$work/list.json")"
+printf '{"free":{"wifiRestricted":false,"allowedSsids":["home"]}}\n' >"$settings"
+expect free running "turning the restriction off keeps the list and restarts the service"
+printf '{"restricted":{"wifiRestricted":false}}\n' >"$settings"
+expect restricted running "the app lifts the configured restriction"
+rm -f "$settings"
+expect restricted down "the configured restriction applies again"
 network home
+expect restricted running "back on the allowed network"
 
 # A tree whose native daemon dies retires instead of running unowned.
 kill -TERM -- "-$supervisor_pid" 2>/dev/null || true
@@ -156,4 +165,18 @@ kill -0 "$supervisor_pid" 2>/dev/null && fail "the supervisor outlived its owner
 expect free down "the services stop with the retired supervisor"
 supervisor_pid=
 
-printf 'ok: svc Wi-Fi gating and owner retirement\n'
+# Start on boot is separate from the Wi-Fi restriction.
+printf '{"free":{"enabled":false}}\n' >"$work/state/settings.json"
+setsid bash "$svc_script" supervise >>"$work/supervise.log" 2>&1 &
+supervisor_pid=$!
+expect restricted running "an enabled service starts on boot"
+sleep 2
+[[ $(status_of free) == down ]] || fail "a service with start on boot off was started"
+svc start free
+expect free running "it still starts by hand"
+network other
+expect restricted down "the restriction applies to services started on boot"
+network home
+expect restricted running "and restarts them when back"
+
+printf 'ok: svc Wi-Fi gating, settings, show and owner retirement\n'

@@ -113,10 +113,14 @@ The guest supervisor starts the service on an allowed network and stops it
 elsewhere. With no Wi-Fi, a withheld name or state older than five minutes it
 stays down, and `svc list` shows that it is waiting for an allowed network.
 `svc start` refuses to start it elsewhere; a manual `svc stop` is kept.
-TermuxPP's settings (Nix guest services, "Wi-Fi networks…") change a
-service's list at run time through `service-state/allowed-ssids.json`: an
-entry, even an empty list (any network), replaces the configured one, and
-"Use configuration" removes it. `svc --json list` reports the effective list. The ADB
+TermuxPP's settings (Nix guest services) change a service at run time
+through `service-state/settings.json`, whose keys replace the configured
+values: `enabled` (start on boot), `wifiRestricted` (stop outside the
+allowed networks and restart it once back; services that are off or were
+stopped by hand stay off) and `allowedSsids`. Start on boot and the Wi-Fi
+restriction are independent. `svc show SERVICE` (or `svc --json show`) lists
+the state, PID, uptime, listening ports, command and where each setting
+comes from; `svc --json list` reports the same for every service. The ADB
 shell listener belongs to the app and uses `fullNix.adbShell.allowedSsids`
 instead. Test the gating with real runit:
 

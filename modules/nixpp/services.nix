@@ -91,6 +91,7 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.jq
+      pkgs.procps
       pkgs.runit
       pkgs.util-linux
     ];
