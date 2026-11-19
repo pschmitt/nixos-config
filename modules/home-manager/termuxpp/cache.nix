@@ -41,22 +41,27 @@ in
         paths = map (output: pkgs.nix.${output}) (pkgs.nix.meta.outputsToInstall or [ "out" ]);
         nativeBuildInputs = [ pkgs.makeWrapper ];
         # Nix is a multicall binary that dispatches on basename(argv[0]).
-        # wrapProgram relies on `exec -a`, which PRoot drops, so nix-build
-        # would run as `nix` in the guest. Exec a symlink that carries the
-        # command name instead.
+        # wrapProgram relies on `exec -a`, which the guest launcher's re-exec
+        # drops, so nix-build would run as `nix`. Exec a symlink that carries
+        # the command name instead. Link every program before wrapping any:
+        # the nix-* links resolve through bin/nix, which becomes a wrapper.
         postBuild = ''
           multicall="$out/libexec/nixpp-nix"
           mkdir -p "$multicall"
+          programs=()
           for program in "$out"/bin/nix "$out"/bin/nix-*
           do
             if [[ -x "$program" ]]
             then
-              name=''${program##*/}
-              ln -s "$(readlink -f "$program")" "$multicall/$name"
-              rm "$program"
-              makeWrapper "$multicall/$name" "$program" \
-                --set-default AWS_SHARED_CREDENTIALS_FILE ${lib.escapeShellArg cache.credentials_file}
+              ln -s "$(readlink -f "$program")" "$multicall/''${program##*/}"
+              programs+=("$program")
             fi
+          done
+          for program in "''${programs[@]}"
+          do
+            rm "$program"
+            makeWrapper "$multicall/''${program##*/}" "$program" \
+              --set-default AWS_SHARED_CREDENTIALS_FILE ${lib.escapeShellArg cache.credentials_file}
           done
         '';
       }
