@@ -136,24 +136,6 @@ in
     fi
   '';
   dotfiles.zsh.nixShell.default = true;
-  programs.zsh.initContent = lib.mkAfter ''
-    if [[ -z ''${SSH_CONNECTION:-} ]]
-    then
-      function _termuxpp_triple_tap_command() {
-        [[ -z "$BUFFER" ]] || return 0
-        local properties="${config.xdg.configHome}/termuxpp/termuxpp.properties"
-        [[ -r "$properties" ]] || return 0
-        local command
-        command=$(${readTripleTapCommand} "$properties") || return 0
-        [[ -n "$command" ]] || return 0
-        BUFFER=$command
-        zle accept-line
-      }
-      zle -N _termuxpp_triple_tap_command
-      bindkey -M emacs $'\e[24;7~' _termuxpp_triple_tap_command
-      bindkey -M viins $'\e[24;7~' _termuxpp_triple_tap_command
-    fi
-  '';
   xdg = {
     enable = true;
     configFile."zsh/completions/_nixpp".source = "${nixpp}/share/zsh/site-functions/_nixpp";
@@ -258,6 +240,24 @@ in
           if [[ ! -r "$HOME/.config/zsh/p10k.zsh" ]]
           then
             PROMPT='%F{${config.dotfiles.promptColor}}${hostname}%f %~ %# '
+          fi
+        '')
+        (lib.mkOrder 1500 ''
+          if [[ -z ''${SSH_CONNECTION:-} ]]
+          then
+            function _termuxpp_triple_tap_command() {
+              [[ -z "$BUFFER" ]] || return 0
+              local properties="${config.xdg.configHome}/termuxpp/termuxpp.properties"
+              [[ -r "$properties" ]] || return 0
+              local command
+              command=$(${readTripleTapCommand} "$properties") || return 0
+              [[ -n "$command" ]] || return 0
+              BUFFER=$command
+              zle accept-line
+            }
+            zle -N _termuxpp_triple_tap_command
+            bindkey -M emacs $'\e[24;7~' _termuxpp_triple_tap_command
+            bindkey -M viins $'\e[24;7~' _termuxpp_triple_tap_command
           fi
         '')
       ];
