@@ -128,8 +128,9 @@ Wi-Fi names identify places, so keep them in SOPS: `allowedSsidsFile` (and
 `fullNix.adbShell.allowedSsidsFile`) read one name per line from a secret at
 run time instead, so the names never reach the Nix store. An unreadable file
 allows no network for a service; the ADB property is then left unchanged. A
-host sets the system-layer option in `hosts/<host>/system.nix`, for example
-p11 restricts sshd and the ADB shell to the `wifi/home-ssids` secret. Test the
+host sets the system-layer option in `hosts/<host>/system.nix` and the Home
+Manager one in `hosts/<host>/home.nix`; p11 restricts sshd and the ADB shell to
+the `wifi/home-ssids` secret. Test the
 gating with real runit:
 
 ```sh

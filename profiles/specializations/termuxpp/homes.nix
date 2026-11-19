@@ -21,6 +21,14 @@ let
         (inputs.nixos-config-private.outPath + "/hm/termuxpp-cache.nix")
         (inputs.nixos-config-private.outPath + "/modules/main-user.nix")
         (../../../hosts + "/${hostname}/prompt.nix")
+        # Host-local guest Home Manager settings, when present (hosts/<host>/
+        # default.nix is the native Termux bundle, not this guest home).
+        (
+          let
+            home = ../../../hosts + "/${hostname}/home.nix";
+          in
+          if builtins.pathExists home then home else { }
+        )
         ({ config, lib, ... }: {
           sops.defaultSopsFile = lib.mkDefault (
             inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml"
