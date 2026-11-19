@@ -18,6 +18,13 @@ builtins.mapAttrs (
           home = home.config.home.homeDirectory;
         };
         system.stateVersion = "1";
+        # The Android NDK only runs on x86_64 Linux; the result is still the
+        # Android/AArch64 executable.
+        system.nativeNixpp = import ../../../pkgs/nixpp/native.nix {
+          inherit inputs;
+          pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
+          inherit (home.pkgs) lib;
+        };
         environment = {
           systemPackages = with home.pkgs; [
             bashInteractive

@@ -112,7 +112,24 @@ impl Server {
     /// Only a SIGINT/SIGTERM that reaches a running command ends the loop with
     /// an error; every other failure is reported to the client or dropped.
     pub fn run(&self, runner: &mut dyn Runner, stop: &AtomicBool) -> Result<()> {
+        // A generation may ship a newer native nixpp; install it and return,
+        // so the daemon restarts on it through the start script.
+        let current = crate::provision::running_executable().ok();
+        let prefix = std::env::var_os("PREFIX").map(PathBuf::from);
+        let mut checked = None;
         while !stop.load(Ordering::SeqCst) && !crate::runtime_apk::replaced(&self.runtime) {
+            if let Some(current) = &current
+                && let Some(source) =
+                    crate::native_update::pending(&self.runtime, current, &mut checked)
+            {
+                match crate::native_update::install(&self.runtime, &source, prefix.as_deref()) {
+                    Ok(()) => {
+                        eprintln!("nixpp: installed the native nixpp of the selected generation; restarting");
+                        return Ok(());
+                    }
+                    Err(error) => eprintln!("nixpp: could not install the native nixpp: {error:#}"),
+                }
+            }
             if !self.wait_readable() {
                 continue;
             }
@@ -322,6 +339,13 @@ pub fn serve(runtime: &Path, socket: &Path, runner: &mut dyn Runner) -> Result<S
         return Ok(Served::AlreadyRunning);
     };
     let _handlers = StopHandlers::install()?;
+    // Keep the start scripts in step with this executable: an older nixpp
+    // (a login from the bootstrap's copy) may have written its own.
+    if cfg!(target_os = "android")
+        && let Err(error) = crate::bootstrap::install_scripts(&server.runtime)
+    {
+        eprintln!("nixpp: could not install the start scripts: {error:#}");
+    }
     if cfg!(target_os = "android")
         && let Err(error) = crate::outer_remote::start(&server.runtime)
     {

@@ -122,6 +122,17 @@ in
         readOnly = true;
         internal = true;
       };
+      nativeNixpp = mkOption {
+        type = types.nullOr types.package;
+        default = null;
+        description = ''
+          The native (Android/Bionic) nixpp shipped with this generation as
+          native/nixpp. After switching to the generation the native daemon
+          installs it when it differs from its own executable and restarts,
+          so native changes reach existing installs with the guest system
+          instead of only with a fresh bootstrap.
+        '';
+      };
     };
   };
 
@@ -141,6 +152,10 @@ in
       ln -s ${systemPath} "$out/sw"
       ln -s ${etc}/etc "$out/etc"
       ln -s ${manifest} "$out/manifest.json"
+      ${lib.optionalString (cfg.system.nativeNixpp != null) ''
+        mkdir -p "$out/native"
+        ln -s ${lib.getExe cfg.system.nativeNixpp} "$out/native/nixpp"
+      ''}
       ${lib.optionalString (secretsActivation != null) ''
         mkdir -p "$out/bin"
         ln -s ${secretsActivation}/bin/activate-secrets "$out/bin/activate-secrets"

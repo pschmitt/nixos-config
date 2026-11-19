@@ -397,7 +397,7 @@ pub fn stage_executable(directory: &Path) -> Result<()> {
     stage_executable_from(directory, &current)
 }
 
-fn stage_executable_from(directory: &Path, source: &Path) -> Result<()> {
+pub(crate) fn stage_executable_from(directory: &Path, source: &Path) -> Result<()> {
     let source = fs::canonicalize(source)
         .with_context(|| format!("failed to resolve {}", source.display()))?;
     let directory = resolve_directory(directory)?;
@@ -728,7 +728,7 @@ fn resolve_directory(directory: &Path) -> Result<PathBuf> {
 /// the target, is synced, and renamed over it. A link or file already at the
 /// target is replaced, never followed or written through. A failure removes
 /// the temporary file and leaves the target as it was.
-fn replace_with(
+pub(crate) fn replace_with(
     directory: &Path,
     name: &str,
     mode: u32,

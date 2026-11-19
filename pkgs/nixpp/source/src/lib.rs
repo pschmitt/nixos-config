@@ -16,6 +16,7 @@ mod enroll;
 pub mod error;
 pub mod fsutil;
 mod gc;
+pub(crate) mod native_update;
 pub mod guest;
 mod outer;
 mod outer_remote;
