@@ -2,7 +2,7 @@
 
 ## Android app
 
-- [ ] Fix RBW fingerprint unlock on the managed Android guests. Coordinate
+- [x] Fix RBW fingerprint unlock on the managed Android guests. Coordinate
   with the RBW enrollment work and distinguish a blocked biometric prompt
   from a Keystore signing error after authentication. Use a disposable
   authentication-bound signing key to verify the TermuxPP API path on both
@@ -12,8 +12,9 @@
   authentication returns an empty signature within 0.3 s instead of
   hanging). Hangs after the master password came from the frozen
   `:background` process owning the am socket (termuxpp a319a9e0); rbw now
-  times out every Keystore call (rbw 62aa5ee). Remaining: enroll and unlock
-  with a real fingerprint on p11.
+  times out every Keystore call (rbw 62aa5ee). Enrollment with a real
+  fingerprint succeeded on p11 (hardware-backed, authentication-bound key,
+  300 s window).
 
 - [x] Merge TermuxPP:API into TermuxPP. Review droid-nix for guest integration
   patterns. Verify a real API call from the app terminal and from an SSH session
