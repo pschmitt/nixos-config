@@ -23,8 +23,9 @@ Commands:
                 storage, install, alarms, usage, settings, battery,
                 processes)
 
-With a working Shizuku shell (rish), grant needs no confirmation. Without
-it, or with --no-shizuku, Android asks: grant opens the permission dialogs
+grant first asks Shizuku for permission (Shizuku shows its dialog). Once
+TermuxPP may use Shizuku, rish grants the rest without any confirmation.
+Without Shizuku, or with --no-shizuku, Android asks: grant opens the dialogs
 and then each special access page in turn, and status reads what the
 TermuxPP app reports.
 EOF_USAGE
@@ -105,8 +106,11 @@ collect_shizuku() {
     section && /permissions:|^ *[A-Z][A-Za-z ]+:/ { section = 0 }
     section && $1 ~ /\./ { name = $1; sub(/:.*/, "", name); print name }
   ' <<<"$dump")
-  awk '
-    /^ *runtime permissions:/ { section = 1; next }
+  # dumpsys lists runtime grants per Android user (a work profile adds one);
+  # only the app's own user counts.
+  awk -v user="${TERMUX__USER_ID:-0}" '
+    /^ *User [0-9]+:/ { current = $2; sub(/:$/, "", current) }
+    /^ *runtime permissions:/ { section = (current == "" || current == user); next }
     section && !/granted=/ { section = 0 }
     section && /granted=/ {
       name = $1; sub(/:$/, "", name)
@@ -124,7 +128,7 @@ collect_shizuku() {
       state=missing
       grep -q ",$PACKAGE," <<<"$whitelist" && state=granted
     else
-      mode=$(shizuku "appops get $PACKAGE $appop" | head -n 1) || mode=
+      mode=$(shizuku "appops get --user ${TERMUX__USER_ID:-0} $PACKAGE $appop" | head -n 1) || mode=
       state=missing
       [[ $mode == *": allow"* ]] && state=granted
     fi
@@ -142,7 +146,7 @@ grant_shizuku() {
   local name=$1 kind=$2 detail=$3 appop
   if [[ $kind == runtime ]]
   then
-    shizuku "pm grant $PACKAGE $detail" >/dev/null
+    shizuku "pm grant --user ${TERMUX__USER_ID:-0} $PACKAGE $detail" >/dev/null
   elif [[ $name == processes ]]
   then
     shizuku "settings put global $PHANTOM_SETTING false" >/dev/null
@@ -152,12 +156,70 @@ grant_shizuku() {
     then
       shizuku "dumpsys deviceidle whitelist +$PACKAGE" >/dev/null
     else
-      shizuku "appops set $PACKAGE $appop allow" >/dev/null
+      shizuku "appops set --user ${TERMUX__USER_ID:-0} $PACKAGE $appop allow" >/dev/null
     fi
   fi
 }
 
 # --- The app's own report, without Shizuku -----------------------------------
+
+# --- Shizuku first -----------------------------------------------------------
+# grant asks for Shizuku's permission before anything else: once TermuxPP may
+# use Shizuku, rish (which runs as TermuxPP) grants the rest without prompts.
+
+SHIZUKU_RECEIVER=$PACKAGE/com.termux.app.update.ShizukuCommandReceiver
+
+# Run a Shizuku command in the app (request, open, refresh) and print the
+# Shizuku state it then reports, empty for an app without that report.
+app_shizuku() {
+  local since
+  since=$(date +%s)
+  termux-am broadcast --user "${TERMUX__USER_ID:-0}" -n "$SHIZUKU_RECEIVER" \
+    --es command "$1" >/dev/null 2>&1 || return 0
+  local _
+  for _ in $(seq 1 20)
+  do
+    if [[ $(jq -r '.updated // 0' "$STATE_FILE" 2>/dev/null) -ge $since ]]
+    then
+      jq -r '.shizuku // empty' "$STATE_FILE"
+      return 0
+    fi
+    sleep 0.25
+  done
+}
+
+shizuku_hint() {
+  case $1 in
+    UNAVAILABLE) printf 'Shizuku is not installed (https://shizuku.rikka.app); asking Android for each permission instead.\n' ;;
+    NOT_RUNNING) printf 'Shizuku is installed but not running: start it in the Shizuku app. Asking Android instead.\n' ;;
+    PERMISSION_DENIED) printf 'TermuxPP is denied in Shizuku (allow it under Authorized applications). Asking Android instead.\n' ;;
+    UNSUPPORTED) printf 'This Shizuku is too old; update it. Asking Android instead.\n' ;;
+    PERMISSION_NEEDED) printf 'Shizuku was not allowed in time. Asking Android instead.\n' ;;
+  esac
+}
+
+# Succeeds when TermuxPP may use Shizuku, after asking for it when needed.
+request_shizuku() {
+  local state
+  state=$(app_shizuku refresh)
+  # An app without the Shizuku report: use rish when it already works.
+  [[ -z $state ]] && return 0
+  if [[ $state == PERMISSION_NEEDED ]]
+  then
+    printf 'Allow TermuxPP in the Shizuku dialog on the phone...\n'
+    state=$(app_shizuku request)
+    local _
+    for _ in $(seq 1 60)
+    do
+      [[ $state == PERMISSION_NEEDED ]] || break
+      sleep 1
+      state=$(jq -r '.shizuku // empty' "$STATE_FILE")
+    done
+  fi
+  [[ $state == READY ]] && return 0
+  shizuku_hint "$state" >&2
+  return 1
+}
 
 state_age() {
   local updated
@@ -297,12 +359,21 @@ main() {
   fi
 
   local via=app
-  ((use_shizuku)) && shizuku_works && via=shizuku
+  if ((use_shizuku))
+  then
+    if [[ $command == grant ]]
+    then
+      request_shizuku && shizuku_works && via=shizuku
+    else
+      shizuku_works && via=shizuku
+    fi
+  fi
 
   local state
   state=$(collect_"$via") || return 1
   if [[ $command == status ]]
   then
+    printf 'Shizuku: %s\n' "$(app_shizuku refresh | tr '[:upper:]_' '[:lower:] ' | sed 's/^$/unknown (update the app)/')"
     [[ $via == app ]] && printf 'As reported by the TermuxPP app (Shizuku unavailable):\n'
     print_status "$state"
     return

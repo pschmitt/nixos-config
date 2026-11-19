@@ -277,10 +277,15 @@ grants on separate pages: overlay, all-files, install apps, exact alarms,
 usage access, system settings, unrestricted battery, and `processes`, the
 child process limit ("Disable child process restrictions") that otherwise
 kills the nixpp controller. `termuxpp-setup-permissions grant [NAME...]`
-grants what is missing. With a working Shizuku shell this needs no
-confirmation; without it, Android shows its permission prompts and then each
-settings page in turn, and `status` reads what the app reports in
-`/run/nixpp-runtime/permissions.json`.
+grants what is missing. It asks Shizuku first: when Shizuku runs and TermuxPP
+is not yet authorized, Shizuku shows its dialog; once allowed, `rish` grants
+everything else without any confirmation. When Shizuku is missing, not
+running or denied, the script says so and Android shows its permission
+prompts and then each settings page in turn instead. `status` shows the
+Shizuku state first and reads what the app reports in
+`/run/nixpp-runtime/permissions.json` (a `shizuku` field, and the grants)
+when `rish` is unavailable. Only the app's own Android user counts, so a work
+profile does not show up twice.
 
 ### Updating the app
 
