@@ -76,10 +76,12 @@ by having fewer moving parts (no native controller, one in-app socket, no
 | --- | --- |
 | Controller watchdog in `TermuxService` (restart when `nixpp.sock` stops answering, backoff) | Done (termux-app 40597fae) |
 | Child process limit in `termuxpp-setup-permissions`; disabled on the phones | Done |
-| Stable redirect library: the app installs `files/lib/libtermux-pkg-redirect.so` atomically; shells, start scripts, `nixpp native-shell` and the ADB shell use it; the `apk-library` marker points at it, so APK updates no longer restart nixpp processes | In progress |
-| Redirect library maps `files/apps/com.termux` to the fork, fixing stock `termux-am-socket` | In progress |
+| Stable redirect library: the app installs `files/lib/libtermux-pkg-redirect.so` atomically; shells, start scripts, `nixpp native-shell` and the ADB shell use it; the `apk-library` marker points at it, so APK updates no longer restart nixpp processes; nixpp compares it by file identity | Done (termux-app f1db9791, nixos-config c1af25c0, 8e46ac56) |
+| Redirect library maps `files/apps/com.termux` to the fork, fixing stock `termux-am-socket` | Done (termux-app f1db9791) |
 | Native sshd off (runit `down` file from guest activation) | Done (2d128ebd) |
 | One sshd: Home Assistant's Tasker launcher (`set-managed-sshd`) drives the guest's runit sshd through `svc` instead of starting its own | Done |
-| One app-owned native supervisor: the controller, the guest service manager and the android bridge run as children of one process the app watches, instead of separately started processes | Planned |
+| One app-owned native daemon (`nixpp daemon`): controller, outer socket, service supervision and android bridge as threads of one process the app starts and the watchdog checks | In progress |
 | Single login path for terminal, SSH, ADB shell and Tasker | Planned |
 | No long-running `run-as` processes; `run-as` only for one-shot recovery | Planned |
+| One guest-to-Android channel: an in-app socket (am protocol plus API calls, authorized by peer UID) instead of broadcasts, the python bridge and `outer.sock` | Planned |
+| Update-transition tests (new APK on old runtime and the reverse) | Planned |

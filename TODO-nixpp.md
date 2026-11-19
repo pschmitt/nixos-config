@@ -58,6 +58,33 @@
   supervision and a Termux `svc`-style CLI for status, start, stop, and restart.
   Add a page in TermuxPP settings for the same controls and service logs.
 
+## Architecture redesign
+
+See [docs/termuxpp/architecture.md](docs/termuxpp/architecture.md) for the
+layers, failure causes and principles.
+
+- [x] Controller watchdog in `TermuxService`; child process limit in
+  `termuxpp-setup-permissions` and disabled on both phones.
+- [x] Stable redirect library at `files/lib/libtermux-pkg-redirect.so`; nixpp
+  compares the preload by file identity, not by spelling.
+- [x] Redirect `files/apps/com.termux` so stock `termux-am-socket` works.
+- [x] One sshd: native Termux sshd off (runit `down` file), Home Assistant's
+  Tasker launcher drives the guest's runit sshd through `svc`.
+- [x] Tasker plug-in service mode: pick a guest service, start/stop/restart.
+- [ ] One app-owned native daemon (`nixpp daemon`): controller, outer socket,
+  service supervision and the android bridge as threads of one process the
+  app starts and the watchdog checks. One lock, one restart path, one APK
+  update reaction, fewer phantom processes.
+- [ ] One login path for terminal, SSH, ADB shell, Tasker, `nixpp enter` and
+  `session.sh`, with the environment from one source the app writes.
+- [ ] No long-running `run-as` processes; `run-as` only for one-shot
+  diagnosis and recovery in `termuxpp-adb-shell`.
+- [ ] One guest-to-Android channel: an in-app socket (am protocol plus API
+  calls, authorized by peer UID) replacing the Termux:API broadcast path, the
+  python android bridge and `outer.sock` where possible.
+- [ ] Update-transition tests: new APK on an old runtime and the reverse,
+  with the real start scripts, on a worker.
+
 ## Acceptance
 
 - The combined APK installs alongside the old companions. With the old
