@@ -174,7 +174,12 @@ after its client restarts.
   `start`, and short jobs with MCP `exec` when available. These register the
   job and capture combined output. Use `rworker jobs "$w"`, `rworker logs
   `"$w" [JOB] [--lines N]` to inspect one worker, or `rworker logs [--lines N]`
-  to inspect all workers. `rworker logs -f` follows all jobs across all workers
+  to inspect all workers. **Never filter a job's output inside the worker**
+  (`... | tail -n 10`, `> /dev/null`, `2>&1 | rg ...`): the user follows the
+  jobs live with `rworker logs -f`, and a trimmed job prints nothing until it
+  ends. Let the command write everything to stdout/stderr (`nix build -L`
+  for build logs) and trim on your side when reading, e.g.
+  `rworker logs "$w" JOB --lines 40`. `rworker logs -f` follows all jobs across all workers
   (`--topic`/`--agent` regex-filter `logs`/`events`; a leading `!` inverts, e.g. `--topic '!build'`), with colored `WORKER/JOB` prefixes. It discovers new jobs within about one
   second and rescans the worker list every five seconds, attaching to new workers
   and stopping when workers disappear. `rworker events` emits only lifecycle
