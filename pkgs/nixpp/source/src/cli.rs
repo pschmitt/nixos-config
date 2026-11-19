@@ -704,6 +704,7 @@ fn serve_command(runtime: Option<PathBuf>, socket: Option<PathBuf>, ui: &Ui) -> 
         None => executable_directory()?,
     };
     match server::serve(&runtime, &socket, &mut SessionRunner::new())? {
+        Served::ReloadApk => crate::runtime_apk::restart(&runtime, &[]).map(|()| 0),
         Served::AlreadyRunning => {
             ui.warn("a native controller already serves this runtime");
             Ok(0)

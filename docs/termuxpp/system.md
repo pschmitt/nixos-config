@@ -178,12 +178,19 @@ lifetime are not covered by these shell tests.
 `--bootstrap` always retains independent native bootstrap recovery. A NixOS
 `system` profile is deliberately not fabricated.
 
-The native controller starts only when its `system.enabled` marker is installed.
-See the matching TermuxPP runtime README for staging and recovery commands. Do
-not enable the migration merely because worker tests pass: verify first-switch,
-fresh-login, rollback and recovery behavior on the authorized test device before
-migrating another phone. Native service supervision and Android API integration
-are separate concerns.
+On an enrolled runtime, TermuxPP publishes its installed Android library path
+at app startup and after package replacement. The native controller finishes its
+current request, releases the socket, and restarts with libraries from the
+installed APK. APK recovery requires the matching native nixpp and TermuxPP
+app. For the first rollout to an existing installation, replace both the prefix
+and staged runtime nixpp binaries, refresh the launch scripts with a native
+nixpp login, and restart the legacy controller once.
+
+When activation publishes a new generation, the service supervisor stops the
+old services and starts them using the selected generation. Explicitly stopped
+services stay stopped. Ordinary terminal sessions continue in the generation
+they entered. Keep a separate terminal open for recovery before testing
+SSH service handoff.
 
 ## Secrets (sops-nix)
 

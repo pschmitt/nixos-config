@@ -21,13 +21,13 @@ const MANAGER_LOCK: &str = "manager.lock";
 const SUPERVISOR_LOG: &str = "supervisor.log";
 const SERVICE_COMMAND: &str = "/run/current-system/sw/bin/svc";
 
-/// Start the native manager when a Nix system is selected.
+/// Start the native manager for an enrolled or selected Nix system.
 ///
 /// The manager holds its own nonblocking lock for its lifetime. It is safe to
 /// call this for every native guest login; extra helper processes exit as soon
 /// as they find the lock held.
 pub fn ensure_started(runtime: &Path) -> Result<()> {
-    if selected_candidate(runtime)?.is_none() {
+    if !runtime.join("system.enabled").is_file() && selected_candidate(runtime)?.is_none() {
         return Ok(());
     }
     let executable = crate::provision::running_executable()
@@ -49,7 +49,7 @@ pub fn ensure_started(runtime: &Path) -> Result<()> {
 pub fn run(runtime: &Path) -> Result<()> {
     let state = runtime.join(SERVICE_STATE);
     fs::create_dir_all(&state)?;
-    let Some(_lock) = FileLock::try_acquire(&state.join(MANAGER_LOCK))? else {
+    let Some(lock) = FileLock::try_acquire(&state.join(MANAGER_LOCK))? else {
         return Ok(());
     };
     let log = OpenOptions::new()
@@ -60,6 +60,10 @@ pub fn run(runtime: &Path) -> Result<()> {
         .open(state.join(SUPERVISOR_LOG))?;
 
     loop {
+        if crate::runtime_apk::replaced(runtime) {
+            drop(lock);
+            return crate::runtime_apk::restart(runtime, &["--services"]);
+        }
         let Some((name, _generation)) = selected_candidate(runtime)? else {
             sleep(Duration::from_secs(1));
             continue;
@@ -102,6 +106,9 @@ fn selected_candidate(runtime: &Path) -> Result<Option<(String, String)>> {
     }
     let selector_text = String::from_utf8(read_bounded(&selector, 4096)?)
         .map_err(|_| Error::invalid("system selector is not UTF-8"))?;
+    if selector_text == "\n" {
+        return Ok(None);
+    }
     let name = selector_text
         .strip_suffix('\n')
         .filter(|name| !name.contains('\n') && is_candidate_name(name))

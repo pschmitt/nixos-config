@@ -1,7 +1,8 @@
 #!/system/bin/sh
 
 main() {
-  if [[ $# != 0 ]]
+  unset LD_PRELOAD LD_LIBRARY_PATH
+  if [[ $# != 0 && ${1:-} != --services ]]
   then
     printf 'Usage: %s\nRun the native guest-system controller in the foreground.\n' "$0"
     case $1 in
@@ -22,15 +23,21 @@ main() {
   data_dir=${TERMUX_APP__DATA_DIR:-/data/data/dev.pschmitt.termux}
   prefix=$data_dir/files/usr
   apk=$(/system/bin/pm path "${data_dir##*/}") || return 1
-  apk=${apk#package:}
-  case $apk in
-    *'
-'*|'')
-      printf 'Cannot resolve a unique installed core APK.\n' >&2
-      return 1
-      ;;
-  esac
-  redirect=${apk%/*}/lib/arm64/libtermux-pkg-redirect.so
+  base_apk=
+  while IFS= read -r line
+  do
+    case $line in
+      package:*/base.apk) base_apk=${line#package:} ;;
+    esac
+  done <<EOF_APK
+$apk
+EOF_APK
+  if [[ -z $base_apk ]]
+  then
+    printf 'Cannot locate the installed base APK.\n' >&2
+    return 1
+  fi
+  redirect=${base_apk%/*}/lib/arm64/libtermux-pkg-redirect.so
   if [[ ! -r $redirect || ! -x $directory/nixpp ]]
   then
     printf 'The native core redirect library and runtime nixpp binary are required.\n' >&2
@@ -38,12 +45,18 @@ main() {
   fi
   export HOME=$data_dir/files/home PREFIX=$prefix TERMUX_APP__DATA_DIR=$data_dir
   export PATH=$prefix/bin:/system/bin TMPDIR=$prefix/tmp
+  TERMUX_PKG_REDIRECT_SO=$(/system/bin/readlink -f "$redirect") || return 1
+  export TERMUX_PKG_REDIRECT_SO
   export LD_LIBRARY_PATH=$prefix/lib LD_PRELOAD=$redirect
   if [[ -r $prefix/lib/libtermux-exec.so ]]
   then
     export LD_PRELOAD=$LD_PRELOAD:$prefix/lib/libtermux-exec.so
   fi
   umask 077
+  if [[ ${1:-} == --services ]]
+  then
+    exec "$directory/nixpp" --runtime "$directory" __service-supervisor
+  fi
   exec "$directory/nixpp" --runtime "$directory" serve \
     --socket "$socket_directory/nixpp.sock"
 }

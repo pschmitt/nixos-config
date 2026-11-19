@@ -24,7 +24,7 @@ service_name_valid() {
 }
 
 supervisor_present() {
-  [[ -p $1/supervise/control ]]
+  sv status "$1" >/dev/null 2>&1
 }
 
 selected_generation() {
@@ -196,12 +196,24 @@ main() {
     done
   }
 
+  apk_library() {
+    local selector=${NIXPP_SVC_SELECTOR:-/run/nixpp-runtime/current-system}
+    local marker=${selector%/*}/apk-library
+    local library
+    if [[ -r $marker ]] && IFS= read -r library < "$marker"
+    then
+      printf '%s\n' "$library"
+    fi
+  }
+
   supervise_services() {
     local selected
     local old_generation=
     local directory
     local service
     local runsvdir_pid
+    local loaded_apk
+    loaded_apk=$(apk_library)
     selected=$(active_generation) || return 1
     exec 8>"$runtime/supervisor.lock"
     if ! flock -n 8
@@ -232,8 +244,12 @@ main() {
           supervisor_present "$directory" || break
           sleep 0.1
         done
+        if supervisor_present "$directory"
+        then
+          return 76
+        fi
       done
-      rm -rf -- "$services_dir" "$desired_dir" || return 1
+      rm -rf -- "$services_dir" || return 1
       mkdir -p "$services_dir" "$desired_dir" || return 1
       printf '%s\n' "$selected" >"$runtime/system-generation"
     fi
@@ -264,7 +280,7 @@ main() {
     while kill -0 "$runsvdir_pid" 2>/dev/null
     do
       selected=$(selected_generation) || selected=
-      if [[ $selected != "$generation" ||
+      if [[ $(apk_library) != "$loaded_apk" || $selected != "$generation" ||
         ! ${NIXPP_SVC_CURRENT_SYSTEM:-/run/current-system} -ef $generation ]]
       then
         break

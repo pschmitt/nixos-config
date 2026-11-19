@@ -107,12 +107,12 @@ impl Server {
         &self.path
     }
 
-    /// Accept and answer connections until `stop` is set.
+    /// Accept connections until `stop` is set or an APK replacement is detected.
     ///
     /// Only a SIGINT/SIGTERM that reaches a running command ends the loop with
     /// an error; every other failure is reported to the client or dropped.
     pub fn run(&self, runner: &mut dyn Runner, stop: &AtomicBool) -> Result<()> {
-        while !stop.load(Ordering::SeqCst) {
+        while !stop.load(Ordering::SeqCst) && !crate::runtime_apk::replaced(&self.runtime) {
             if !self.wait_readable() {
                 continue;
             }
@@ -308,13 +308,15 @@ impl Drop for StopHandlers {
 pub enum Served {
     /// Another server holds the lock; nothing was bound.
     AlreadyRunning,
+    /// The app published a new native library path.
+    ReloadApk,
 }
 
 /// Bind `socket` and serve until SIGINT or SIGTERM.
 ///
 /// A normal stop is reported as [`Error::Interrupted`] or
 /// [`Error::Terminated`] so that the process exits with the conventional code;
-/// `Ok` means that another server already owns the runtime.
+/// `Ok` reports lock contention or an APK replacement.
 pub fn serve(runtime: &Path, socket: &Path, runner: &mut dyn Runner) -> Result<Served> {
     let Some(server) = Server::bind(runtime, socket)? else {
         return Ok(Served::AlreadyRunning);
@@ -325,7 +327,15 @@ pub fn serve(runtime: &Path, socket: &Path, runner: &mut dyn Runner) -> Result<S
     {
         eprintln!("nixpp: could not start the native outer socket: {error:#}");
     }
+    if cfg!(target_os = "android")
+        && let Err(error) = crate::services::ensure_started(&server.runtime)
+    {
+        eprintln!("nixpp: could not start the service supervisor: {error:#}");
+    }
     server.run(runner, &STOP)?;
+    if !STOP.load(Ordering::SeqCst) {
+        return Ok(Served::ReloadApk);
+    }
     match STOP_SIGNAL.load(Ordering::SeqCst) {
         libc::SIGINT => Err(Error::Interrupted),
         _ => Err(Error::Terminated),

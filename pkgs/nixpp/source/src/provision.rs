@@ -126,6 +126,8 @@ pub(crate) fn native_command(args: &[OsString]) -> Result<Command> {
     let apk = Command::new("/system/bin/pm")
         .args(["path"])
         .arg(package)
+        .env_remove("LD_PRELOAD")
+        .env_remove("LD_LIBRARY_PATH")
         .output()?;
     ensure!(apk.status.success(), "unable to locate the TermuxPP APK");
     let apk = std::str::from_utf8(&apk.stdout)?
