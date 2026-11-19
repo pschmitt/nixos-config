@@ -195,7 +195,7 @@ in
         pkgs.nixd
         pkgs.statix
       ];
-      extraLuaConfig = ''
+      initLua = ''
         vim.schedule(function()
           local osc52 = require("vim.ui.clipboard.osc52")
           local function paste()
