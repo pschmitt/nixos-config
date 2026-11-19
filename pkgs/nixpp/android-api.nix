@@ -3,6 +3,8 @@
   coreutils,
   inputs,
   lib,
+  python3,
+  runCommand,
   symlinkJoin,
   writeShellApplication,
 }:
@@ -12,6 +14,45 @@ let
     packageName = "dev.pschmitt.termux";
     dataDir = "/android/data/data/dev.pschmitt.termux";
   };
+  prefix = "${androidApp.dataDir}/files/usr";
+  session = writeShellApplication {
+    name = "termuxpp-session";
+    text = ''
+      script=${prefix}/bin/termuxpp-session
+      if [[ ! -r "$script" ]]
+      then
+        printf '%s\n' 'Open an updated TermuxPP app to install the session CLI.' >&2
+        exit 1
+      fi
+      exec ${lib.getExe python3} "$script" "$@"
+    '';
+  };
+  sessionCompletions = runCommand "termuxpp-session-completions" { } ''
+    mkdir -p "$out/share/bash-completion/completions" \
+      "$out/share/fish/vendor_completions.d" "$out/share/zsh/site-functions"
+    cat > "$out/share/bash-completion/completions/termuxpp-session" <<'BASH'
+    file=${prefix}/share/bash-completion/completions/termuxpp-session
+    if [[ -r "$file" ]]
+    then
+      source "$file"
+    fi
+    unset file
+    BASH
+    cat > "$out/share/fish/vendor_completions.d/termuxpp-session.fish" <<'FISH'
+    set -l file ${prefix}/share/fish/vendor_completions.d/termuxpp-session.fish
+    if test -r "$file"
+      source "$file"
+    end
+    FISH
+    cat > "$out/share/zsh/site-functions/_termuxpp-session" <<'ZSH'
+    #compdef termuxpp-session
+    local file=${prefix}/share/zsh/site-functions/_termuxpp-session
+    if [[ -r "$file" ]]
+    then
+      source "$file"
+    fi
+    ZSH
+  '';
   # TermuxPP already runs the upstream TermuxAm socket server. Droid-nix uses
   # the same protocol but places the socket directly under its files directory.
   termux-am = (callPackage (source + "/termux-am.nix") { inherit androidApp; }).overrideAttrs (old: {
@@ -48,7 +89,11 @@ let
 in
 symlinkJoin {
   name = "termuxpp-api";
-  paths = [ api ];
+  paths = [
+    api
+    session
+    sessionCompletions
+  ];
   postBuild = ''
     for command in "$out"/bin/droid-nix-*; do
       name=''${command##*/}

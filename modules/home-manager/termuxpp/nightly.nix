@@ -14,7 +14,17 @@ let
   };
 in
 {
-  home.packages = [ maintenance ];
+  home.packages = [
+    maintenance
+    (pkgs.runCommand "termuxpp-nightly-completions" { nativeBuildInputs = [ pkgs.installShellFiles ]; }
+      ''
+        installShellCompletion --cmd termuxpp-nightly-update \
+          --bash ${./completions/nightly.bash} \
+          --zsh ${./completions/nightly.zsh} \
+          --fish ${./completions/nightly.fish}
+      ''
+    )
+  ];
 
   # Tasker runs in Android's native environment. Its allowlisted script cannot
   # link into the guest store, so install the small launcher as a native file.

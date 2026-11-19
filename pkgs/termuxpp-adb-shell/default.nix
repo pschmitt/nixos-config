@@ -42,6 +42,10 @@ stdenvNoCC.mkDerivation {
       --bash completions/termuxpp-adb-shell.bash \
       --zsh completions/termuxpp-adb-shell.zsh \
       --fish completions/termuxpp-adb-shell.fish
+    installShellCompletion --cmd termuxpp-adb-ssh-proxy \
+      --bash completions/ssh-proxy.bash \
+      --zsh completions/ssh-proxy.zsh \
+      --fish completions/ssh-proxy.fish
     makeWrapper ${python3}/bin/python3 "$out/bin/termuxpp-adb-shell" \
       --add-flags "-I $out/libexec/termuxpp-adb-shell.py" \
       --prefix PATH : ${
