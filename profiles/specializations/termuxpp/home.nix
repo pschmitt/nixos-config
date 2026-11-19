@@ -121,10 +121,6 @@ in
     fi
   '';
   dotfiles.zsh.nixShell.default = true;
-  # SSH's Bash login shim execs zsh but leaves the inherited SHELL in place.
-  programs.zsh.envExtra = ''
-    export SHELL=${lib.escapeShellArg (lib.getExe config.programs.zsh.package)}
-  '';
   xdg = {
     enable = true;
     configFile."zsh/completions/_nixpp".source = "${nixpp}/share/zsh/site-functions/_nixpp";
@@ -207,6 +203,8 @@ in
       dotDir = "${config.xdg.configHome}/zsh-nix";
       shellAliases.tmad = tmad;
       envExtra = lib.mkBefore ''
+        # SSH's Bash login shim execs zsh but leaves the inherited SHELL in place.
+        export SHELL=${lib.escapeShellArg (lib.getExe config.programs.zsh.package)}
         export LC_ALL=C.UTF-8
         : "''${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
         export XDG_RUNTIME_DIR
