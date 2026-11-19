@@ -81,18 +81,22 @@ layers, failure causes and principles.
   `session.sh`, with the environment from one source the app writes.
 - [x] No long-running `run-as` processes; `run-as` only for one-shot
   diagnosis and recovery in `termuxpp-adb-shell`.
-- [ ] One guest-to-Android channel: an in-app socket (am protocol plus API
+- [x] One guest-to-Android channel: an in-app socket (am protocol plus API
   calls, authorized by peer UID) replacing the Termux:API broadcast path, the
   python android bridge and `outer.sock` where possible.
-- [ ] Update-transition tests: new APK on an old runtime and the reverse,
-  with the real start scripts, on a worker.
+- [x] Update-transition tests: new APK on an old runtime and the reverse.
+  Covered at the decision points: nixpp's `marker_differs` over every
+  APK/script combination (at most one restart, path spellings settle) and the
+  app's start-script detection (`NixppRuntimeRecoveryTest`).
+- [ ] End-to-end transition test: run the real `start-system-control.sh`
+  against both app builds in an emulator on a worker.
 
 ## CLI
 
 - [ ] Sporadic `eza -d` hang in the candidate self-test on p11 (37 s to 607 s,
   interactive runs take 25–96 ms) blocks switches; find the cause in the eza
   signal-stack wrapper or the check environment.
-- [ ] `termuxpp-self-update`: update the TermuxPP APK from the CLI, like
+- [x] `termuxpp-self-update`: update the TermuxPP APK from the CLI, like
   Settings > About does (same release source and checks; Android shows the
   install prompt, or Shizuku installs without one).
 

@@ -80,47 +80,6 @@ pub fn spawn(runtime: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Keep the native Android bridge (`start-android-bridge.sh`) running while
-/// `bridge.enabled` exists. Guest logins used to start it in the background,
-/// once per login and unsupervised.
-pub fn spawn_bridge(runtime: &Path) -> Result<()> {
-    let runtime = runtime.to_owned();
-    std::thread::Builder::new()
-        .name("android-bridge".into())
-        .spawn(move || {
-            loop {
-                let script = runtime.join("start-android-bridge.sh");
-                if !runtime.join("bridge.enabled").is_file() || !script.is_file() {
-                    sleep(Duration::from_secs(30));
-                    continue;
-                }
-                let started = std::time::Instant::now();
-                let mut command = Command::new("/system/bin/sh");
-                // The daemon may run from a directory the app cannot read
-                // (Android's /); the broker reopens its working directory.
-                command.arg(&script).current_dir(&runtime).stdin(Stdio::null());
-                if let Ok(log) = OpenOptions::new()
-                    .append(true)
-                    .create(true)
-                    .custom_flags(libc::O_NOFOLLOW)
-                    .mode(0o600)
-                    .open(runtime.join("bridge.log"))
-                    && let Ok(error_log) = log.try_clone()
-                {
-                    command.stdout(Stdio::from(log)).stderr(Stdio::from(error_log));
-                }
-                if let Err(error) = command.spawn().and_then(|mut child| child.wait()) {
-                    eprintln!("nixpp: cannot run the Android bridge: {error}");
-                }
-                // A broker that served for a while restarts at once; one that
-                // exits immediately (another broker listens) waits.
-                let delay = if started.elapsed() > Duration::from_secs(60) { 2 } else { 30 };
-                sleep(Duration::from_secs(delay));
-            }
-        })?;
-    Ok(())
-}
-
 fn open_log(state: &Path) -> Result<fs::File> {
     Ok(OpenOptions::new()
         .append(true)

@@ -21,23 +21,24 @@ Outer: native Android userland (bionic)
   - $PREFIX: Termux packages (termux-am, termux-api helpers, ...)
   - nixpp daemon ("nixpp serve"), the one native long-runner:
     nixpp.sock (switch, prepare, recover), outer.sock (run a native
-    command for the guest), and threads supervising the guest services
-    (svc supervise) and the Android bridge
+    command for the guest), and a thread supervising the guest services
+    (svc supervise)
   | launcher (seccomp path rewriting, re-exec, bind table)
   v
 Inner: Nix guest (glibc, Home Manager)
   - user tools, nixpp guest commands
   - svc supervise -> runit -> guest services (sshd :2222, ...)
-  - android-bridge <-> app
+  - termux-am / Termux:API -> app am socket (the one channel to Android)
 ```
 
 Crossing the boundary:
 
 - App to guest: a terminal session runs `nixpp login`; SSH reaches the guest
   sshd; the ADB shell connects to the app over mTLS.
-- Guest to Android: Termux:API broadcasts (`termux-*`), the guest's
-  `termux-am` (same UID as the app, so non-exported components work),
-  `xdg-open`, the android bridge.
+- Guest to Android: one channel, the app's am socket. The guest's
+  `termux-am` runs with the app's identity, so Termux:API (`termux-*`,
+  `android-bridge`), `xdg-open` and notifications reach the app's own,
+  non-exported receivers.
 - Guest to the native userland: `nixpp enter --outer` and `rish` through
   `outer.sock`.
 
@@ -82,8 +83,8 @@ by having fewer moving parts (no native controller, one in-app socket, no
 | Redirect library maps `files/apps/com.termux` to the fork, fixing stock `termux-am-socket` | Done (termux-app f1db9791) |
 | Native sshd off (runit `down` file from guest activation) | Done (2d128ebd) |
 | One sshd: Home Assistant's Tasker launcher (`set-managed-sshd`) drives the guest's runit sshd through `svc` instead of starting its own | Done |
-| One app-owned native daemon: the controller (`nixpp serve`) runs the outer socket, guest service supervision and the Android bridge as threads; logins only start it. A guest service tree retires when its daemon dies (owner PID) | Done (first stage); next: one APK-update reaction, fold `outer.sock` into the controller socket |
+| One app-owned native daemon: the controller (`nixpp serve`) runs the outer socket and guest service supervision as threads; logins only start it. A guest service tree retires when its daemon dies (owner PID). Native updates arrive with the generation (`native/nixpp`) and the daemon restarts on them | Done |
 | Single login path: every native entry into the guest (terminal, gestures, services page, Tasker plug-in and launchers) runs `nixpp login` with the app's shell environment; SSH lands in the guest sshd; the ADB shell opens the native login shell | Done |
 | No long-running `run-as` processes: `login.sh` never starts the daemon from a `runas_app` context, and `termuxpp-adb-shell` prefers mTLS (app-owned sessions) and uses `run-as` only without credentials, as recovery | Done |
-| One guest-to-Android channel: an in-app socket (am protocol plus API calls, authorized by peer UID) instead of broadcasts, the python bridge and `outer.sock` | Planned |
+| One guest-to-Android channel: the app's am socket carries Termux:API, `xdg-open` and notifications; the python broker is gone (`android-bridge` wraps Termux:API). `outer.sock` remains only for native commands | Done |
 | Update-transition tests (new APK on old runtime and the reverse) | Planned |

@@ -50,9 +50,8 @@ pub const NIXPP_NAME: &str = "nixpp";
 
 /// Runtime launch scripts embedded verbatim, as `(file name, content)`.
 ///
-/// `login.sh` optionally starts the Android bridge and the system controller
-/// when the `bridge.enabled` / `system.enabled` marker files exist.
-pub const SCRIPTS: [(&str, &str); 5] = [
+/// `login.sh` starts the native daemon when the `system.enabled` marker exists.
+pub const SCRIPTS: [(&str, &str); 4] = [
     ("session.sh", include_str!("assets/session.sh")),
     (
         "system-session.sh",
@@ -62,10 +61,6 @@ pub const SCRIPTS: [(&str, &str); 5] = [
     (
         "start-system-control.sh",
         include_str!("assets/start-system-control.sh"),
-    ),
-    (
-        "start-android-bridge.sh",
-        include_str!("assets/start-android-bridge.sh"),
     ),
 ];
 

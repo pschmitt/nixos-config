@@ -224,18 +224,13 @@ for normal Home Manager recovery. Preserve native recovery independently.
 
 ## Android integration
 
-`android-bridge ping|status|battery-status|toast` talks to a native broker through
-`/tmp/android-bridge/bridge.sock`. Start it outside the Linux guest using the
-runtime's `start-android-bridge.sh`; opt-in login startup uses `bridge.enabled`.
-The guest cannot directly execute Android/Bionic helpers. The bridge accepts
-only the four listed operations, validates requests and same-UID peers, bounds
-helper execution/output, and uses a private directory/socket. It is not a
-security boundary against other processes of the Android app UID. There is no
-arbitrary command, clipboard, location, contact or credential interface.
-
-Both test phones passed guest-to-native ping, filtered battery status and toast.
-Those probes do not establish background-service lifetime or every companion's
-compatibility. Native recovery and native SSH configuration remain independent.
+The guest reaches Android through one channel: the TermuxPP app's am socket.
+The guest's `termux-am` runs with the app's identity, so Termux:API commands
+(`termux-battery-status`, `termux-toast`, ...), `xdg-open` and `notify-send`
+are plain intents to the app's own receivers. `android-bridge
+ping|status|battery-status|toast` keeps the former broker's commands on top of
+Termux:API; the separate native broker is gone. Native commands (`rish`,
+`nixpp enter --outer`) use the daemon's `outer.sock` instead.
 
 ### Desktop command compatibility
 
@@ -286,6 +281,17 @@ grants what is missing. With a working Shizuku shell this needs no
 confirmation; without it, Android shows its permission prompts and then each
 settings page in turn, and `status` reads what the app reports in
 `/run/nixpp-runtime/permissions.json`.
+
+### Updating the app
+
+`termuxpp-self-update` updates the TermuxPP app with the same updater as
+Settings > About: same release source, checksum and signature checks.
+`termuxpp-self-update check` only checks (exit status 10 when an update is
+available), `status` shows the last state and `cancel` stops a running
+check or download. With Shizuku the install needs no confirmation; without
+it, Android asks. Installing replaces the app and ends its processes, so the
+shell that runs the command may close; the app records its version and the
+updater state in `/run/nixpp-runtime/update-status.json`.
 
 ### Native shell and shared storage
 

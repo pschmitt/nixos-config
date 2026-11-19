@@ -79,4 +79,44 @@ mod tests {
         fs::write(runtime.path().join("apk-library"), format!("{}\n", library.display())).unwrap();
         assert!(!marker_differs(runtime.path(), alias.join("lib.so").as_os_str()));
     }
+
+    /// App and runtime update independently. Each combination must restart
+    /// a process at most once and then settle.
+    #[test]
+    fn update_transitions_settle_after_at_most_one_restart() {
+        let runtime = tempfile::tempdir().unwrap();
+        let apk_v1 = runtime.path().join("apk-v1/libtermux-pkg-redirect.so");
+        let apk_v2 = runtime.path().join("apk-v2/libtermux-pkg-redirect.so");
+        let stable = runtime.path().join("files/lib/libtermux-pkg-redirect.so");
+        for library in [&apk_v2, &stable] {
+            fs::create_dir_all(library.parent().unwrap()).unwrap();
+            fs::write(library, []).unwrap();
+        }
+        let marker = runtime.path().join("apk-library");
+        let record = |path: &Path| fs::write(&marker, format!("{}\n", path.display())).unwrap();
+
+        // New APK, old start script: the app keeps recording the APK path. A
+        // process of the removed APK restarts once onto the new one.
+        record(&apk_v2);
+        assert!(marker_differs(runtime.path(), apk_v1.as_os_str()));
+        assert!(!marker_differs(runtime.path(), apk_v2.as_os_str()));
+
+        // New APK, new start script: the stable copy is recorded. A process
+        // still on an APK path restarts once; on the stable copy it settles.
+        record(&stable);
+        assert!(marker_differs(runtime.path(), apk_v2.as_os_str()));
+        assert!(!marker_differs(runtime.path(), stable.as_os_str()));
+
+        // Another spelling of the stable copy (/data/user/0 for /data/data)
+        // must not count as a replacement, or the process restarts forever.
+        let alias = runtime.path().join("alias");
+        std::os::unix::fs::symlink(runtime.path(), &alias).unwrap();
+        let spelled = alias.join("files/lib/libtermux-pkg-redirect.so");
+        assert!(!marker_differs(runtime.path(), spelled.as_os_str()));
+
+        // Older app after a newer one: the recorded APK path is gone, so the
+        // stale record cannot force a restart loop.
+        record(&apk_v1);
+        assert!(!marker_differs(runtime.path(), stable.as_os_str()));
+    }
 }

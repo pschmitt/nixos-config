@@ -23,7 +23,6 @@ let
     ];
     assert builtins.elem home.pkgs.jc c.home.packages;
     assert c.fullNix.androidBridge.enable;
-    assert c.fullNix.androidBridge.socket == "/tmp/android-bridge/bridge.sock";
     assert c.fullNix.lifecycle.enable;
     assert builtins.elem "writeBoundary" c.home.activation.androidPreflight.before;
     assert builtins.elem "linkGeneration" c.home.activation.androidAcceptance.after;

@@ -36,6 +36,7 @@ in
     ../../../modules/home-manager/termuxpp/rworker.nix
     ../../../modules/home-manager/termuxpp/package-set.nix
     ../../../modules/home-manager/termuxpp/permissions.nix
+    ../../../modules/home-manager/termuxpp/self-update.nix
     ../../../modules/home-manager/termuxpp/bridge.nix
     ../../../modules/home-manager/termuxpp/lifecycle.nix
     ../../../modules/home-manager/termuxpp/nightly.nix
