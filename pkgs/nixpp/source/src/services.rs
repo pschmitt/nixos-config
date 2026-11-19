@@ -60,6 +60,7 @@ pub fn run(runtime: &Path) -> Result<()> {
         .open(state.join(SUPERVISOR_LOG))?;
 
     loop {
+        let apk_marker = crate::runtime_apk::marker(runtime).unwrap_or_default();
         if crate::runtime_apk::replaced(runtime) {
             drop(lock);
             return crate::runtime_apk::restart(runtime, &["--services"]);
@@ -72,6 +73,15 @@ pub fn run(runtime: &Path) -> Result<()> {
             .arg("--system")
             .arg(&name)
             .arg("--")
+            // Fix the APK snapshot before entering the guest so a replacement
+            // during startup also retires this service tree.
+            .args([
+                "/bin/sh",
+                "-c",
+                r#"export NIXPP_SVC_APK_LIBRARY="$1"; shift; exec "$@""#,
+                "svc",
+            ])
+            .arg(apk_marker)
             .arg(SERVICE_COMMAND)
             .arg("supervise")
             .stdin(Stdio::null())

@@ -213,7 +213,7 @@ main() {
     local service
     local runsvdir_pid
     local loaded_apk
-    loaded_apk=$(apk_library)
+    loaded_apk=${NIXPP_SVC_APK_LIBRARY-$(apk_library)}
     selected=$(active_generation) || return 1
     exec 8>"$runtime/supervisor.lock"
     if ! flock -n 8
