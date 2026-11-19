@@ -40,5 +40,24 @@ in
     unlockWebhook = "http://10.5.1.1:8123/api/webhook/rbw_unlock_request";
     # A fill into a site the vault entry is not saved for notifies the phone.
     notifyWebhook = "http://10.5.1.1:8123/api/webhook/browser_daemon_any_site_fill";
+    # Through rbw-agent's mTLS API instead of the rbw command: one client per
+    # account (default, wiit), created with `rbw api client create` and granted
+    # account-wide login fields, passkeys, status and unlock.
+    rbwApi =
+      let
+        pki = "${config.users.users.${username}.home}/.local/share/rbw/remote-api/pki";
+        client = id: {
+          certFile = "${pki}/client-${id}.pem";
+          keyFile = "${pki}/client-${id}-key.pem";
+        };
+      in
+      {
+        url = "https://10.5.0.14:24871";
+        caFile = "${pki}/ca.pem";
+        clients = map client [
+          "21c6acba88084ae7bddf08c94c807ef2"
+          "5d0227f59af049dea49062e3b3054186"
+        ];
+      };
   };
 }
