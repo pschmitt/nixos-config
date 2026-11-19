@@ -23,6 +23,7 @@
     ./prompt.nix
     ./resource-control.nix
     ./services.nix
+    ./ws-scrcpy-web.nix
     ./zsh.nix
   ];
 
