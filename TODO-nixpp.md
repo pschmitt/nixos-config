@@ -7,6 +7,13 @@
   from a Keystore signing error after authentication. Use a disposable
   authentication-bound signing key to verify the TermuxPP API path on both
   phones before testing RBW with the existing enrollment.
+  2026-11-19: the API path is verified on p11 and zf10 with a disposable
+  hardware-backed key (generate, `list -d`, delete; sign without
+  authentication returns an empty signature within 0.3 s instead of
+  hanging). Hangs after the master password came from the frozen
+  `:background` process owning the am socket (termuxpp a319a9e0); rbw now
+  times out every Keystore call (rbw 62aa5ee). Remaining: enroll and unlock
+  with a real fingerprint on p11.
 
 - [x] Merge TermuxPP:API into TermuxPP. Review droid-nix for guest integration
   patterns. Verify a real API call from the app terminal and from an SSH session
