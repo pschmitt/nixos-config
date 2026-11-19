@@ -28,6 +28,19 @@ let
         default = null;
         description = "Working directory for the service.";
       };
+      allowedSsids = mkOption {
+        type = types.listOf types.str;
+        default = [ ];
+        example = [ "home-lan" ];
+        description = ''
+          Exact Wi-Fi names on which this service may run. The TermuxPP app
+          publishes the current network to the runtime directory, and the
+          guest supervisor starts and stops the service as it changes; with
+          no Wi-Fi, an unknown name or stale network state the service stays
+          down. An empty list means no restriction. Keep the real names in
+          the private configuration.
+        '';
+      };
     };
   };
   serviceDirectories = lib.mapAttrs (
@@ -69,6 +82,7 @@ let
   manifest = (pkgs.formats.json { }).generate "nixpp-services.json" (
     lib.mapAttrs (name: service: {
       enabled = service.enable;
+      inherit (service) allowedSsids;
       directory = toString serviceDirectories.${name};
     }) services
   );
@@ -102,6 +116,14 @@ in
           {
             assertion = lib.hasPrefix "/" (builtins.head service.command);
             message = "services.${name}.command must use an absolute executable path";
+          }
+          {
+            assertion = name != "adb-shell";
+            message = "adb-shell belongs to the TermuxPP app; restrict it with fullNix.adbShell.allowedSsids";
+          }
+          {
+            assertion = lib.all (ssid: ssid != "" && !(lib.hasInfix "," ssid)) service.allowedSsids;
+            message = "services.${name}.allowedSsids entries must be non-empty and contain no comma";
           }
         ]
         ++ lib.mapAttrsToList (key: _value: {

@@ -75,6 +75,19 @@ service_status() {
   esac
 }
 
+# The TermuxPP app publishes the connected Wi-Fi name here and refreshes the
+# file at least every minute. A missing, unreadable or stale file, no Wi-Fi or
+# a name Android withholds all mean "unknown": restricted services stay down.
+current_ssid() {
+  local selector=${NIXPP_SVC_SELECTOR:-/run/nixpp-runtime/current-system}
+  local network=${NIXPP_SVC_NETWORK:-${selector%/*}/network.json}
+  local max_age=${NIXPP_SVC_NETWORK_MAX_AGE:-300}
+  local modified
+  modified=$(stat -c %Y -- "$network" 2>/dev/null) || return 1
+  (($(date +%s) - modified <= max_age)) || return 1
+  jq -er '.ssid | strings | select(length > 0)' "$network" 2>/dev/null
+}
+
 # The ADB shell listener belongs to the Android app, not to the guest
 # supervisor, so it is listed read-only and probed on its loopback port.
 adb_shell_status() {
@@ -127,6 +140,31 @@ main() {
 
   generation=$(active_generation) || return 1
   mkdir -p "$services_dir" "$desired_dir" "$logs_dir" || return 1
+
+  allowed_ssids() {
+    jq -r --arg name "$1" '.[$name].allowedSsids // [] | .[]' "$manifest"
+  }
+
+  # Succeeds when SERVICE has no allow-list or the current Wi-Fi is on it.
+  network_allows() {
+    local name=$1
+    local ssid
+    local allowed
+    if ! jq -e --arg name "$name" '(.[$name].allowedSsids // []) | length > 0' "$manifest" >/dev/null
+    then
+      return 0
+    fi
+    ssid=$(current_ssid) || return 1
+    while IFS= read -r allowed
+    do
+      [[ $allowed == "$ssid" ]] && return 0
+    done < <(allowed_ssids "$name")
+    return 1
+  }
+
+  network_restricted() {
+    jq -e --arg name "$1" '(.[$name].allowedSsids // []) | length > 0' "$manifest" >/dev/null
+  }
 
   service_exists() {
     service_name=$1
@@ -284,7 +322,7 @@ main() {
     while IFS= read -r service
     do
       if [[ $(jq -r --arg name "$service" '.[$name].enabled' "$manifest") == true &&
-        ! -e "$desired_dir/$service.stopped" ]]
+        ! -e "$desired_dir/$service.stopped" ]] && network_allows "$service"
       then
         start_service "$service" || {
           shutdown_supervisors "$runsvdir_pid"
@@ -293,8 +331,37 @@ main() {
       fi
     done < <(jq -r 'keys[]' "$manifest")
 
+    local restricted=()
+    while IFS= read -r service
+    do
+      if [[ $(jq -r --arg name "$service" '.[$name].enabled' "$manifest") == true ]] &&
+        network_restricted "$service"
+      then
+        restricted+=("$service")
+      fi
+    done < <(jq -r 'keys[]' "$manifest")
+
     while kill -0 "$runsvdir_pid" 2>/dev/null
     do
+      # Follow Wi-Fi changes for restricted services. A manual `svc stop`
+      # (the .stopped marker) always wins; network stops leave no marker.
+      if ((${#restricted[@]}))
+      then
+        exec 9>"$lock_file"
+        flock 9
+        for service in "${restricted[@]}"
+        do
+          [[ -e "$desired_dir/$service.stopped" ]] && continue
+          if network_allows "$service"
+          then
+            [[ $(service_status "$service") == running ]] || start_service "$service" || true
+          elif [[ $(service_status "$service") != down ]]
+          then
+            stop_service "$service" || true
+          fi
+        done
+        exec 9>&-
+      fi
       selected=$(selected_generation) || selected=
       if [[ $(apk_library) != "$loaded_apk" || $selected != "$generation" ||
         ! ${NIXPP_SVC_CURRENT_SYSTEM:-/run/current-system} -ef $generation ]]
@@ -319,11 +386,17 @@ main() {
         local result='[]'
         while IFS= read -r service_name
         do
-          local enabled status
+          local enabled status network=null
           enabled=$(jq -r --arg name "$service_name" '.[$name].enabled' "$manifest")
           status=$(service_status "$service_name")
+          if network_restricted "$service_name"
+          then
+            network='"blocked"'
+            network_allows "$service_name" && network='"allowed"'
+          fi
           result=$(jq -cn --argjson items "$result" --arg name "$service_name" --arg status "$status" --argjson enabled "$enabled" \
-            '$items + [{name:$name,status:$status,enabled:$enabled}]')
+            --argjson network "$network" \
+            '$items + [{name:$name,status:$status,enabled:$enabled} + (if $network == null then {} else {network:$network} end)]')
         done < <(jq -r 'keys[]' "$manifest")
         result=$(jq -cn --argjson items "$result" --arg status "$(adb_shell_status)" \
           '$items + [{name:"adb-shell",status:$status,enabled:true,external:true}]')
@@ -331,7 +404,12 @@ main() {
       else
         while IFS= read -r service_name
         do
-          printf '%-24s %s\n' "$service_name" "$(service_status "$service_name")"
+          local note=
+          if network_restricted "$service_name" && ! network_allows "$service_name"
+          then
+            note=' (waiting for an allowed Wi-Fi network)'
+          fi
+          printf '%-24s %s%s\n' "$service_name" "$(service_status "$service_name")" "$note"
         done < <(jq -r 'keys[]' "$manifest")
         printf '%-24s %s\n' adb-shell "$(adb_shell_status) (managed by the TermuxPP app)"
       fi
@@ -354,6 +432,11 @@ main() {
         fi
         tail -c 65536 "$log_file" | tail -n 200
         return
+      fi
+      if [[ $command == start || $command == restart ]] && ! network_allows "$service_name"
+      then
+        die "$service_name may only run on its allowed Wi-Fi networks (current: $(current_ssid || printf 'unknown'))"
+        return 1
       fi
       exec 9>"$lock_file"
       flock 9
