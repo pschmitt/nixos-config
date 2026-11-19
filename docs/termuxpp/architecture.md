@@ -84,6 +84,6 @@ by having fewer moving parts (no native controller, one in-app socket, no
 | One sshd: Home Assistant's Tasker launcher (`set-managed-sshd`) drives the guest's runit sshd through `svc` instead of starting its own | Done |
 | One app-owned native daemon: the controller (`nixpp serve`) runs the outer socket, guest service supervision and the Android bridge as threads; logins only start it. A guest service tree retires when its daemon dies (owner PID) | Done (first stage); next: one APK-update reaction, fold `outer.sock` into the controller socket |
 | Single login path: every native entry into the guest (terminal, gestures, services page, Tasker plug-in and launchers) runs `nixpp login` with the app's shell environment; SSH lands in the guest sshd; the ADB shell opens the native login shell | Done |
-| No long-running `run-as` processes; `run-as` only for one-shot recovery | Planned |
+| No long-running `run-as` processes: `login.sh` never starts the daemon from a `runas_app` context, and `termuxpp-adb-shell` prefers mTLS (app-owned sessions) and uses `run-as` only without credentials, as recovery | Done |
 | One guest-to-Android channel: an in-app socket (am protocol plus API calls, authorized by peer UID) instead of broadcasts, the python bridge and `outer.sock` | Planned |
 | Update-transition tests (new APK on old runtime and the reverse) | Planned |

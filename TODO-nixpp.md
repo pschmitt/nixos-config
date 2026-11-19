@@ -79,7 +79,7 @@ layers, failure causes and principles.
   update reaction, fewer phantom processes.
 - [x] One login path for terminal, SSH, ADB shell, Tasker, `nixpp enter` and
   `session.sh`, with the environment from one source the app writes.
-- [ ] No long-running `run-as` processes; `run-as` only for one-shot
+- [x] No long-running `run-as` processes; `run-as` only for one-shot
   diagnosis and recovery in `termuxpp-adb-shell`.
 - [ ] One guest-to-Android channel: an in-app socket (am protocol plus API
   calls, authorized by peer UID) replacing the Termux:API broadcast path, the

@@ -4,7 +4,12 @@ script=$(/system/bin/readlink -f "$0") || exit 1
 directory=${script%/*}
 # The native daemon (start-system-control.sh) supervises the guest services
 # and the Android bridge; starting it again is harmless.
-if [[ -f "$directory/system.enabled" && -r "$directory/start-system-control.sh" ]]
+# The app owns the daemon (its watchdog starts it). A run-as shell (ADB
+# recovery) runs in another SELinux context that app restarts never stop, so
+# a daemon started from there would outlive every app restart.
+context=$(cat /proc/self/attr/current 2>/dev/null) || context=
+if [[ -f "$directory/system.enabled" && -r "$directory/start-system-control.sh" &&
+  $context != *:runas_app:* ]]
 then
   (
     umask 077
