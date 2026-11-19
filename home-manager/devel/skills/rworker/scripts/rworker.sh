@@ -143,6 +143,7 @@ flag ps --long show full process command lines
 flag logs --lines=count number of lines per job
 flag logs --follow follow all jobs on all workers
 flag logs -f short for --follow
+flag logs -q short for --quiet
 flag logs --no-events suppress lifecycle events while following
 flag logs --quiet suppress all status messages (timestamped, italic) while following
 flag logs --topic=topic limit to workers whose topic matches this regex (prefix with ! to invert)
@@ -159,6 +160,7 @@ flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
 flag up --ssh log in as soon as it is ready
+flag up --quiet-topic-warning do not warn when no --topic is given
 flag up --nix-cache push this host's S3 cache settings (default when it has any)
 flag up --no-nix-cache keep the S3 cache credentials off the worker
 flag exec --nix-cache push this host's S3 cache settings (default when it has any)
@@ -168,6 +170,7 @@ flag exec --no-niks3-token do not give the worker a niks3 push token
 flag extend --no-niks3-token extend without renewing the niks3 token
 flag niks3-token --force reissue the token of someone else's worker
 flag nix-cache --dry-run only show what would be pushed
+flag nix-cache -n short for --dry-run
 flag up -l=user log in as this user (with --ssh; default agent)
 flag up --topic=topic what the worker is for (none unless given)
 flag up --profile=profile worker profile (standard, browser-daemon or large-builder)
@@ -187,6 +190,8 @@ flag ssh --create create a worker first (same as up --ssh; up's options follow)
 flag ssh --profile=profile worker image profile when creating
 flag ssh -l=user log in as this user (like ssh -l)
 flag ls --watch redraw in place, marking changes
+flag ls -w short for --watch
+flag ls --interval=seconds refresh interval in seconds (with --watch; same as -n)
 flag ls -n=interval refresh interval in seconds (with --watch)
 flag extend --ttl=duration new lifetime from now
 flag prune --all every ad-hoc worker, whoever owns it
@@ -204,6 +209,8 @@ flag ls --agent-id=id only workers whose agent id matches this regex (prefix wit
 flag logs --agent-id=id limit to workers whose agent id matches this regex (prefix with ! to invert)
 flag events --agent-id=id limit to workers whose agent id matches this regex (prefix with ! to invert)
 flag prune --yes do not ask
+flag prune -y short for --yes
+flag prune -n short for --dry-run
 flag prune --dry-run only show what would be deleted
 values duration 30m 1h 2h 4h 8h 24h
 values flavor s1.large s1.xlarge s1.2xlarge
@@ -281,6 +288,7 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
                    given)
   --agent-id ID    the creating agent's id (its Concord agent id; also read
                    from RWORKER_AGENT_ID or CONCORD_AGENT_ID)
+  --quiet-topic-warning  do not warn when --topic is missing
 
 The worker also records its creator: owner (\$USER@host), the agent
 process (claude, codex, agy, opencode, ... and its PID), the agent id, the
@@ -310,7 +318,8 @@ busy, idle 12m (drained after 20m idle with nothing pending) or draining.
   -w, --watch    redraw the table in place every -n seconds (default 5),
                  marking rows: + new, ~ changed (status, IP, owner, expiry,
                  flavor), - gone. q quits, any other key refreshes now.
-  -n SECONDS     refresh interval for --watch
+  -n SECONDS, --interval SECONDS
+                 refresh interval for --watch
 EOF
       ;;
     exec)
