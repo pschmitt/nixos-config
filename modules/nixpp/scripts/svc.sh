@@ -163,6 +163,20 @@ main() {
     [[ $value == true ]]
   }
 
+  # TEXT with the extended regex metacharacters escaped.
+  regex_quote() {
+    local text=$1 quoted='' character index
+    for ((index = 0; index < ${#text}; index++))
+    do
+      character=${text:index:1}
+      case $character in
+        '['|']'|\\|'.'|'*'|'^'|'$'|'('|')'|'+'|'?'|'{'|'}'|'|') quoted+="\\$character" ;;
+        *) quoted+=$character ;;
+      esac
+    done
+    printf '%s' "$quoted"
+  }
+
   # The configured allow-list file of SERVICE (a secret with one Wi-Fi
   # name per line), empty when it lists the names inline.
   ssids_file() {
@@ -417,6 +431,39 @@ main() {
     local all_services=()
     mapfile -t all_services < <(jq -r 'keys[]' "$manifest")
 
+    # Wait for changes instead of polling: the inputs are the settings, the
+    # desired-state markers, the Wi-Fi state, the selected generation and the
+    # APK marker. Wake every 10 seconds anyway (daemon and runsvdir alive?)
+    # and evaluate at least once a minute (stale Wi-Fi state stops services).
+    local selector_dir=${NIXPP_SVC_SELECTOR:-/run/nixpp-runtime/current-system}
+    selector_dir=${selector_dir%/*}
+    local network_file=${NIXPP_SVC_NETWORK:-$selector_dir/network.json}
+    local inputs=("$settings" "$desired_dir" "$network_file" "$selector_dir/current-system" "$selector_dir/apk-library")
+    local ssids_files=() service file
+    for service in "${all_services[@]}"
+    do
+      file=$(ssids_file "$service")
+      [[ -n $file ]] && ssids_files+=("$file")
+    done
+    inputs+=("${ssids_files[@]}")
+    # Watch the inputs' directories, but report only the inputs themselves:
+    # this loop's own lock and stamp files must not wake it.
+    local watch_dirs=() include='' directory
+    for file in "${inputs[@]}"
+    do
+      if [[ $file == "$desired_dir" ]]
+      then
+        directory=$desired_dir
+        include+="|$(regex_quote "$desired_dir")/.*"
+      else
+        directory=${file%/*}
+        include+="|$(regex_quote "$file")"
+      fi
+      [[ " ${watch_dirs[*]} " == *" $directory "* ]] || watch_dirs+=("$directory")
+    done
+    include="^(${include#|})\$"
+    local stamp=$runtime/.supervise-stamp evaluate=1 idle=0 input
+
     while kill -0 "$runsvdir_pid" 2>/dev/null
     do
       # The native daemon that started this tree died: retire, so its
@@ -429,8 +476,10 @@ main() {
       # services page). Stop a running restricted service outside its
       # networks and mark it .network-down; restart only those once allowed.
       # Services that are off or were stopped by hand (.stopped) stay off.
-      if ((${#all_services[@]}))
+      if ((evaluate && ${#all_services[@]}))
       then
+        # Inputs newer than this stamp changed after this pass began.
+        : >"$stamp"
         exec 9>"$lock_file"
         flock 9
         for service in "${all_services[@]}"
@@ -462,7 +511,36 @@ main() {
       then
         break
       fi
-      sleep 1
+      # An input changed while this pass ran: run again before waiting.
+      evaluate=0
+      for input in "${inputs[@]}"
+      do
+        [[ $input -nt $stamp ]] && evaluate=1
+      done
+      ((evaluate)) && continue
+      if inotifywait -qq -t 10 -e close_write,moved_to,moved_from,create,delete,attrib \
+        --include "$include" "${watch_dirs[@]}" 2>/dev/null
+      then
+        evaluate=1 idle=0
+      else
+        case $? in
+          2)
+            # Timed out: catch a change that landed before the wait began
+            # (builtin tests, no process), and the minute-long staleness.
+            idle=$((idle + 1))
+            for input in "${inputs[@]}"
+            do
+              [[ $input -nt $stamp ]] && evaluate=1
+            done
+            ((idle % 6 == 0)) && evaluate=1
+            ;;
+          *)
+            # No inotify (or no inotifywait): fall back to polling.
+            evaluate=1
+            sleep 1
+            ;;
+        esac
+      fi
     done
     shutdown_supervisors "$runsvdir_pid"
     return 75

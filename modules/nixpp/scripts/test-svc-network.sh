@@ -56,6 +56,16 @@ jq -n --arg dir "$work/src" '{
 # A secret file: CRLF line ends and blank lines are tolerated.
 printf 'elsewhere\r\n\nhome\r\n' >"$work/src/home-ssids"
 
+# Count jq calls: an idle supervisor must not run any.
+mkdir -p "$work/shim"
+real_jq=$(command -v jq)
+printf '#!/bin/sh\necho >>"%s"\nexec "%s" "$@"\n' "$work/jq.calls" "$real_jq" >"$work/shim/jq"
+chmod +x "$work/shim/jq"
+export PATH=$work/shim:$PATH
+jq_calls() {
+  [[ -e $work/jq.calls ]] && wc -l <"$work/jq.calls" || echo 0
+}
+
 export NIXPP_SVC_MANIFEST=$work/services.json
 export NIXPP_SVC_RUNTIME_DIR=$work/state
 export NIXPP_SVC_SELECTOR=$work/runtime/current-system
@@ -101,6 +111,12 @@ mv "$work/src/home-ssids" "$work/src/home-ssids.away"
 expect filed down "an unreadable allow-list file allows no network"
 mv "$work/src/home-ssids.away" "$work/src/home-ssids"
 expect filed running "the restored file allows the network again"
+
+# Idle: the supervisor waits for changes instead of re-reading its inputs.
+sleep 1
+before=$(jq_calls)
+sleep 3
+(($(jq_calls) == before)) || fail "an idle supervisor ran jq $(($(jq_calls) - before)) times in 3 seconds"
 
 network other
 expect restricted down "another Wi-Fi stops it"

@@ -100,6 +100,7 @@ let
     name = "svc";
     runtimeInputs = [
       pkgs.coreutils
+      pkgs.inotify-tools
       pkgs.jq
       pkgs.procps
       pkgs.runit

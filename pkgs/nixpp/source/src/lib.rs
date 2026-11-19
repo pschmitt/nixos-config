@@ -29,6 +29,7 @@ pub mod server;
 pub mod services;
 pub mod store;
 pub mod ui;
+pub(crate) mod watch;
 
 #[cfg(test)]
 mod testutil;

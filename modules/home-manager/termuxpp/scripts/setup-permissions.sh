@@ -280,6 +280,8 @@ state_age() {
 
 collect_app() {
   local age
+  # The app publishes on request (and on start), not on a timer.
+  app_shizuku refresh >/dev/null
   age=$(state_age) ||
     die "TermuxPP has not reported its permissions yet: open the app (an updated build is needed) and try again"
   ((age <= 300)) || die "TermuxPP's permission report is ${age}s old: open the app and try again"

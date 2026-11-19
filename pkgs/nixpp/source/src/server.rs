@@ -26,6 +26,7 @@ pub const RESPONSE_LIMIT: usize = 65536;
 /// Time a client has to deliver its request and to accept the response.
 const IO_TIMEOUT: Duration = Duration::from_secs(5);
 /// How often an idle server looks at its stop flag.
+/// How long to block when inotify or the stop pipe is unavailable.
 const POLL_INTERVAL_MS: libc::c_int = 250;
 
 const SERVER_LOCK: &str = "system-server.lock";
@@ -117,6 +118,12 @@ impl Server {
         let current = crate::provision::running_executable().ok();
         let prefix = std::env::var_os("PREFIX").map(PathBuf::from);
         let mut checked = None;
+        // Wake on a new selected generation (a native update may come with it)
+        // and a replaced APK, instead of polling for them.
+        let mut watch = crate::watch::Watch::new(
+            &self.runtime,
+            vec![b"current-system".to_vec(), b"apk-library".to_vec()],
+        );
         while !stop.load(Ordering::SeqCst) && !crate::runtime_apk::replaced(&self.runtime) {
             if let Some(current) = &current
                 && let Some(source) =
@@ -132,7 +139,7 @@ impl Server {
                     Err(error) => eprintln!("nixpp: could not install the native nixpp: {error:#}"),
                 }
             }
-            if !self.wait_readable() {
+            if !self.wait_readable(&mut watch) {
                 continue;
             }
             let stream = match self.listener.accept() {
@@ -152,15 +159,35 @@ impl Server {
         Ok(())
     }
 
-    fn wait_readable(&self) -> bool {
-        let mut descriptor = libc::pollfd {
-            fd: self.listener.as_raw_fd(),
+    /// Blocks until a client connects, a watched file changes or a stop
+    /// signal arrives; whether a client is waiting.
+    fn wait_readable(&self, watch: &mut Option<crate::watch::Watch>) -> bool {
+        let pollfd = |fd| libc::pollfd {
+            fd,
             events: libc::POLLIN,
             revents: 0,
         };
-        // SAFETY: one valid pollfd that outlives the call.
-        let ready = unsafe { libc::poll(&mut descriptor, 1, POLL_INTERVAL_MS) };
-        ready > 0
+        let mut fds = vec![pollfd(self.listener.as_raw_fd())];
+        let stop = STOP_PIPE_READ.load(Ordering::SeqCst);
+        if stop >= 0 {
+            fds.push(pollfd(stop));
+        }
+        if let Some(watch) = watch.as_ref() {
+            fds.push(pollfd(watch.fd().as_raw_fd()));
+        }
+        // Without both wake-up sources, fall back to polling.
+        let timeout = if stop >= 0 && watch.is_some() {
+            -1
+        } else {
+            POLL_INTERVAL_MS
+        };
+        // SAFETY: fds holds fds.len() initialised pollfd entries.
+        let ready = unsafe { libc::poll(fds.as_mut_ptr(), fds.len() as libc::nfds_t, timeout) };
+        if let Some(watch) = watch.as_mut() {
+            // The loop re-checks the generation and the APK marker anyway.
+            watch.drain();
+        }
+        ready > 0 && fds[0].revents & libc::POLLIN != 0
     }
 
     fn handle(&self, stream: UnixStream, runner: &mut dyn Runner) -> Result<()> {
@@ -274,10 +301,19 @@ fn write_response(mut stream: &UnixStream, response: &Value) -> io::Result<()> {
 /// SIGINT or SIGTERM seen while the server was idle (0 for none).
 static STOP_SIGNAL: AtomicI32 = AtomicI32::new(0);
 static STOP: AtomicBool = AtomicBool::new(false);
+/// A pipe the stop handler writes to, so a signal delivered to any thread
+/// wakes the serving thread's poll; -1 when there is none.
+static STOP_PIPE_READ: AtomicI32 = AtomicI32::new(-1);
+static STOP_PIPE_WRITE: AtomicI32 = AtomicI32::new(-1);
 
 extern "C" fn record_stop(signal: libc::c_int) {
     STOP_SIGNAL.store(signal, Ordering::SeqCst);
     STOP.store(true, Ordering::SeqCst);
+    let pipe = STOP_PIPE_WRITE.load(Ordering::SeqCst);
+    if pipe >= 0 {
+        // SAFETY: write(2) is async-signal-safe; a full pipe already wakes.
+        unsafe { libc::write(pipe, [1_u8].as_ptr().cast(), 1) };
+    }
 }
 
 /// Restores the signal dispositions replaced by [`StopHandlers::install`].
@@ -307,6 +343,11 @@ impl StopHandlers {
                 libc::sigaction(libc::SIGTERM, &term, std::ptr::null_mut());
                 return Err(error);
             }
+            let mut pipe = [-1; 2];
+            if libc::pipe2(pipe.as_mut_ptr(), libc::O_CLOEXEC | libc::O_NONBLOCK) == 0 {
+                STOP_PIPE_READ.store(pipe[0], Ordering::SeqCst);
+                STOP_PIPE_WRITE.store(pipe[1], Ordering::SeqCst);
+            }
             Ok(Self { term, int })
         }
     }
@@ -314,10 +355,17 @@ impl StopHandlers {
 
 impl Drop for StopHandlers {
     fn drop(&mut self) {
-        // SAFETY: restores the dispositions saved by `install`.
+        // SAFETY: restores the dispositions saved by `install` and closes the
+        // stop pipe once no handler can write to it.
         unsafe {
             libc::sigaction(libc::SIGTERM, &self.term, std::ptr::null_mut());
             libc::sigaction(libc::SIGINT, &self.int, std::ptr::null_mut());
+            for pipe in [&STOP_PIPE_WRITE, &STOP_PIPE_READ] {
+                let fd = pipe.swap(-1, Ordering::SeqCst);
+                if fd >= 0 {
+                    libc::close(fd);
+                }
+            }
         }
     }
 }
