@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Nix defines nix_ip, android_network_command, and json_ip before this body.
+# shellcheck disable=SC2154
 
 android_query() {
   while [[ ${1:-} == -* ]]

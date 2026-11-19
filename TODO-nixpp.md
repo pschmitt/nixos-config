@@ -11,7 +11,7 @@
   main APK. Preserve permission and caller checks and document any migration
   needed for installed companion apps and existing automation.
 
-- [ ] Let users bind an arbitrary command and its arguments to TermuxPP gesture
+- [x] Let users bind an arbitrary command and its arguments to TermuxPP gesture
   actions, including taps and extra-keys swipes. Define the execution context
   for native and Nix sessions and let users choose the action in Settings.
 
