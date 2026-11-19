@@ -357,6 +357,9 @@ pub fn serve(runtime: &Path, socket: &Path, runner: &mut dyn Runner) -> Result<S
     {
         eprintln!("nixpp: could not install the start scripts: {error:#}");
     }
+    if cfg!(target_os = "android") {
+        crate::bootstrap::retire_legacy_bridge(&server.runtime);
+    }
     if cfg!(target_os = "android")
         && let Err(error) = crate::outer_remote::start(&server.runtime)
     {

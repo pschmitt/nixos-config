@@ -383,6 +383,53 @@ pub fn install_scripts(directory: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Files of the native Android bridge broker, which Termux:API through the
+/// app's am socket replaced. Older daemons started it from the runtime.
+const LEGACY_BRIDGE_FILES: [&str; 3] = [
+    "android-bridge.py",
+    "start-android-bridge.sh",
+    "bridge.enabled",
+];
+
+/// Stop a broker an older daemon left running and remove its files. A daemon
+/// that restarts in place for a native update keeps its children, and nothing
+/// else stops the broker before the app restarts.
+pub(crate) fn retire_legacy_bridge(directory: &Path) {
+    let script = directory.join(LEGACY_BRIDGE_FILES[0]);
+    for pid in processes_running(Path::new("/proc"), &script) {
+        // SAFETY: kill(2) with a PID read from /proc; a stale PID only fails.
+        unsafe { libc::kill(pid, libc::SIGTERM) };
+    }
+    for name in LEGACY_BRIDGE_FILES {
+        let _ = fs::remove_file(directory.join(name));
+    }
+}
+
+/// PIDs under `proc` whose command line names `script`, under any spelling
+/// of its path (/data/data versus /data/user/0).
+fn processes_running(proc: &Path, script: &Path) -> Vec<libc::pid_t> {
+    let Ok(target) = fs::metadata(script) else {
+        return Vec::new();
+    };
+    let Ok(entries) = fs::read_dir(proc) else {
+        return Vec::new();
+    };
+    let same = |argument: &[u8]| {
+        use std::os::unix::{ffi::OsStrExt, fs::MetadataExt};
+        argument.ends_with(b"/android-bridge.py")
+            && fs::metadata(std::ffi::OsStr::from_bytes(argument))
+                .is_ok_and(|found| found.dev() == target.dev() && found.ino() == target.ino())
+    };
+    entries
+        .flatten()
+        .filter_map(|entry| {
+            let pid = entry.file_name().to_str()?.parse::<libc::pid_t>().ok()?;
+            let cmdline = fs::read(entry.path().join("cmdline")).ok()?;
+            cmdline.split(|byte| *byte == 0).any(same).then_some(pid)
+        })
+        .collect()
+}
+
 /// Copy the running executable to `DIR/nixpp` (mode 0700), so the launch
 /// scripts find the controller even when `nixpp` was started from elsewhere.
 /// Does nothing when `DIR/nixpp` already is the running executable.
@@ -950,6 +997,43 @@ fn extract_bootstrap(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn finds_the_legacy_bridge_under_any_spelling() {
+        let root = tempfile::tempdir().unwrap();
+        let runtime = root.path().join("data/runtime");
+        fs::create_dir_all(&runtime).unwrap();
+        fs::write(runtime.join("android-bridge.py"), "").unwrap();
+        let alias = root.path().join("alias");
+        std::os::unix::fs::symlink(root.path().join("data"), &alias).unwrap();
+        let proc = root.path().join("proc");
+        for (pid, cmdline) in [
+            (
+                "41",
+                format!(
+                    "python3\0-I\0{}/runtime/android-bridge.py\0serve\0",
+                    alias.display()
+                ),
+            ),
+            (
+                "42",
+                "python3\0-I\0/elsewhere/android-bridge.py\0".to_owned(),
+            ),
+            ("43", "sleep\0100\0".to_owned()),
+            (
+                "self",
+                format!("python3\0{}/android-bridge.py\0", runtime.display()),
+            ),
+        ] {
+            fs::create_dir_all(proc.join(pid)).unwrap();
+            fs::write(proc.join(pid).join("cmdline"), cmdline).unwrap();
+        }
+        assert_eq!(
+            processes_running(&proc, &runtime.join("android-bridge.py")),
+            vec![41]
+        );
+        assert!(processes_running(&proc, &runtime.join("missing.py")).is_empty());
+    }
     use std::io::Cursor;
     use zip::write::SimpleFileOptions;
     use zip::{CompressionMethod, ZipWriter};
