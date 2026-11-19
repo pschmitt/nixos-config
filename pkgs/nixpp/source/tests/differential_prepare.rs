@@ -395,7 +395,12 @@ fn rust_prepare_matches_the_python_reference() {
         let rust_fixture = Fixture::build(&root);
         (scenario.setup)(&rust_fixture);
         let rust_outcomes = run_rust(&rust_fixture, scenario.attempts);
-        let rust_tree = snapshot(&root);
+        let mut rust_tree = snapshot(&root);
+        // Rust coordinates preparation with switching and GC using this lock.
+        assert_eq!(
+            rust_tree.remove("runtime/system-control.lock"),
+            Some(Entry::File(0o600, Vec::new()))
+        );
 
         compared += 1;
         accepted += reference_outcomes.iter().filter(|o| o.is_ok()).count();
