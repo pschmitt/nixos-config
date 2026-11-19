@@ -5,7 +5,7 @@ usage() {
 Usage: $(basename "$0") [--json] COMMAND [SERVICE]
 
 Commands:
-  list                 List declared services and status
+  list                 List declared services and status (plus the app-managed adb-shell)
   start SERVICE        Start a service
   stop SERVICE         Stop a service
   restart SERVICE      Restart a service
@@ -75,6 +75,17 @@ service_status() {
   esac
 }
 
+# The ADB shell listener belongs to the Android app, not to the guest
+# supervisor, so it is listed read-only and probed on its loopback port.
+adb_shell_status() {
+  if timeout 1 bash -c ": </dev/tcp/127.0.0.1/${NIXPP_SVC_ADB_PORT:-5522}" 2>/dev/null
+  then
+    printf 'running'
+  else
+    printf 'down'
+  fi
+}
+
 main() {
   local json_output=0
   local command
@@ -123,6 +134,11 @@ main() {
       die "invalid service name"
       return 1
     }
+    if [[ $service_name == adb-shell ]]
+    then
+      die "adb-shell is managed by the TermuxPP app (Settings > Debugging)"
+      return 1
+    fi
     jq -e --arg name "$service_name" '.[$name] != null' "$manifest" >/dev/null || {
       die "unknown service: $service_name"
       return 1
@@ -309,12 +325,15 @@ main() {
           result=$(jq -cn --argjson items "$result" --arg name "$service_name" --arg status "$status" --argjson enabled "$enabled" \
             '$items + [{name:$name,status:$status,enabled:$enabled}]')
         done < <(jq -r 'keys[]' "$manifest")
+        result=$(jq -cn --argjson items "$result" --arg status "$(adb_shell_status)" \
+          '$items + [{name:"adb-shell",status:$status,enabled:true,external:true}]')
         printf '%s\n' "$result"
       else
         while IFS= read -r service_name
         do
           printf '%-24s %s\n' "$service_name" "$(service_status "$service_name")"
         done < <(jq -r 'keys[]' "$manifest")
+        printf '%-24s %s\n' adb-shell "$(adb_shell_status) (managed by the TermuxPP app)"
       fi
       ;;
     start|stop|restart|logs)
