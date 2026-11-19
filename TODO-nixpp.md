@@ -105,14 +105,16 @@ layers, failure causes and principles.
 
 ## CLI
 
-- [ ] Sporadic `eza -d` "hang" in the candidate self-test on p11 (37 s and
+- [x] Sporadic `eza -d` "hang" in the candidate self-test on p11 (37 s and
   607 s, both on 2026-11-19; `nix` and `rsync` were slow in the same runs).
   Likely cause: the daemon ran in the cgroup of the `:background` (Tasker)
   process, which Android freezes while cached, freezing the whole check
   including its timer; `eza -d` was simply running at the time. Fixed in the
   app (termuxpp a319a9e0: app-wide setup, including the nixpp watchdog, only
   in the main process); the daemon now warns when it runs in a secondary
-  process's cgroup. Close after a week of switches without a timed-out check.
+  process's cgroup. Since then 3 switches and 10 extra `nixpp check` runs
+  passed on p11 and zf10 (eza 3-9 s for 60 listings). Reopen if a check
+  times out again; look for the daemon's cgroup warning first.
 - [x] `termuxpp-self-update`: update the TermuxPP APK from the CLI, like
   Settings > About does (same release source and checks; Android shows the
   install prompt, or Shizuku installs without one).
