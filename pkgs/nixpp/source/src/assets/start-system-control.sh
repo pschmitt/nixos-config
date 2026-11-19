@@ -44,6 +44,15 @@ EOF_APK
   then
     redirect=$data_dir/files/lib/libtermux-pkg-redirect.so
   fi
+  # The app records the library it wants preloaded (apk-library). Follow it
+  # while it exists: an app that predates the stable copy records its APK
+  # path, and preloading the leftover stable copy instead would make nixpp
+  # see a replaced APK and restart forever.
+  if [[ -r $directory/apk-library ]] && IFS= read -r recorded < "$directory/apk-library" &&
+    [[ $recorded == /* && -r $recorded ]]
+  then
+    redirect=$recorded
+  fi
   if [[ ! -r $redirect || ! -x $directory/nixpp ]]
   then
     printf 'The native core redirect library and runtime nixpp binary are required.\n' >&2

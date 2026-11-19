@@ -88,8 +88,12 @@ layers, failure causes and principles.
   Covered at the decision points: nixpp's `marker_differs` over every
   APK/script combination (at most one restart, path spellings settle) and the
   app's start-script detection (`NixppRuntimeRecoveryTest`).
-- [ ] End-to-end transition test: run the real `start-system-control.sh`
-  against both app builds in an emulator on a worker.
+- [x] End-to-end transition test: `pkgs/nixpp/tests/test-start-transitions.sh`
+  (in `nixpp-system-tests`) runs the real `start-system-control.sh` on a fake
+  Android root through app updates, a downgrade to an app without the stable
+  copy and back, and asks the real nixpp (`__apk-replaced`) whether serve
+  would restart. It found a restart loop after such a downgrade: the script
+  now follows the library the app records.
 
 ## CLI
 

@@ -58,6 +58,8 @@ pkgs.runCommand "termuxpp-system-assembly-tests" { nativeBuildInputs = [ pkgs.py
   cp ${../../pkgs/nixpp/tests/prepare-session.py} prepare-session.py
   cp ${../../pkgs/nixpp/tests/test_prepare_session.py} test_prepare_session.py
   python3 -I test_prepare_session.py
+  bash ${../../pkgs/nixpp/tests/test-start-transitions.sh} ${valid.system}/sw/bin/nixpp \
+    ${../../pkgs/nixpp/source/src/assets/start-system-control.sh}
   python3 -I ${../../pkgs/nixpp/tests/test_nixpp_parity.py} ${../../pkgs/nixpp/tests/prepare-session.py} \
     ${valid.system}/sw/bin/nixpp ${valid.system} ${integrated.system}
   mkdir -p runtime/root/etc

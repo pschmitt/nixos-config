@@ -177,6 +177,10 @@ pub enum Command {
     /// Run the persistent native guest service supervisor
     #[command(name = "__service-supervisor", hide = true)]
     ServiceSupervisor,
+    /// Print whether serve would restart for a replaced APK (exit 0) or not
+    /// (exit 1), from the apk-library marker and TERMUX_PKG_REDIRECT_SO
+    #[command(name = "__apk-replaced", hide = true)]
+    ApkReplaced,
     /// Run a controller operation directly, without the socket
     Controller {
         #[command(subcommand)]
@@ -342,6 +346,17 @@ fn execute(cli: &Cli, ui: &Ui) -> Exit {
                 Err(error) => Exit::failure(format!("service supervisor: {error:#}")),
             },
             Err(error) => Exit::failure(format!("service supervisor: {error:#}")),
+        },
+        Command::ApkReplaced => match native_runtime(runtime) {
+            Ok(runtime) => {
+                let replaced = crate::runtime_apk::replaced(&runtime);
+                println!("{}", if replaced { "replaced" } else { "current" });
+                Exit {
+                    code: if replaced { 0 } else { 1 },
+                    message: None,
+                }
+            }
+            Err(error) => Exit::failure(format!("apk check: {error:#}")),
         },
         Command::Controller { operation } => native(operate(runtime, operation, ui)),
         Command::Init(args) => {
@@ -621,6 +636,7 @@ fn guest_command(
         | Command::Login(_)
         | Command::NativeShell
         | Command::ServiceSupervisor
+        | Command::ApkReplaced
         | Command::Bootstrap { .. } => {
             unreachable!("handled before the guest commands")
         }
