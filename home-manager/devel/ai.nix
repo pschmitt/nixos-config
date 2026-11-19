@@ -606,13 +606,8 @@ in
           };
         };
         msteams.command = lib.getExe msteamsMcp;
-        rworker = {
-          command = lib.getExe pkgs.rworker.mcp;
-          args = [
-            "--rworker"
-            (lib.getExe pkgs.rworker)
-          ];
-        };
+        # Bound to the configured client (home-manager/devel/rworker.nix).
+        rworker.command = lib.getExe config.programs.rworker.mcp.finalPackage;
         outlook.command = lib.getExe msoutlookMcp;
         todoist = {
           command = lib.getExe pkgs.todoist-mcp;
@@ -640,7 +635,6 @@ in
       zsh.shellAliases = {
         cl = "claude";
         cx = "codex";
-        rk = "rworker";
       };
       claude-code = {
         enable = true;
@@ -954,7 +948,6 @@ in
           # '')
         ]
         ++ [
-          pkgs.rworker
           claudeOgl
           claudeStatusline
           claudeTmuxRename

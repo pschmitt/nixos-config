@@ -310,6 +310,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    rworker = {
+      url = "github:pschmitt/rworker";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
+
     luks-ssh-unlock = {
       url = "github:pschmitt/luks-ssh-unlock";
       inputs = {

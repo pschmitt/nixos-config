@@ -355,6 +355,21 @@
     },
     "crane_6": {
       "locked": {
+        "lastModified": 1794962885,
+        "narHash": "sha256-zrweT2tXbcWiJMACOhOr2eYFJKVa6g59ouRaZ3BS5Do=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "95e62def851e9d650f0eab63cb4f59a3306e20bd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
+    "crane_7": {
+      "locked": {
         "lastModified": 1793836618,
         "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
         "owner": "ipetkov",
@@ -2508,6 +2523,7 @@
         "pschmitt-dev": "pschmitt-dev",
         "rbw": "rbw",
         "ruamel-fmt": "ruamel-fmt",
+        "rworker": "rworker",
         "sendmyl": "sendmyl",
         "shelly-ble-rpc": "shelly-ble-rpc",
         "slack-react": "slack-react",
@@ -2614,6 +2630,30 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rworker": {
+      "inputs": {
+        "crane": "crane_6",
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795128469,
+        "narHash": "sha256-WyUKQfaHVTNOPrctMAoiOF1h/P9UCBsfPJ1e6PXJY+s=",
+        "owner": "pschmitt",
+        "repo": "rworker",
+        "rev": "55ede9b100158f0a4fb84a267c5e9cb5d0e3102c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "rworker",
         "type": "github"
       }
     },
@@ -2742,7 +2782,7 @@
     },
     "stricknani": {
       "inputs": {
-        "crane": "crane_6",
+        "crane": "crane_7",
         "flake-utils": [
           "flake-utils"
         ],

@@ -2,22 +2,22 @@
 
 Where the code lives:
 
-- Client, completions, MCP server and tests: the package `pkgs/rworker`
-  (`rworker.sh`, `completions/`, `mcp/rworker-mcp.py`, `tests/`). It is
-  `pkgs.rworker` (`pkgs.rworker.mcp` for the MCP server); TermuxPP overrides
-  it (no SSH connection sharing).
+- Client, completions, MCP server, Home Manager module and tests: the
+  repository [pschmitt/rworker](https://github.com/pschmitt/rworker)
+  (Rust; flake input `rworker`). It is `pkgs.rworker`
+  (`pkgs.rworker.mcp` for the MCP server), configured through
+  `programs.rworker` (`home-manager/devel/rworker.nix`); TermuxPP and
+  browser-daemon's provider override it (`extraRuntimeInputs`,
+  `sshControlMaster`). Its `AGENTS.md` and `PARITY.md` say how to change it.
 - Control host side (`rworker` on rofl-10): `services/scripts/nixbot-workers.py`
   in the private repository.
 - On the worker: `hosts/rworker/` (image, `scripts/rworker-metadata.sh`).
 - This skill directory holds only the instructions.
 
-The client's `spec()` (`rworker __spec`) drives the zsh and bash
-completions. When adding an action or flag, update `spec()`, the dispatch in
-`main()` and `action_help()` together; the build of `pkgs.rworker`
-(`pkgs/rworker/check-spec.sh`) fails otherwise. The client is shellchecked at
-build time, so run `shellcheck -s bash pkgs/rworker/rworker.sh` too. Unit
-tests: `python3 pkgs/rworker/tests/test-rworker-jobs.py` and
-`test-rworker-mcp.py`.
+Changes to the client go to its repository, then the `deploy` skill (bump
+the `rworker` input). Its spec (`rworker __spec`) drives the completions;
+`cargo test` there checks the spec, dispatch, help and completion scripts
+against each other.
 
 The worker image is the NixOS host `rworker` (`hosts/rworker/`, flake output
 `images.rworker`, boot check `rworker-boot`; formerly `nixbot-worker`). The

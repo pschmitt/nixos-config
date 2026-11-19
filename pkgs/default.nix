@@ -124,7 +124,10 @@ in
   console-tui = pkgs.callPackage ./console-tui { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
   playconsole-cli = pkgs.callPackage ./playconsole-cli { };
-  rworker = pkgs.callPackage ./rworker { };
+  # The client for ad-hoc build workers (github:pschmitt/rworker), built
+  # with this nixpkgs; `.override` takes extraRuntimeInputs and
+  # sshControlMaster (TermuxPP, browser-daemon's provider).
+  inherit (inputs.rworker.overlays.default pkgs pkgs) rworker;
   shellyctl = pkgs.callPackage ./shellyctl { };
   slack-mcp-server = pkgs.callPackage ./slack-mcp-server { };
   skills-ref = pkgs.callPackage ./skills-ref { };

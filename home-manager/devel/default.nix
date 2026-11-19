@@ -28,6 +28,7 @@ in
     ./nodejs.nix
     ./python.nix
     ./rust.nix
+    ./rworker.nix
     ./sh.nix
     ./tea.nix
     ./zsh.nix

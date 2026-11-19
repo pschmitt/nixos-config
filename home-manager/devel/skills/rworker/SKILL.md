@@ -24,7 +24,7 @@ A worker NAME may be abbreviated to a unique prefix or substring (`rworker logs 
 an ambiguous one lists the candidates. The shell completions (`rk`) complete names, also after flags.
 
 All through `rworker` (on PATH via Home Manager; the package is
-`pkgs/rworker`). It calls `rworker` on the control host (rofl-10)
+`github:pschmitt/rworker`, configured by `programs.rworker`). It calls `rworker` on the control host (rofl-10)
 over SSH and keeps per-worker state in `~/.local/state/rworker`:
 
 ```bash
