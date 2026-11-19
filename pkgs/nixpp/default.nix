@@ -2,6 +2,7 @@
   lib,
   stdenv,
   buildPackages,
+  dix,
   installShellFiles,
   rustPlatform,
   python3,
@@ -27,6 +28,7 @@ rustPlatform.buildRustPackage {
   '';
   NIXPP_REFERENCE_PREPARE = ./tests/prepare-session.py;
   NIXPP_REFERENCE_PYTHON = "${python3}/bin/python3";
+  NIXPP_DIX = lib.getExe dix;
 
   meta = {
     description = "Declarative Android guest system manager";

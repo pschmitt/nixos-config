@@ -525,10 +525,18 @@ fn guest_command(
         Command::Doctor => doctor(ui, &socket)?,
         Command::Diff { from, to } => {
             let runtime = require(runtime, "diff requires NIXPP_RUNTIME or --runtime")?;
+            let format = if ui.json() {
+                guest::DiffFormat::Nix
+            } else {
+                guest::DiffFormat::Dix {
+                    color: ui.stdout_color(),
+                }
+            };
             let (from, to, diff) = guest::diff_generations(
                 &runtime,
                 from.as_deref(),
                 to.as_deref(),
+                format,
                 &mut ProcessBuilder,
             )?;
             if ui.json() {

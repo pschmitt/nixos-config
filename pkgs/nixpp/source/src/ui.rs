@@ -106,6 +106,11 @@ impl Ui {
         self.json
     }
 
+    /// Whether to use color in output sent to stdout.
+    pub fn stdout_color(&self) -> bool {
+        self.out_color
+    }
+
     /// Whether stdout is an interactive terminal.
     pub fn stdout_is_terminal() -> bool {
         io::stdout().is_terminal()

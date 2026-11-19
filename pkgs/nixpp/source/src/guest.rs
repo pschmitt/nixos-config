@@ -413,23 +413,33 @@ fn closure_diff_defaults_to_previous_then_active() {
     );
 }
 
-/// Compare retained closures. Keep the controller lock until Nix finishes
-/// reading both graphs, so neither candidate can be pruned mid-comparison.
+pub enum DiffFormat {
+    Nix,
+    Dix { color: bool },
+}
+
+/// Compare retained closures under the controller lock so neither candidate
+/// can be pruned while the diff reads the graphs.
 pub fn diff_generations(
     runtime: &Path,
     from: Option<&str>,
     to: Option<&str>,
+    format: DiffFormat,
     builder: &mut dyn Builder,
 ) -> Result<(String, String, String)> {
     let _lock = crate::fsutil::FileLock::acquire(&runtime.join(crate::controller::CONTROL_LOCK))?;
     let (from, to) = diff_endpoints(&crate::controller::generations(runtime)?, from, to)?;
-    let diff = builder.output(&[
-        "nix".into(),
-        "store".into(),
-        "diff-closures".into(),
-        format!("/nix/store/{from}"),
-        format!("/nix/store/{to}"),
-    ])?;
+    let mut command = match format {
+        DiffFormat::Nix => vec!["nix".into(), "store".into(), "diff-closures".into()],
+        DiffFormat::Dix { color } => vec![
+            option_env!("NIXPP_DIX").unwrap_or("dix").into(),
+            "--color".into(),
+            if color { "always" } else { "never" }.into(),
+            "--force-correctness".into(),
+        ],
+    };
+    command.extend([format!("/nix/store/{from}"), format!("/nix/store/{to}")]);
+    let diff = builder.output(&command)?;
     Ok((from, to, diff))
 }
 

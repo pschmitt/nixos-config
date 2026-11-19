@@ -318,6 +318,8 @@ When a generation is pruned, GC also drops its unused Home Manager profile
 links so they release the old closure.
 
 Run `nixpp diff` to compare the previous generation with the active one.
+The terminal output uses `dix` to show version changes, added and removed
+packages, and a closure size summary.
 To compare two retained generations, get their numbers with
 `nixpp list-generations` and pass them in order, for example `nixpp diff 12 14`.
 Use `nixpp --json diff` to include the generation paths with the diff output.
