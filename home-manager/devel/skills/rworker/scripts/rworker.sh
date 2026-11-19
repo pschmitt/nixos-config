@@ -3226,7 +3226,7 @@ cmd_builder() {
 # an unknown or ambiguous fragment is an error. A name this host already
 # knows (state file) skips the lookup.
 resolve_worker() {
-  local frag="$1" names exact match
+  local frag="$1" names exact
   local -a hits=()
   if [[ -z "$frag" || -f "$(state_file "$frag")" ]]
   then
