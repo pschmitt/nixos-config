@@ -96,7 +96,9 @@ pub fn spawn_bridge(runtime: &Path) -> Result<()> {
                 }
                 let started = std::time::Instant::now();
                 let mut command = Command::new("/system/bin/sh");
-                command.arg(&script).stdin(Stdio::null());
+                // The daemon may run from a directory the app cannot read
+                // (Android's /); the broker reopens its working directory.
+                command.arg(&script).current_dir(&runtime).stdin(Stdio::null());
                 if let Ok(log) = OpenOptions::new()
                     .append(true)
                     .create(true)
