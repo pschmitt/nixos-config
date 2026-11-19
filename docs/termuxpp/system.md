@@ -112,7 +112,11 @@ location access "Allow all the time"; `termuxpp-setup-permissions grant` sets it
 The guest supervisor starts the service on an allowed network and stops it
 elsewhere. With no Wi-Fi, a withheld name or state older than five minutes it
 stays down, and `svc list` shows that it is waiting for an allowed network.
-`svc start` refuses to start it elsewhere; a manual `svc stop` is kept. The ADB
+`svc start` refuses to start it elsewhere; a manual `svc stop` is kept.
+TermuxPP's settings (Nix guest services, "Wi-Fi networks…") change a
+service's list at run time through `service-state/allowed-ssids.json`: an
+entry, even an empty list (any network), replaces the configured one, and
+"Use configuration" removes it. `svc --json list` reports the effective list. The ADB
 shell listener belongs to the app and uses `fullNix.adbShell.allowedSsids`
 instead. Test the gating with real runit:
 

@@ -141,8 +141,18 @@ main() {
   generation=$(active_generation) || return 1
   mkdir -p "$services_dir" "$desired_dir" "$logs_dir" || return 1
 
+  # The TermuxPP app's services page writes per-service lists here; an entry
+  # (even an empty list, meaning no restriction) replaces the configured one.
+  local overrides=${NIXPP_SVC_SSID_OVERRIDES:-$runtime/allowed-ssids.json}
+
+  # Prints the effective allow-list of SERVICE, one name per line.
   allowed_ssids() {
-    jq -r --arg name "$1" '.[$name].allowedSsids // [] | .[]' "$manifest"
+    if [[ -r $overrides ]] && jq -e --arg name "$1" 'has($name)' "$overrides" >/dev/null 2>&1
+    then
+      jq -r --arg name "$1" '.[$name][]? | strings' "$overrides"
+    else
+      jq -r --arg name "$1" '.[$name].allowedSsids // [] | .[]' "$manifest"
+    fi
   }
 
   # Succeeds when SERVICE has no allow-list or the current Wi-Fi is on it.
@@ -150,7 +160,7 @@ main() {
     local name=$1
     local ssid
     local allowed
-    if ! jq -e --arg name "$name" '(.[$name].allowedSsids // []) | length > 0' "$manifest" >/dev/null
+    if ! network_restricted "$name"
     then
       return 0
     fi
@@ -163,7 +173,7 @@ main() {
   }
 
   network_restricted() {
-    jq -e --arg name "$1" '(.[$name].allowedSsids // []) | length > 0' "$manifest" >/dev/null
+    [[ -n $(allowed_ssids "$1") ]]
   }
 
   service_exists() {
@@ -336,13 +346,12 @@ main() {
       fi
     done < <(jq -r 'keys[]' "$manifest")
 
-    local restricted=()
+    local enabled_services=()
     while IFS= read -r service
     do
-      if [[ $(jq -r --arg name "$service" '.[$name].enabled' "$manifest") == true ]] &&
-        network_restricted "$service"
+      if [[ $(jq -r --arg name "$service" '.[$name].enabled' "$manifest") == true ]]
       then
-        restricted+=("$service")
+        enabled_services+=("$service")
       fi
     done < <(jq -r 'keys[]' "$manifest")
 
@@ -354,21 +363,27 @@ main() {
       then
         break
       fi
-      # Follow Wi-Fi changes for restricted services. A manual `svc stop`
-      # (the .stopped marker) always wins; network stops leave no marker.
-      if ((${#restricted[@]}))
+      # Follow Wi-Fi changes; the allow-lists may change at any time (the
+      # app's services page). A manual `svc stop` (.stopped) always wins; a
+      # network stop leaves .network-down, so only those restart once allowed.
+      if ((${#enabled_services[@]}))
       then
         exec 9>"$lock_file"
         flock 9
-        for service in "${restricted[@]}"
+        for service in "${enabled_services[@]}"
         do
           [[ -e "$desired_dir/$service.stopped" ]] && continue
           if network_allows "$service"
           then
-            [[ $(service_status "$service") == running ]] || start_service "$service" || true
+            if network_restricted "$service" || [[ -e "$desired_dir/$service.network-down" ]]
+            then
+              [[ $(service_status "$service") == running ]] || start_service "$service" || true
+            fi
+            rm -f -- "$desired_dir/$service.network-down"
           elif [[ $(service_status "$service") != down ]]
           then
             stop_service "$service" || true
+            : >"$desired_dir/$service.network-down"
           fi
         done
         exec 9>&-
@@ -405,9 +420,15 @@ main() {
             network='"blocked"'
             network_allows "$service_name" && network='"allowed"'
           fi
+          local ssids overridden=false
+          ssids=$(allowed_ssids "$service_name" | jq -R . | jq -sc .)
+          if [[ -r $overrides ]] && jq -e --arg name "$service_name" 'has($name)' "$overrides" >/dev/null 2>&1
+          then
+            overridden=true
+          fi
           result=$(jq -cn --argjson items "$result" --arg name "$service_name" --arg status "$status" --argjson enabled "$enabled" \
-            --argjson network "$network" \
-            '$items + [{name:$name,status:$status,enabled:$enabled} + (if $network == null then {} else {network:$network} end)]')
+            --argjson network "$network" --argjson ssids "$ssids" --argjson overridden "$overridden" \
+            '$items + [{name:$name,status:$status,enabled:$enabled,allowedSsids:$ssids,ssidsOverridden:$overridden} + (if $network == null then {} else {network:$network} end)]')
         done < <(jq -r 'keys[]' "$manifest")
         result=$(jq -cn --argjson items "$result" --arg status "$(adb_shell_status)" \
           '$items + [{name:"adb-shell",status:$status,enabled:true,external:true}]')

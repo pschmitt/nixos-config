@@ -119,6 +119,23 @@ svc start restricted
 expect restricted running "manual start on the allowed Wi-Fi"
 expect free running "unrestricted service is unaffected throughout"
 
+# The app's services page overrides the configured lists at run time.
+overrides=$work/state/allowed-ssids.json
+network other
+expect restricted down "configured list applies before any override"
+printf '{"free":["home"]}\n' >"$overrides"
+expect free down "an override restricts an unrestricted service"
+svc --json list >"$work/list.json"
+[[ $(jq -c '.[] | select(.name == "free") | [.allowedSsids, .ssidsOverridden, .network]' "$work/list.json") == '[["home"],true,"blocked"]' ]] ||
+  fail "list does not show the override: $(cat "$work/list.json")"
+printf '{}\n' >"$overrides"
+expect free running "removing the override restores the network-stopped service"
+printf '{"restricted":[]}\n' >"$overrides"
+expect restricted running "an empty override lifts the configured restriction"
+rm -f "$overrides"
+expect restricted down "the configured list applies again"
+network home
+
 # A tree whose native daemon dies retires instead of running unowned.
 kill -TERM -- "-$supervisor_pid" 2>/dev/null || true
 wait "$supervisor_pid" 2>/dev/null || true
