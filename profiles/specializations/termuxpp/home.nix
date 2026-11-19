@@ -65,6 +65,8 @@ in
     ../../base/dotfiles/tmux.nix
     ../../../home-manager/cli/zsh/config/runtime.nix
     ../../../home-manager/cli/zsh/plugins
+    ../../../home-manager/cli/zsh/tools/termux/home-assistant-cli.nix
+    ../../../home-manager/gui/home-assistant-secrets.nix
   ];
 
   fullNix = {
@@ -126,8 +128,6 @@ in
     };
   };
 
-  # The guest has no yadm-owned root startup file to select the Nix dotDir.
-  home.file.".zshenv".enable = lib.mkOverride 40 true;
   # OpenSSH starts the guest account's Bash login shell from /etc/passwd.
   home.file.".bash_profile".text = ''
     if [[ -n ''${SSH_CONNECTION:-} && $- == *i* ]]
@@ -215,7 +215,6 @@ in
     };
     zsh = {
       enable = true;
-      dotDir = "${config.xdg.configHome}/zsh-nix";
       shellAliases.tmad = tmad;
       envExtra = lib.mkBefore ''
         # SSH's Bash login shim execs zsh but leaves the inherited SHELL in place.

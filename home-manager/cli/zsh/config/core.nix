@@ -4,71 +4,33 @@
   pkgs,
   ...
 }:
-let
-  nixDotDir = "${config.xdg.configHome}/zsh-nix";
-  nixDotDirTarget = lib.removePrefix "${config.home.homeDirectory}/" nixDotDir;
-  completionLinks = lib.concatMapStringsSep "\n" (name: ''
-    ln -s ${lib.escapeShellArg (toString config.xdg.configFile.${name}.source)} \
-      "$out/completions/${lib.removePrefix "zsh/completions/" name}"
-  '') (builtins.filter (lib.hasPrefix "zsh/completions/") (builtins.attrNames config.xdg.configFile));
-  previewFiles = {
-    zshenv = config.home.file."${nixDotDirTarget}/.zshenv".source;
-    zprofile = config.home.file."${nixDotDirTarget}/.zprofile".source;
-    zshrc = config.home.file."${nixDotDirTarget}/.zshrc".source;
-  };
-  previewConfig = pkgs.runCommand "zsh-nix-dotdir" { } ''
-    mkdir -p "$out/plugins" "$out/completions"
-    substitute ${previewFiles.zshenv} "$out/.zshenv" \
-      --replace-fail ${lib.escapeShellArg nixDotDir} "$out"
-    ln -s ${previewFiles.zprofile} "$out/.zprofile"
-    ln -s ${previewFiles.zshrc} "$out/.zshrc"
-    ln -s ${config.xdg.configHome}/zsh/plugins/local "$out/plugins/local"
-    ln -s ${config.xdg.configHome}/zsh/custom "$out/custom"
-    ${completionLinks}
-
-  '';
-  zshNix = pkgs.writeShellApplication {
-    name = "zsh-nix";
-    runtimeInputs = [ pkgs.zsh ];
-    text = ''
-      unset ZHJ __HM_SESS_VARS_SOURCED __HM_ZSH_SESS_VARS_SOURCED
-      unset ZINIT_HOME
-      export ZDOTDIR=${lib.escapeShellArg (toString previewConfig)}
-      exec ${pkgs.zsh}/bin/zsh "$@"
-    '';
-  };
-  # Escape hatch back to the yadm/zinit shell when the Nix config is the
-  # default ZDOTDIR (dotfiles.zsh.nixShell.default).
-  zshYadm = pkgs.writeShellApplication {
-    name = "zsh-yadm";
-    runtimeInputs = [ pkgs.zsh ];
-    text = ''
-      unset ZHJ __HM_SESS_VARS_SOURCED __HM_ZSH_SESS_VARS_SOURCED
-      export ZDOTDIR="$HOME/.config/zsh"
-      exec ${pkgs.zsh}/bin/zsh "$@"
-    '';
-  };
-in
 {
   imports = [ ./base.nix ];
 
-  home.packages = [
-    zshNix
-    zshYadm
-  ];
-
-  # Let $ZDOTDIR/completions resolve when ~/.config/zsh-nix is used directly
-  # as ZDOTDIR (the launcher links these into its store copy instead).
-  xdg.configFile."zsh-nix/completions".source =
-    config.lib.file.mkOutOfStoreSymlink "${config.xdg.configHome}/zsh/completions";
-
-  # The regular yadm-managed shell owns ~/.zshenv. Keep its dotDir separate
-  # while the launcher uses a store-backed copy for pre-activation testing.
+  # NixOS sets ZDOTDIR system-wide (/etc/zshenv.local, profiles/base/dotfiles.nix),
+  # so no ~/.zshenv is needed.
   home.file.".zshenv".enable = lib.mkForce false;
+
+  # Migration (2026-11): yadm used to own ~/.config/zsh/.zsh{env,rc} and
+  # .zprofile as relative symlinks to zshenv/zshrc/zprofile. Remove them
+  # before Home Manager links its own, on hosts where the yadm pull that
+  # deletes them has not run yet. Drop once every host has pulled yadm.
+  home.activation.dropYadmZshStartupLinks = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
+    for name in zshenv zshrc zprofile
+    do
+      link=${lib.escapeShellArg config.programs.zsh.dotDir}/.$name
+      if [[ -L "$link" && "$(readlink "$link")" == "$name" ]]
+      then
+        run rm -f "$link"
+      fi
+    done
+  '';
 
   programs.zsh = {
     enable = true;
-    dotDir = nixDotDir;
+    # The startup files come from Nix; yadm still owns the local plugins,
+    # functions, custom/ overlays, completions and p10k.zsh beside them.
+    dotDir = "${config.xdg.configHome}/zsh";
     enableCompletion = false;
     profileExtra = ''
       [[ -r /etc/zsh/zprofile ]] && source /etc/zsh/zprofile 2>/dev/null
@@ -148,7 +110,7 @@ in
       fi
     '';
     initContent = lib.mkMerge [
-      # Mirror the yadm custom.zsh loader: OS and per-host overrides such as
+      # OS and per-host overlays from yadm's custom/ dir. Overrides such as
       # custom/hosts/<host>/zprompt (host_color) must precede p10k.zsh.
       (lib.mkOrder 700 ''
         () {
@@ -156,12 +118,11 @@ in
           local custom_dir="${config.xdg.configHome}/zsh/custom"
 
           is_distrobox && multisrc "$custom_dir/os/distrobox"/*
-          source "$custom_dir/hostname" 2>/dev/null
           is_nixos || multisrc "$custom_dir/os/not-nixos"/*.zsh
 
           multisrc \
-            "$custom_dir/os/$__OS_KIND"/^zboot.zsh \
-            "$custom_dir/hosts/$HOST"/^zboot.zsh
+            "$custom_dir/os/$__OS_KIND"/*(-.) \
+            "$custom_dir/hosts/$HOST"/*(-.)
 
           # Like the yadm dirs.zsh: a cd<name> alias for every named
           # directory, including the host overlays' `hash -d` entries.

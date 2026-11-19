@@ -66,11 +66,11 @@ write_py_tool() {
 make_runtime_gen() {
   local dir="$1" real
   mkdir -p "$dir/home-path/bin" "$dir/home-files/.config/nix" \
-    "$dir/home-files/.config/zsh-nix"
+    "$dir/home-files/.config/zsh"
   real=$(readlink -f "$(command -v python3)")
   ln -s "$real" "$dir/home-path/bin/python3"
-  printf 'export FOO=1\n' > "$dir/home-files/.config/zsh-nix/.zshenv"
-  printf 'alias l=ls\n' > "$dir/home-files/.config/zsh-nix/.zshrc"
+  printf 'export FOO=1\n' > "$dir/home-files/.config/zsh/.zshenv"
+  printf 'alias l=ls\n' > "$dir/home-files/.config/zsh/.zshrc"
   printf 'experimental-features = nix-command flakes\nflake-registry =\n' \
     > "$dir/home-files/.config/nix/nix.conf"
   cat > "$dir/home-files/.config/nix/registry.json" <<'JSON'

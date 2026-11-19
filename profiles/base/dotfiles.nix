@@ -1,8 +1,4 @@
-{ config, pkgs, ... }:
-let
-  zdotdir =
-    if config.dotfiles.zsh.nixShell.default then "$HOME/.config/zsh-nix" else "$HOME/.config/zsh";
-in
+{ pkgs, ... }:
 {
   imports = [
     ./dotfiles/neovim.nix
@@ -19,7 +15,7 @@ in
     etc = {
       "zshenv.local" = {
         text = ''
-          export ZDOTDIR="''${ZDOTDIR:-${zdotdir}}"
+          export ZDOTDIR="''${ZDOTDIR:-$HOME/.config/zsh}"
         '';
         mode = "0644";
       };

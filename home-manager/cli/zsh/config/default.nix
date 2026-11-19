@@ -1,5 +1,5 @@
-# The Nix-managed shell uses an isolated dotDir and launcher; the regular
-# yadm-owned Zsh startup files remain in place.
+# The Nix-managed Zsh startup files in ~/.config/zsh (ZDOTDIR). yadm only
+# provides the local plugins, functions and host/OS overlays beside them.
 {
   imports = [
     ./core.nix

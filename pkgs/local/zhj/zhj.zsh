@@ -15,24 +15,12 @@
 # command string with the Nix zsh config loaded (no prompt, plugins or
 # completions). Usage: zhj [-x] [-e VAR=value]... [--] CMD|FILE [ARGS...]
 
-local -a void DEBUG WITH_ZINIT zhjenv
-local -a orig_args=("$@")
-zparseopts -D -K -- c=void {x,-debug}=DEBUG {z,-zinit}=WITH_ZINIT
+local -a void DEBUG zhjenv
+zparseopts -D -K -- c=void {x,-debug}=DEBUG
 zparseopts -D -K -a zhjenv -- {e,-env}+:
 zhjenv=(${zhjenv:#-e})
 zhjenv=(${zhjenv:#--env})
 [[ "$1" == "--" ]] && shift
-
-# zinit only exists in the yadm shell
-if [[ -n "$WITH_ZINIT" || "$*" =~ (zi|zinit).* ]]
-then
-  if [[ ! -x "$HOME/bin/zhj" ]]
-  then
-    print -u2 -- "zhj: zinit is only available on zinit hosts (yadm ~/bin/zhj)"
-    return 1
-  fi
-  ZHJ_YADM=1 exec "$HOME/bin/zhj" "${orig_args[@]}"
-fi
 
 # Only ZHJ is exported; NO_* must not leak into shells zhj spawns (tmux).
 export ZHJ=1

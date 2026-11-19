@@ -59,8 +59,9 @@ let
     assert c.termux.enable == false;
     assert c.termux.packages == [ ];
     assert c.programs.zsh.enable;
-    assert c.programs.zsh.dotDir == "/home/pschmitt/.config/zsh-nix";
-    assert c.home.file.".zshenv".enable;
+    assert c.programs.zsh.dotDir == "/home/pschmitt/.config/zsh";
+    # ZDOTDIR comes from the guest /etc/zshenv (systems.nix), not ~/.zshenv.
+    assert !c.home.file.".zshenv".enable;
     assert c.dotfiles.zsh.nixShell.default;
     assert c.programs.neovim.enable;
     assert !c.programs.neovim.nightly.enable;

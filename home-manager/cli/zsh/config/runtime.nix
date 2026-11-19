@@ -76,12 +76,6 @@ in
           zsh::override-local-yadm
         fi
 
-        if [[ "''${TERMUX_RUN_MODE:-}" != ci && -z "''${ZSH_SECRETS_SOURCED:-}" ]]
-        then
-          typeset -g ZSH_SECRETS_SOURCED=1
-          [[ -r "${config.xdg.configHome}/zsh/secrets.zsh" ]] && source "${config.xdg.configHome}/zsh/secrets.zsh" 2>/dev/null
-        fi
-
         if [[ "''${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
         then
           typeset -g TERMUX_NATIVE_USER_PLUGINS_READY=1

@@ -144,7 +144,7 @@ class Gate:
         if self.args.zdotdir:
             return Path(self.args.zdotdir)
         if self.isolated:
-            return self.generation / 'home-files' / '.config' / 'zsh-nix'
+            return self.generation / 'home-files' / '.config' / 'zsh'
         return None
 
     def build_env(self):

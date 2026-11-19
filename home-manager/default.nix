@@ -27,7 +27,7 @@ in
   ];
 
   # The Nix-managed Zsh config is the default shell config on every Home
-  # Manager host; `zsh-yadm` still starts the yadm/zinit one.
+  # Manager host (ZDOTDIR=~/.config/zsh).
   dotfiles.zsh.nixShell = {
     enable = lib.mkDefault true;
     default = lib.mkDefault true;

@@ -28,6 +28,11 @@ builtins.mapAttrs (
           ];
           etc = {
             "ssh/termuxpp-client.conf".text = "ControlPath none\n";
+            # The guest zsh reads /etc/zshenv before any user file; point it at
+            # the Home Manager dotDir so no ~/.zshenv is needed.
+            "zshenv".text = ''
+              export ZDOTDIR="''${ZDOTDIR:-${home.config.programs.zsh.dotDir}}"
+            '';
             "nixpp/upgrade.json".text = builtins.toJSON {
               flake = "github:pschmitt/nixos-config/main";
               host = hostname;

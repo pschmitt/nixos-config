@@ -5,10 +5,10 @@
   ...
 }:
 # NOTE to truly force a new clone from scratch, run this as root:
-# ssh root@lrz.lan 'systemctl -M pschmitt@ --user stop yadm-clone yadm-pull yadm-pull.timer zinit-install gpg-import-private gpg-import-work gpg-agent.service gpg-agent.socket; cp -vaf /home/pschmitt/.ssh/id_ed25519 /root; rm -rf /home/pschmitt; mkdir -p /home/pschmitt/.ssh;  mv -vf /root/id_ed25519 /home/pschmitt/.ssh/id_ed25519; chown -R pschmitt:pschmitt /home/pschmitt; systemctl restart home-manager-pschmitt'
+# ssh root@lrz.lan 'systemctl -M pschmitt@ --user stop yadm-clone yadm-pull yadm-pull.timer gpg-import-private gpg-import-work gpg-agent.service gpg-agent.socket; cp -vaf /home/pschmitt/.ssh/id_ed25519 /root; rm -rf /home/pschmitt; mkdir -p /home/pschmitt/.ssh;  mv -vf /root/id_ed25519 /home/pschmitt/.ssh/id_ed25519; chown -R pschmitt:pschmitt /home/pschmitt; systemctl restart home-manager-pschmitt'
 
 # to follow along:
-# ssh root@lrz.lan sudo -u pschmitt journalctl --user -xlf -u zinit-install -u yadm-clone
+# ssh root@lrz.lan sudo -u pschmitt journalctl --user -xlf -u yadm-clone
 
 let
   yadmCloneScript = pkgs.writeShellScript "yadm-clone" ''
@@ -94,28 +94,6 @@ in
 
         Install.WantedBy = [ "default.target" ];
       };
-
-      zinit-install = {
-        Unit = {
-          Description = "zinit install plugins (scheduler burst)";
-          After = [ "yadm-clone.service" ];
-          Wants = [ "yadm-clone.service" ];
-        };
-
-        Service = {
-          Type = "oneshot";
-          Environment = [
-            "TERM=xterm-256color"
-            "ZINIT_SCHEDULER_BURST=1"
-            # zinit only exists in the yadm-managed config; the default
-            # ZDOTDIR is the Nix one (dotfiles.zsh.nixShell.default).
-            "ZDOTDIR=${config.xdg.configHome}/zsh"
-          ];
-          ExecStart = "${pkgs.zsh}/bin/zsh -ils -c -- '@zinit-scheduler burst'";
-        };
-
-        Install.WantedBy = [ ];
-      };
     };
 
     timers.yadm-pull = {
@@ -136,6 +114,6 @@ in
 
     # NOTE for this work reliably, we need to have lingering enabled for the user
     run ${pkgs.systemd}/bin/systemctl --user start --no-block \
-      yadm-clone.service yadm-apply-alternates.service zinit-install.service
+      yadm-clone.service yadm-apply-alternates.service
   '';
 }

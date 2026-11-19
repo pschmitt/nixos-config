@@ -4,7 +4,7 @@
 { config, ... }:
 {
   sops.secrets = {
-    "home-assistant/server" = { };
+    "home-assistant/server".sopsFile = config.host.sopsDefaultFile;
     # Use the Philipp Schmitt PAT named `nixos-config (<HOSTNAME>)`; each host
     # has its own token.
     "home-assistant/token".sopsFile = config.host.sopsFile;

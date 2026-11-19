@@ -26,6 +26,7 @@ let
             inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml"
           );
           sops.age.sshKeyPaths = lib.mkDefault [ "${config.home.homeDirectory}/.ssh/id_ed25519" ];
+          host.sopsFile = inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml";
         })
       ];
     };
