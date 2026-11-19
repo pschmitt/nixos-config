@@ -3,6 +3,8 @@
   gnused,
   iproute2,
   lib,
+  python3,
+  rooted ? false,
   symlinkJoin,
   writeShellApplication,
 }:
@@ -13,7 +15,10 @@ let
     runtimeInputs = [ gnused ];
     text = ''
       nix_ip=${lib.escapeShellArg "${iproute2}/bin/ip"}
-      shizuku_rish=${lib.escapeShellArg (lib.getExe rish)}
+      android_network_command=(${
+        if rooted then "nixpp enter --outer -- su -c" else "${lib.escapeShellArg (lib.getExe rish)} -c"
+      })
+      json_ip=(${lib.getExe python3} ${./scripts/ip-json.py})
       ${builtins.readFile ./scripts/ip.sh}
     '';
   };

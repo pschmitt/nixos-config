@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# Keep flags that Android's ip can represent. In particular, Android ip can
-# ignore -j and print text, so never use it to answer a JSON request.
 android_query() {
   while [[ ${1:-} == -* ]]
   do
@@ -27,6 +25,26 @@ android_query() {
 }
 
 main() {
+  local -a query=()
+  local json=0 shift_count=0
+  local arg
+  for arg in "$@"
+  do
+    case $arg in
+      -j|-json|--json) json=1 ;;
+      -d|-details|--details|-p|-pretty|--pretty) ;;
+      -*) query+=("$arg") ;;
+      *) break ;;
+    esac
+    shift_count=$((shift_count + 1))
+  done
+  query+=("${@:shift_count+1}")
+
+  if (( json )) && android_query "${query[@]}"
+  then
+    exec "${json_ip[@]}" "$nix_ip" "${android_network_command[@]}" -- "$@"
+  fi
+
   if ! android_query "$@"
   then
     exec "$nix_ip" "$@"
@@ -52,14 +70,21 @@ main() {
       ;;
   esac
 
-  local arg command=/system/bin/ip
+  local command='exec /system/bin/ip'
   for arg in "$@"
   do
     # rish -c takes one shell program. Quote each argument for Android sh.
     arg=${arg//\'/\'\\\'\'}
     command+=" '$arg'"
   done
-  "$shizuku_rish" -c "$command" | sed '1{/^Entering shell\.\.\.$/d;}'
+  if result=$("${android_network_command[@]}" "$command 2>&1")
+  then
+    printf '%s\n' "$result" | sed '1{/^Entering shell\.\.\.$/d;}'
+  else
+    local rc=$?
+    printf '%s\n' "$result" | sed '1{/^Entering shell\.\.\.$/d;}' >&2
+    return "$rc"
+  fi
 }
 
 main "$@"
