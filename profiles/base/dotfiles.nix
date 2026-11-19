@@ -15,6 +15,9 @@
     etc = {
       "zshenv.local" = {
         text = ''
+          # Sessions started before the move (tmux servers) still export
+          # the old ~/.config/zsh-nix dotDir.
+          [[ "''${ZDOTDIR:-}" == "$HOME/.config/zsh-nix" ]] && unset ZDOTDIR
           export ZDOTDIR="''${ZDOTDIR:-$HOME/.config/zsh}"
         '';
         mode = "0644";

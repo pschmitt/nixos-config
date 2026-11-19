@@ -31,6 +31,8 @@ builtins.mapAttrs (
             # The guest zsh reads /etc/zshenv before any user file; point it at
             # the Home Manager dotDir so no ~/.zshenv is needed.
             "zshenv".text = ''
+              # Sessions started before the move still export ~/.config/zsh-nix.
+              [[ "''${ZDOTDIR:-}" == "$HOME/.config/zsh-nix" ]] && unset ZDOTDIR
               export ZDOTDIR="''${ZDOTDIR:-${home.config.programs.zsh.dotDir}}"
             '';
             "nixpp/upgrade.json".text = builtins.toJSON {
