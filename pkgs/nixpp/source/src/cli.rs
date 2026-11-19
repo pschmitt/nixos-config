@@ -181,6 +181,22 @@ pub enum Command {
     /// (exit 1), from the apk-library marker and TERMUX_PKG_REDIRECT_SO
     #[command(name = "__apk-replaced", hide = true)]
     ApkReplaced,
+    /// Continue a terminal's outer server after a re-exec into a newer nixpp
+    #[command(name = "__outer-resume", hide = true)]
+    OuterResume {
+        #[arg(long)]
+        listener_fd: i32,
+        #[arg(long)]
+        child: i32,
+        #[arg(long)]
+        dir: PathBuf,
+    },
+    /// Run COMMAND under a terminal's outer server without a terminal (tests)
+    #[command(name = "__outer-supervise", hide = true)]
+    OuterSupervise {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true, required = true)]
+        command: Vec<std::ffi::OsString>,
+    },
     /// Run a controller operation directly, without the socket
     Controller {
         #[command(subcommand)]
@@ -358,6 +374,28 @@ fn execute(cli: &Cli, ui: &Ui) -> Exit {
             }
             Err(error) => Exit::failure(format!("apk check: {error:#}")),
         },
+        Command::OuterResume {
+            listener_fd,
+            child,
+            dir,
+        } => match crate::outer::resume(*listener_fd, *child, dir.clone()) {
+            Ok(code) => Exit {
+                code,
+                message: None,
+            },
+            Err(error) => Exit::failure(format!("outer: {error:#}")),
+        },
+        Command::OuterSupervise { command } => {
+            let mut guest = std::process::Command::new(&command[0]);
+            guest.args(&command[1..]);
+            match crate::outer::supervise(&mut guest) {
+                Ok(code) => Exit {
+                    code,
+                    message: None,
+                },
+                Err(error) => Exit::failure(format!("outer: {error:#}")),
+            }
+        }
         Command::Controller { operation } => native(operate(runtime, operation, ui)),
         Command::Init(args) => {
             crate::progress::set_json(cli.json);
@@ -637,6 +675,8 @@ fn guest_command(
         | Command::NativeShell
         | Command::ServiceSupervisor
         | Command::ApkReplaced
+        | Command::OuterResume { .. }
+        | Command::OuterSupervise { .. }
         | Command::Bootstrap { .. } => {
             unreachable!("handled before the guest commands")
         }
