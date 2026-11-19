@@ -124,7 +124,9 @@ impl Server {
             {
                 match crate::native_update::install(&self.runtime, &source, prefix.as_deref()) {
                     Ok(()) => {
-                        eprintln!("nixpp: installed the native nixpp of the selected generation; restarting");
+                        eprintln!(
+                            "nixpp: installed the native nixpp of the selected generation; restarting"
+                        );
                         return Ok(());
                     }
                     Err(error) => eprintln!("nixpp: could not install the native nixpp: {error:#}"),
@@ -339,6 +341,15 @@ pub fn serve(runtime: &Path, socket: &Path, runner: &mut dyn Runner) -> Result<S
         return Ok(Served::AlreadyRunning);
     };
     let _handlers = StopHandlers::install()?;
+    if cfg!(target_os = "android")
+        && let Some(owner) = crate::app_cgroup::secondary_owner()
+    {
+        eprintln!(
+            "nixpp: warning: running in the cgroup of {owner}, which Android freezes while \
+             it is cached; sessions, switches and checks will stall. Restart the daemon \
+             from the TermuxPP app."
+        );
+    }
     // Keep the start scripts in step with this executable: an older nixpp
     // (a login from the bootstrap's copy) may have written its own.
     if cfg!(target_os = "android")
