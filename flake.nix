@@ -6,12 +6,6 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable"; # unstable by default
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-26.05";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
-    # Paperless 3.4.2 requires torch < 2.15; keep its compatible package set
-    # until nixpkgs supplies a matching pair. Deliberately independent of nixpkgs.
-    nixpkgs-paperless = {
-      url = "github:NixOS/nixpkgs/6b93cd12c87540c01762ba068f30928f4f916954";
-      flake = false;
-    };
 
     # Old nixpkgs revisions pinned for legacy tool versions (overlays.old-packages).
     # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl

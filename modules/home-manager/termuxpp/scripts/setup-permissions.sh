@@ -31,6 +31,24 @@ TermuxPP app reports.
 EOF_USAGE
 }
 
+# Colour only on a terminal, and never with NO_COLOR.
+if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-} != dumb ]]
+then
+  COLOR=1
+else
+  COLOR=0
+fi
+
+# paint TEXT SGR: TEXT in that colour when colour is on.
+paint() {
+  if ((COLOR))
+  then
+    printf '\033[%sm%s\033[0m' "$2" "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
+
 die() {
   printf '%s: %s\n' "$(basename "$0")" "$*" >&2
   exit 1
@@ -99,16 +117,29 @@ shizuku_works() {
 
 # Prints "NAME STATE KIND DETAIL" lines from the package state.
 collect_shizuku() {
-  local dump requested whitelist entry name permission appop action label mode state
-  dump=$(shizuku "dumpsys package $PACKAGE") || die "cannot read the package state through Shizuku"
-  requested=$(awk '
+  local user=${TERMUX__USER_ID:-0} entry name permission appop action label
+  local ops=() query dump requested whitelist mode state
+  for entry in "${SPECIAL_ACCESS[@]}"
+  do
+    read -r name permission appop action label <<<"$entry"
+    [[ $appop == - ]] || ops+=("$appop")
+  done
+  # One rish call for everything: each start costs a PTY and a JVM.
+  query="echo @@package; dumpsys package $PACKAGE; echo @@idle; dumpsys deviceidle whitelist"
+  query+="; for op in ${ops[*]}; do echo \"@@op \$op\"; appops get --user $user $PACKAGE \$op | head -n 1; done"
+  query+="; echo @@sdk; getprop ro.build.version.sdk; echo @@phantom; settings get global $PHANTOM_SETTING"
+  dump=$(shizuku "$query") || die "cannot read the package state through Shizuku"
+  section() {
+    awk -v name="@@$1" '$0 == name { on = 1; next } /^@@/ { on = 0 } on' <<<"$dump"
+  }
+  requested=$(section package | awk '
     /^ *requested permissions:/ { section = 1; next }
     section && /permissions:|^ *[A-Z][A-Za-z ]+:/ { section = 0 }
     section && $1 ~ /\./ { name = $1; sub(/:.*/, "", name); print name }
-  ' <<<"$dump")
+  ')
   # dumpsys lists runtime grants per Android user (a work profile adds one);
   # only the app's own user counts.
-  awk -v user="${TERMUX__USER_ID:-0}" '
+  section package | awk -v user="$user" '
     /^ *User [0-9]+:/ { current = $2; sub(/:$/, "", current) }
     /^ *runtime permissions:/ { section = (current == "" || current == user); next }
     section && !/granted=/ { section = 0 }
@@ -117,47 +148,67 @@ collect_shizuku() {
       short = name; sub(/.*\./, "", short)
       print short, (($0 ~ /granted=true/) ? "granted" : "missing"), "runtime", name
     }
-  ' <<<"$dump" | sort -u
-  whitelist=$(shizuku 'dumpsys deviceidle whitelist') || whitelist=
+  ' | sort -u
+  whitelist=$(section idle)
   for entry in "${SPECIAL_ACCESS[@]}"
   do
     read -r name permission appop action label <<<"$entry"
     grep -qxF "$permission" <<<"$requested" || continue
+    state=missing
     if [[ $appop == - ]]
     then
-      state=missing
       grep -q ",$PACKAGE," <<<"$whitelist" && state=granted
     else
-      mode=$(shizuku "appops get --user ${TERMUX__USER_ID:-0} $PACKAGE $appop" | head -n 1) || mode=
-      state=missing
+      mode=$(section "op $appop")
       [[ $mode == *": allow"* ]] && state=granted
     fi
     printf '%s %s special %s\n' "$name" "$state" "$label"
   done
-  if [[ $(shizuku 'getprop ro.build.version.sdk') -ge 32 ]]
+  if [[ $(section sdk) -ge 32 ]]
   then
     state=missing
-    [[ $(shizuku "settings get global $PHANTOM_SETTING") == false* ]] && state=granted
+    [[ $(section phantom) == false* ]] && state=granted
     printf 'processes %s special Unrestricted_child_processes\n' "$state"
   fi
 }
 
-grant_shizuku() {
-  local name=$1 kind=$2 detail=$3 appop
+# The shell command that grants one "NAME STATE KIND DETAIL" entry.
+grant_command() {
+  local name=$1 kind=$2 detail=$3 user=${TERMUX__USER_ID:-0} appop
   if [[ $kind == runtime ]]
   then
-    shizuku "pm grant --user ${TERMUX__USER_ID:-0} $PACKAGE $detail" >/dev/null
+    printf 'pm grant --user %s %s %s' "$user" "$PACKAGE" "$detail"
   elif [[ $name == processes ]]
   then
-    shizuku "settings put global $PHANTOM_SETTING false" >/dev/null
+    printf 'settings put global %s false' "$PHANTOM_SETTING"
   else
     appop=$(special_field "$name" 2)
     if [[ $appop == - ]]
     then
-      shizuku "dumpsys deviceidle whitelist +$PACKAGE" >/dev/null
+      printf 'dumpsys deviceidle whitelist +%s' "$PACKAGE"
     else
-      shizuku "appops set --user ${TERMUX__USER_ID:-0} $PACKAGE $appop allow" >/dev/null
+      printf 'appops set --user %s %s %s allow' "$user" "$PACKAGE" "$appop"
     fi
+  fi
+}
+
+# Grant all TODO entries in one rish call; background location after the
+# foreground grants, as Android requires. Prints what failed.
+grant_shizuku() {
+  local todo=$1 name state kind detail query='' result
+  local entries
+  entries=$(grep -v 'BACKGROUND' <<<"$todo"; grep 'BACKGROUND' <<<"$todo")
+  while read -r name state kind detail
+  do
+    [[ -n $name ]] || continue
+    query+="$(grant_command "$name" "$kind" "$detail") >/dev/null 2>&1 || echo 'failed $name'; "
+  done <<<"$entries"
+  [[ -n $query ]] || return 0
+  result=$(shizuku "${query}true") || return 1
+  if grep -q '^failed ' <<<"$result"
+  then
+    sed -n 's/^failed /Could not grant /p' <<<"$result" >&2
+    return 1
   fi
 }
 
@@ -295,19 +346,24 @@ ask_special() {
 # --- Commands ----------------------------------------------------------------
 
 print_status() {
-  local name state kind detail missing=0
+  local name state kind detail missing=0 shown suffix
   while read -r name state kind detail
   do
     [[ -n $name ]] || continue
     [[ $state == missing ]] && missing=$((missing + 1))
-    if [[ $kind == runtime ]]
-    then
-      printf '  %-38s %s\n' "$name" "$state"
-    else
-      printf '  %-38s %s (%s)\n' "$name" "$state" "${detail//_/ }"
-    fi
+    shown=$(paint "$state" "$([[ $state == granted ]] && echo 32 || echo 31)")
+    suffix=''
+    [[ $kind == runtime ]] || suffix=" $(paint "(${detail//_/ })" 2)"
+    # Pad by the visible width: escape codes take none.
+    printf '  %-38s %s%*s%s\n' "$name" "$shown" $((7 - ${#state})) '' "$suffix"
   done <<<"$1"
-  printf '%d missing\n' "$missing"
+  if ((missing == 0))
+  then
+    paint 'nothing missing' '1;32'
+  else
+    paint "$missing missing" '1;31'
+  fi
+  printf '\n'
   ((missing == 0))
 }
 
@@ -373,7 +429,10 @@ main() {
   state=$(collect_"$via") || return 1
   if [[ $command == status ]]
   then
-    printf 'Shizuku: %s\n' "$(app_shizuku refresh | tr '[:upper:]_' '[:lower:] ' | sed 's/^$/unknown (update the app)/')"
+    local shizuku_state
+    shizuku_state=$(app_shizuku refresh)
+    printf '%s %s\n' "$(paint Shizuku: 1)" "$(paint "$(tr '[:upper:]_' '[:lower:] ' <<<"${shizuku_state:-unknown (update the app)}")" \
+      "$([[ $shizuku_state == READY ]] && echo 32 || echo 33)")"
     [[ $via == app ]] && printf 'As reported by the TermuxPP app (Shizuku unavailable):\n'
     print_status "$state"
     return
@@ -383,7 +442,7 @@ main() {
   todo=$(missing_entries "$state" "${names[@]}")
   if [[ -z $todo ]]
   then
-    printf 'Nothing to grant.\n'
+    printf '%s\n' "$(paint 'Nothing to grant.' 32)"
     print_status "$state"
     return
   fi
@@ -391,17 +450,7 @@ main() {
   local name entry_state kind detail failed=0
   if [[ $via == shizuku ]]
   then
-    # Android grants background location only after foreground location.
-    while read -r name entry_state kind detail
-    do
-      [[ $name == *BACKGROUND* ]] && continue
-      grant_shizuku "$name" "$kind" "$detail" || { printf 'Could not grant %s\n' "$name" >&2; failed=1; }
-    done <<<"$todo"
-    while read -r name entry_state kind detail
-    do
-      [[ $name == *BACKGROUND* ]] || continue
-      grant_shizuku "$name" "$kind" "$detail" || { printf 'Could not grant %s\n' "$name" >&2; failed=1; }
-    done <<<"$todo"
+    grant_shizuku "$todo" || failed=1
   else
     local foreground=() background=() special=()
     while read -r name entry_state kind detail

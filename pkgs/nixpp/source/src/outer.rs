@@ -38,7 +38,11 @@ pub fn supervise(guest: &mut Command) -> Result<u8> {
             match listener.accept() {
                 Ok((mut stream, _)) => {
                     let code = match run_request(&mut stream) {
-                        Ok(status) => status,
+                        // A client that found this socket unusable (another
+                        // session, for example under script(1)) hangs up
+                        // without a request and falls back to the daemon.
+                        Ok(None) => continue,
+                        Ok(Some(status)) => status,
                         Err(error) => {
                             eprintln!("nixpp outer: {error:#}");
                             1
@@ -90,12 +94,16 @@ pub fn request(args: &[OsString]) -> Result<u8> {
         .context("outer command returned no exit status")
 }
 
-fn run_request(stream: &mut UnixStream) -> Result<u8> {
+/// Runs one request; None when the client hung up without sending one.
+fn run_request(stream: &mut UnixStream) -> Result<Option<u8>> {
     stream.set_read_timeout(Some(Duration::from_secs(2)))?;
     let mut request = Vec::new();
     BufReader::new(&mut *stream)
         .take(MESSAGE_LIMIT)
         .read_until(b'\n', &mut request)?;
+    if request.is_empty() {
+        return Ok(None);
+    }
     ensure!(request.ends_with(b"\n"), "incomplete outer command request");
     let args: Vec<Vec<u8>> = serde_json::from_slice(&request)?;
     let args: Vec<OsString> = args.into_iter().map(OsString::from_vec).collect();
@@ -121,7 +129,7 @@ fn run_request(stream: &mut UnixStream) -> Result<u8> {
         .process_group(foreground)
         .status()
         .context("cannot run the outer command")?;
-    Ok(exit_code(status))
+    Ok(Some(exit_code(status)))
 }
 
 pub(crate) fn exit_code(status: ExitStatus) -> u8 {
