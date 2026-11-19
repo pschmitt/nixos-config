@@ -228,6 +228,16 @@ in
       initContent = lib.mkMerge [
         (lib.mkOrder 600 ''
           source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
+          for completion_dir in \
+            "${config.home.profileDirectory}/share/zsh/site-functions" \
+            /run/current-system/sw/share/zsh/site-functions
+          do
+            if [[ -d "$completion_dir" ]]
+            then
+              fpath=("$completion_dir:A" $fpath)
+            fi
+          done
+          unset completion_dir
         '')
         (lib.mkOrder 1400 ''
           # The shared yadm tmux plugin also defines this alias.
