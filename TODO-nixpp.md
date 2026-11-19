@@ -2,6 +2,12 @@
 
 ## Android app
 
+- [ ] Fix RBW fingerprint unlock on the managed Android guests. Coordinate
+  with the RBW enrollment work and distinguish a blocked biometric prompt
+  from a Keystore signing error after authentication. Use a disposable
+  authentication-bound signing key to verify the TermuxPP API path on both
+  phones before testing RBW with the existing enrollment.
+
 - [x] Merge TermuxPP:API into TermuxPP. Review droid-nix for guest integration
   patterns. Verify a real API call from the app terminal and from an SSH session
   in the managed Nix guest.
