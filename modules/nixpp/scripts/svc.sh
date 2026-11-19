@@ -277,6 +277,11 @@ main() {
     fi
     exec 9>"$lock_file"
     flock 9
+    # The TermuxPP Tasker plug-in lists the services from this copy.
+    if cp -- "$manifest" "$runtime/.manifest.json.$$" 2>/dev/null
+    then
+      mv -f -- "$runtime/.manifest.json.$$" "$runtime/manifest.json" || rm -f -- "$runtime/.manifest.json.$$"
+    fi
     if [[ -r $runtime/system-generation ]]
     then
       IFS= read -r old_generation < "$runtime/system-generation"

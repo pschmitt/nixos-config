@@ -51,7 +51,15 @@ EOF_APK
   fi
   export HOME=$data_dir/files/home PREFIX=$prefix TERMUX_APP__DATA_DIR=$data_dir
   export PATH=$prefix/bin:/system/bin TMPDIR=$prefix/tmp
+  # nixpp restarts a process whose preload differs from the apk-library marker.
+  # The app and this script may spell the same file differently (/data/data
+  # versus /data/user/0), so adopt the marker's spelling for the same file.
   TERMUX_PKG_REDIRECT_SO=$(/system/bin/readlink -f "$redirect") || return 1
+  if [[ -r $directory/apk-library ]] && IFS= read -r recorded < "$directory/apk-library" &&
+    [[ -n $recorded && $recorded -ef $redirect ]]
+  then
+    TERMUX_PKG_REDIRECT_SO=$recorded
+  fi
   export TERMUX_PKG_REDIRECT_SO
   export LD_LIBRARY_PATH=$prefix/lib LD_PRELOAD=$redirect
   if [[ -r $prefix/lib/libtermux-exec.so ]]

@@ -85,6 +85,7 @@ setsid bash "$svc_script" supervise >"$work/supervise.log" 2>&1 &
 supervisor_pid=$!
 
 expect free running "unrestricted service starts without network state"
+cmp -s "$work/services.json" "$work/state/manifest.json" || fail "supervise did not publish the manifest for Tasker"
 expect restricted down "no network state keeps the restricted service down"
 
 network home

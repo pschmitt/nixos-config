@@ -22,7 +22,19 @@ pub(crate) fn marker(runtime: &Path) -> Option<OsString> {
 
 fn marker_differs(runtime: &Path, loaded: &OsStr) -> bool {
     // Ignore a record left behind when a different APK has already replaced it.
-    marker(runtime).is_some_and(|current| current != loaded && Path::new(&current).is_file())
+    marker(runtime).is_some_and(|current| {
+        current != loaded && Path::new(&current).is_file() && !same_file(&current, loaded)
+    })
+}
+
+// The app and the start scripts may spell one file differently (/data/data
+// versus /data/user/0); only a different file means a replaced APK.
+fn same_file(a: &OsStr, b: &OsStr) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    match (std::fs::metadata(a), std::fs::metadata(b)) {
+        (Ok(a), Ok(b)) => a.dev() == b.dev() && a.ino() == b.ino(),
+        _ => false,
+    }
 }
 
 pub(crate) fn restart(runtime: &Path, args: &[&str]) -> Result<()> {
@@ -55,5 +67,16 @@ mod tests {
         fs::write(&current, []).unwrap();
         assert!(marker_differs(runtime.path(), loaded.as_os_str()));
         assert!(!marker_differs(runtime.path(), current.as_os_str()));
+    }
+
+    #[test]
+    fn another_spelling_of_the_same_library_is_not_a_replacement() {
+        let runtime = tempfile::tempdir().unwrap();
+        let library = runtime.path().join("lib.so");
+        fs::write(&library, []).unwrap();
+        let alias = runtime.path().join("alias");
+        std::os::unix::fs::symlink(runtime.path(), &alias).unwrap();
+        fs::write(runtime.path().join("apk-library"), format!("{}\n", library.display())).unwrap();
+        assert!(!marker_differs(runtime.path(), alias.join("lib.so").as_os_str()));
     }
 }
