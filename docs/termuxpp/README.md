@@ -317,6 +317,11 @@ still running with a launcher that predates generation leases.
 When a generation is pruned, GC also drops its unused Home Manager profile
 links so they release the old closure.
 
+Run `nixpp diff` to compare the previous generation with the active one.
+To compare two retained generations, get their numbers with
+`nixpp list-generations` and pass them in order, for example `nixpp diff 12 14`.
+Use `nixpp --json diff` to include the generation paths with the diff output.
+
 ### Functional audit qualification
 
 The overlay now wraps `vivid` and `zoxide` with the targeted signal-stack shim.
