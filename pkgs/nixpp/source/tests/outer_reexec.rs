@@ -42,6 +42,25 @@ fn outer_server_reexecs_into_a_replaced_nixpp() {
     wait_for("the outer socket", || socket.exists());
     let before = running_inode(pid).unwrap();
 
+    // Idle, the server blocks: the old 20 ms accept loop woke 50 times a second.
+    let switches = || -> u64 {
+        fs::read_to_string(format!("/proc/{pid}/status"))
+            .unwrap()
+            .lines()
+            .find_map(|line| line.strip_prefix("voluntary_ctxt_switches:"))
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap()
+    };
+    let idle = switches();
+    std::thread::sleep(Duration::from_secs(1));
+    let woke = switches() - idle;
+    assert!(
+        woke < 5,
+        "an idle outer server woke {woke} times in a second"
+    );
+
     // An update installs a new file over the old one.
     let staged = root.path().join("nixpp.new");
     fs::copy(env!("CARGO_BIN_EXE_nixpp"), &staged).unwrap();

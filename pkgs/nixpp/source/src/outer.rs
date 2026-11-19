@@ -4,7 +4,7 @@ use anyhow::{Context, Result, ensure};
 use std::ffi::{OsStr, OsString};
 use std::fs::{self, DirBuilder};
 use std::io::{BufRead, BufReader, IsTerminal, Read, Write};
-use std::os::fd::{AsRawFd, FromRawFd, RawFd};
+use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
 use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::os::unix::fs::DirBuilderExt;
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -71,47 +71,163 @@ fn remove_socket(directory: &Path) {
     let _ = fs::remove_dir(directory);
 }
 
-/// How often the server checks for a replaced nixpp, in accept polls.
-const UPDATE_CHECK_POLLS: u32 = 100;
+/// How long to block without pidfd or inotify (old kernels): the guest's exit
+/// and a replaced nixpp are then noticed within this time.
+const FALLBACK_WAIT_MS: i32 = 2000;
 
+/// Serves the terminal until the guest exits. Blocks in poll(2) on the
+/// listening socket, a pidfd for the guest and an inotify watch on the
+/// executable, so an idle terminal never wakes up.
 fn serve(terminal: Terminal) -> Result<u8> {
     let mut executable = Executable::current();
-    let mut polls = 0_u32;
+    let mut watch = executable
+        .as_ref()
+        .and_then(|current| Watch::new(&current.path));
+    let guest = pidfd(terminal.child);
     loop {
         if let Some(code) = child_exit(terminal.child)? {
             return Ok(code);
         }
-        match terminal.listener.accept() {
-            Ok((mut stream, _)) => {
-                let code = match run_request(&mut stream) {
-                    // A client that found this socket unusable (another
-                    // session, for example under script(1)) hangs up
-                    // without a request and falls back to the daemon.
-                    Ok(None) => continue,
-                    Ok(Some(status)) => status,
-                    Err(error) => {
-                        eprintln!("nixpp outer: {error:#}");
-                        1
-                    }
-                };
-                let _ = writeln!(stream, "{code}");
+        let mut fds = vec![libc::pollfd {
+            fd: terminal.listener.as_raw_fd(),
+            events: libc::POLLIN,
+            revents: 0,
+        }];
+        for fd in [guest.as_ref(), watch.as_ref().map(|watch| &watch.fd)]
+            .into_iter()
+            .flatten()
+        {
+            fds.push(libc::pollfd {
+                fd: fd.as_raw_fd(),
+                events: libc::POLLIN,
+                revents: 0,
+            });
+        }
+        let fallback = guest.is_none() || (executable.is_some() && watch.is_none());
+        let timeout = if fallback { FALLBACK_WAIT_MS } else { -1 };
+        // SAFETY: fds points to fds.len() initialised pollfd entries.
+        let ready = unsafe { libc::poll(fds.as_mut_ptr(), fds.len() as libc::nfds_t, timeout) };
+        if ready < 0 {
+            let error = std::io::Error::last_os_error();
+            if error.kind() == std::io::ErrorKind::Interrupted {
+                continue;
             }
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                std::thread::sleep(Duration::from_millis(20));
-                polls = polls.wrapping_add(1);
-                if polls % UPDATE_CHECK_POLLS == 0
-                    && let Some(current) = &executable
-                    && current.replaced()
-                {
-                    // Only returns on failure; keep serving with this code.
-                    let error = reexec(&terminal, &current.path);
-                    eprintln!("nixpp: this terminal keeps the previous nixpp: {error:#}");
-                    executable = None;
-                }
-            }
-            Err(error) => return Err(error.into()),
+            return Err(error.into());
+        }
+        if fds[0].revents != 0 {
+            accept_one(&terminal.listener)?;
+        }
+        let changed = match &mut watch {
+            Some(watch) => watch.drain(),
+            None => ready == 0,
+        };
+        if changed
+            && let Some(current) = &executable
+            && current.replaced()
+        {
+            // Only returns on failure; keep serving with this code.
+            let error = reexec(&terminal, &current.path);
+            eprintln!("nixpp: this terminal keeps the previous nixpp: {error:#}");
+            executable = None;
+            watch = None;
         }
     }
+}
+
+fn accept_one(listener: &UnixListener) -> Result<()> {
+    let mut stream = match listener.accept() {
+        Ok((stream, _)) => stream,
+        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => return Ok(()),
+        Err(error) => return Err(error.into()),
+    };
+    let code = match run_request(&mut stream) {
+        // A client that found this socket unusable (another session, for
+        // example under script(1)) hangs up without a request and falls back
+        // to the daemon.
+        Ok(None) => return Ok(()),
+        Ok(Some(status)) => status,
+        Err(error) => {
+            eprintln!("nixpp outer: {error:#}");
+            1
+        }
+    };
+    let _ = writeln!(stream, "{code}");
+    Ok(())
+}
+
+/// A pidfd that becomes readable when `child` exits; None before Linux 5.3.
+fn pidfd(child: libc::pid_t) -> Option<OwnedFd> {
+    // SAFETY: pidfd_open takes a PID and flags and returns a new descriptor.
+    let fd = unsafe { libc::syscall(libc::SYS_pidfd_open, child, 0) };
+    let fd = RawFd::try_from(fd).ok().filter(|fd| *fd >= 0)?;
+    // SAFETY: the kernel just returned this descriptor to us.
+    Some(unsafe { OwnedFd::from_raw_fd(fd) })
+}
+
+/// inotify on the executable's directory, reporting changes to its name.
+struct Watch {
+    fd: OwnedFd,
+    name: Vec<u8>,
+}
+
+impl Watch {
+    fn new(path: &Path) -> Option<Self> {
+        let directory = path.parent()?;
+        let name = path.file_name()?.as_bytes().to_vec();
+        // SAFETY: inotify_init1 takes flags and returns a new descriptor.
+        let fd = unsafe { libc::inotify_init1(libc::IN_NONBLOCK | libc::IN_CLOEXEC) };
+        if fd < 0 {
+            return None;
+        }
+        // SAFETY: as above, the descriptor is ours.
+        let fd = unsafe { OwnedFd::from_raw_fd(fd) };
+        let directory = std::ffi::CString::new(directory.as_os_str().as_bytes()).ok()?;
+        let mask = libc::IN_MOVED_TO | libc::IN_CREATE | libc::IN_CLOSE_WRITE | libc::IN_ATTRIB;
+        // SAFETY: a valid inotify descriptor and NUL-terminated path.
+        let watch = unsafe { libc::inotify_add_watch(fd.as_raw_fd(), directory.as_ptr(), mask) };
+        (watch >= 0).then_some(Self { fd, name })
+    }
+
+    /// Reads the pending events; whether one concerned the executable.
+    fn drain(&mut self) -> bool {
+        let mut buffer = [0_u8; 4096];
+        let mut matched = false;
+        loop {
+            // SAFETY: reading into a buffer of the given length.
+            let read = unsafe {
+                libc::read(
+                    self.fd.as_raw_fd(),
+                    buffer.as_mut_ptr().cast(),
+                    buffer.len(),
+                )
+            };
+            let Ok(read) = usize::try_from(read) else {
+                return matched;
+            };
+            if read == 0 {
+                return matched;
+            }
+            matched |= event_names(&buffer[..read]).any(|name| name == self.name.as_slice());
+        }
+    }
+}
+
+/// The names in a buffer of inotify events.
+fn event_names(mut events: &[u8]) -> impl Iterator<Item = &[u8]> {
+    const HEADER: usize = std::mem::size_of::<libc::inotify_event>();
+    std::iter::from_fn(move || {
+        if events.len() < HEADER {
+            return None;
+        }
+        let length = u32::from_ne_bytes(events[HEADER - 4..HEADER].try_into().ok()?) as usize;
+        let name = events.get(HEADER..HEADER + length)?;
+        events = &events[HEADER + length..];
+        let end = name
+            .iter()
+            .position(|byte| *byte == 0)
+            .unwrap_or(name.len());
+        Some(&name[..end])
+    })
 }
 
 /// The guest's exit code once it has exited, reaping it.
@@ -288,4 +404,27 @@ pub(crate) fn exit_code(status: ExitStatus) -> u8 {
             .unwrap_or_else(|| 128 + status.signal().unwrap_or(1)),
     )
     .unwrap_or(1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn event(name: &str, padded: usize) -> Vec<u8> {
+        let mut bytes = vec![0_u8; std::mem::size_of::<libc::inotify_event>() - 4];
+        bytes.extend_from_slice(&(padded as u32).to_ne_bytes());
+        let mut name = name.as_bytes().to_vec();
+        name.resize(padded, 0);
+        bytes.extend(name);
+        bytes
+    }
+
+    #[test]
+    fn reads_the_names_of_inotify_events() {
+        let mut buffer = event("nixpp", 16);
+        buffer.extend(event("network.json", 16));
+        buffer.extend(event("", 0));
+        let names: Vec<&[u8]> = event_names(&buffer).collect();
+        assert_eq!(names, [&b"nixpp"[..], b"network.json", b""]);
+    }
 }
