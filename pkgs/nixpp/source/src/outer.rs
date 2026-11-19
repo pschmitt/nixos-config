@@ -27,10 +27,11 @@ struct Terminal {
 }
 
 pub fn supervise(guest: &mut Command) -> Result<u8> {
-    let directory = std::env::var_os("TMPDIR")
+    let tmp = std::env::var_os("TMPDIR")
         .map(PathBuf::from)
-        .context("native TMPDIR is not set")?
-        .join(format!("nixpp-outer-{}", std::process::id()));
+        .context("native TMPDIR is not set")?;
+    remove_stale_sockets(&tmp);
+    let directory = tmp.join(format!("nixpp-outer-{}", std::process::id()));
     DirBuilder::new().mode(0o700).create(&directory)?;
     let result = (|| {
         let socket = directory.join("s");
@@ -65,6 +66,31 @@ pub fn resume(listener: RawFd, child: libc::pid_t, directory: PathBuf) -> Result
     });
     remove_socket(&directory);
     result
+}
+
+/// Remove the socket directories of terminals whose server is gone: a
+/// killed terminal (app stopped, phone restarted) never cleans up its own.
+fn remove_stale_sockets(tmp: &Path) {
+    let Ok(entries) = fs::read_dir(tmp) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(pid) = name
+            .to_str()
+            .and_then(|name| name.strip_prefix("nixpp-outer-"))
+            .and_then(|pid| pid.parse::<libc::pid_t>().ok())
+            .filter(|pid| *pid > 0)
+        else {
+            continue;
+        };
+        // SAFETY: signal 0 only checks whether the process exists.
+        let gone = unsafe { libc::kill(pid, 0) } != 0
+            && std::io::Error::last_os_error().raw_os_error() == Some(libc::ESRCH);
+        if gone {
+            remove_socket(&entry.path());
+        }
+    }
 }
 
 fn remove_socket(directory: &Path) {
@@ -340,4 +366,29 @@ pub(crate) fn exit_code(status: ExitStatus) -> u8 {
             .unwrap_or_else(|| 128 + status.signal().unwrap_or(1)),
     )
     .unwrap_or(1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn removes_only_the_sockets_of_gone_terminals() {
+        let tmp = tempfile::tempdir().unwrap();
+        // A PID that is certainly gone: a reaped child.
+        let mut child = Command::new("true").spawn().unwrap();
+        let gone = child.id();
+        child.wait().unwrap();
+        let alive = std::process::id();
+        for pid in [gone, alive] {
+            let directory = tmp.path().join(format!("nixpp-outer-{pid}"));
+            fs::create_dir(&directory).unwrap();
+            fs::write(directory.join("s"), "").unwrap();
+        }
+        fs::create_dir(tmp.path().join("unrelated")).unwrap();
+        remove_stale_sockets(tmp.path());
+        assert!(!tmp.path().join(format!("nixpp-outer-{gone}")).exists());
+        assert!(tmp.path().join(format!("nixpp-outer-{alive}/s")).exists());
+        assert!(tmp.path().join("unrelated").exists());
+    }
 }
