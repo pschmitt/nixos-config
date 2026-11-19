@@ -42,6 +42,12 @@ main() {
       ;;
   esac
   redirect=${apk%/*}/lib/arm64/libtermux-pkg-redirect.so
+  # The app keeps a stable copy that survives APK updates; the APK path is
+  # only a fallback for an app that predates it.
+  if [[ -r $data_dir/files/lib/libtermux-pkg-redirect.so ]]
+  then
+    redirect=$data_dir/files/lib/libtermux-pkg-redirect.so
+  fi
   if [[ ! -r $redirect || ! -x $prefix/bin/python3 ]]
   then
     printf 'The native core redirect library and Python are required.\n' >&2

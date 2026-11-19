@@ -123,24 +123,13 @@ pub(crate) fn native_command(args: &[OsString]) -> Result<Command> {
         .file_name()
         .context("invalid TermuxPP app data directory")?;
     let prefix = data_dir.join("files/usr");
-    let apk = Command::new("/system/bin/pm")
-        .args(["path"])
-        .arg(package)
-        .env_remove("LD_PRELOAD")
-        .env_remove("LD_LIBRARY_PATH")
-        .output()?;
-    ensure!(apk.status.success(), "unable to locate the TermuxPP APK");
-    let apk = std::str::from_utf8(&apk.stdout)?
-        .lines()
-        .find_map(|line| {
-            line.strip_prefix("package:")
-                .filter(|path| path.ends_with("/base.apk"))
-        })
-        .context("unable to locate the base TermuxPP APK")?;
-    let redirect = Path::new(apk)
-        .parent()
-        .context("invalid TermuxPP APK path")?
-        .join("lib/arm64/libtermux-pkg-redirect.so");
+    // The app's stable copy survives APK updates; see TermuxNix.REDIRECT_LIB_PATH.
+    let stable = data_dir.join("files/lib/libtermux-pkg-redirect.so");
+    let redirect = if stable.is_file() {
+        stable
+    } else {
+        apk_redirect(package)?
+    };
     ensure!(
         redirect.is_file(),
         "unable to locate the TermuxPP prefix redirect library"
@@ -161,6 +150,29 @@ pub(crate) fn native_command(args: &[OsString]) -> Result<Command> {
         .env("LD_PRELOAD", &redirect)
         .env("TERMUX_PKG_REDIRECT_SO", &redirect);
     Ok(command)
+}
+
+/// The APK's own redirect library, for an app that predates the stable copy.
+fn apk_redirect(package: &std::ffi::OsStr) -> Result<PathBuf> {
+    let apk = Command::new("/system/bin/pm")
+        .args(["path"])
+        .arg(package)
+        .env_remove("LD_PRELOAD")
+        .env_remove("LD_LIBRARY_PATH")
+        .output()?;
+    ensure!(apk.status.success(), "unable to locate the TermuxPP APK");
+    let apk = std::str::from_utf8(&apk.stdout)?
+        .lines()
+        .find_map(|line| {
+            line.strip_prefix("package:")
+                .filter(|path| path.ends_with("/base.apk"))
+        })
+        .context("unable to locate the base TermuxPP APK")?;
+    let redirect = Path::new(apk)
+        .parent()
+        .context("invalid TermuxPP APK path")?
+        .join("lib/arm64/libtermux-pkg-redirect.so");
+    Ok(redirect)
 }
 
 /// Execute a command or start a login shell in an already-running guest.

@@ -5,6 +5,9 @@ the isolated TermuxPP full-Nix runtime. These are **not** native nixpp bundles,
 NixOS systems, or nix-on-droid configurations. Both use `aarch64-linux` packages
 and the runtime's persistent `/home/pschmitt`.
 
+See [architecture.md](architecture.md) for how the app, the native userland
+and the guest fit together, and for the ongoing redesign.
+
 The existing `hosts/*/default.nix`, native bundle outputs, SSH daemons and recovery
 shells are unchanged. Only the host-owned prompt settings are imported from those
 hosts: their native cache/SSH modules target a different activation mechanism.
