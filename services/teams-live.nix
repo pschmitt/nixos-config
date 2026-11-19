@@ -49,6 +49,8 @@ in
     "teams-live/gitlab-url" = hostSecret;
     "teams-live/gitlab-group" = hostSecret;
     "teams-live/gitlab-webhook-secret" = hostSecret;
+    "teams-live/gitlab-oauth-client-id" = hostSecret;
+    "teams-live/gitlab-oauth-client-secret" = hostSecret;
     "teams-live/conversation-notes" = hostSecret;
     "teams-live/conversation-team" = hostSecret;
     "teams-live/jira-url" = hostSecret;
@@ -124,6 +126,11 @@ in
             link_ttl_seconds = cfg.approval.linkTtlSeconds;
             # Where an approving address is (offline, nothing is sent anywhere): shown in the MR comment.
             geoip_database = "${pkgs.dbip-city-lite}/share/dbip/dbip-city-lite.mmdb";
+            # "Sign in with GitLab" before a confirmation: the page learns who confirms.
+            oauth = {
+              client_id = secretValue "teams-live/gitlab-oauth-client-id";
+              client_secret = secretValue "teams-live/gitlab-oauth-client-secret";
+            };
           };
         };
 
