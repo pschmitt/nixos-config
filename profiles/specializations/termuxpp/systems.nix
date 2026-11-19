@@ -27,7 +27,6 @@ builtins.mapAttrs (
             cacert
           ];
           etc = {
-            "ssh/termuxpp-client.conf".text = "ControlPath none\n";
             # The guest zsh reads /etc/zshenv before any user file; point it at
             # the Home Manager dotDir so no ~/.zshenv is needed.
             "zshenv".text = ''

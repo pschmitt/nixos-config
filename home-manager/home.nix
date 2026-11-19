@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   # Import-gating facts come via specialArgs (set by the NixOS bridge in
   # ./default.nix) to avoid a config-in-imports infinite recursion.
@@ -13,6 +14,7 @@
       ./base.nix
       ./sops.nix
       ./ssh.nix
+      inputs.nixos-config-private.homeManagerModules.sshClient
       ./ssh-clipboard.nix
       ./work
       ./yadm.nix

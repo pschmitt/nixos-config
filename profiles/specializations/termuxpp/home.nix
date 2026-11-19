@@ -1,6 +1,7 @@
 {
   config,
   hostname,
+  inputs,
   lib,
   pkgs,
   ...
@@ -51,6 +52,7 @@ in
     ../../../home-manager/cli/ripgrep.nix
     ../../../home-manager/cli/nvim
     ../../../home-manager/cli/ssh-tools.nix
+    inputs.nixos-config-private.homeManagerModules.sshClient
     ../../../home-manager/cli/zsh/atuin.nix
     ../../../home-manager/cli/zsh/direnv.nix
     ../../../home-manager/cli/zsh/vivid.nix
@@ -68,6 +70,8 @@ in
     ../../../home-manager/cli/zsh/tools/termux/home-assistant-cli.nix
     ../../../home-manager/gui/home-assistant-secrets.nix
   ];
+
+  dotfiles.sshClient.disableMultiplexing = true;
 
   fullNix = {
     rworker.enable = true;
