@@ -40,7 +40,7 @@ mkdir -p "$work/runtime/system-candidates/$name" "$work/state"
 printf '%s\n' "$name" >"$work/runtime/current-system"
 printf '%s\n' "$generation" >"$work/runtime/system-candidates/$name/generation"
 
-for service in restricted free
+for service in restricted free filed
 do
   mkdir -p "$work/src/$service/log"
   printf '#!/bin/sh\nexec sleep 1000\n' >"$work/src/$service/run"
@@ -49,8 +49,12 @@ do
 done
 jq -n --arg dir "$work/src" '{
   restricted: {enabled: true, allowedSsids: ["home"], directory: "\($dir)/restricted"},
-  free: {enabled: true, allowedSsids: [], directory: "\($dir)/free"}
+  free: {enabled: true, allowedSsids: [], directory: "\($dir)/free"},
+  filed: {enabled: true, allowedSsids: [], allowedSsidsFile: "\($dir)/home-ssids",
+    directory: "\($dir)/filed"}
 }' >"$work/services.json"
+# A secret file: CRLF line ends and blank lines are tolerated.
+printf 'elsewhere\r\n\nhome\r\n' >"$work/src/home-ssids"
 
 export NIXPP_SVC_MANIFEST=$work/services.json
 export NIXPP_SVC_RUNTIME_DIR=$work/state
@@ -90,6 +94,13 @@ expect restricted down "no network state keeps the restricted service down"
 
 network home
 expect restricted running "allowed Wi-Fi starts it"
+expect filed running "a name from the allow-list file starts it"
+[[ $(svc --json show filed | jq -c '[.wifiRestricted, .allowedSsids, .configured.allowedSsids]') == '[true,["elsewhere","home"],["elsewhere","home"]]' ]] ||
+  fail "show does not read the allow-list file: $(svc --json show filed)"
+mv "$work/src/home-ssids" "$work/src/home-ssids.away"
+expect filed down "an unreadable allow-list file allows no network"
+mv "$work/src/home-ssids.away" "$work/src/home-ssids"
+expect filed running "the restored file allows the network again"
 
 network other
 expect restricted down "another Wi-Fi stops it"

@@ -163,6 +163,29 @@ main() {
     [[ $value == true ]]
   }
 
+  # The configured allow-list file of SERVICE (a secret with one Wi-Fi
+  # name per line), empty when it lists the names inline.
+  ssids_file() {
+    jq -r --arg name "$1" '.[$name].allowedSsidsFile // empty' "$manifest"
+  }
+
+  # Prints the configured allow-list of SERVICE, one name per line. An
+  # unreadable file allows no network, so a missing secret cannot lift the
+  # restriction.
+  configured_ssids() {
+    local file
+    file=$(ssids_file "$1")
+    if [[ -z $file ]]
+    then
+      jq -r --arg name "$1" '.[$name].allowedSsids // [] | .[]' "$manifest"
+    elif [[ -r $file ]]
+    then
+      tr -d '\r' <"$file" | grep -v '^[[:space:]]*$' || true
+    else
+      printf 'svc: %s: cannot read the Wi-Fi allow-list %s; allowing no network\n' "$1" "$file" >&2
+    fi
+  }
+
   # Prints the effective allow-list of SERVICE, one name per line.
   allowed_ssids() {
     local value
@@ -171,12 +194,13 @@ main() {
     then
       jq -r '.[]? | strings' <<<"$value"
     else
-      jq -r --arg name "$1" '.[$name].allowedSsids // [] | .[]' "$manifest"
+      configured_ssids "$1"
     fi
   }
 
   # The restriction is on when the app says so, otherwise when the
-  # configuration lists networks. On with an empty list allows no network.
+  # configuration lists networks or names a file. On with an empty list
+  # allows no network.
   network_restricted() {
     local value
     value=$(setting "$1" wifiRestricted)
@@ -184,7 +208,9 @@ main() {
     then
       [[ $value == true ]]
     else
-      jq -e --arg name "$1" '(.[$name].allowedSsids // []) | length > 0' "$manifest" >/dev/null
+      jq -e --arg name "$1" \
+        '((.[$name].allowedSsids // []) | length > 0) or (.[$name].allowedSsidsFile != null)' \
+        "$manifest" >/dev/null
     fi
   }
 
@@ -522,7 +548,8 @@ main() {
       --arg pid "$pid" --arg uptime "$uptime" --arg command "${command% }" \
       --argjson ports "$ports" --argjson enabled "$enabled" --argjson restricted "$restricted" \
       --argjson ssids "$ssids" --argjson network "$network" --argjson settings "$own" \
-      --argjson configured "$(jq -c --arg name "$name" '.[$name] | {enabled, allowedSsids: (.allowedSsids // [])}' "$manifest")" \
+      --argjson configured "$(jq -c --arg name "$name" --argjson ssids "$(configured_ssids "$name" 2>/dev/null | jq -R . | jq -sc .)" \
+        '.[$name] | {enabled, allowedSsids: $ssids}' "$manifest")" \
       --argjson waiting "$waiting" --argjson stopped "$stopped" \
       '{name: $name, status: $status, enabled: $enabled, wifiRestricted: $restricted,
         allowedSsids: $ssids, waitingForNetwork: $waiting, stoppedByUser: $stopped,

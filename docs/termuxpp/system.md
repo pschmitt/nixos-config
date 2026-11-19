@@ -122,7 +122,15 @@ restriction are independent. `svc show SERVICE` (or `svc --json show`) lists
 the state, PID, uptime, listening ports, command and where each setting
 comes from; `svc --json list` reports the same for every service. The ADB
 shell listener belongs to the app and uses `fullNix.adbShell.allowedSsids`
-instead. Test the gating with real runit:
+instead.
+
+Wi-Fi names identify places, so keep them in SOPS: `allowedSsidsFile` (and
+`fullNix.adbShell.allowedSsidsFile`) read one name per line from a secret at
+run time instead, so the names never reach the Nix store. An unreadable file
+allows no network for a service; the ADB property is then left unchanged. A
+host sets the system-layer option in `hosts/<host>/system.nix`, for example
+p11 restricts sshd and the ADB shell to the `wifi/home-ssids` secret. Test the
+gating with real runit:
 
 ```sh
 nix shell nixpkgs#jq nixpkgs#runit nixpkgs#util-linux \

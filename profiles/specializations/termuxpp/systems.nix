@@ -10,6 +10,13 @@ builtins.mapAttrs (
     modules = [
       ../../../modules/nixpp/ssh-client.nix
       ../../../modules/nixpp/sshd.nix
+      # Host-local system-layer settings (Home Manager ones live in default.nix).
+      (
+        let
+          system = ../../../hosts + "/${hostname}/system.nix";
+        in
+        if builtins.pathExists system then system else { }
+      )
       {
         networking.hostName = hostname;
         sops.defaultSopsFile = inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml";

@@ -41,6 +41,16 @@ let
           the private configuration.
         '';
       };
+      allowedSsidsFile = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "/run/secrets/wifi/home-ssids";
+        description = ''
+          Like `allowedSsids`, but read at runtime from this file, one Wi-Fi
+          name per line: a secret path, so the names stay out of the Nix
+          store. An unreadable file allows no network.
+        '';
+      };
     };
   };
   serviceDirectories = lib.mapAttrs (
@@ -82,7 +92,7 @@ let
   manifest = (pkgs.formats.json { }).generate "nixpp-services.json" (
     lib.mapAttrs (name: service: {
       enabled = service.enable;
-      inherit (service) allowedSsids;
+      inherit (service) allowedSsids allowedSsidsFile;
       directory = toString serviceDirectories.${name};
     }) services
   );
@@ -125,6 +135,14 @@ in
           {
             assertion = lib.all (ssid: ssid != "" && !(lib.hasInfix "," ssid)) service.allowedSsids;
             message = "services.${name}.allowedSsids entries must be non-empty and contain no comma";
+          }
+          {
+            assertion = service.allowedSsids == [ ] || service.allowedSsidsFile == null;
+            message = "services.${name}: set allowedSsids or allowedSsidsFile, not both";
+          }
+          {
+            assertion = service.allowedSsidsFile == null || lib.hasPrefix "/" service.allowedSsidsFile;
+            message = "services.${name}.allowedSsidsFile must be an absolute path";
           }
         ]
         ++ lib.mapAttrsToList (key: _value: {

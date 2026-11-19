@@ -20,6 +20,17 @@ let
         import javaproperties
 
         path, value = sys.argv[1], sys.argv[2]
+        if value == "--file":
+            # One Wi-Fi name per line (a secret), so the names stay out of
+            # the Nix store. Leave the property alone when it is unreadable.
+            try:
+                with open(sys.argv[3], encoding="utf-8") as source:
+                    names = [line.strip() for line in source]
+            except OSError as error:
+                print(f"adb-shell allow-list: {error}; property unchanged",
+                      file=sys.stderr)
+                sys.exit(0)
+            value = ",".join(name for name in names if name)
         props = {}
         if os.path.exists(path):
             with open(path, encoding="utf-8") as source:
@@ -36,6 +47,17 @@ let
       '';
 in
 {
+  options.fullNix.adbShell.allowedSsidsFile = lib.mkOption {
+    type = lib.types.nullOr lib.types.str;
+    default = null;
+    example = "/run/user/secrets/wifi/home-ssids";
+    description = ''
+      Like `allowedSsids`, but read at activation from this file, one Wi-Fi
+      name per line: a secret path, so the names stay out of the Nix store.
+      An unreadable file leaves the property unchanged.
+    '';
+  };
+
   options.fullNix.adbShell.allowedSsids = lib.mkOption {
     type = lib.types.listOf lib.types.str;
     default = [ ];
@@ -49,9 +71,28 @@ in
   };
 
   # The app reads this file outside the guest, like the appearance files.
-  config.home.activation.termuxppAdbShellSsids = lib.mkIf (cfg.allowedSsids != [ ]) (
-    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run ${setAllowedSsids} ${lib.escapeShellArg properties} ${lib.escapeShellArg (lib.concatStringsSep "," cfg.allowedSsids)}
-    ''
-  );
+  config = {
+    assertions = [
+      {
+        assertion = cfg.allowedSsids == [ ] || cfg.allowedSsidsFile == null;
+        message = "fullNix.adbShell: set allowedSsids or allowedSsidsFile, not both";
+      }
+    ];
+
+    # After sops-nix, which decrypts a secret allowedSsidsFile.
+    home.activation.termuxppAdbShellSsids =
+      lib.mkIf (cfg.allowedSsids != [ ] || cfg.allowedSsidsFile != null)
+        (
+          lib.hm.dag.entryAfter [ "writeBoundary" "sops-nix" ] (
+            if cfg.allowedSsidsFile != null then
+              ''
+                run ${setAllowedSsids} ${lib.escapeShellArg properties} --file ${lib.escapeShellArg cfg.allowedSsidsFile}
+              ''
+            else
+              ''
+                run ${setAllowedSsids} ${lib.escapeShellArg properties} ${lib.escapeShellArg (lib.concatStringsSep "," cfg.allowedSsids)}
+              ''
+          )
+        );
+  };
 }
