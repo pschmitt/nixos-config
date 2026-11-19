@@ -14,12 +14,12 @@ let
         libraries = [ pkgs.python3Packages.javaproperties ];
       }
       ''
-            import sys
+        import sys
 
-            import javaproperties
+        import javaproperties
 
-            with open(sys.argv[1], encoding="utf-8") as source:
-                props = javaproperties.load(source)
+        with open(sys.argv[1], encoding="utf-8") as source:
+            props = javaproperties.load(source)
         if props.get("terminal-triple-tap-action", "").casefold() == "send-keys":
             sys.stdout.write(props.get("terminal-triple-tap-command", ""))
       '';
