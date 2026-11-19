@@ -121,6 +121,10 @@ in
     fi
   '';
   dotfiles.zsh.nixShell.default = true;
+  # SSH's Bash login shim execs zsh but leaves the inherited SHELL in place.
+  programs.zsh.envExtra = ''
+    export SHELL=${lib.escapeShellArg (lib.getExe config.programs.zsh.package)}
+  '';
   xdg = {
     enable = true;
     configFile."zsh/completions/_nixpp".source = "${nixpp}/share/zsh/site-functions/_nixpp";
