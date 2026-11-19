@@ -29,6 +29,7 @@ rustPlatform.buildRustPackage {
   NIXPP_REFERENCE_PREPARE = ./tests/prepare-session.py;
   NIXPP_REFERENCE_PYTHON = "${python3}/bin/python3";
   NIXPP_DIX = lib.getExe dix;
+  NIXPP_DIX_LEGACY = if lib.versionOlder (lib.getVersion dix) "3" then "1" else "0";
 
   meta = {
     description = "Declarative Android guest system manager";

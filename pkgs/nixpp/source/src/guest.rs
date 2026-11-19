@@ -431,12 +431,24 @@ pub fn diff_generations(
     let (from, to) = diff_endpoints(&crate::controller::generations(runtime)?, from, to)?;
     let mut command = match format {
         DiffFormat::Nix => vec!["nix".into(), "store".into(), "diff-closures".into()],
-        DiffFormat::Dix { color } => vec![
-            option_env!("NIXPP_DIX").unwrap_or("dix").into(),
-            "--color".into(),
-            if color { "always" } else { "never" }.into(),
-            "--force-correctness".into(),
-        ],
+        DiffFormat::Dix { color } => {
+            let mut args = vec![
+                option_env!("NIXPP_DIX").unwrap_or("dix").into(),
+                if color {
+                    "--color=always"
+                } else {
+                    "--color=never"
+                }
+                .into(),
+            ];
+            let verb = if option_env!("NIXPP_DIX_LEGACY") == Some("1") {
+                "--force-correctness"
+            } else {
+                "diff"
+            };
+            args.push(verb.into());
+            args
+        }
     };
     command.extend([format!("/nix/store/{from}"), format!("/nix/store/{to}")]);
     let diff = builder.output(&command)?;
