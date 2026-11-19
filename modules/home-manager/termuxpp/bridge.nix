@@ -35,10 +35,35 @@ in
     };
   };
 
+  options.programs.notify-send.android.timeout = lib.mkOption {
+    type = lib.types.submodule {
+      options =
+        lib.mapAttrs
+          (
+            urgency: default:
+            lib.mkOption {
+              type = lib.types.ints.between 0 2147483647;
+              inherit default;
+              description = "Default timeout for ${urgency} Android notifications, in milliseconds. Zero keeps the notification until dismissed.";
+            }
+          )
+          {
+            low = 4000;
+            normal = 7000;
+            critical = 15000;
+          };
+    };
+    default = { };
+    description = "TermuxPP notify-send timeouts by urgency.";
+  };
+
   config = lib.mkIf cfg.enable {
     home.packages = [
       android-bridge
-      (pkgs.callPackage ../../../pkgs/nixpp/android-api.nix { inherit inputs; })
+      (pkgs.callPackage ../../../pkgs/nixpp/android-api.nix {
+        inherit inputs;
+        notificationTimeouts = config.programs.notify-send.android.timeout;
+      })
     ];
     home.sessionVariables.ANDROID_BRIDGE_SOCKET = cfg.socket;
   };

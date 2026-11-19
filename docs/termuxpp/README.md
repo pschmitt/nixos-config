@@ -234,7 +234,32 @@ Both test phones passed guest-to-native ping, filtered battery status and toast.
 Those probes do not establish background-service lifetime or every companion's
 compatibility. Native recovery and native SSH configuration remain independent.
 
-### Shizuku shell
+### Desktop command compatibility
+
+`notify-send` posts through TermuxPP's Android integration. It accepts a summary
+and optional body, app name, urgency, expiry, category, icon name or image file,
+and notification IDs for replacement.
+
+```sh
+notify-send -a backup -u low -i info "Backup complete"
+notify-send -t 2500 "Build complete" "Tap to dismiss sooner"
+id=$(notify-send -p -t 0 "Syncing")
+notify-send -r "$id" -t 4000 "Sync complete"
+```
+
+Expiry is in milliseconds. Use `-t 0` to keep a notification until dismissed.
+Home Manager exposes the defaults as `programs.notify-send.android.timeout`
+with `low = 4000`, `normal = 7000`, and `critical = 15000`.
+
+Android uses its own notification settings for sound and display. The app-name
+option adds a label. Named icons use the app's Android icons. Image paths use
+bitmap formats Android can decode. Desktop action callbacks are unavailable.
+
+`xdg-open URL` opens a link in the default Android app. `xdg-open PATH` opens
+a readable file using TermuxPP's Android content provider. Use
+`termuxpp-reload-settings` after editing properties or styling files.
+
+## Shizuku shell
 
 Run `rish` or `rish -c 'id -u'` from an interactive TermuxPP terminal. The
 wrapper enters the native Android environment and extracts the matching

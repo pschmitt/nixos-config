@@ -7,6 +7,11 @@
   runCommand,
   symlinkJoin,
   writeShellApplication,
+  notificationTimeouts ? {
+    low = 4000;
+    normal = 7000;
+    critical = 15000;
+  },
 }:
 let
   source = inputs.droid-nix-src + "/pkgs/android-integration";
@@ -25,6 +30,21 @@ let
         exit 1
       fi
       exec ${lib.getExe python3} "$script" "$@"
+    '';
+  };
+  reloadSettings = writeShellApplication {
+    name = "termuxpp-reload-settings";
+    text = ''
+      exec ${lib.getExe session} reload-settings "$@"
+    '';
+  };
+  notifySend = writeShellApplication {
+    name = "notify-send";
+    text = ''
+      export TERMUXPP_NOTIFICATION_API=${api}/libexec/droid-nix-api
+      export TERMUXPP_ANDROID_PATH=${androidPath}
+      export TERMUXPP_NOTIFY_TIMEOUTS=${lib.escapeShellArg (builtins.toJSON notificationTimeouts)}
+      exec ${lib.getExe python3} ${./scripts/notify-send.py} "$@"
     '';
   };
   sessionCompletions = runCommand "termuxpp-session-completions" { } ''
@@ -66,6 +86,15 @@ let
     runtimeInputs = [ coreutils ];
     text = builtins.readFile ./scripts/android-api-path.sh;
   });
+  openTools =
+    (callPackage (source + "/termux-tools.nix") { inherit androidApp termux-am; }).overrideAttrs
+      (old: {
+        postPatch = old.postPatch + ''
+          substituteInPlace scripts/termux-open.in \
+            --replace-fail '${androidApp.packageName}/${androidApp.packageName}.OpenReceiver' '${androidApp.packageName}/com.termux.app.TermuxOpenReceiver' \
+            --replace-fail 'realpath "$FILE"' '${androidPath} "$FILE"'
+        '';
+      });
   api =
     (callPackage (source + "/termux-api.nix") { inherit androidApp termux-am; }).overrideAttrs
       (old: {
@@ -92,9 +121,14 @@ symlinkJoin {
   paths = [
     api
     session
+    reloadSettings
+    notifySend
+    openTools.xdg_open
     sessionCompletions
   ];
   postBuild = ''
+    ln -s ${openTools.open}/bin/droid-nix-open "$out/bin/termux-open"
+    ln -s termuxpp-reload-settings "$out/bin/termux-reload-settings"
     for command in "$out"/bin/droid-nix-*; do
       name=''${command##*/}
       ln -s -- "$name" "$out/bin/termux-''${name#droid-nix-}"
