@@ -108,6 +108,7 @@ in
   nixpp-termux = pkgs.callPackage ./nixpp/legacy.nix { inherit inputs; };
   nixpp = pkgs.callPackage ./nixpp { };
   termuxpp-rish = pkgs.callPackage ./nixpp/rish.nix { };
+  termuxpp-ip = pkgs.callPackage ./nixpp/ip.nix { };
   termuxpp-storage = pkgs.callPackage ./nixpp/storage.nix { };
   termuxpp-api = pkgs.callPackage ./nixpp/android-api.nix { inherit inputs; };
   nixpp-system-tests = import ../modules/nixpp/tests.nix { inherit inputs pkgs; };

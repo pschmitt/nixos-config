@@ -1,13 +1,15 @@
 { pkgs, ... }:
 {
-  home.packages = builtins.attrValues {
+  home.packages = [
+    (pkgs.callPackage ../../../pkgs/nixpp/ip.nix { })
+  ]
+  ++ builtins.attrValues {
     inherit (pkgs)
       age
       ansible
       dnsutils
       gh
       glab
-      iproute2
       k9s
       kubecolor
       kubeconform
