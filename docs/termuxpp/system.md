@@ -81,12 +81,15 @@ pin. `fetch latest` runs the configured upgrade.
 `upgrade --from-cache` reads the host's published pin, verifies the system
 against the configured cache signing keys, and copies its closure. It uses
 the read-only cache credentials rendered by SOPS. It does not fetch or
-evaluate the flake and does not require SSH to a builder.
+evaluate the flake and does not require SSH to a builder. Ordinary Nix
+commands also use this S3 cache as a substituter. They use the rendered
+read-only cache credentials when `AWS_SHARED_CREDENTIALS_FILE` is unset.
 
 `build` returns a store path. `rebuild` builds, prepares a candidate if needed,
 then requests a coordinated switch. `--max-jobs 0` prevents phone-side compilation
 when using normal builders; `--rworker` uses the existing wrapper which enforces
-the same policy. The chosen remote builder must already be configured and trusted.
+the same policy. The guest reads its configured remote builders from
+`/etc/nix/machines`. The chosen remote builder must already be trusted.
 This is a guest-system rebuild, not `nixos-rebuild` or Android OS management.
 
 `NIXPP_RUNTIME` supplies the native runtime directory through `/android`;
