@@ -19,6 +19,15 @@
           run ${pkgs.runit}/bin/sv down "$nativeSshd" 2>/dev/null || true
         fi
         unset nativeSshd
+        # The retired native-era Termux:Boot script (yadm-config 508b1c7c)
+        # survives on some phones and deletes that down file on every boot.
+        legacyBoot="''${NIXPP_RUNTIME%/home/.local/share/termuxpp-nix}/home/.config/termuxpp/boot/start-services.sh"
+        if [[ -f $legacyBoot ]] && ${pkgs.gnugrep}/bin/grep -q 'SVDIR/sshd/down' "$legacyBoot"
+        then
+          run ${pkgs.coreutils}/bin/mkdir -p "''${legacyBoot%/.config/*}/.cache/termuxpp-retired"
+          run ${pkgs.coreutils}/bin/mv -f -- "$legacyBoot" "''${legacyBoot%/.config/*}/.cache/termuxpp-retired/boot-start-services.sh"
+        fi
+        unset legacyBoot
         ;;
     esac
   '';
