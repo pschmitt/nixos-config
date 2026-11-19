@@ -40,9 +40,11 @@ def main():
         parser.error("replacement ID must be a non-negative 32-bit integer")
 
     defaults = json.loads(os.environ["TERMUXPP_NOTIFY_TIMEOUTS"])
-    timeout = defaults[args.urgency] if args.expire_time == -1 else args.expire_time
-    if args.transient and args.expire_time == -1 and timeout == 0:
-        timeout = 7000
+    timeout = 0
+    if args.urgency != "critical":
+        timeout = defaults[args.urgency] if args.expire_time == -1 else args.expire_time
+        if args.transient and args.expire_time == -1 and timeout == 0:
+            timeout = 7000
     notification_id = args.replace_id or (1 + secrets.randbelow(2**31 - 1))
     command = [
         os.environ["TERMUXPP_NOTIFICATION_API"], "Notification",

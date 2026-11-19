@@ -248,8 +248,10 @@ notify-send -r "$id" -t 4000 "Sync complete"
 ```
 
 Expiry is in milliseconds. Use `-t 0` to keep a notification until dismissed.
-Home Manager exposes the defaults as `programs.notify-send.android.timeout`
-with `low = 4000`, `normal = 7000`, and `critical = 15000`.
+Expiring notifications show an Android countdown. Critical notifications stay
+until dismissed, even with an explicit timeout. Home Manager exposes the
+other defaults as `programs.notify-send.android.timeout` with `low = 4000`
+and `normal = 7000`.
 
 Android uses its own notification settings for sound and display. The app-name
 option adds a label. Named icons use the app's Android icons. Image paths use

@@ -50,7 +50,6 @@ in
           {
             low = 4000;
             normal = 7000;
-            critical = 15000;
           };
     };
     default = { };
