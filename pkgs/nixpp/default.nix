@@ -21,6 +21,7 @@ rustPlatform.buildRustPackage {
   cargoLock.lockFile = ./source/Cargo.lock;
   nativeBuildInputs = [ installShellFiles ];
   postInstall = ''
+    test -x "$NIXPP_DIX"
     "${completionGenerator}" completions bash > nixpp
     "${completionGenerator}" completions zsh > _nixpp
     "${completionGenerator}" completions fish > nixpp.fish
@@ -28,7 +29,7 @@ rustPlatform.buildRustPackage {
   '';
   NIXPP_REFERENCE_PREPARE = ./tests/prepare-session.py;
   NIXPP_REFERENCE_PYTHON = "${python3}/bin/python3";
-  NIXPP_DIX = lib.getExe dix;
+  NIXPP_DIX = lib.getExe' dix "dix";
   NIXPP_DIX_LEGACY = if lib.versionOlder (lib.getVersion dix) "3" then "1" else "0";
 
   meta = {
