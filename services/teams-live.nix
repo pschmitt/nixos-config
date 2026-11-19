@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.services.teams-live;
   secrets = config.sops.secrets;
@@ -117,6 +122,8 @@ in
             inherit (cfg.approval) port;
             base_url = "https://${webhookHost}/approve";
             link_ttl_seconds = cfg.approval.linkTtlSeconds;
+            # Where an approving address is (offline, nothing is sent anywhere): shown in the MR comment.
+            geoip_database = "${pkgs.dbip-city-lite}/share/dbip/dbip-city-lite.mmdb";
           };
         };
 
