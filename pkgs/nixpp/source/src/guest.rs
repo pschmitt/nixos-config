@@ -24,7 +24,7 @@ const MANAGE_TIMEOUT: Duration = Duration::from_secs(4500);
 /// Largest accepted controller response, including the newline.
 const RESPONSE_LIMIT: usize = 65536;
 const MANIFEST_LIMIT: u64 = 1 << 20;
-const GCROOTS: &str = "root/nix/var/nix/gcroots/termuxpp-system-candidates";
+pub(crate) const GCROOTS: &str = "root/nix/var/nix/gcroots/termuxpp-system-candidates";
 
 /// Candidate names are store basenames; nothing else may reach the socket.
 pub fn validate_candidate(name: &str) -> Result<()> {
@@ -209,6 +209,7 @@ pub fn prepare_with(
     store_check: &dyn Fn(&str) -> Result<()>,
 ) -> Result<PathBuf> {
     let runtime = fs::canonicalize(runtime)?;
+    let _lock = crate::fsutil::FileLock::acquire(&runtime.join(crate::controller::CONTROL_LOCK))?;
     let generation = fs::canonicalize(generation)?;
     store_check(&path_str(&generation)?)?;
     let data: Value = serde_json::from_slice(&read_bounded(

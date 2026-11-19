@@ -125,7 +125,7 @@ main() {
     set -- -b "$directory/root/nix/store/$system_candidate:/run/current-system!" "$@"
   fi
   cd "$directory/root$session_home" || return 1
-  exec /system/bin/env -i \
+  set -- /system/bin/env -i \
     HOME="$session_home" USER="$session_user" LOGNAME="$session_user" \
     TERM="${TERM:-xterm-256color}" COLORTERM="${COLORTERM:-truecolor}" \
     LANG=C.UTF-8 TMPDIR=/tmp SHELL="$login_shell" \
@@ -155,6 +155,22 @@ auto-optimise-store = false' \
     -b "$directory/proc-uptime:/proc/uptime" \
     -b /:/android \
     "$@"
+  if [[ -n $system_candidate ]]
+  then
+    native_prefix=${PREFIX:-${TERMUX_APP__DATA_DIR:-/data/data/dev.pschmitt.termux}/files/usr}
+    # Android mksh closes high-numbered redirections on exec. Bash keeps
+    # fd 8 open so the native launcher protects the whole guest session.
+    # shellcheck disable=SC2016
+    BASH_ENV=/dev/null exec "$native_prefix/bin/bash" --noprofile --norc -c '
+      lease=$1
+      shift
+      exec 8>>"$lease" || exit 1
+      /system/bin/flock -s -n 8 || exit 1
+      [[ -r "${lease%/*}/generation" ]] || exit 1
+      exec "$@"
+    ' nixpp-session "$directory/system-candidates/$system_candidate/.session-lock" "$@"
+  fi
+  exec "$@"
 }
 
 main "$@"

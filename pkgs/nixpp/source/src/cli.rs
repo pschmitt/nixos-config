@@ -129,6 +129,17 @@ pub enum Command {
     },
     /// Check the native controller, Nix store, builders and signed cache
     Doctor,
+    /// Prune old system generations and collect unreferenced Nix store paths
+    Gc {
+        /// Minimum number of generations to keep
+        #[arg(long, default_value_t = 3, value_parser = clap::value_parser!(u16).range(1..=1000))]
+        keep_generations: u16,
+        /// Show which generations would be removed
+        #[arg(long)]
+        dry_run: bool,
+    },
+    #[command(name = "__cache-pin-obsolete", hide = true)]
+    CachePinObsolete { generation: String },
     /// Show the active and previous system generations
     Status {
         /// Show all retained generations
@@ -503,6 +514,32 @@ fn guest_command(
             target: FetchTarget::Latest,
         } => upgrade_system(ui, runtime, &socket, &UpgradeArgs::default())?,
         Command::Doctor => doctor(ui, &socket)?,
+        Command::Gc {
+            keep_generations,
+            dry_run,
+        } => {
+            let runtime = require(runtime, "gc requires NIXPP_RUNTIME or --runtime")?;
+            let report = crate::gc::run(&runtime, usize::from(*keep_generations), *dry_run)?;
+            if ui.json() {
+                ui.print(&canonical_json(&serde_json::to_value(report)?));
+            } else if let Some(reason) = report.deferred {
+                ui.print(&format!("GC deferred: {reason}"));
+            } else if report.prune.is_empty() {
+                ui.print("No system generations to prune.");
+            } else {
+                let action = if *dry_run { "Would prune" } else { "Pruned" };
+                for name in report.prune {
+                    ui.print(&format!("{action} {name}"));
+                }
+            }
+        }
+        Command::CachePinObsolete { generation } => {
+            let runtime = require(
+                runtime,
+                "cache pin check requires NIXPP_RUNTIME or --runtime",
+            )?;
+            ui.print(&crate::gc::pin_is_obsolete(&runtime, generation)?.to_string());
+        }
         Command::Rebuild(args) => rebuild_system(ui, runtime, &socket, args)?,
         Command::Switch { candidate } => {
             let response = guest::manage(&socket, "switch", Some(candidate))?;
@@ -815,6 +852,7 @@ mod tests {
                 "controller",
                 "doctor",
                 "fetch",
+                "gc",
                 "help",
                 "init",
                 "list-generations",

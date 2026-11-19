@@ -15,6 +15,7 @@ pub mod controller;
 mod enroll;
 pub mod error;
 pub mod fsutil;
+mod gc;
 pub mod guest;
 mod outer;
 mod outer_remote;

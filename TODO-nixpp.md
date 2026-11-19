@@ -32,10 +32,10 @@
   PTY for interactive sessions and
   preserve separate stdio streams for non-interactive commands. Test `rish`
   over SSH, terminal resize, Ctrl-C, exit status and disconnect cleanup.
-- [ ] Use a Shizuku fallback for zsh helpers that need the phone's route,
-  gateway or source IP. Query Android's effective route with
-  `rish -c '/system/bin/ip -4 route get 192.0.2.1'` and keep the regular Linux
-  path on other hosts.
+- [x] Use a Shizuku fallback for zsh helpers that need the phone's route,
+  gateway or source IP. The Nix-managed `ip` wrapper provides route, address
+  and neighbour JSON on the phones. `whatsmy gateway` and `whatsmy ip` passed on
+  both devices, and other hosts keep their normal Linux `ip`.
 
 ## Bootstrap
 

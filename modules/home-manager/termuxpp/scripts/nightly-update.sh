@@ -26,15 +26,12 @@ run_step() {
 }
 
 upgrade_profile() {
-  local pin generations
+  local pin obsolete
   log 'Checking the signed cache pin'
   pin=$(timeout --kill-after=15 120 nixpp --json upgrade --from-cache --dry-run |
     jq -er '.path | split("/") | last') || return 1
-  generations=$(timeout --kill-after=15 30 nixpp --json status --all) || return 1
-  if jq -e --arg pin "$pin" '
-    (.[] | select(.current)) as $active |
-    any(.[]; .generation == $pin and .number <= $active.number)
-  ' <<< "$generations" >/dev/null
+  obsolete=$(timeout --kill-after=15 30 nixpp __cache-pin-obsolete "$pin") || return 1
+  if [[ "$obsolete" == true ]]
   then
     log 'The signed pin is at or behind the active generation. Keeping the active generation.'
     return 0
@@ -45,6 +42,7 @@ upgrade_profile() {
 maintenance() {
   local config failed=0
   upgrade_profile || return 1
+  run_step gc 1200 nixpp gc --keep-generations 3 || failed=1
   run_step dotfiles 180 yadm pull --ff-only || failed=1
 
   if [[ -s "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/session" ]]

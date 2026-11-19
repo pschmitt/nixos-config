@@ -29,7 +29,7 @@ const PROFILE_TIMEOUT: Duration = Duration::from_secs(300);
 const STATE_FILE: &str = "system-state.json";
 const PENDING_FILE: &str = "system-pending.json";
 const CURRENT_FILE: &str = "current-system";
-const CONTROL_LOCK: &str = "system-control.lock";
+pub(crate) const CONTROL_LOCK: &str = "system-control.lock";
 const SECRETS_SUFFIX: &str = "/bin/activate-secrets";
 
 /// The selected system and the retained previous one.
@@ -104,7 +104,7 @@ fn read_state(runtime: &Path) -> Result<Option<State>> {
         .transpose()
 }
 
-fn pending_exists(runtime: &Path) -> Result<bool> {
+pub(crate) fn pending_exists(runtime: &Path) -> Result<bool> {
     Ok(read_state_value(runtime, PENDING_FILE)?.is_some())
 }
 
