@@ -128,6 +128,7 @@ action down delete an ad-hoc worker
 action prune delete several ad-hoc workers (default: your own)
 action extend move the expiry of an ad-hoc worker
 action topic change what an ad-hoc worker is for
+action claim take over an ad-hoc worker: new agent, agent id and topic
 action niks3-token (re)issue a worker's short-lived niks3 push token
 action ssh ssh to a worker (pinned host key)
 action sync rsync a directory to a worker
@@ -141,6 +142,7 @@ flag start --workdir=path working directory on the worker
 flag ps --long show full process command lines
 flag logs --lines=count number of lines per job
 flag logs --follow follow all jobs on all workers
+flag logs -f short for --follow
 flag logs --no-events suppress lifecycle events while following
 flag logs --quiet suppress all status messages (timestamped, italic) while following
 flag logs --topic=topic limit to workers whose topic matches this regex (prefix with ! to invert)
@@ -191,6 +193,16 @@ flag prune --all every ad-hoc worker, whoever owns it
 flag down --force delete someone else's worker or a pool worker
 flag extend --force extend someone else's worker
 flag topic --force change the topic of someone else's worker
+flag claim --force claim someone else's worker
+flag claim --topic=topic what the worker is for now
+flag claim --agent-id=id your agent id (Concord)
+flag up --agent-id=id the creating agent's id (Concord)
+flag exec --agent-id=id the creating agent's id (Concord)
+flag ls --topic=topic only workers whose topic matches this regex (prefix with ! to invert)
+flag ls --agent=agent only workers whose creating agent matches this regex (prefix with ! to invert)
+flag ls --agent-id=id only workers whose agent id matches this regex (prefix with ! to invert)
+flag logs --agent-id=id limit to workers whose agent id matches this regex (prefix with ! to invert)
+flag events --agent-id=id limit to workers whose agent id matches this regex (prefix with ! to invert)
 flag prune --yes do not ask
 flag prune --dry-run only show what would be deleted
 values duration 30m 1h 2h 4h 8h 24h
@@ -203,7 +215,7 @@ values topic
 values agent claude codex agy opencode gemini copilot shell nixbot
 values user agent pschmitt nix-remote-builder
 values interval 2 5 10 30
-worker down extend topic niks3-token ssh sync builder prune inspect nix-cache start jobs ps logs register
+worker down extend topic claim niks3-token ssh sync builder prune inspect nix-cache start jobs ps logs register
 global --json force JSON output
 global -j short for --json
 SPEC
@@ -225,11 +237,11 @@ action_help() {
       printf '  --long shows full command lines, including arguments\n'
       ;;
     logs)
-      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events] [--quiet] [--topic REGEX] [--agent REGEX]\n' "$me"
-      printf '       %s logs [-f] [--topic REGEX] [--agent REGEX]  # follow jobs and events on all (or matching) workers\n' "$me"
+      printf 'Usage: %s logs [WORKER [JOB]] [--lines N] [--follow] [--no-events] [--quiet] [--topic REGEX] [--agent REGEX] [--agent-id REGEX]\n' "$me"
+      printf '       %s logs [-f] [--topic REGEX] [--agent REGEX] [--agent-id REGEX]  # follow jobs and events on all (or matching) workers\n' "$me"
       ;;
     events)
-      printf 'Usage: %s events [--interval SECONDS] [--topic REGEX] [--agent REGEX]\n' "$me"
+      printf 'Usage: %s events [--interval SECONDS] [--topic REGEX] [--agent REGEX] [--agent-id REGEX]\n' "$me"
       ;;
     register)
       printf 'Usage: %s register WORKER JOB --log PATH\n' "$me"
@@ -267,10 +279,12 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
   -l USER          with --ssh: log in as USER (pschmitt, nix-remote-builder)
   --topic TEXT     what it is for (shown by ls and inspect; none unless
                    given)
+  --agent-id ID    the creating agent's id (its Concord agent id; also read
+                   from RWORKER_AGENT_ID or CONCORD_AGENT_ID)
 
 The worker also records its creator: owner (\$USER@host), the agent
-process (claude, codex, agy, opencode, ... and its PID), the agent session
-id and the working directory. ls -o wide shows them; on the worker they are
+process (claude, codex, agy, opencode, ... and its PID), the agent id, the
+agent session id and the working directory. ls -o wide shows them; on the worker they are
 in /run/rworker/metadata.json.
 
 Example:
@@ -280,6 +294,7 @@ EOF
     ls)
       cat <<EOF
 Usage: $me ls [-o json|wide] [-w|--watch [-n SECONDS]]
+          [--topic REGEX] [--agent REGEX] [--agent-id REGEX]
 
 List all workers: ad-hoc ones (KIND adhoc) and nixbot's pool (KIND pool),
 with status, owner, creating agent, topic, time to expiry and age.
@@ -288,7 +303,10 @@ Pool workers have no TTL; EXPIRES shows what the autoscaler last saw:
 busy, idle 12m (drained after 20m idle with nothing pending) or draining.
 
   -o json        print the raw JSON instead of the table
-  -o wide        add the agent's PID, flavor, NetBird IP and cwd
+  -o wide        add the agent id, flavor, NetBird IP and cwd
+  --topic REGEX, --agent REGEX, --agent-id REGEX
+                 only workers whose topic, creating agent or agent id
+                 matches (a leading ! inverts the match)
   -w, --watch    redraw the table in place every -n seconds (default 5),
                  marking rows: + new, ~ changed (status, IP, owner, expiry,
                  flavor), - gone. q quits, any other key refreshes now.
@@ -305,7 +323,7 @@ run CMD there as agent (live output; its exit code becomes ours), copy
 results back and delete the worker again - also on errors and Ctrl-C.
 Status messages go to stderr, the command's output to stdout.
 
-  --ttl, --flavor, --disk, --profile, --scratch, --topic, --nix-cache, --no-nix-cache, --no-niks3-token   as for up
+  --ttl, --flavor, --disk, --profile, --scratch, --topic, --agent-id, --nix-cache, --no-nix-cache, --no-niks3-token   as for up
   --sync SRC[:DEST]      rsync SRC to the worker before running (DEST
                          defaults to SRC's basename); repeatable
   --fetch REMOTE[:LOCAL] rsync REMOTE (relative to agent's home) back
@@ -364,6 +382,18 @@ Change what an ad-hoc worker is for: the topic that ls shows, set with --topic
 when the worker was created. Update it when you reuse a worker for other
 work, so ls stays truthful. An empty TEXT clears it. Workers of another owner
 are refused unless --force.
+EOF
+      ;;
+    claim)
+      cat <<EOF
+Usage: $me claim NAME --topic TEXT --agent-id ID [--force]
+
+Take over an ad-hoc worker that you reuse for other work: replaces its
+creator info with yours (agent, agent PID, session, working directory),
+the agent id (your Concord agent id, also read from RWORKER_AGENT_ID or
+CONCORD_AGENT_ID) and the topic. Do this whenever you reuse a worker, so ls
+and logs --agent/--agent-id stay truthful. Workers of another owner are
+refused unless --force.
 EOF
       ;;
     niks3-token)
@@ -866,7 +896,7 @@ forget() {
 # above us (claude, codex, agy, opencode, ...), its PID and session, the
 # topic (only with --topic) and the working directory.
 creator_meta() {
-  local topic="$1" pid="$PPID" comm argv0 cand agent="" agent_pid="" session
+  local topic="$1" agent_id="${2:-${RWORKER_AGENT_ID:-${CONCORD_AGENT_ID:-}}}" pid="$PPID" comm argv0 cand agent="" agent_pid="" session
   while [[ -n "$pid" && "$pid" -gt 1 && -z "$agent" ]]
   do
     comm=$(cat "/proc/${pid}/comm" 2>/dev/null) || break
@@ -910,6 +940,10 @@ creator_meta() {
   if [[ -n "$session" ]]
   then
     printf '%s\n' --meta "agent_session=${session}"
+  fi
+  if [[ -n "$agent_id" ]]
+  then
+    printf '%s\n' --meta "agent_id=${agent_id}"
   fi
   if [[ -n "$topic" ]]
   then
@@ -1024,7 +1058,7 @@ render_progress() {
 
 cmd_up() {
   local key_file="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}" info name ip
-  local login="" login_user="" topic="" nix_cache=auto cache_info settings quiet_topic_warning=""
+  local login="" login_user="" topic="" agent_id="" nix_cache=auto cache_info settings quiet_topic_warning=""
   local -a args=() meta=()
   while [[ -n "${1:-}" ]]
   do
@@ -1052,6 +1086,10 @@ cmd_up() {
         topic="${2:-}"
         shift
         ;;
+      --agent-id)
+        agent_id="${2:-}"
+        shift
+        ;;
       --quiet-topic-warning)
         quiet_topic_warning=1
         ;;
@@ -1062,7 +1100,7 @@ cmd_up() {
     shift
   done
   set -- "${args[@]}"
-  mapfile -t meta < <(creator_meta "$topic")
+  mapfile -t meta < <(creator_meta "$topic" "$agent_id")
   if [[ -z "$topic" && -z "$quiet_topic_warning" ]]
   then
     printf '%s no topic provided\n' "$(paint 33 '!')" >&2
@@ -1188,7 +1226,7 @@ table_plain() {
       elif (.expires_at // 0) > 0 then dur(.expires_at - $now)
       else "-" end;
     (["NAME", "KIND", "PROFILE", "STATUS", "OWNER", "AGENT", "TOPIC", "EXPIRES", "AGE"]
-      + (if $wide then ["FLAVOR", "IP", "CWD"] else [] end)),
+      + (if $wide then ["AGENT-ID", "FLAVOR", "IP", "CWD"] else [] end)),
     (sort_by(.kind, .name)[] | [
       .name, .kind, (.profile // "standard"), (.status | ascii_upcase), opt(.owner),
       (if $wide and .agent_pid then "\(agent_label(.agent)) (\(.agent_pid))"
@@ -1196,7 +1234,7 @@ table_plain() {
       opt(.topic), expiry,
       (created as $c | if $c then dur($now - $c) else "-" end)
     ] + (if $wide then [
-      (.flavor // "-"), (ips_label // "<none>"), opt(.cwd)
+      opt(.agent_id), (.flavor // "-"), (ips_label // "<none>"), opt(.cwd)
     ] else [] end)) | @tsv') || return 1
   if [[ $(wc -l <<< "$rows") -le 1 ]]
   then
@@ -1286,7 +1324,7 @@ watch_ls() {
   local first=1 json="" error="" key
   while true
   do
-    if out=$(remote_ls 2>&1)
+    if out=$(remote_ls 2>&1) && out=$(filter_workers "$out" "${LS_TOPIC:-}" "${LS_AGENT:-}" 2>&1)
     then
       json="$out"
       error=""
@@ -1383,7 +1421,8 @@ watch_ls() {
 }
 
 cmd_ls() {
-  local json="" watch="" interval=5
+  local json="" watch="" interval=5 topic="" agent=""
+  LS_TOPIC="" LS_AGENT=""
   while [[ -n "${1:-}" ]]
   do
     case "$1" in
@@ -1408,6 +1447,20 @@ cmd_ls() {
         ;;
       -w|--watch)
         watch=1
+        ;;
+      --topic|--agent|--agent-id)
+        if [[ -z "${2:-}" ]]
+        then
+          printf -- '%s requires a regex pattern\n' "$1" >&2
+          return 2
+        fi
+        validate_regex "$1" "$2" || return $?
+        case "$1" in
+          --topic) topic="$2"; LS_TOPIC="$2" ;;
+          --agent) agent="$2"; LS_AGENT="$2" ;;
+          --agent-id) FILTER_AGENT_ID="$2" ;;
+        esac
+        shift
         ;;
       -n|--interval)
         shift
@@ -1435,6 +1488,7 @@ cmd_ls() {
   fi
   local out
   out=$(remote_ls) || return 1
+  out=$(filter_workers "$out" "$topic" "$agent") || return 1
   if [[ -n "$json" || -n "$JSON" ]]
   then
     printf '%s\n' "$out"
@@ -1526,7 +1580,7 @@ cmd_inspect() {
     (.created_at // "-"), (.expires_at // 0), (.grace_until // 0),
     (.last_active // 0), (.max_lifetime_end // 0), (.host_key // "-"),
     (.availability_zone // "-"), (.pool_state // ""),
-    (.last_busy // 0)' <<< "$info")
+    (.last_busy // 0), (.agent_id // "-")' <<< "$info")
   label Name "$(paint_vm "${f[0]}")"
   label Kind "${f[1]}"
   label Status "$(paint_state "${f[2]}")"
@@ -1538,6 +1592,7 @@ cmd_inspect() {
     agent=$(paint_agents <<< "$agent")
   fi
   label "  Agent" "${agent}$([[ "${f[5]}" != - ]] && printf ' (PID %s)' "${f[5]}")"
+  label "  Agent ID" "${f[21]}"
   label "  Session" "${f[6]}"
   label "  Topic" "${f[7]}"
   label "  Cwd" "${f[8]}"
@@ -1700,7 +1755,7 @@ cmd_exec() {
       --scratch|--nix-cache|--no-nix-cache|--no-niks3-token)
         up_args+=("$1")
         ;;
-      --topic)
+      --topic|--agent-id)
         up_args+=("$1" "${2:-}")
         shift
         ;;
@@ -1893,6 +1948,64 @@ cmd_topic() {
   fi
   topic=$(jq -r '.topic // "-"' <<< "$out") || return 1
   ok "$(paint_vm "$name") topic: ${topic}"
+}
+
+cmd_claim() {
+  local name="" topic="" agent_id="" out agent
+  local -a force=() meta=()
+  while [[ $# -gt 0 ]]
+  do
+    case "$1" in
+      --force)
+        force=(--force)
+        ;;
+      --topic)
+        topic="${2:-}"
+        shift
+        ;;
+      --agent-id)
+        agent_id="${2:-}"
+        shift
+        ;;
+      -*)
+        printf 'Unknown claim option: %s\n' "$1" >&2
+        show_help claim >&2
+        return 2
+        ;;
+      *)
+        if [[ -n "$name" ]]
+        then
+          show_help claim >&2
+          return 2
+        fi
+        name="$1"
+        ;;
+    esac
+    shift
+  done
+  if [[ -z "$name" ]]
+  then
+    show_help claim >&2
+    return 2
+  fi
+  if [[ -z "$topic" ]]
+  then
+    printf '%s no topic provided\n' "$(paint 33 '!')" >&2
+  fi
+  if [[ -z "${agent_id:-${RWORKER_AGENT_ID:-${CONCORD_AGENT_ID:-}}}" ]]
+  then
+    printf '%s no agent id provided (--agent-id, RWORKER_AGENT_ID)\n' "$(paint 33 '!')" >&2
+  fi
+  mapfile -t meta < <(creator_meta "$topic" "$agent_id")
+  out=$(remote claim "$name" "${meta[@]}" "${force[@]}" \
+    --owner "${USER}@$(hostname)") || return 1
+  if [[ -n "$JSON" ]]
+  then
+    printf '%s\n' "$out"
+    return 0
+  fi
+  agent=$(jq -r '"\(.agent // "-") \(.agent_id // "-")"' <<< "$out") || return 1
+  ok "$(paint_vm "$name") claimed: ${agent}, topic: $(jq -r '.topic // "-"' <<< "$out")"
 }
 
 cmd_niks3_token() {
@@ -2211,21 +2324,22 @@ validate_regex() {
 }
 
 filter_workers() {
-  local workers="$1" topic="${2:-}" agent="${3:-}"
-  if [[ -z "$topic" && -z "$agent" ]]
+  local workers="$1" topic="${2:-}" agent="${3:-}" agent_id="${FILTER_AGENT_ID:-}"
+  if [[ -z "$topic" && -z "$agent" && -z "$agent_id" ]]
   then
     printf '%s\n' "$workers"
     return 0
   fi
   # A leading "!" inverts the match: "!foo" keeps workers NOT matching foo.
-  jq -c --arg topic_re "$topic" --arg agent_re "$agent" '
+  jq -c --arg topic_re "$topic" --arg agent_re "$agent" --arg id_re "$agent_id" '
     def m($v; $re):
       if $re == "" then true
       elif ($re | startswith("!")) then ($v | test($re[1:]) | not)
       else ($v | test($re)) end;
     [.[] | select(
       m(.topic // ""; $topic_re) and
-      m(.agent // ""; $agent_re)
+      m(.agent // ""; $agent_re) and
+      m(.agent_id // ""; $id_re)
     )]
   ' <<< "$workers"
 }
@@ -2236,7 +2350,7 @@ cmd_logs() {
   while [[ $# -gt 0 ]]
   do
     case "$1" in
-      --lines|--topic|--agent)
+      --lines|--topic|--agent|--agent-id)
         opts+=("$1" "${2:-}")
         shift "$(( $# > 1 ? 2 : 1 ))"
         ;;
@@ -2306,6 +2420,24 @@ cmd_logs() {
         fi
         shift
         ;;
+      --agent-id)
+        if [[ -z "${2:-}" ]]
+        then
+          printf -- '--agent-id requires a regex pattern\n' >&2
+          return 2
+        fi
+        FILTER_AGENT_ID="$2"
+        shift 2
+        ;;
+      --agent-id=*)
+        FILTER_AGENT_ID="${1#--agent-id=}"
+        if [[ -z "$FILTER_AGENT_ID" ]]
+        then
+          printf -- '--agent-id requires a regex pattern\n' >&2
+          return 2
+        fi
+        shift
+        ;;
       *)
         printf 'Unknown logs option: %s\n' "$1" >&2
         action_help logs >&2
@@ -2325,6 +2457,10 @@ cmd_logs() {
   if [[ -n "$agent" ]]
   then
     validate_regex --agent "$agent" || return $?
+  fi
+  if [[ -n "${FILTER_AGENT_ID:-}" ]]
+  then
+    validate_regex --agent-id "$FILTER_AGENT_ID" || return $?
   fi
   if [[ -n "$follow" ]]
   then
@@ -2622,6 +2758,24 @@ cmd_events() {
         if [[ -z "$agent" ]]
         then
           printf -- '--agent requires a regex pattern\n' >&2
+          return 2
+        fi
+        shift
+        ;;
+      --agent-id)
+        if [[ -z "${2:-}" ]]
+        then
+          printf -- '--agent-id requires a regex pattern\n' >&2
+          return 2
+        fi
+        FILTER_AGENT_ID="$2"
+        shift 2
+        ;;
+      --agent-id=*)
+        FILTER_AGENT_ID="${1#--agent-id=}"
+        if [[ -z "$FILTER_AGENT_ID" ]]
+        then
+          printf -- '--agent-id requires a regex pattern\n' >&2
           return 2
         fi
         shift
@@ -3058,6 +3212,126 @@ cmd_builder() {
   fi
 }
 
+# A worker name may be abbreviated: an exact name wins, else a unique prefix,
+# else a unique substring ("3e192" for adhoc-3e192e4f). Prints the full name;
+# an unknown or ambiguous fragment is an error. A name this host already
+# knows (state file) skips the lookup.
+resolve_worker() {
+  local frag="$1" names exact match
+  local -a hits=()
+  if [[ -z "$frag" || -f "$(state_file "$frag")" ]]
+  then
+    printf '%s\n' "$frag"
+    return 0
+  fi
+  names=$(remote_ls 2>/dev/null | jq -r '.[].name') || names=""
+  if [[ -z "$names" ]]
+  then
+    printf '%s\n' "$frag"
+    return 0
+  fi
+  exact=$(grep -Fx -- "$frag" <<< "$names" || true)
+  if [[ -n "$exact" ]]
+  then
+    printf '%s\n' "$exact"
+    return 0
+  fi
+  mapfile -t hits < <(grep -F -- "$frag" <<< "$names" | grep -- "^${frag//[^A-Za-z0-9_-]/.}" || true)
+  if (( ${#hits[@]} == 0 ))
+  then
+    mapfile -t hits < <(grep -F -- "$frag" <<< "$names" || true)
+  fi
+  case "${#hits[@]}" in
+    0)
+      printf '%s\n' "$frag"
+      ;;
+    1)
+      printf '%s\n' "${hits[0]}"
+      ;;
+    *)
+      printf 'Ambiguous worker name %s, matches:\n' "$frag" >&2
+      printf '  %s\n' "${hits[@]}" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Rewrites abbreviated worker names in the arguments of ACTION into
+# RESOLVED_ARGS: only the argument positions that are worker names, so topic
+# and command texts are left alone. Options that take a value are skipped
+# with it.
+resolve_args() {
+  local action="$1" arg full user="" pos=0 i
+  shift
+  RESOLVED_ARGS=("$@")
+  case "$action" in
+    start|jobs|register|logs|ps|down|extend|topic|claim|niks3-token|sync|builder|nix-cache|inspect|prune|ssh|cp) ;;
+    *) return 0 ;;
+  esac
+  for i in "${!RESOLVED_ARGS[@]}"
+  do
+    arg="${RESOLVED_ARGS[$i]}"
+    if [[ "${SKIP_NEXT:-}" == 1 ]]
+    then
+      SKIP_NEXT=0
+      continue
+    fi
+    case "$arg" in
+      --)
+        break
+        ;;
+      --lines|--topic|--agent|--agent-id|--ttl|--owner|--name|--workdir|--interval|-n|-l|-o|--log|--flavor|--disk|--profile)
+        # claim and logs take values from flags; ssh -l too.
+        SKIP_NEXT=1
+        continue
+        ;;
+      --*=*|-*)
+        continue
+        ;;
+    esac
+    case "$action" in
+      cp)
+        if [[ "$arg" == *:* && "$arg" != ./* && "$arg" != /* ]]
+        then
+          user=""
+          full="${arg%%:*}"
+          if [[ "$full" == *@* ]]
+          then
+            user="${full%%@*}@"
+            full="${full#*@}"
+          fi
+          full=$(resolve_worker "$full") || return 1
+          RESOLVED_ARGS[i]="${user}${full}:${arg#*:}"
+        fi
+        ;;
+      prune)
+        full=$(resolve_worker "$arg") || return 1
+        RESOLVED_ARGS[i]="$full"
+        ;;
+      *)
+        if (( pos == 0 ))
+        then
+          user=""
+          full="$arg"
+          if [[ "$action" == ssh && "$full" == *@* ]]
+          then
+            user="${full%%@*}@"
+            full="${full#*@}"
+          fi
+          full=$(resolve_worker "$full") || return 1
+          RESOLVED_ARGS[i]="${user}${full}"
+        fi
+        pos=$((pos + 1))
+        if [[ "$action" == ssh || "$action" == topic || "$action" == claim ]]
+        then
+          break
+        fi
+        ;;
+    esac
+  done
+  SKIP_NEXT=0
+}
+
 main() {
   local action="${1:-}" arg
   case "$action" in
@@ -3133,6 +3407,12 @@ main() {
       return 0
     fi
   done
+  if [[ "$action" != ssh || "${1:-}" != --create ]]
+  then
+    SKIP_NEXT=0
+    resolve_args "$action" "$@" || return 1
+    set -- "${RESOLVED_ARGS[@]}"
+  fi
   case "$action" in
     start)
       cmd_jobs_remote "$action" "$@"
@@ -3196,6 +3476,9 @@ main() {
       ;;
     topic)
       cmd_topic "$@"
+      ;;
+    claim)
+      cmd_claim "$@"
       ;;
     niks3-token)
       cmd_niks3_token "$@"

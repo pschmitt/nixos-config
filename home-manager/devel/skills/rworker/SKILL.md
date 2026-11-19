@@ -20,6 +20,9 @@ key is pinned on creation, never trusted on first use.
 
 ## Commands
 
+A worker NAME may be abbreviated to a unique prefix or substring (`rworker logs -f 3e19`);
+an ambiguous one lists the candidates. The shell completions (`rk`) complete names, also after flags.
+
 All through `rworker` (on PATH via Home Manager; the same code is
 `scripts/rworker.sh`). It calls `rworker` on the control host (rofl-10)
 over SSH and keeps per-worker state in `~/.local/state/rworker`:
@@ -43,12 +46,18 @@ rworker down "$w"
   with `-j`/`--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
   `host_key`, `expires_at`, `flavor`). Use `--json` in scripts; `--ssh`
   logs you in right away (interactive use); `ssh --create [up options]` is
-  the same. **Always** pass `--topic "what it is for"` (also with `exec` and
-  `ssh --create`; MCP `up(topic=...)`): without it `ls` shows `-` and nobody
-  can tell whose worker it is or whether it is safe to delete. **Keep it
-  current**: when you reuse a worker for other work, `topic NAME "new topic"`
-  (MCP `topic(name, text)`; ad-hoc only, empty clears it). Agent, PID, session
-  and cwd are recorded on their own. Ask for a bigger flavor only for
+  the same. **Always** pass `--topic "what it is for"` and `--agent-id ID`
+  (your Concord agent id, e.g. `claude-code:ca5ed9b8`; also read from
+  `RWORKER_AGENT_ID` / `CONCORD_AGENT_ID`) with `up`, `exec` and
+  `ssh --create` (MCP `up(topic=..., agent_id=...)`): without them `ls` shows
+  `-` and nobody can tell whose worker it is or whether it is safe to delete.
+  **When you reuse a worker** (one you did not create, or one made for earlier
+  work), take it over first: `claim NAME --topic "new topic" --agent-id ID`
+  (MCP `claim(name, topic, agent_id)`). It replaces the creator info (agent,
+  agent id, PID, session, cwd) and the topic in one go, so `ls` and the
+  filters stay truthful; `topic NAME "text"` changes only the topic (ad-hoc
+  only, empty clears it). Agent, PID, session and cwd are recorded on their
+  own at creation and by `claim`. Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
 - `profiles [--json]` lists the profiles (flavor, disk, image tags); select
   one with `up --profile NAME`.
@@ -57,7 +66,10 @@ rworker down "$w"
   It asks first; pass `--yes` in scripts. Pool workers are never pruned.
 - `ls` lists all workers (ad-hoc and nixbot's pool, `KIND` tells them
   apart) with owner, creating agent, topic and expiry (`-o wide` adds the
-  agent's PID, flavor, IP and cwd); `inspect NAME [--boot]` shows
+  agent id, flavor, IP and cwd). `ls`, `logs` and `events` filter with the
+  regexes `--agent` (claude, codex, ...), `--agent-id` (a Concord id) and
+  `--topic`; a leading `!` inverts one, e.g. `ls --agent-id claude-code:ca5ed9b8`
+  shows your own workers (MCP `ls(agent_id=...)`); `inspect NAME [--boot]` shows
   everything about one worker; `ls --watch` redraws it in place and marks
   new (`+`), changed (`~`) and gone (`-`) workers; `extend NAME --ttl 2h`
   moves the expiry; `down NAME` deletes the worker and its overlay peers
@@ -176,61 +188,11 @@ after its client restarts.
 
 ## Secrets and private inputs
 
-Credentials the task needs may be sent to a worker. Workers are private and
-temporary, and the user allows it without asking each time: this holds for
-the S3 cache credentials, a GitHub token for a private flake input and
-whatever else the build or test needs. For a private flake input you can also
-transfer a checkout at the exact revision pinned in `flake.lock` and use
-`--override-input NAME path:<worker-checkout>`. Verify the revision first; a
-dirty checkout changes what is evaluated. Remember that Nix may copy the
-source into the worker's world-readable store: never include plaintext
-secrets. `rworker sync` does **not** exclude `.git` by itself.
-
-Sending a credential does not make it safe to show. The worker user and
-administrators can read it, and processes or tools may copy or log it, so keep
-it out of the transcript: pass it as a file, never in MCP arguments,
-command-line arguments, Git, Nix expressions or the Nix store, avoid shell
-tracing and commands that print it, and delete it before `down`. A narrow,
-short-lived credential is nicer when it is cheap to get, but it is not
-required. Prefer sending just the file or entry the job needs over a whole
-credentials directory or the SSH agent.
-
-The worker may remove an agent user's `/dev/shm` files when its last SSH login
-ends. If the next command needs the file, keep one SSH session open through
-the transfer and consumption, or send it on stdin to the consuming command in
-the same SSH session. For a locally prepared mode-0600 `secret_file`:
-
-```bash
-rworker ssh "$w" 'umask 077; d=$(mktemp -d /dev/shm/rworker-secret.XXXXXXXX); trap '\''rm -rf "$d"'\'' EXIT; cat > "$d/credential"; your-command "$d/credential"' < "$secret_file"
-```
-
-Check each step; if transfer or the job fails, still remove the directory and
-tear down the worker. Remove any local temporary secret file, revoke temporary tokens
-when finished, and always `down` the worker. Do not assume deletion erases
-copies made by the workload.
-
-For private flake fetches, prepare a minimal Nix user configuration without
-printing tokens. Include `access-tokens` for every private host, including nested
-inputs: overriding the parent does not authenticate its dependencies. GitLab
-tokens need a `PAT:` or `OAuth2:` prefix. Set `NIX_USER_CONF_FILES` to this file
-for the worker's Nix command; it replaces the normal user configuration and
-authenticates client fetches, not build sandboxes or daemon-side cache access.
-Do not put tokens in `NIX_CONFIG` or arguments. `nix-cache` handles S3 separately.
-
-On hosts with our Home Manager Nix configuration, the rendered SOPS template
-already contains the GitHub and WIIT GitLab entries, including those needed by
-the private configuration's nested inputs. Set up an existing worker in one
-step (the file stays on its encrypted disk, readable only by the worker user):
-
-```bash
-rworker ssh "$w" 'umask 077 && mkdir -p "$HOME/.config/rworker" && chmod 700 "$HOME/.config/rworker" && install -m 600 /dev/stdin "$HOME/.config/rworker/nix-auth.conf"' < "$HOME/.config/sops-nix/secrets/rendered/nix-access-tokens"
-rworker ssh "$w" "cd repo && NIX_USER_CONF_FILES=\$HOME/.config/rworker/nix-auth.conf nix eval --json '.#nixosConfigurations.example.config.system.build.toplevel.drvPath'"
-rworker ssh "$w" 'rm -f "$HOME/.config/rworker/nix-auth.conf"'
-```
-
-Use the synced checkout and desired command; keep the config until fetching is
-done. If the template is unavailable, use the minimal-config method above.
-Remove the file even on failure and then tear down the worker as usual.
+Credentials the task needs (S3 cache credentials, a GitHub token for a private
+flake input) may go to a worker without asking, as a file and never in the
+transcript; delete them before `down`. Details, the private-flake `nix-auth.conf`
+recipe and the checkout-at-pinned-revision alternative:
+[secrets-private-inputs](references/secrets-private-inputs.md).
 
 ## Changing rworker
 

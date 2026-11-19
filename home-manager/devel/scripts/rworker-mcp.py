@@ -50,6 +50,7 @@ def up(
     disk_gib: int | None = None,
     scratch: bool = False,
     topic: str | None = None,
+    agent_id: str | None = None,
     nix_cache: bool = True,
     profile: str | None = None,
     niks3_token: bool = True,
@@ -60,7 +61,8 @@ def up(
     when it expires stays until it has been idle for 1 h, up to its maximum
     lifetime (24 h, or 7 days with scratch=True). topic: ALWAYS set it - a few words on what
     it is for (shown by ls/inspect; the creating agent, its PID, session and
-    cwd are recorded automatically). flavor: s1.large (8 vCPU), s1.xlarge (16, default),
+    cwd are recorded automatically). agent_id: ALWAYS set it to your Concord
+    agent id, so workers can be filtered by it. flavor: s1.large (8 vCPU), s1.xlarge (16, default),
     s1.2xlarge (32). profile selects a configured worker profile: standard,
     browser-daemon, or large-builder. Profile defaults can be overridden with
     flavor and disk_gib. disk_gib: volume size (default 150). nix_cache (default
@@ -87,6 +89,8 @@ def up(
         argv.append("--scratch")
     if topic:
         argv += ["--topic", topic]
+    if agent_id:
+        argv += ["--agent-id", agent_id]
     if not nix_cache:
         argv.append("--no-nix-cache")
     if not niks3_token:
@@ -101,15 +105,23 @@ def profiles() -> list:
 
 
 @mcp.tool()
-def ls() -> list:
-    """List all workers: ad-hoc ones (kind adhoc) and nixbot's pool (pool)."""
-    return json.loads(run("ls", "--json", timeout=120))
+def ls(topic: str | None = None, agent: str | None = None,
+       agent_id: str | None = None) -> list:
+    """List all workers: ad-hoc ones (kind adhoc) and nixbot's pool (pool).
+    topic, agent (claude, codex, ...) and agent_id (a Concord agent id) are
+    regexes that keep only matching workers; a leading "!" inverts one."""
+    argv = ["ls", "--json"]
+    for flag, value in (("--topic", topic), ("--agent", agent),
+                        ("--agent-id", agent_id)):
+        if value:
+            argv += [flag, value]
+    return json.loads(run(*argv, timeout=120))
 
 
 @mcp.tool()
 def inspect(name: str, boot: bool = False) -> dict:
-    """Everything known about one worker: owner, creator (agent, PID,
-    session, topic, cwd), expiry, grace period, max lifetime and server
+    """Everything known about one worker: owner, creator (agent, agent id,
+    PID, session, topic, cwd), expiry, grace period, max lifetime and server
     metadata. boot=True adds the worker's own /run/rworker/metadata.json."""
     argv = ["inspect", name, "--json"]
     if boot:
@@ -129,11 +141,22 @@ def extend(name: str, ttl: str, niks3_token: bool = True) -> dict:
 
 
 @mcp.tool()
+def claim(name: str, topic: str, agent_id: str) -> dict:
+    """Take over an ad-hoc worker you reuse for other work: replaces its
+    creator info (agent, agent id, PID, session, cwd) with yours and sets the
+    topic. Call it whenever you reuse a worker, with your Concord agent id and
+    a short topic ("rbw release build"). Refused for another owner's worker."""
+    return json.loads(run("claim", name, "--topic", topic, "--agent-id", agent_id,
+                          "--json", timeout=120))
+
+
+@mcp.tool()
 def topic(name: str, text: str) -> dict:
     """Change what an ad-hoc worker is for (the topic `ls` shows). Call it
     when you reuse a worker for different work, so `ls` stays truthful for
     everyone sharing the pool; keep it short ("rbw release build"). An empty
-    text clears it. Refused for another owner's worker."""
+    text clears it. Refused for another owner's worker. When you reuse a
+    worker, use claim() instead: it also takes over agent and agent id."""
     return json.loads(run("topic", name, text, "--json", timeout=120))
 
 

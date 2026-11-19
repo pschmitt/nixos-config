@@ -60,7 +60,31 @@ _rworker() {
   fi
   if [[ "$action" == logs && $COMP_CWORD -ge 3 ]]
   then
-    words+=" $(rworker __jobs "${COMP_WORDS[2]}" 2>/dev/null)"
+    # logs [FLAGS] [WORKER [JOB]]: the worker is the first word that is neither
+    # a flag nor a flag's value; complete it, then its jobs.
+    local i w skipval=0 worker=""
+    for ((i = 2; i < COMP_CWORD; i++))
+    do
+      w="${COMP_WORDS[i]}"
+      if ((skipval))
+      then
+        skipval=0
+      elif [[ "$w" == --lines || "$w" == --topic || "$w" == --agent || "$w" == --agent-id ]]
+      then
+        skipval=1
+      elif [[ "$w" != -* ]]
+      then
+        worker="$w"
+        break
+      fi
+    done
+    if [[ -z "$worker" && "$cur" != -* && "$prev" != --lines && "$prev" != --topic && "$prev" != --agent && "$prev" != --agent-id ]]
+    then
+      words+=" $(_rworker_workers)"
+    elif [[ -n "$worker" ]]
+    then
+      words+=" $(rworker __jobs "$worker" 2>/dev/null)"
+    fi
   fi
   mapfile -t COMPREPLY < <(compgen -W "$words" -- "$cur")
 }

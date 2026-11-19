@@ -117,9 +117,26 @@ _rworker() {
   fi
 
   local flag spec_flag values desc _rworker_job_worker="${words[3]:-}"
-  if [[ "$action" == logs ]] && (( CURRENT >= 4 ))
+  if [[ "$action" == logs ]]
   then
-    flags+=('1:job:_rworker_jobs')
+    # logs [FLAGS] [WORKER [JOB]]: flags may come before the worker, so find
+    # the worker as the first word that is neither a flag nor a flag's value.
+    local w skipval=0
+    _rworker_job_worker=""
+    for w in "${(@)words[3,CURRENT-1]}"
+    do
+      if (( skipval ))
+      then
+        skipval=0
+        continue
+      fi
+      case "$w" in
+        --lines|--topic|--agent|--agent-id) skipval=1 ;;
+        -*) ;;
+        *) _rworker_job_worker="$w"; break ;;
+      esac
+    done
+    flags+=('1::worker:_rworker_workers' '2::job:_rworker_jobs')
   fi
   for line in "${_rworker_spec_cache[@]}"
   do
@@ -152,10 +169,9 @@ _rworker() {
   local skip=2
   if (( ${takes_worker[(Ie)$action]} )) && [[ "$action" != prune ]]
   then
-    if [[ "$action" == logs && "${words[3]:-}" == -* ]]
+    if [[ "$action" == logs ]]
     then
-      # logs accepts flags without a worker, so keep a leading option for
-      # _arguments instead of consuming it as the optional worker position.
+      # logs: _arguments sees the worker and job positions itself.
       skip=2
     else
       skip=3

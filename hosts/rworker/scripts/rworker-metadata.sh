@@ -134,7 +134,7 @@ human() {
     (.host.memory_bytes // 0 | tostring), s(.host.load),
     (.host.disk.avail // 0 | tostring), (.host.disk.size // 0 | tostring),
     (.host.uptime_seconds // 0 | tostring), s(.source),
-    s(.host.tailscale_ip)' <<< "$info")
+    s(.host.tailscale_ip), s(.meta.agent_id)' <<< "$info")
   local agent="${f[3]}"
   if [[ "${f[4]}" != - ]]
   then
@@ -147,6 +147,7 @@ human() {
   then
     printf '%s\n' "$(bold Creator:)"
     line "  Agent" "$agent"
+    line "  Agent ID" "${f[25]}"
     line "  Session" "${f[5]}"
     line "  Topic" "${f[6]}"
     line "  Cwd" "${f[7]}"

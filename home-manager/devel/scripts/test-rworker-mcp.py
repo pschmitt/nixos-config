@@ -55,6 +55,17 @@ class ProfileTest(unittest.TestCase):
             module.topic("w", "rbw release build")
             self.assertEqual(
                 run.call_args.args[:4], ("topic", "w", "rbw release build", "--json"))
+            module.claim("w", "rbw release build", "claude-code:abc")
+            self.assertEqual(
+                run.call_args.args,
+                ("claim", "w", "--topic", "rbw release build",
+                 "--agent-id", "claude-code:abc", "--json"))
+            module.up(agent_id="claude-code:abc")
+            self.assertIn("--agent-id", run.call_args.args)
+            module.ls(agent_id="claude-code:abc")
+            self.assertEqual(
+                run.call_args.args,
+                ("ls", "--json", "--agent-id", "claude-code:abc"))
 
     def test_exec_uses_registered_job_and_returns_exit_status(self):
         modules = {name: ModuleType(name) for name in ("mcp", "mcp.server", "mcp.server.mcpserver")}
