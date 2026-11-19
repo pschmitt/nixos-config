@@ -22,4 +22,18 @@
         ;;
     esac
   '';
+
+  # Home Assistant starts and stops sshd through Tasker, which may only run
+  # native scripts from its allowlisted directory. The launcher drives the
+  # guest's runit sshd instead of starting a separate, unsupervised one.
+  home.activation.installManagedSshdLauncher = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    case "''${NIXPP_RUNTIME:-}" in
+      /android/*/.local/share/termuxpp-nix)
+        sshdLauncher="''${NIXPP_RUNTIME%/.local/share/termuxpp-nix}/.config/termuxpp/tasker/set-managed-sshd"
+        run ${pkgs.coreutils}/bin/install -Dm700 ${./scripts/set-managed-sshd.sh} "$sshdLauncher.new"
+        run ${pkgs.coreutils}/bin/mv -fT -- "$sshdLauncher.new" "$sshdLauncher"
+        unset sshdLauncher
+        ;;
+    esac
+  '';
 }

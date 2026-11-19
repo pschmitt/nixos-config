@@ -45,7 +45,7 @@ Crossing the boundary:
 | --- | --- |
 | `nixpp: cannot reach the native controller` | The controller is an app child process. Android's phantom process killer trimmed it, and nothing restarted it until the app process restarted. |
 | `CANNOT LINK EXECUTABLE ... libtermux-pkg-redirect.so not found` | Native processes kept the APK's library directory (`/data/app/~~hash/...`) in `LD_PRELOAD`. Every APK update removes that directory. |
-| SSH lands outside the guest | A native Termux sshd from the native bundle era shared port 2222 with the guest sshd and was started by termux-services' runsvdir. |
+| SSH lands outside the guest | Three sshd launchers shared port 2222: the native Termux sshd from the native bundle era (started by termux-services' runsvdir), the guest's runit sshd, and an unsupervised guest sshd that Home Assistant's Tasker launcher started. |
 | Leftover processes survive app restarts | Processes started through `run-as` (debug builds) run in another SELinux context; `am force-stop` does not reach them. |
 | Native `termux-am` fails | Stock `termux-am-socket` has `files/apps/com.termux/...` compiled in; the redirect library rewrote only the data directory. |
 | `rish` loses output | Without a terminal it exits before the remote output arrives. |
@@ -79,6 +79,7 @@ by having fewer moving parts (no native controller, one in-app socket, no
 | Stable redirect library: the app installs `files/lib/libtermux-pkg-redirect.so` atomically; shells, start scripts, `nixpp native-shell` and the ADB shell use it; the `apk-library` marker points at it, so APK updates no longer restart nixpp processes | In progress |
 | Redirect library maps `files/apps/com.termux` to the fork, fixing stock `termux-am-socket` | In progress |
 | Native sshd off (runit `down` file from guest activation) | Done (2d128ebd) |
+| One sshd: Home Assistant's Tasker launcher (`set-managed-sshd`) drives the guest's runit sshd through `svc` instead of starting its own | Done |
 | One app-owned native supervisor: the controller, the guest service manager and the android bridge run as children of one process the app watches, instead of separately started processes | Planned |
 | Single login path for terminal, SSH, ADB shell and Tasker | Planned |
 | No long-running `run-as` processes; `run-as` only for one-shot recovery | Planned |
