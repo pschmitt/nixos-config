@@ -243,6 +243,12 @@ in
           fi
         '')
         (lib.mkOrder 1500 ''
+          if [[ -r "${config.xdg.configHome}/zsh/functions/ssh/ssh::tmux" ]]
+          then
+            fpath+=("${config.xdg.configHome}/zsh/functions/ssh")
+            autoload -Uz ssh::tmux
+          fi
+
           if [[ -z ''${SSH_CONNECTION:-} ]]
           then
             function _termuxpp_triple_tap_command() {
