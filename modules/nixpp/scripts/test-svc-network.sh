@@ -119,4 +119,24 @@ svc start restricted
 expect restricted running "manual start on the allowed Wi-Fi"
 expect free running "unrestricted service is unaffected throughout"
 
-printf 'ok: svc Wi-Fi gating\n'
+# A tree whose native daemon dies retires instead of running unowned.
+kill -TERM -- "-$supervisor_pid" 2>/dev/null || true
+wait "$supervisor_pid" 2>/dev/null || true
+for directory in "$work"/state/services/*; do sv -w 5 down "$directory" >/dev/null 2>&1 || true; done
+sleep 1
+sleep 300 &
+owner=$!
+NIXPP_SVC_OWNER_PID=$owner setsid bash "$svc_script" supervise >>"$work/supervise.log" 2>&1 &
+supervisor_pid=$!
+expect free running "a supervisor with a live owner starts the services"
+kill "$owner"
+for ((attempt = 0; attempt < 50; attempt++))
+do
+  kill -0 "$supervisor_pid" 2>/dev/null || break
+  sleep 0.2
+done
+kill -0 "$supervisor_pid" 2>/dev/null && fail "the supervisor outlived its owner"
+expect free down "the services stop with the retired supervisor"
+supervisor_pid=
+
+printf 'ok: svc Wi-Fi gating and owner retirement\n'

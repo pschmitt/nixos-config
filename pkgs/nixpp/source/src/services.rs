@@ -10,7 +10,6 @@ use crate::store::{is_candidate_name, is_store_root};
 use std::fs::{self, OpenOptions};
 use std::io;
 use std::os::unix::fs::OpenOptionsExt;
-use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::thread::sleep;
@@ -21,53 +20,121 @@ const MANAGER_LOCK: &str = "manager.lock";
 const SUPERVISOR_LOG: &str = "supervisor.log";
 const SERVICE_COMMAND: &str = "/run/current-system/sw/bin/svc";
 
-/// Start the native manager for an enrolled or selected Nix system.
-///
-/// The manager holds its own nonblocking lock for its lifetime. It is safe to
-/// call this for every native guest login; extra helper processes exit as soon
-/// as they find the lock held.
-pub fn ensure_started(runtime: &Path) -> Result<()> {
-    if !runtime.join("system.enabled").is_file() && selected_candidate(runtime)?.is_none() {
-        return Ok(());
-    }
-    let executable = crate::provision::running_executable()
-        .map_err(|error| Error::invalid(format!("cannot locate native nixpp: {error}")))?;
-    let mut command = Command::new(executable);
-    command
-        .arg("--runtime")
-        .arg(runtime)
-        .arg("__service-supervisor")
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .process_group(0);
-    command.spawn()?;
-    Ok(())
-}
-
 /// Run the native manager until its process is stopped.
+///
+/// The legacy separate supervisor process; `nixpp serve` now supervises the
+/// guest services in a thread (see [`spawn`]).
 pub fn run(runtime: &Path) -> Result<()> {
     let state = runtime.join(SERVICE_STATE);
     fs::create_dir_all(&state)?;
     let Some(lock) = FileLock::try_acquire(&state.join(MANAGER_LOCK))? else {
         return Ok(());
     };
-    let log = OpenOptions::new()
-        .append(true)
-        .create(true)
-        .custom_flags(libc::O_NOFOLLOW)
-        .mode(0o600)
-        .open(state.join(SUPERVISOR_LOG))?;
-
+    let log = open_log(&state)?;
     loop {
-        let apk_marker = crate::runtime_apk::marker(runtime).unwrap_or_default();
         if crate::runtime_apk::replaced(runtime) {
             drop(lock);
             return crate::runtime_apk::restart(runtime, &["--services"]);
         }
+        supervise_once(runtime, &log, None)?;
+    }
+}
+
+/// Supervise the guest services from a thread of the native daemon.
+///
+/// The thread waits for the manager lock (an older, separate supervisor may
+/// still hold it) and then keeps the guest's `svc supervise` running. It
+/// passes the daemon's PID along, so the guest tree retires when the daemon
+/// dies; a daemon restarted by exec keeps its PID, and the guest supervisor
+/// retires on the changed APK marker by itself.
+pub fn spawn(runtime: &Path) -> Result<()> {
+    let runtime = runtime.to_owned();
+    std::thread::Builder::new()
+        .name("services".into())
+        .spawn(move || {
+            let state = runtime.join(SERVICE_STATE);
+            let lock = loop {
+                match fs::create_dir_all(&state)
+                    .map_err(Error::from)
+                    .and_then(|()| FileLock::try_acquire(&state.join(MANAGER_LOCK)))
+                {
+                    Ok(Some(lock)) => break lock,
+                    Ok(None) => sleep(Duration::from_secs(5)),
+                    Err(error) => {
+                        eprintln!("nixpp: service supervision unavailable: {error}");
+                        sleep(Duration::from_secs(30));
+                    }
+                }
+            };
+            let _lock = lock;
+            let owner = std::process::id();
+            loop {
+                let result = open_log(&state)
+                    .and_then(|log| supervise_once(&runtime, &log, Some(owner)));
+                if let Err(error) = result {
+                    eprintln!("nixpp: service supervision failed: {error}");
+                    sleep(Duration::from_secs(5));
+                }
+            }
+        })?;
+    Ok(())
+}
+
+/// Keep the native Android bridge (`start-android-bridge.sh`) running while
+/// `bridge.enabled` exists. Guest logins used to start it in the background,
+/// once per login and unsupervised.
+pub fn spawn_bridge(runtime: &Path) -> Result<()> {
+    let runtime = runtime.to_owned();
+    std::thread::Builder::new()
+        .name("android-bridge".into())
+        .spawn(move || {
+            loop {
+                let script = runtime.join("start-android-bridge.sh");
+                if !runtime.join("bridge.enabled").is_file() || !script.is_file() {
+                    sleep(Duration::from_secs(30));
+                    continue;
+                }
+                let started = std::time::Instant::now();
+                let mut command = Command::new("/system/bin/sh");
+                command.arg(&script).stdin(Stdio::null());
+                if let Ok(log) = OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .custom_flags(libc::O_NOFOLLOW)
+                    .mode(0o600)
+                    .open(runtime.join("bridge.log"))
+                    && let Ok(error_log) = log.try_clone()
+                {
+                    command.stdout(Stdio::from(log)).stderr(Stdio::from(error_log));
+                }
+                if let Err(error) = command.spawn().and_then(|mut child| child.wait()) {
+                    eprintln!("nixpp: cannot run the Android bridge: {error}");
+                }
+                // A broker that served for a while restarts at once; one that
+                // exits immediately (another broker listens) waits.
+                let delay = if started.elapsed() > Duration::from_secs(60) { 2 } else { 30 };
+                sleep(Duration::from_secs(delay));
+            }
+        })?;
+    Ok(())
+}
+
+fn open_log(state: &Path) -> Result<fs::File> {
+    Ok(OpenOptions::new()
+        .append(true)
+        .create(true)
+        .custom_flags(libc::O_NOFOLLOW)
+        .mode(0o600)
+        .open(state.join(SUPERVISOR_LOG))?)
+}
+
+/// Run the guest's `svc supervise` once for the selected generation.
+fn supervise_once(runtime: &Path, log: &fs::File, owner: Option<u32>) -> Result<()> {
+    {
+        let apk_marker = crate::runtime_apk::marker(runtime).unwrap_or_default();
         let Some((name, _generation)) = selected_candidate(runtime)? else {
             sleep(Duration::from_secs(1));
-            continue;
+            return Ok(());
         };
         let mut child = Command::new(runtime.join("session.sh"))
             .arg("--system")
@@ -78,10 +145,11 @@ pub fn run(runtime: &Path) -> Result<()> {
             .args([
                 "/bin/sh",
                 "-c",
-                r#"export NIXPP_SVC_APK_LIBRARY="$1"; shift; exec "$@""#,
+                r#"export NIXPP_SVC_APK_LIBRARY="$1" NIXPP_SVC_OWNER_PID="$2"; shift 2; exec "$@""#,
                 "svc",
             ])
             .arg(apk_marker)
+            .arg(owner.map(|pid| pid.to_string()).unwrap_or_default())
             .arg(SERVICE_COMMAND)
             .arg("supervise")
             .stdin(Stdio::null())
@@ -94,7 +162,7 @@ pub fn run(runtime: &Path) -> Result<()> {
         // happen if the native manager died but its child is still retiring.
         if status.code() == Some(76) {
             sleep(Duration::from_secs(1));
-            continue;
+            return Ok(());
         }
 
         if selected_candidate(runtime)?.is_some_and(|(current, _)| current == name) {
@@ -102,6 +170,7 @@ pub fn run(runtime: &Path) -> Result<()> {
             sleep(Duration::from_secs(1));
         }
     }
+    Ok(())
 }
 
 fn selected_candidate(runtime: &Path) -> Result<Option<(String, String)>> {

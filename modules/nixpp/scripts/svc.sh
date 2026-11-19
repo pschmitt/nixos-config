@@ -348,6 +348,12 @@ main() {
 
     while kill -0 "$runsvdir_pid" 2>/dev/null
     do
+      # The native daemon that started this tree died: retire, so its
+      # successor can take over instead of finding an unowned tree.
+      if [[ -n ${NIXPP_SVC_OWNER_PID:-} ]] && ! kill -0 "$NIXPP_SVC_OWNER_PID" 2>/dev/null
+      then
+        break
+      fi
       # Follow Wi-Fi changes for restricted services. A manual `svc stop`
       # (the .stopped marker) always wins; network stops leave no marker.
       if ((${#restricted[@]}))

@@ -2,10 +2,8 @@
 
 script=$(/system/bin/readlink -f "$0") || exit 1
 directory=${script%/*}
-if [[ -f "$directory/bridge.enabled" && -r "$directory/start-android-bridge.sh" ]]
-then
-  /system/bin/sh "$directory/start-android-bridge.sh" </dev/null >>"$directory/bridge.log" 2>&1 &
-fi
+# The native daemon (start-system-control.sh) supervises the guest services
+# and the Android bridge; starting it again is harmless.
 if [[ -f "$directory/system.enabled" && -r "$directory/start-system-control.sh" ]]
 then
   (

@@ -71,7 +71,9 @@ layers, failure causes and principles.
 - [x] One sshd: native Termux sshd off (runit `down` file), Home Assistant's
   Tasker launcher drives the guest's runit sshd through `svc`.
 - [x] Tasker plug-in service mode: pick a guest service, start/stop/restart.
-- [ ] One app-owned native daemon (`nixpp daemon`): controller, outer socket,
+- [x] One app-owned native daemon (first stage: `nixpp serve` runs the outer
+  socket, service supervision and the bridge as threads; logins only start
+  it; guest trees retire with their daemon). Follow-up: controller, outer socket,
   service supervision and the android bridge as threads of one process the
   app starts and the watchdog checks. One lock, one restart path, one APK
   update reaction, fewer phantom processes.

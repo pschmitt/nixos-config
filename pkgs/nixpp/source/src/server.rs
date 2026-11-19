@@ -327,10 +327,17 @@ pub fn serve(runtime: &Path, socket: &Path, runner: &mut dyn Runner) -> Result<S
     {
         eprintln!("nixpp: could not start the native outer socket: {error:#}");
     }
+    // The controller is the one native daemon: guest services and the Android
+    // bridge run as its threads instead of separately started processes.
     if cfg!(target_os = "android")
-        && let Err(error) = crate::services::ensure_started(&server.runtime)
+        && let Err(error) = crate::services::spawn(&server.runtime)
     {
-        eprintln!("nixpp: could not start the service supervisor: {error:#}");
+        eprintln!("nixpp: could not start service supervision: {error:#}");
+    }
+    if cfg!(target_os = "android")
+        && let Err(error) = crate::services::spawn_bridge(&server.runtime)
+    {
+        eprintln!("nixpp: could not start the Android bridge: {error:#}");
     }
     server.run(runner, &STOP)?;
     if !STOP.load(Ordering::SeqCst) {
