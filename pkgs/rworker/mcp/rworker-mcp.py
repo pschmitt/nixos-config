@@ -1,6 +1,6 @@
 """MCP server for ad-hoc build workers (rworker).
 
-A thin layer over the `rworker` client (skills/rworker), so host-key
+A thin layer over the `rworker` client (pkgs/rworker), so host-key
 pinning, local state and SSH keys work exactly as on the command line:
 create a short-lived encrypted build VM, run commands or long jobs on it,
 copy sources over, use it as a Nix builder, and delete it again.

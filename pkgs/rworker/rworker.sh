@@ -104,9 +104,9 @@ RWORKER_ICONS=0 (no Nerd Font glyphs for the agent), NO_COLOR.
 EOF
 }
 
-# Machine-readable command spec: the shell completions read it, and the
-# rworker-completions flake check compares it with the dispatch below and
-# with action_help. Keep all three in sync when adding an action or flag.
+# Machine-readable command spec: the shell completions read it, and
+# check-spec.sh (run by the package build) compares it with the dispatch below
+# and with action_help. Keep all three in sync when adding an action or flag.
 #   action NAME DESCRIPTION
 #   flag ACTION FLAG[=VALUES] DESCRIPTION   (VALUES names a values line)
 #   values NAME WORD...

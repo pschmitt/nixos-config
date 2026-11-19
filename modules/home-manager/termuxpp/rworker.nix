@@ -7,37 +7,9 @@
 let
   cfg = config.fullNix.rworker;
 
-  rworker = pkgs.symlinkJoin {
-    name = "rworker";
-    meta.mainProgram = "rworker";
-    paths = [
-      (pkgs.writeShellApplication {
-        name = "rworker";
-        runtimeInputs = [
-          pkgs.coreutils
-          pkgs.gnused
-          pkgs.hostname
-          pkgs.jq
-          pkgs.openssh
-          pkgs.procps
-          pkgs.rsync
-          pkgs.util-linux
-        ];
-        # Android's translated app-private paths exceed Unix socket limits.
-        text =
-          builtins.replaceStrings
-            [
-              "-o ControlMaster=auto -o ControlPersist=10m"
-              ''-o "ControlPath=''${STATE_DIR}/control-%C"''
-            ]
-            [ "-o ControlMaster=no" "-o ControlPath=none" ]
-            (builtins.readFile ../../../home-manager/devel/skills/rworker/scripts/rworker.sh);
-      })
-      (pkgs.runCommand "rworker-completions" { } ''
-        install -Dm644 ${../../../home-manager/devel/skills/rworker/completions/_rworker} $out/share/zsh/site-functions/_rworker
-        install -Dm644 ${../../../home-manager/devel/skills/rworker/completions/rworker.bash} $out/share/bash-completion/completions/rworker
-      '')
-    ];
+  rworker = pkgs.rworker.override {
+    extraRuntimeInputs = [ pkgs.hostname ];
+    sshControlMaster = false;
   };
 
   rworker-nix = pkgs.writeShellApplication {

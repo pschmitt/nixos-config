@@ -20,7 +20,7 @@ class ProfileTest(unittest.TestCase):
     def test_up_passes_profile_and_resource_overrides(self):
         modules = {name: ModuleType(name) for name in ("mcp", "mcp.server", "mcp.server.mcpserver")}
         modules["mcp.server.mcpserver"].MCPServer = FakeServer
-        spec = importlib.util.spec_from_file_location("worker_mcp", Path(__file__).with_name("rworker-mcp.py"))
+        spec = importlib.util.spec_from_file_location("worker_mcp", Path(__file__).resolve().parents[1] / "mcp" / "rworker-mcp.py")
         module = importlib.util.module_from_spec(spec)
         with patch.dict(sys.modules, modules), patch.object(sys, "argv", ["rworker-mcp", "--rworker", "rworker"]):
             spec.loader.exec_module(module)
@@ -37,7 +37,7 @@ class ProfileTest(unittest.TestCase):
     def test_niks3_token_is_default_and_optional(self):
         modules = {name: ModuleType(name) for name in ("mcp", "mcp.server", "mcp.server.mcpserver")}
         modules["mcp.server.mcpserver"].MCPServer = FakeServer
-        spec = importlib.util.spec_from_file_location("worker_mcp", Path(__file__).with_name("rworker-mcp.py"))
+        spec = importlib.util.spec_from_file_location("worker_mcp", Path(__file__).resolve().parents[1] / "mcp" / "rworker-mcp.py")
         module = importlib.util.module_from_spec(spec)
         with patch.dict(sys.modules, modules), patch.object(sys, "argv", ["rworker-mcp", "--rworker", "rworker"]):
             spec.loader.exec_module(module)
@@ -70,7 +70,7 @@ class ProfileTest(unittest.TestCase):
     def test_exec_uses_registered_job_and_returns_exit_status(self):
         modules = {name: ModuleType(name) for name in ("mcp", "mcp.server", "mcp.server.mcpserver")}
         modules["mcp.server.mcpserver"].MCPServer = FakeServer
-        spec = importlib.util.spec_from_file_location("worker_mcp", Path(__file__).with_name("rworker-mcp.py"))
+        spec = importlib.util.spec_from_file_location("worker_mcp", Path(__file__).resolve().parents[1] / "mcp" / "rworker-mcp.py")
         module = importlib.util.module_from_spec(spec)
         with patch.dict(sys.modules, modules), patch.object(sys, "argv", ["rworker-mcp", "--rworker", "rworker"]):
             spec.loader.exec_module(module)

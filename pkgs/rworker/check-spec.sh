@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Check that rworker's command spec (what the completions read), its
 # dispatch and its per-action help all list the same actions and flags.
-# Runs as the flake check rworker-completions.
+# Runs in the build of pkgs.rworker (postBuild).
 # usage: check-spec.sh RWORKER_SH
 
 usage() {

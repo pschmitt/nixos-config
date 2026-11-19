@@ -1,5 +1,5 @@
 #compdef rworker rk
-# zsh completion for rworker (skills/rworker). Actions, flags and values come
+# zsh completion for rworker (pkgs/rworker). Actions, flags and values come
 # from `rworker __spec`; workers, with kind, agent, topic and expiry, from
 # `rworker __workers` (the cached last ls, refreshed in the background), so
 # TAB never waits on the network.

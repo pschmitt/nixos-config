@@ -1,4 +1,4 @@
-# bash completion for rworker (skills/rworker). Actions, flags and values come
+# bash completion for rworker (pkgs/rworker). Actions, flags and values come
 # from `rworker __spec`, worker names from `rworker __workers` (the cached
 # last ls, refreshed in the background), so TAB never waits on the network.
 

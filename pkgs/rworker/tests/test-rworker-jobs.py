@@ -7,7 +7,7 @@ import tempfile
 import time
 import unittest
 
-CLIENT = Path(__file__).resolve().parents[1] / "skills/rworker/scripts/rworker.sh"
+CLIENT = Path(__file__).resolve().parents[1] / "rworker.sh"
 
 
 class JobsTest(unittest.TestCase):

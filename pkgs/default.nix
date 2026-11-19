@@ -124,6 +124,7 @@ in
   console-tui = pkgs.callPackage ./console-tui { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
   playconsole-cli = pkgs.callPackage ./playconsole-cli { };
+  rworker = pkgs.callPackage ./rworker { };
   shellyctl = pkgs.callPackage ./shellyctl { };
   slack-mcp-server = pkgs.callPackage ./slack-mcp-server { };
   skills-ref = pkgs.callPackage ./skills-ref { };

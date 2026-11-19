@@ -161,13 +161,6 @@ let
     flakeIgnore = [ "E501" ];
   } (builtins.readFile ./scripts/signal-mcp.py);
 
-  # Ad-hoc build workers as MCP tools (up/ls/exec/start/logs/sync/down),
-  # on top of the rworker client so host keys and state are shared.
-  rworkerMcp = pkgs.writers.writePython3Bin "rworker-mcp" {
-    libraries = [ pkgs.python3Packages.mcp ];
-    flakeIgnore = [ "E501" ];
-  } (builtins.readFile ./scripts/rworker-mcp.py);
-
   # One browser MCP for every node and profile: `browser-daemon mcp` runs Playwright
   # MCP on a browser-daemon node, a throwaway browser on the node with the most room
   # unless the agent asks otherwise (`browser_use`). Profiles keep their logins;
@@ -196,32 +189,6 @@ let
       pkgs.zsh
     ];
     text = builtins.readFile ./skills/browser-login/scripts/ask-human.sh;
-  };
-  # Ad-hoc build workers on OpenStack (skills/rworker): talks to the
-  # control host over SSH, pins each worker's host key locally.
-  rworker = pkgs.symlinkJoin {
-    name = "rworker";
-    meta.mainProgram = "rworker";
-    paths = [
-      (pkgs.writeShellApplication {
-        name = "rworker";
-        runtimeInputs = [
-          pkgs.coreutils
-          pkgs.gnused
-          pkgs.jq
-          pkgs.openssh
-          pkgs.procps
-          pkgs.rsync
-          pkgs.util-linux
-        ];
-        text = builtins.readFile ./skills/rworker/scripts/rworker.sh;
-      })
-      # zsh and bash completions; Home Manager links them into the profile.
-      (pkgs.runCommand "rworker-completions" { } ''
-        install -Dm644 ${./skills/rworker/completions/_rworker} $out/share/zsh/site-functions/_rworker
-        install -Dm644 ${./skills/rworker/completions/rworker.bash} $out/share/bash-completion/completions/rworker
-      '')
-    ];
   };
   browserMcps.browser-daemon = {
     command = lib.getExe browserDaemonMcp;
@@ -640,10 +607,10 @@ in
         };
         msteams.command = lib.getExe msteamsMcp;
         rworker = {
-          command = lib.getExe rworkerMcp;
+          command = lib.getExe pkgs.rworker.mcp;
           args = [
             "--rworker"
-            (lib.getExe rworker)
+            (lib.getExe pkgs.rworker)
           ];
         };
         outlook.command = lib.getExe msoutlookMcp;
@@ -987,7 +954,7 @@ in
           # '')
         ]
         ++ [
-          rworker
+          pkgs.rworker
           claudeOgl
           claudeStatusline
           claudeTmuxRename

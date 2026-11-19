@@ -838,25 +838,6 @@
             };
           };
         }
-        // {
-          # rworker's command spec (read by its shell completions), dispatch
-          # and per-action help list the same actions and flags.
-          rworker-completions =
-            pkgs.runCommand "rworker-completions"
-              {
-                nativeBuildInputs = [
-                  pkgs.diffutils
-                  pkgs.gawk
-                  pkgs.gnugrep
-                  pkgs.gnused
-                ];
-              }
-              ''
-                bash ${./home-manager/devel/skills/rworker/scripts/check-spec.sh} \
-                  ${./home-manager/devel/skills/rworker/scripts/rworker.sh}
-                touch $out
-              '';
-        }
         // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
           # Boots the nixbot worker image and checks its encrypted disk.
           rworker-boot = self.nixosConfigurations.rworker.config.system.build.bootTest;
