@@ -39,6 +39,7 @@ in
     ../../../modules/home-manager/termuxpp/bridge.nix
     ../../../modules/home-manager/termuxpp/lifecycle.nix
     ../../../modules/home-manager/termuxpp/nightly.nix
+    ../../../modules/home-manager/termuxpp/native-services.nix
     ../../../modules/home-manager/termuxpp/sops.nix
     ../../../modules/home-manager/termuxpp/yadm.nix
     ../../../modules/dotfiles.nix
