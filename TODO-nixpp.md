@@ -77,7 +77,7 @@ layers, failure causes and principles.
   service supervision and the android bridge as threads of one process the
   app starts and the watchdog checks. One lock, one restart path, one APK
   update reaction, fewer phantom processes.
-- [ ] One login path for terminal, SSH, ADB shell, Tasker, `nixpp enter` and
+- [x] One login path for terminal, SSH, ADB shell, Tasker, `nixpp enter` and
   `session.sh`, with the environment from one source the app writes.
 - [ ] No long-running `run-as` processes; `run-as` only for one-shot
   diagnosis and recovery in `termuxpp-adb-shell`.
@@ -89,6 +89,9 @@ layers, failure causes and principles.
 
 ## CLI
 
+- [ ] Sporadic `eza -d` hang in the candidate self-test on p11 (37 s to 607 s,
+  interactive runs take 25–96 ms) blocks switches; find the cause in the eza
+  signal-stack wrapper or the check environment.
 - [ ] `termuxpp-self-update`: update the TermuxPP APK from the CLI, like
   Settings > About does (same release source and checks; Android shows the
   install prompt, or Shizuku installs without one).

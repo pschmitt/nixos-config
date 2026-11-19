@@ -17,7 +17,9 @@ main() {
   trap unlock EXIT
   trap 'exit 130' INT
   trap 'exit 143' TERM HUP
-  /system/bin/sh "$HOME/.local/share/termuxpp-nix/login.sh" -c \
+  # nixpp login is the one entry from the native side into the guest.
+  # shellcheck disable=SC2016 # expands in the guest shell
+  "${PREFIX:-/data/data/dev.pschmitt.termux/files/usr}/bin/nixpp" login -c \
     'exec "$HOME/.nix-profile/bin/termuxpp-nightly-update" "$@"' termuxpp-nightly "$@"
 }
 

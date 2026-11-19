@@ -6,7 +6,9 @@ set -eu
 
 case "${1:-}" in
   start|stop|restart)
-    exec /system/bin/sh "$HOME/.local/share/termuxpp-nix/login.sh" -c \
+    # nixpp login is the one entry from the native side into the guest.
+    # shellcheck disable=SC2016 # expands in the guest shell
+    exec "${PREFIX:-/data/data/dev.pschmitt.termux/files/usr}/bin/nixpp" login -c \
       'exec /run/current-system/sw/bin/svc "$1" sshd' set-managed-sshd "$1"
     ;;
   *)
