@@ -18,6 +18,7 @@ let
       name = "${package.pname or package.name}-full-nix";
       paths = [ package ];
       passthru.fullNixSignalStackPrograms = programs;
+      passthru.version = final.lib.getVersion package;
       nativeBuildInputs = [ final.makeWrapper ];
       postBuild = final.lib.concatMapStringsSep "\n" (program: ''
         wrapProgram $out/bin/${program} --prefix LD_PRELOAD : ${signalStack}/lib/stack.so
@@ -35,6 +36,10 @@ in
 {
   eza = withSignalStack prev.eza [ "eza" ];
   bat = withSignalStack prev.bat [ "bat" ];
+  # dix 3.0.0 segfaults on the Pixel's PRoot signal stack. Locally confirmed
+  # on 2026-11-19 against Nixpkgs b1b8759: the same live diff passes with stack.so.
+  # Drop this once the unwrapped binary passes that test on the Pixel.
+  dix = withSignalStack prev.dix [ "dix" ];
   fd = withSignalStack prev.fd [ "fd" ];
   ripgrep = withSignalStack prev.ripgrep [ "rg" ];
   # The Pixel's seccomp pathname handler overflows nix-locate's Rust signal stack.
