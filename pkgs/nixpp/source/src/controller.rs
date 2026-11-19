@@ -98,7 +98,7 @@ fn resolve(runtime: &Path) -> Result<PathBuf> {
     Ok(fs::canonicalize(runtime)?)
 }
 
-fn read_state(runtime: &Path) -> Result<Option<State>> {
+pub(crate) fn read_state(runtime: &Path) -> Result<Option<State>> {
     read_state_value(runtime, STATE_FILE)?
         .map(|value| State::from_value(&value))
         .transpose()

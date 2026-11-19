@@ -359,6 +359,80 @@ pub trait Builder {
     fn output(&mut self, command: &[String]) -> Result<String>;
 }
 
+fn diff_endpoints(
+    generations: &[Generation],
+    from: Option<&str>,
+    to: Option<&str>,
+) -> Result<(String, String)> {
+    let find = |selector: &str| {
+        let number = selector.parse::<usize>().ok();
+        generations
+            .iter()
+            .find(|generation| {
+                generation.generation == selector
+                    || number.is_some_and(|number| generation.number == Some(number))
+            })
+            .map(|generation| generation.generation.clone())
+            .ok_or_else(|| Error::invalid(format!("unknown system generation: {selector}")))
+    };
+    match (from, to) {
+        (Some(from), Some(to)) => Ok((find(from)?, find(to)?)),
+        (None, None) => {
+            let previous = generations
+                .iter()
+                .find(|generation| generation.previous)
+                .ok_or_else(|| Error::invalid("no previous system generation is retained"))?;
+            let current = generations
+                .iter()
+                .find(|generation| generation.current)
+                .ok_or_else(|| Error::invalid("no active system generation"))?;
+            Ok((previous.generation.clone(), current.generation.clone()))
+        }
+        _ => Err(Error::invalid("diff takes two generation selectors")),
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn closure_diff_defaults_to_previous_then_active() {
+    let generations = [false, true].map(|current| Generation {
+        number: Some(if current { 3 } else { 2 }),
+        date: None,
+        generation: if current { "active" } else { "previous" }.into(),
+        home_manager: String::new(),
+        current,
+        previous: !current,
+    });
+    assert_eq!(
+        diff_endpoints(&generations, None, None).unwrap(),
+        ("previous".into(), "active".into())
+    );
+    assert_eq!(
+        diff_endpoints(&generations, Some("3"), Some("previous")).unwrap(),
+        ("active".into(), "previous".into())
+    );
+}
+
+/// Compare retained closures. Keep the controller lock until Nix finishes
+/// reading both graphs, so neither candidate can be pruned mid-comparison.
+pub fn diff_generations(
+    runtime: &Path,
+    from: Option<&str>,
+    to: Option<&str>,
+    builder: &mut dyn Builder,
+) -> Result<(String, String, String)> {
+    let _lock = crate::fsutil::FileLock::acquire(&runtime.join(crate::controller::CONTROL_LOCK))?;
+    let (from, to) = diff_endpoints(&crate::controller::generations(runtime)?, from, to)?;
+    let diff = builder.output(&[
+        "nix".into(),
+        "store".into(),
+        "diff-closures".into(),
+        format!("/nix/store/{from}"),
+        format!("/nix/store/{to}"),
+    ])?;
+    Ok((from, to, diff))
+}
+
 /// The real builder: stdout is captured, stdin and stderr stay attached so
 /// that remote build progress remains visible.
 #[derive(Debug, Default)]

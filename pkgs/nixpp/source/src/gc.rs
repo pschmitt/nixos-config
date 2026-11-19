@@ -4,8 +4,8 @@ use crate::controller::{self, CONTROL_LOCK};
 use crate::error::{Error, Result};
 use crate::fsutil::{FileLock, atomic_write, read_bounded};
 use crate::guest::GCROOTS;
-use crate::store::is_candidate_name;
-use serde::Serialize;
+use crate::store::{is_candidate_name, is_store_root};
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
 use std::os::unix::fs::MetadataExt;
@@ -25,6 +25,12 @@ pub struct Report {
     pub retained: Vec<String>,
 }
 
+#[derive(Deserialize, Serialize)]
+struct HistoryRecord {
+    prepared: SystemTime,
+    home_manager: String,
+}
+
 fn candidate(runtime: &Path, name: &str) -> PathBuf {
     runtime.join("system-candidates").join(name)
 }
@@ -40,7 +46,7 @@ fn check_directory(directory: &Path) -> Result<()> {
     }
 }
 
-fn recorded_time(runtime: &Path, name: &str) -> Result<Option<SystemTime>> {
+fn read_history(runtime: &Path, name: &str) -> Result<Option<HistoryRecord>> {
     let path = runtime.join(HISTORY).join(name);
     match fs::symlink_metadata(&path) {
         Ok(metadata) if metadata.is_file() => {
@@ -54,8 +60,8 @@ fn recorded_time(runtime: &Path, name: &str) -> Result<Option<SystemTime>> {
 
 fn generation_time(runtime: &Path, name: &str) -> Result<Option<SystemTime>> {
     check_directory(&runtime.join(HISTORY))?;
-    if let Some(time) = recorded_time(runtime, name)? {
-        return Ok(Some(time));
+    if let Some(record) = read_history(runtime, name)? {
+        return Ok(Some(record.prepared));
     }
     let path = candidate(runtime, name).join("generation");
     match fs::symlink_metadata(path) {
@@ -175,7 +181,7 @@ fn retired_path(runtime: &Path, name: &str) -> PathBuf {
 
 fn finish_retired(runtime: &Path, name: &str) -> Result<()> {
     let path = retired_path(runtime, name);
-    if !fs::symlink_metadata(&path)?.is_dir() || recorded_time(runtime, name)?.is_none() {
+    if !fs::symlink_metadata(&path)?.is_dir() || read_history(runtime, name)?.is_none() {
         return Err(Error::invalid("invalid interrupted generation prune"));
     }
     let root = runtime.join(GCROOTS).join(name);
@@ -197,9 +203,14 @@ fn remember(runtime: &Path, name: &str) -> Result<()> {
     let directory = runtime.join(HISTORY);
     fs::create_dir_all(&directory)?;
     let path = directory.join(name);
-    if recorded_time(runtime, name)?.is_none() {
+    if read_history(runtime, name)?.is_none() {
         let time = fs::metadata(candidate(runtime, name).join("generation"))?.modified()?;
-        atomic_write(&path, &serde_json::to_string(&time)?)?;
+        let candidate = controller::candidate_manifest(runtime, name)?;
+        let record = HistoryRecord {
+            prepared: time,
+            home_manager: candidate.home_manager,
+        };
+        atomic_write(&path, &serde_json::to_string(&record)?)?;
     }
     Ok(())
 }
@@ -220,7 +231,14 @@ fn retain(generations: &[controller::Generation], keep: usize) -> HashSet<&str> 
 }
 
 pub fn run(runtime: &Path, keep: usize, dry_run: bool) -> Result<Report> {
+    if !dry_run && inode(&fs::metadata(runtime.join("root/nix"))?) != inode(&fs::metadata("/nix")?)
+    {
+        return Err(Error::invalid(
+            "gc must run inside the guest that owns the selected runtime",
+        ));
+    }
     run_with(runtime, keep, dry_run, has_unleased_sessions, || {
+        prune_home_profiles(runtime)?;
         let status = Command::new("nix")
             .args(["store", "gc"])
             .stdin(Stdio::null())
@@ -233,6 +251,99 @@ pub fn run(runtime: &Path, keep: usize, dry_run: bool) -> Result<Report> {
         }
         Ok(())
     })
+}
+
+/// Select only standard Nix profile links to a retired HM closure. The active
+/// profile may have been activated independently of nixpp, so protect it too.
+fn obsolete_home_links(profile: &Path, retired: &HashSet<PathBuf>) -> Result<Vec<String>> {
+    let Some(directory) = profile.parent() else {
+        return Ok(Vec::new());
+    };
+    if !directory.exists() {
+        return Ok(Vec::new());
+    }
+    let selected = match fs::read_link(profile) {
+        Ok(path) => Some(path),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(error) => return Err(error.into()),
+    };
+    let mut result = Vec::new();
+    for entry in fs::read_dir(directory)? {
+        let entry = entry?;
+        let filename = entry.file_name();
+        let Some(number) = filename
+            .to_str()
+            .and_then(|name| name.strip_prefix("home-manager-"))
+            .and_then(|name| name.strip_suffix("-link"))
+            .filter(|number| {
+                !number.is_empty() && number.bytes().all(|byte| byte.is_ascii_digit())
+            })
+        else {
+            continue;
+        };
+        if selected.as_deref().and_then(Path::file_name) == Some(filename.as_os_str()) {
+            continue;
+        }
+        if entry.file_type()?.is_symlink() && retired.contains(&fs::read_link(entry.path())?) {
+            result.push(number.to_owned());
+        }
+    }
+    result.sort_unstable();
+    Ok(result)
+}
+
+fn prune_home_profiles(runtime: &Path) -> Result<()> {
+    let history = runtime.join(HISTORY);
+    if !history.exists() {
+        return Ok(());
+    }
+    let mut protected: HashSet<_> = controller::generations(runtime)?
+        .into_iter()
+        .map(|generation| generation.home_manager)
+        .collect();
+    if let Some(state) = controller::read_state(runtime)? {
+        protected.extend(state.home_manager);
+        protected.extend(state.previous_home_manager);
+    }
+    let mut retired = HashSet::new();
+    for entry in fs::read_dir(history)? {
+        let name = entry?.file_name();
+        let Some(name) = name.to_str().filter(|name| is_candidate_name(name)) else {
+            continue;
+        };
+        if let Some(record) = read_history(runtime, name)?
+            && is_store_root(&record.home_manager)
+            && !protected.contains(&record.home_manager)
+        {
+            retired.insert(PathBuf::from(record.home_manager));
+        }
+    }
+    if retired.is_empty() {
+        return Ok(());
+    }
+    let state_home = std::env::var_os("XDG_STATE_HOME")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/state")))
+        .ok_or_else(|| Error::invalid("home profile GC requires HOME or XDG_STATE_HOME"))?;
+    let profile = state_home.join("nix/profiles/home-manager");
+    let obsolete = obsolete_home_links(&profile, &retired)?;
+    if !obsolete.is_empty() {
+        let status = Command::new("nix-env")
+            .arg("--profile")
+            .arg(profile)
+            .arg("--delete-generations")
+            .args(obsolete)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .status()?;
+        if !status.success() {
+            return Err(Error::invalid(format!(
+                "Home Manager profile pruning failed: {status}"
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn run_with(
@@ -432,10 +543,36 @@ mod tests {
         let previous = add_candidate(&fixture, 'c', 25);
         select(&fixture, &active, &previous);
         fs::write(fixture.runtime.join("system-pending.json"), "{}").unwrap();
-        let summary = run(&fixture.runtime, 1, false).unwrap();
+        let summary = run_with(
+            &fixture.runtime,
+            1,
+            false,
+            |_, _| panic!("GC inspected sessions during an unfinished activation"),
+            || panic!("GC collected during an unfinished activation"),
+        )
+        .unwrap();
         assert!(summary.deferred.is_some());
         assert!(summary.prune.is_empty());
         assert!(fixture.candidate.exists());
         assert!(!fixture.runtime.join(HISTORY).exists());
+    }
+
+    #[test]
+    fn home_profile_pruning_keeps_the_active_link_and_unrelated_history() {
+        let directory = tempfile::tempdir().unwrap();
+        let profile = directory.path().join("home-manager");
+        let retired = "/nix/store/retired-home-manager-generation";
+        symlink(retired, directory.path().join("home-manager-1-link")).unwrap();
+        symlink(retired, directory.path().join("home-manager-2-link")).unwrap();
+        symlink(
+            "/nix/store/independent-home-manager-generation",
+            directory.path().join("home-manager-3-link"),
+        )
+        .unwrap();
+        symlink("home-manager-2-link", &profile).unwrap();
+        assert_eq!(
+            obsolete_home_links(&profile, &HashSet::from([PathBuf::from(retired)])).unwrap(),
+            ["1"]
+        );
     }
 }

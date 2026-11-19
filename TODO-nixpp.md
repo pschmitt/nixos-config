@@ -26,6 +26,8 @@
   any interrupted activation. Keep enough history for signed cache pin checks
   to recognise an older generation after pruning. Run GC under the controller
   lock, then wire it into nightly maintenance after a successful upgrade.
+- [ ] Add `nixpp diff` for closure changes between retained generations. With
+  no arguments, compare the previous generation to the active generation.
 - [x] Support `nixpp enter --outer` in SSH and other sessions without a
   per-terminal native parent. Have the native supervisor serve a separate
   same-UID Unix socket under `/run/nixpp-runtime`. Relay a dedicated native

@@ -127,6 +127,15 @@ pub enum Command {
         #[arg(value_enum)]
         target: FetchTarget,
     },
+    /// Compare system closures (previous to current by default)
+    Diff {
+        /// Earlier generation number or store basename
+        #[arg(requires = "to")]
+        from: Option<String>,
+        /// Later generation number or store basename
+        #[arg(requires = "from")]
+        to: Option<String>,
+    },
     /// Check the native controller, Nix store, builders and signed cache
     Doctor,
     /// Prune old system generations and collect unreferenced Nix store paths
@@ -514,6 +523,24 @@ fn guest_command(
             target: FetchTarget::Latest,
         } => upgrade_system(ui, runtime, &socket, &UpgradeArgs::default())?,
         Command::Doctor => doctor(ui, &socket)?,
+        Command::Diff { from, to } => {
+            let runtime = require(runtime, "diff requires NIXPP_RUNTIME or --runtime")?;
+            let (from, to, diff) = guest::diff_generations(
+                &runtime,
+                from.as_deref(),
+                to.as_deref(),
+                &mut ProcessBuilder,
+            )?;
+            if ui.json() {
+                ui.print(&canonical_json(
+                    &json!({ "from": from, "to": to, "diff": diff }),
+                ));
+            } else if diff.trim().is_empty() {
+                ui.print("No closure differences.");
+            } else {
+                ui.print(diff.trim_end());
+            }
+        }
         Command::Gc {
             keep_generations,
             dry_run,
@@ -850,6 +877,7 @@ mod tests {
                 "check",
                 "completions",
                 "controller",
+                "diff",
                 "doctor",
                 "fetch",
                 "gc",
@@ -876,6 +904,13 @@ mod tests {
         assert_eq!(cli.runtime, Some(PathBuf::from("/rt")));
         assert_eq!(cli.socket, Some(PathBuf::from("/rt/nixpp.sock")));
         assert!(matches!(cli.command, Command::Serve));
+    }
+
+    #[test]
+    fn diff_accepts_zero_or_two_generation_selectors() {
+        assert!(parse(&["diff"]).is_ok());
+        assert!(parse(&["diff", "2", "5"]).is_ok());
+        assert!(parse(&["diff", "2"]).is_err());
     }
 
     #[test]

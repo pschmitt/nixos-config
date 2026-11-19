@@ -314,6 +314,8 @@ Use `nixpp gc --keep-generations 3 --dry-run` to preview cleanup. GC preserves
 the active and rollback generations and any generation used by a running
 session. It defers cleanup while activation is unfinished or a session is
 still running with a launcher that predates generation leases.
+When a generation is pruned, GC also drops its unused Home Manager profile
+links so they release the old closure.
 
 ### Functional audit qualification
 
