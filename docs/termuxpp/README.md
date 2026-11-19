@@ -271,6 +271,19 @@ an SSH connection with a PTY can run an interactive Shizuku shell. Update
 the Shizuku app through Android. The next `rish` invocation reads the new
 APK and caches its matching assets automatically.
 
+### Permissions
+
+`termuxpp-setup-permissions` (or `termuxpp-setup-permissions status`) lists
+every runtime permission TermuxPP requests and the special access Android
+grants on separate pages: overlay, all-files, install apps, exact alarms,
+usage access, system settings, unrestricted battery, and `processes`, the
+child process limit ("Disable child process restrictions") that otherwise
+kills the nixpp controller. `termuxpp-setup-permissions grant [NAME...]`
+grants what is missing. With a working Shizuku shell this needs no
+confirmation; without it, Android shows its permission prompts and then each
+settings page in turn, and `status` reads what the app reports in
+`/run/nixpp-runtime/permissions.json`.
+
 ### Native shell and shared storage
 
 From a fresh TermuxPP app terminal, run `nixpp enter --outer` for a native

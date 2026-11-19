@@ -107,7 +107,8 @@ the guest user and are supervised with runit.
 `services.<name>.allowedSsids` restricts a service to exact Wi-Fi names. The
 TermuxPP app writes the connected network to `network.json` in the runtime
 directory (`/run/nixpp-runtime/network.json` in the guest) on every change and
-at least once a minute; reading the name needs the app's location permission.
+at least once a minute. Android reveals the name in the background only with
+location access "Allow all the time"; `termuxpp-setup-permissions grant` sets it.
 The guest supervisor starts the service on an allowed network and stops it
 elsewhere. With no Wi-Fi, a withheld name or state older than five minutes it
 stays down, and `svc list` shows that it is waiting for an allowed network.

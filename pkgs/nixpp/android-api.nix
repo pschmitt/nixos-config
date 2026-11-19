@@ -127,6 +127,8 @@ symlinkJoin {
   ];
   postBuild = ''
     ln -s ${openTools.open}/bin/droid-nix-open "$out/bin/termux-open"
+    # Starts activities and broadcasts as TermuxPP (the app's own identity).
+    ln -s ${termux-am}/bin/am "$out/bin/termux-am"
     ln -s termuxpp-reload-settings "$out/bin/termux-reload-settings"
     for command in "$out"/bin/droid-nix-*; do
       name=''${command##*/}
