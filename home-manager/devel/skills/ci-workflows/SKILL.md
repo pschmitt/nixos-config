@@ -81,6 +81,16 @@ To onboard a repository:
    run one at a time, so expect a queue after enabling many repositories.
 7. README: put the nixbot badge first in the badge row.
 
+These builds use the repository's own `flake.lock`. A consumer that sets
+`inputs.<repo>.inputs.nixpkgs.follows` or applies the repository's overlay
+builds different store paths, so they never hit. When such a consumer needs
+the hit (rbw for the nixos-config phones, which otherwise compile it under
+emulation), add a main-only job that builds the consumed package with
+`--override-input nixpkgs` set to the consumer's current pin, read from its
+`flake.lock`, and pins it in niks3 (rbw's `nix-aarch64-nixos-config` job).
+Check the match first: `nix eval --raw` the package's `outPath` with that
+override and compare it with the path on the consumer.
+
 ## Docker images
 
 For native package producers in GitHub Actions, use `nix-build.yaml` followed
