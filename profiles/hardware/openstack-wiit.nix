@@ -51,7 +51,10 @@
     # HACK Fix netbird port forwarding
     networking.nat = {
       enable = true;
-      externalInterface = "ens3";
+      # Most WIIT OpenStack VMs name their NIC enp3s0; override per host
+      # (rofl-11 uses ens3). It must match the real uplink: otherwise traffic
+      # routed through NetBird/Tailscale leaves unmasqueraded and gets no reply.
+      externalInterface = lib.mkDefault "enp3s0";
     };
   };
 }
