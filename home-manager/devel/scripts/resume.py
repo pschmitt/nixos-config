@@ -372,7 +372,7 @@ def preview(agent, path, cwd, title, session_id, timestamp):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--preview-session', nargs=6, metavar=('AGENT', 'PATH', 'CWD', 'TITLE', 'ID', 'TIME'), help=argparse.SUPPRESS)
+    parser.add_argument('--preview-session', nargs=7, metavar=('AGENT', 'PATH', 'CWD', 'TITLE', 'ID', 'TIME', 'LIVE'), help=argparse.SUPPRESS)
     parser.add_argument('selection', nargs='?', help='session number or ID to resume')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--pick', action='store_true', help='select interactively with fzf (default)')
@@ -382,8 +382,27 @@ def main():
     parser.add_argument('--limit', type=int, default=0, help='maximum displayed results (default: all)')
     args = parser.parse_args()
     if args.preview_session:
-        preview(*args.preview_session)
-        return
+        *details, live = args.preview_session
+        preview(*details)
+        if live != '1':
+            return
+        sys.stdout.flush()
+        path = Path(details[1])
+        try:
+            stat = path.stat()
+            previous = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
+            while True:
+                time.sleep(1)
+                stat = path.stat()
+                current = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
+                if current != previous:
+                    previous = current
+                    print('\033[2J', end='')
+                    preview(*details)
+                    sys.stdout.flush()
+        except (OSError, BrokenPipeError):
+            return
+
     interactive = sys.stderr.isatty() and not args.list and (args.pick or not args.selection)
     with StartupSpinner(interactive) as spinner:
         sessions = sorted(records(spinner.update), key=lambda row: row[0], reverse=True)
@@ -430,7 +449,8 @@ def main():
                 rows = filtered()
                 lines = '\n'.join('\t'.join([display(i, row, styled=True), row[1], row[5], row[3],
                                              ' '.join(str(row[4]).split()), row[2],
-                                             dt.datetime.fromtimestamp(row[0]).strftime('%Y-%m-%d %H:%M:%S %Z')])
+                                             dt.datetime.fromtimestamp(row[0]).strftime('%Y-%m-%d %H:%M:%S %Z'),
+                                             '1' if (row[1], row[2]) in active else '0'])
                                   for i, row in enumerate(rows, 1))
                 width = 18 if narrow else 24
                 columns = f'\033[38;5;245m{"LAST":8}   {"AGENT":13} {"CWD":{width}} TOPIC\033[0m'
@@ -447,7 +467,7 @@ def main():
                      '--prompt=󰍉  Session  ❯ ', '--pointer=❯', '--marker=󰄬', theme,
                      '--bind=alt-up:preview-up,alt-down:preview-down,alt-k:preview-up,alt-j:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
                      '--expect=ctrl-g,ctrl-d,ctrl-r', '--header=' + columns, '--footer=' + footer, '--footer-border=none',
-                     '--preview=' + ' '.join(map(shlex.quote, [sys.executable, __file__, '--preview-session'])) + ' {2} {3} {4} {5} {6} {7}',
+                     '--preview=' + ' '.join(map(shlex.quote, [sys.executable, __file__, '--preview-session'])) + ' {2} {3} {4} {5} {6} {7} {8}',
                      '--preview-window=right:50%:wrap-word:follow:noinfo:~1:<60(down:40%:wrap-word:follow:noinfo:~1)', '--preview-wrap-sign='],
                     input=lines, text=True, stdout=subprocess.PIPE, env=env,
                 )
