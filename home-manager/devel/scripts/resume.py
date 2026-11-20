@@ -7,6 +7,7 @@ import fcntl
 import time
 import threading
 import unicodedata
+import uuid
 import json
 import os
 import re
@@ -278,6 +279,26 @@ def message_card(role, agent, content):
     print()
 
 
+def agy_transcript_paths(summary_path, session_id):
+    try:
+        session_id = str(uuid.UUID(session_id))
+    except (ValueError, TypeError, AttributeError):
+        return []
+    logs = Path(summary_path).parent / 'brain' / session_id / '.system_generated' / 'logs'
+    return [logs / 'transcript_full.jsonl', logs / 'transcript.jsonl']
+
+
+def file_state(paths):
+    state = []
+    for path in paths:
+        try:
+            stat = path.stat()
+            state.append((stat.st_mtime_ns, stat.st_size, stat.st_ino))
+        except OSError:
+            state.append(None)
+    return tuple(state)
+
+
 def preview(agent, path, cwd, title, session_id, timestamp):
     reset = '\033[0m'
 
@@ -302,7 +323,7 @@ def preview(agent, path, cwd, title, session_id, timestamp):
         print(f'\033[38;5;109m󰉋  {cwd}{reset}')
         print(f'\033[38;5;245m󰥔  {timestamp}{reset}\n')
 
-    if agent == 'agy':
+    def agy_summary():
         pinned('')
         metadata()
         try:
@@ -315,14 +336,20 @@ def preview(agent, path, cwd, title, session_id, timestamp):
                 print(f'\033[1;38;5;111m󰊭  Antigravity summary{reset}\n{summary}\n')
             else:
                 print('\033[3;38;5;245mNo indexed summary is available.\033[0m')
-            print('\033[3;38;5;245mFull conversation messages are stored in a binary format.\033[0m')
+            print('\033[3;38;5;245mNo readable Antigravity transcript is available.\033[0m')
         except (sqlite3.Error, OSError) as exc:
             print(f'\033[3mCould not read Antigravity summary: {exc}\033[0m', file=sys.stderr)
-        return
+
+    transcript_path = Path(path)
+    if agent == 'agy':
+        transcript_path = next((p for p in agy_transcript_paths(path, session_id) if p.is_file()), None)
+        if transcript_path is None:
+            agy_summary()
+            return
     messages = deque(maxlen=5)
     latest_user = ''
     try:
-        with open(path, 'rb') as stream:
+        with open(transcript_path, 'rb') as stream:
             size = stream.seek(0, os.SEEK_END)
             stream.seek(max(0, size - 4 * 1024 * 1024))
             if size > 4 * 1024 * 1024:
@@ -331,7 +358,16 @@ def preview(agent, path, cwd, title, session_id, timestamp):
                 line = raw_line.decode('utf-8', errors='replace')
                 try:
                     obj = json.loads(line)
-                    if agent == 'codex':
+                    if agent == 'agy':
+                        kind = obj.get('type')
+                        if kind == 'USER_INPUT' and obj.get('source') != 'SYSTEM_SDK':
+                            role = 'user'
+                        elif kind == 'PLANNER_RESPONSE':
+                            role = 'assistant'
+                        else:
+                            continue
+                        content = obj.get('content', '')
+                    elif agent == 'codex':
                         item = obj.get('payload', {})
                         if obj.get('type') != 'response_item' or item.get('type') != 'message':
                             continue
@@ -349,7 +385,12 @@ def preview(agent, path, cwd, title, session_id, timestamp):
                     if not isinstance(content, str):
                         continue
                     content = content.strip()
-                    if not content or content.startswith(('<', '# AGENTS.md', '# Developer', '# system')):
+                    if agent == 'agy' and role == 'user' and content.startswith('<USER_REQUEST'):
+                        match = re.search(r'<USER_REQUEST(?:\s[^>]*)?>(.*?)</USER_REQUEST>', content, re.DOTALL)
+                        if not match:
+                            continue
+                        content = match.group(1).strip()
+                    if not content or (agent != 'agy' and content.startswith(('<', '# AGENTS.md', '# Developer', '# system'))):
                         continue
                     # Escape terminal control sequences in transcript content.
                     content = ''.join(c for c in content if c in '\n\t' or ord(c) >= 32 and ord(c) != 127)
@@ -358,6 +399,9 @@ def preview(agent, path, cwd, title, session_id, timestamp):
                     messages.append((role, content[-3000:]))
                 except (ValueError, AttributeError, TypeError):
                     continue
+        if agent == 'agy' and not messages:
+            agy_summary()
+            return
         pinned(latest_user)
         metadata()
         for role, content in messages:
@@ -365,6 +409,9 @@ def preview(agent, path, cwd, title, session_id, timestamp):
         if not messages:
             print('\033[3;38;5;245mNo readable messages found.\033[0m')
     except OSError as exc:
+        if agent == 'agy':
+            agy_summary()
+            return
         pinned('')
         metadata()
         print(f'\033[3mCould not read conversation: {exc}\033[0m', file=sys.stderr)
@@ -388,13 +435,14 @@ def main():
             return
         sys.stdout.flush()
         path = Path(details[1])
+        paths = [path]
+        if details[0] == 'agy':
+            paths = agy_transcript_paths(path, details[4]) + [path, Path(str(path) + '-wal')]
         try:
-            stat = path.stat()
-            previous = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
+            previous = file_state(paths)
             while True:
                 time.sleep(1)
-                stat = path.stat()
-                current = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
+                current = file_state(paths)
                 if current != previous:
                     previous = current
                     print('\033[2J', end='')
@@ -450,7 +498,7 @@ def main():
                 lines = '\n'.join('\t'.join([display(i, row, styled=True), row[1], row[5], row[3],
                                              ' '.join(str(row[4]).split()), row[2],
                                              dt.datetime.fromtimestamp(row[0]).strftime('%Y-%m-%d %H:%M:%S %Z'),
-                                             '1' if (row[1], row[2]) in active else '0'])
+                                             '1' if row[1] == 'agy' or (row[1], row[2]) in active else '0'])
                                   for i, row in enumerate(rows, 1))
                 width = 18 if narrow else 24
                 columns = f'\033[38;5;245m{"LAST":8}   {"AGENT":13} {"CWD":{width}} TOPIC\033[0m'
