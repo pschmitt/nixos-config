@@ -99,6 +99,8 @@ in
       secrets = {
         # API key of the declarative admin (dashboard login and circusctl).
         "circus/admin-api-key" = config.sops.mkHostSecret { };
+        # Password of the declarative dashboard user pschmitt.
+        "circus/users/pschmitt-password" = config.sops.mkHostSecret { };
         # Nix cache signing key (`nix key generate-secret`); public half below.
         "circus/cache-signing-key" = config.sops.mkHostSecret { };
         "circus/webhook-encryption-key" = config.sops.mkHostSecret { };
@@ -278,7 +280,17 @@ in
                 key_file = secret "admin-api-key";
               }
             ];
-            users = [ ];
+            # Dashboard login (rbw entry circus.brkn.lol); the server applies
+            # Circus' password policy to it.
+            users = [
+              {
+                username = "pschmitt";
+                email = "pschmitt@${config.domains.main}";
+                full_name = "Philipp Schmitt";
+                role = "admin";
+                password_file = secret "users/pschmitt-password";
+              }
+            ];
           };
         };
       };

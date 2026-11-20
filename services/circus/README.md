@@ -29,6 +29,12 @@ agent.
 | `circus://rofl-15.nb.brkn.lol:8443` (agent RPC) | queue-runner | trusted tailnet interfaces only |
 | `127.0.0.1:3000` | circus-server | local |
 
+Sign in at `https://circus.brkn.lol` (after Authelia) with the rbw entry
+`circus.brkn.lol`: user `pschmitt`, whose admin API key (for `circusctl` and
+the API) is in its "API Token" field. The session cookie is always `Secure`
+(`force_secure_cookies`), which is fine since nginx serves the dashboard only
+over TLS.
+
 ## Evaluation
 
 The evaluator is pure and restricted, like nixbot (`restrict_eval`,
@@ -55,6 +61,7 @@ and the low slot count are what keep nixbot ahead.
 | Key | Host | Source |
 | --- | --- | --- |
 | `circus/admin-api-key` | rofl-15 | generated |
+| `circus/users/pschmitt-password` | rofl-15 | dashboard password (rbw `circus.brkn.lol`) |
 | `circus/cache-signing-key` | rofl-15 | generated, public key in `default.nix` |
 | `circus/webhook-encryption-key` | rofl-15 | generated |
 | `circus/github-webhook-secret` | rofl-15 | generated |
