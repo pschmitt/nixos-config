@@ -38,8 +38,8 @@ in
     enable = lib.mkEnableOption ''
       the optional `rworker-nix` command: it leases a disposable rworker, runs
       one `nix build|shell|develop` with `--max-jobs 0 --builders` against it
-      and deletes the worker afterwards. The normal builders configuration is
-      left alone'';
+      (or `remote-build`, which also evaluates on the worker) and deletes the
+      worker afterwards. The normal builders configuration is left alone'';
 
     controller = lib.mkOption {
       type = lib.types.nullOr lib.types.str;

@@ -55,18 +55,18 @@ nixpp switch HASH-termuxpp-system-HOST
 nixpp rollback
 nixpp recover
 
-# Upgrade the host from the flake configured in /etc/nixpp/upgrade.json:
+# Check or install the system CI published for this guest in the signed cache:
 nixpp upgrade --dry-run
 nixpp upgrade
 
-# Check or install the system published for this guest in the signed cache:
-nixpp upgrade --from-cache --dry-run
-nixpp upgrade --from-cache
+# Evaluate and build the flake configured in /etc/nixpp/upgrade.json instead:
+nixpp upgrade --build --dry-run
+nixpp upgrade --build
 
 # Build or rebuild an explicit target using configured remote builders:
 nixpp build --flake /path/to/config --host HOST
 nixpp rebuild --flake /path/to/config --host HOST
-# Alternatively lease a worker through the existing rworker-nix integration:
+# Alternatively lease a worker through rworker-nix; it evaluates and builds there:
 nixpp rebuild --flake /path/to/config --host HOST --rworker
 ```
 
@@ -75,11 +75,12 @@ nixpp rebuild --flake /path/to/config --host HOST --rworker
 controller, the local Nix store, configured SSH builders and the signed cache
 pin. `fetch latest` runs the configured upgrade.
 
-`upgrade` selects the host and flake from the system configuration. It accepts
-`--flake` and `--host` overrides, and `--rworker` to select the disposable worker.
-`--dry-run` runs Nix's build planner without contacting the native controller.
+`upgrade --build` selects the host and flake from the system configuration. It
+accepts `--flake` and `--host` overrides, and `--rworker` to select the
+disposable worker; each of them implies `--build`. With `--build`, `--dry-run`
+runs Nix's build planner without contacting the native controller.
 
-`upgrade --from-cache` reads the host's published pin, verifies the system
+Plain `upgrade` (formerly `--from-cache`, still accepted) reads the host's published pin, verifies the system
 against the configured cache signing keys, and copies its closure. It uses
 the read-only cache credentials rendered by SOPS. It does not fetch or
 evaluate the flake and does not require SSH to a builder. Ordinary Nix

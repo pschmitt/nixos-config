@@ -61,6 +61,16 @@ case "$action" in
     ;;
   ssh)
     printf 'rworker-ssh-command %s\n' "$2" >> "$FAKE_TRACE"
+    if [[ "$2" == nix\ build* ]]
+    then
+      case "$FAKE_SCENARIO" in
+        remote-bad-output) printf 'warning: something\n' ;;
+        remote-no-output) ;;
+        remote-build-fails) exit 3 ;;
+        *) printf '/nix/store/aaaa-system-a\n/nix/store/bbbb-system-b\n' ;;
+      esac
+      exit 0
+    fi
     case "$FAKE_SCENARIO" in
       ssh-never-ready)
         exit 255
@@ -119,6 +129,16 @@ FAKE
 #!/usr/bin/env bash
 printf 'nix %s\n' "$*" >> "$FAKE_TRACE"
 printf 'NIX_SSHOPTS=%s\n' "$NIX_SSHOPTS" >> "$FAKE_TRACE"
+if [[ "$1 $2" == "flake metadata" ]]
+then
+  [[ "$FAKE_SCENARIO" != remote-lock-fails ]] || exit 1
+  for arg
+  do
+    flake="$arg"
+  done
+  printf '{"url":"%s/locked-rev?narHash=sha256-x"}\n' "$flake"
+  exit 0
+fi
 case "$FAKE_SCENARIO" in
   nix-fails)
     exit 7
@@ -493,6 +513,60 @@ test_bad_inputs() {
   n=bad-controller
   SCENARIO_ENV='RWORKER_NIX_CONTROLLER=-oProxyCommand=x' run_scenario ok build '.#x'
   expect_rc "$n" 2 && expect_no_lease "$n" && pass "$n"
+}
+
+test_remote_build() {
+  local n=remote-build store
+  store='ssh-ng://agent@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
+  run_scenario ok remote-build --refresh --no-link --print-out-paths \
+    'github:o/cfg#termuxppConfigurations.p11.system' 'github:o/cfg#termuxppConfigurations.zf10.system'
+  expect_rc "$n" 0 \
+    && expect_trace "$n" 'nix flake metadata --json --refresh github:o/cfg' \
+    && expect_trace "$n" "nix flake archive --refresh --to $store" \
+    && expect_trace "$n" 'rworker-ssh-command nix build --no-link --print-out-paths github:o/cfg/locked-rev\?narHash=sha256-x#termuxppConfigurations.p11.system' \
+    && expect_trace "$n" "nix copy --no-check-sigs --from $store" \
+    && expect_trace "$n" ' /nix/store/aaaa-system-a /nix/store/bbbb-system-b' \
+    && expect_trace "$n" 'NIX_SSHOPTS=-o StrictHostKeyChecking=yes' \
+    && expect_trace "$n" 'rworker down w-test1' \
+    && expect_no_trace "$n" '--max-jobs 0' \
+    && pass "$n"
+  if [[ "$(< "$WORK/out")" != $'/nix/store/aaaa-system-a\n/nix/store/bbbb-system-b' ]]
+  then
+    fail "$n-stdout" "unexpected stdout: $(< "$WORK/out")"
+  else
+    pass "$n-stdout"
+  fi
+}
+
+test_remote_build_failures() {
+  local n scenario
+  for scenario in remote-bad-output remote-no-output remote-build-fails remote-lock-fails
+  do
+    n="$scenario"
+    run_scenario "$scenario" remote-build --no-link 'github:o/cfg#x'
+    expect_rc "$n" 1 \
+      && expect_no_trace "$n" 'nix copy' \
+      && expect_trace "$n" 'rworker down w-test1' \
+      && pass "$n"
+  done
+}
+
+test_remote_build_refuses_bad_args() {
+  local n args
+  local -a cases=(
+    'remote-build github:o/cfg#x'
+    'remote-build --no-link'
+    'remote-build --no-link github:o/cfg'
+    'remote-build --no-link --impure github:o/cfg#x'
+    'remote-build --no-link #x'
+  )
+  for args in "${cases[@]}"
+  do
+    n="remote-refuses '$args'"
+    # shellcheck disable=SC2086 # split the case into words on purpose
+    run_scenario ok $args
+    expect_rc "$n" 2 && expect_no_lease "$n" && pass "$n"
+  done
 }
 
 test_help() {

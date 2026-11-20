@@ -8,11 +8,17 @@ LEASE_STARTED=""
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] build|shell|develop NIX_ARGS...
+       $(basename "$0") [OPTIONS] remote-build [--refresh] [-L] --no-link
+                         [--print-out-paths] FLAKE#ATTR...
        $(basename "$0") --down WORKER
 
 Lease a disposable rworker, run "nix SUBCOMMAND --max-jobs 0 --builders LINE
 NIX_ARGS..." against it and delete the worker afterwards, also on failure.
 Nix evaluation still runs locally.
+
+remote-build evaluates on the worker too: it locks each flake here, copies
+its source and inputs (private ones included) to the worker with "nix flake
+archive", builds the locked installables there and copies the outputs back.
 
 Options:
   --ttl DURATION    worker lifetime backstop (default: 1h)
@@ -333,7 +339,7 @@ validate_lease_args() {
   local target="$1" ttl="$2" disk="$3" subcommand="$4"
   shift 4
   case "$subcommand" in
-    build|shell|develop)
+    build|shell|develop|remote-build)
       ;;
     "")
       warn "missing nix subcommand"
@@ -341,7 +347,7 @@ validate_lease_args() {
       return 2
       ;;
     *)
-      warn "unsupported nix subcommand '$subcommand' (build, shell or develop)"
+      warn "unsupported nix subcommand '$subcommand' (build, shell, develop or remote-build)"
       return 2
       ;;
   esac
@@ -360,8 +366,116 @@ validate_lease_args() {
     warn "invalid --disk '$disk'"
     return 2
   fi
-  check_nix_args "$@" || return 2
+  if [[ "$subcommand" == remote-build ]]
+  then
+    parse_remote_args "$@" || return 2
+  else
+    check_nix_args "$@" || return 2
+  fi
   check_nix_config_env || return 2
+}
+
+# Sets REMOTE_REFRESH, REMOTE_LOGS, REMOTE_PRINT and REMOTE_INSTALLABLES from
+# the remote-build arguments; anything else is refused.
+parse_remote_args() {
+  local arg no_link=""
+  REMOTE_REFRESH="" REMOTE_LOGS="" REMOTE_PRINT=""
+  REMOTE_INSTALLABLES=()
+  for arg in "$@"
+  do
+    case "$arg" in
+      --refresh)
+        REMOTE_REFRESH=1
+        ;;
+      -L|--print-build-logs)
+        REMOTE_LOGS=1
+        ;;
+      --print-out-paths)
+        REMOTE_PRINT=1
+        ;;
+      --no-link)
+        no_link=1
+        ;;
+      -*)
+        warn "remote-build does not support '$arg'"
+        return 1
+        ;;
+      *#*)
+        if [[ "${arg%%#*}" == "" || "${arg#*#}" == "" || "$arg" =~ [[:space:]] ]]
+        then
+          warn "invalid installable '$arg'"
+          return 1
+        fi
+        REMOTE_INSTALLABLES+=("$arg")
+        ;;
+      *)
+        warn "remote-build needs FLAKE#ATTR installables (got '$arg')"
+        return 1
+        ;;
+    esac
+  done
+  if [[ -z "$no_link" ]]
+  then
+    warn "remote-build needs --no-link: outputs are only copied back"
+    return 1
+  fi
+  if (( ${#REMOTE_INSTALLABLES[@]} == 0 ))
+  then
+    warn "remote-build needs at least one FLAKE#ATTR"
+    return 1
+  fi
+}
+
+# The ssh-ng store URL of the worker, from its checked builder LINE.
+worker_store_url() {
+  local -a f
+  read -r -a f <<< "$1"
+  printf '%s?ssh-key=%s&base64-ssh-public-host-key=%s\n' "${f[0]}" "${f[2]}" "${f[7]}"
+}
+
+# Locks the installables here, ships their sources to the worker, builds them
+# there and copies the outputs back. Prints the output paths on request.
+remote_build() {
+  local name="$1" store="$2" installable flake attr locked remote out path
+  local -a refresh=() logs=() targets=() paths=()
+  [[ -z "$REMOTE_REFRESH" ]] || refresh=(--refresh)
+  [[ -z "$REMOTE_LOGS" ]] || logs=(-L)
+  for installable in "${REMOTE_INSTALLABLES[@]}"
+  do
+    flake="${installable%%#*}"
+    attr="${installable#*#}"
+    locked=$(nix flake metadata --json "${refresh[@]}" "$flake" | jq -er .url) || {
+      warn "cannot lock flake '$flake'"
+      return 1
+    }
+    nix flake archive "${refresh[@]}" --to "$store" "$flake" > /dev/null || {
+      warn "cannot copy flake '$flake' to worker $name"
+      return 1
+    }
+    targets+=("$locked#$attr")
+  done
+  printf -v remote '%q ' nix build --no-link --print-out-paths "${logs[@]}" "${targets[@]}"
+  out=$(rworker ssh "$name" "$remote") || return 1
+  while IFS= read -r path
+  do
+    [[ -n "$path" ]] || continue
+    if [[ "$path" != /nix/store/* || "$path" =~ [[:space:]] ]]
+    then
+      warn "unexpected build output from worker: '$path'"
+      return 1
+    fi
+    paths+=("$path")
+  done <<< "$out"
+  if (( ${#paths[@]} == 0 ))
+  then
+    warn "the worker build printed no output paths"
+    return 1
+  fi
+  nix copy --no-check-sigs --from "$store" "${paths[@]}" || return 1
+  if [[ -n "$REMOTE_PRINT" ]]
+  then
+    printf '%s\n' "${paths[@]}"
+  fi
 }
 
 main() {
@@ -470,6 +584,11 @@ main() {
     || return 1
 
   export NIX_SSHOPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes${NIX_SSHOPTS:+ $NIX_SSHOPTS}"
+  if [[ "$subcommand" == remote-build ]]
+  then
+    remote_build "$WORKER_NAME" "$(worker_store_url "$line")" || rc=$?
+    return "$rc"
+  fi
   nix "$subcommand" --max-jobs 0 --builders "$line" \
     --option builders-use-substitutes true "${nix_args[@]}" || rc=$?
   return "$rc"
