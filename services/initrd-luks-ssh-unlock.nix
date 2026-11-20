@@ -73,20 +73,4 @@
     enable = true;
     activationScript.enable = true;
   };
-
-  system.activationScripts.luksInitrdChecksum =
-    lib.mkIf config.services.luks-ssh-unlock.activationScript.enable
-      {
-        # initrd-checksum has a /usr/bin/env shebang. Inside nixos-enter (e.g.
-        # nixos-anywhere installs) /usr/bin/env only exists once the usrbinenv
-        # snippet ran. Without it this snippet fails under `set -e`, aborts the
-        # rest of the activation (setuid wrappers included) and nixos-install
-        # then dies with "mount: command not found" when it mounts efivarfs on
-        # UEFI images.
-        deps = [ "usrbinenv" ];
-        text = lib.mkBefore ''
-          export TMPDIR=/tmp
-          mkdir -p /tmp
-        '';
-      };
 }
