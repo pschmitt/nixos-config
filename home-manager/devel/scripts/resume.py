@@ -5,6 +5,7 @@ import datetime as dt
 import itertools
 import fcntl
 import time
+import threading
 import unicodedata
 import json
 import os
@@ -24,7 +25,9 @@ AGENT_ICONS = {'codex': ('\uec81', '38;2;200;200;200'), 'claude': ('\uec82', '38
                'agy': ('󰊭', '38;5;111')}
 
 
-def records():
+def records(progress=None):
+    progress = progress or (lambda _: None)
+    progress('Reading Codex titles')
     home = Path.home()
     codex_titles = {}
     index = home / '.config/codex/session_index.jsonl'
@@ -40,6 +43,7 @@ def records():
     except (OSError, UnicodeError):
         pass
     for agent in ('claude', 'claude-work', 'claude-auto', 'codex'):
+        progress(f'Scanning {agent} sessions')
         root = home / '.config' / agent
         pattern = 'sessions/*/*/*/*.jsonl' if agent == 'codex' else 'projects/*/*.jsonl'
         for path in root.glob(pattern):
@@ -84,6 +88,7 @@ def records():
                     yield (path.stat().st_mtime, agent, session_id, cwd, title, str(path))
             except (OSError, UnicodeError):
                 continue
+    progress('Scanning Antigravity sessions')
     db = home / '.gemini/antigravity-cli/conversation_summaries.db'
     if db.exists():
         try:
@@ -105,6 +110,37 @@ def records():
                         continue
         except sqlite3.Error as exc:
             print(f'resume: {exc}', file=sys.stderr)
+
+
+class StartupSpinner:
+    def __init__(self, enabled):
+        self.enabled = enabled
+        self.message = 'Starting session discovery'
+        self.stop_event = threading.Event()
+        self.worker = None
+
+    def update(self, message):
+        self.message = message
+
+    def __enter__(self):
+        if self.enabled:
+            self.worker = threading.Thread(target=self.animate, daemon=True)
+            self.worker.start()
+        return self
+
+    def animate(self):
+        frames = itertools.cycle('⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏')
+        while not self.stop_event.is_set():
+            sys.stderr.write(f'\r\033[2K\033[38;5;110m{next(frames)}\033[0m {self.message}')
+            sys.stderr.flush()
+            self.stop_event.wait(0.08)
+
+    def __exit__(self, *_):
+        if self.worker is not None:
+            self.stop_event.set()
+            self.worker.join()
+            sys.stderr.write('\r\033[2K')
+            sys.stderr.flush()
 
 
 def active_sessions():
@@ -290,8 +326,11 @@ def main():
     if args.preview_session:
         preview(*args.preview_session)
         return
-    sessions = sorted(records(), key=lambda row: row[0], reverse=True)
-    active = active_sessions()
+    interactive = sys.stderr.isatty() and not args.list and (args.pick or not args.selection)
+    with StartupSpinner(interactive) as spinner:
+        sessions = sorted(records(spinner.update), key=lambda row: row[0], reverse=True)
+        spinner.update('Checking active sessions')
+        active = active_sessions()
     agent_filter = args.agent
     cwd_filter = args.cwd
     try:
