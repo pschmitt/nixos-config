@@ -5,12 +5,25 @@
 # worthless once the worker has registered.
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 let
   client = "netbird-io";
+  logReader = pkgs.writeShellApplication {
+    name = "rworker-log-reader";
+    runtimeInputs = [
+      pkgs.bash
+      pkgs.coreutils
+    ];
+    text = ''
+      export RWORKER_JOBS_SCRIPT=${inputs.rworker}/src/jobs.sh
+      export RWORKER_LOG_EXPORT_SCRIPT=${inputs.rworker}/src/job-log-export.sh
+      ${builtins.readFile ./scripts/log-reader.sh}
+    '';
+  };
   inherit (config.services.netbird.clients.${client}) interface wrapper;
 in
 {
@@ -89,6 +102,17 @@ in
       install -d -m 0755 /run/ssh-authorized-keys
       jq -r '.agent_authorized_keys // [] | .[]' "$user_data" \
         > /run/ssh-authorized-keys/agent
+      log_collector=$(jq -r '.log_collector_key // ""' "$user_data")
+      if [[ -n "$log_collector" ]]
+      then
+        if [[ ! "$log_collector" =~ ^[A-Za-z0-9+/=]{68}$ ]]
+        then
+          echo "rworker: invalid collector public key metadata" >&2
+          exit 1
+        fi
+        printf 'restrict,command="%s" ssh-ed25519 %s rworker-log-collector\n' \
+          "${lib.getExe logReader}" "$log_collector" >> /run/ssh-authorized-keys/agent
+      fi
       chmod 0644 /run/ssh-authorized-keys/agent
 
       key=$RUNTIME_DIRECTORY/setup-key
