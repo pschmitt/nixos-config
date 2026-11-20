@@ -451,6 +451,9 @@ in
         circus-evaluator = {
           environment.NIX_CONFIG = "pure-eval = true";
           serviceConfig = {
+            # Reads the system nix.conf's private-GitHub token include
+            # (profiles/base/nix/secrets.nix, group nix-access-tokens).
+            SupplementaryGroups = [ "nix-access-tokens" ];
             # Next to nixbot's remote evaluation (up to 2 x 2 x 8 GiB) and its
             # 16 build slots on this 62 GiB / 32 core host.
             MemoryHigh = "12G";
@@ -515,6 +518,11 @@ in
       };
     };
 
-    users.groups.${githubTokenGroup} = lib.mkIf cfg.githubApp.enable { };
+    users.groups = {
+      ${githubTokenGroup} = lib.mkIf cfg.githubApp.enable { };
+      # Owned by profiles/base/nix/secrets.nix; declared here too so the
+      # evaluator's membership does not depend on which lands first.
+      nix-access-tokens = { };
+    };
   };
 }
