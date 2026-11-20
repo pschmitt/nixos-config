@@ -232,12 +232,15 @@ in
 
           cache_upload = lib.mkIf cfg.s3Upload.enable {
             enabled = true;
-            store_uri = "s3://circus-cache-brkn-lol";
+            # niks3's bucket, under its own prefix: Circus never writes the
+            # bucket root niks3 serves, and both garbage collectors only
+            # delete keys from their own database, never by listing.
+            store_uri = "s3://nix-cache-brkn-lol";
             compression = "zstd";
             s3 = {
               # Same OpenStack RGW as niks3 (region as its S3 location API says).
               region = "default";
-              prefix = "nix-cache";
+              prefix = "circus";
               endpoint_url = "https://s3.openstack.de-west-01.wiit-cloud.io";
               use_path_style = true;
               secret_access_key_file = secret "s3/secret-access-key";

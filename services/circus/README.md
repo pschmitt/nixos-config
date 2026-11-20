@@ -72,8 +72,9 @@ Each needs its secret first; a missing SOPS key fails activation.
   GitHub webhook (content type JSON, events push and pull request) pointing
   at `https://circus.brkn.lol/api/v1/webhooks/<project id>/github` with
   `circus/github-webhook-secret`. The project id is in the dashboard.
-- `services.circus.s3Upload.enable`: agents upload outputs to
-  `circus-cache-brkn-lol`. Without it, outputs stream to the queue-runner.
+- `services.circus.s3Upload.enable`: agents upload outputs to niks3's
+  `nix-cache-brkn-lol` under the `circus/` prefix. Without it, outputs stream
+  to the queue-runner.
 - `services.circus.githubActionsAgents.enable` with `agentBinaryUrl`: aarch64
   agents on GitHub's arm runners. The runners join NetBird with the existing
   `NB_SETUP_KEY`; that key's group needs a NetBird policy to rofl-15 TCP 443
