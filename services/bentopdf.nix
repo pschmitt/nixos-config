@@ -1,7 +1,7 @@
 { config, ... }:
 let
   # renovate: datasource=docker depName=ghcr.io/alam00000/bentopdf depType=automerge
-  bentopdfVersion = "2.8.11";
+  bentopdfVersion = "2.8.12";
   bentopdfHost = "pdf.${config.domains.main}";
   bentopdfPort = 23686;
 in
