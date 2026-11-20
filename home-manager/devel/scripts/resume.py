@@ -8,6 +8,7 @@ import time
 import unicodedata
 import json
 import os
+import re
 from pathlib import Path
 import sqlite3
 import shlex
@@ -15,6 +16,8 @@ import subprocess
 import sys
 from urllib.parse import unquote, urlparse
 
+
+USER_RECORD = re.compile(r'"(?:type|role)"\s*:\s*"user"')
 
 AGENT_ICONS = {'codex': ('\uec81', '38;2;200;200;200'), 'claude': ('\uec82', '38;2;217;119;87'),
                'claude-work': ('\uec82', '38;2;217;119;87'), 'claude-auto': ('\uec82', '38;2;217;119;87'),
@@ -44,6 +47,11 @@ def records():
                 cwd, title, session_id = '', '', path.stem
                 with path.open() as stream:
                     for line in itertools.islice(stream, 100):
+                        if agent == 'codex':
+                            if '"session_meta"' not in line and '"user_message"' not in line and not USER_RECORD.search(line):
+                                continue
+                        elif (cwd or '"cwd"' not in line) and not USER_RECORD.search(line):
+                            continue
                         try:
                             obj = json.loads(line)
                         except (ValueError, UnicodeDecodeError):
@@ -53,6 +61,7 @@ def records():
                             if obj.get('type') == 'session_meta':
                                 cwd = payload.get('cwd', '')
                                 session_id = payload.get('id', session_id)
+                                title = codex_titles.get(session_id, title)
                             if payload.get('type') == 'user_message':
                                 title = payload.get('message', '')
                             elif payload.get('type') == 'message' and payload.get('role') == 'user':
