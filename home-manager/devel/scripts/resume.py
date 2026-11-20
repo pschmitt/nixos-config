@@ -554,7 +554,7 @@ def main():
                 spacing = max(2, list_width - cell_width('^T search  ^G agent  ^D cwd  ^R reset  Pg↑/↓ scroll') - cell_width(filters))
                 footer = f'{shortcuts}{" " * spacing}{hint}{filters}\033[0m'
                 result = subprocess.run(
-                    ['fzf', '--ansi', '--info=hidden', '--no-separator', '--no-hscroll', '--delimiter=\t', '--with-nth=1', '--no-sort', '--layout=reverse',
+                    ['fzf', '--ansi', '--info=hidden', '--no-separator', '--no-hscroll', '--delimiter=\t', '--with-nth=1', '--tiebreak=index', '--layout=reverse',
                      '--prompt=󰍉  Session  ❯ ', '--pointer=❯', '--marker=󰄬', theme,
                      '--bind=alt-up:preview-up,alt-down:preview-down,alt-k:preview-up,alt-j:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
                      '--expect=ctrl-g,ctrl-d,ctrl-r,ctrl-t', '--header=' + columns, '--footer=' + footer, '--footer-border=none',
