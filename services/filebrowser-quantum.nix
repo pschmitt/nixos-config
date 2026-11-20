@@ -27,7 +27,12 @@ in
         listen: "127.0.0.1"
         port: ${toString port}
         externalUrl: "${externalUrl}"
-        database: "${stateDir}/filebrowser.sqlite"
+        # FileBrowser Quantum 2.0 keeps its state in SQLite and refuses the
+        # 1.x string form of server.database. The 1.x file (BoltDB despite
+        # its old .sqlite name) is migrated from migrateFrom on first start.
+        database:
+          path: "${stateDir}/filebrowser-v2.sqlite"
+          migrateFrom: "${stateDir}/filebrowser.bolt.old"
         cacheDir: "${stateDir}/cache"
         sources:
           # One source over the whole synced tree (Documents/Music/Pictures/
