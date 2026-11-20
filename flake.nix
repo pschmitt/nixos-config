@@ -256,7 +256,17 @@
         # hrworks (its CLI uses browser-daemon-client) would otherwise lock a
         # second browser-daemon, and with it a second rbw, crane and flake-utils.
         hrworks.inputs.browser-daemon.follows = "browser-daemon";
+        nixbot.follows = "nixbot";
       };
+    };
+
+    # Self-hosted Nix CI (rofl-14, configured in the private repo): our fork
+    # of Mic92/nixbot with the changes we run (remote evaluation hooks,
+    # builders page, ...), meant to go upstream piece by piece.
+    nixbot = {
+      url = "github:pschmitt/nixbot";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
     };
 
     hypr-rdp = {

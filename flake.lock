@@ -1722,7 +1722,7 @@
           "nixos-config-private",
           "nixpkgs"
         ],
-        "treefmt-nix": "treefmt-nix_2"
+        "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
         "lastModified": 1791365690,
@@ -1808,10 +1808,9 @@
     "nixbot": {
       "inputs": {
         "nixpkgs": [
-          "nixos-config-private",
           "nixpkgs"
         ],
-        "treefmt-nix": "treefmt-nix_3"
+        "treefmt-nix": "treefmt-nix_2"
       },
       "locked": {
         "lastModified": 1795196964,
@@ -1834,7 +1833,9 @@
         "flake-parts": "flake-parts_2",
         "hrworks": "hrworks",
         "niks3": "niks3",
-        "nixbot": "nixbot",
+        "nixbot": [
+          "nixbot"
+        ],
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -2508,6 +2509,7 @@
         "neovim-nightly": "neovim-nightly",
         "nix-index-database": "nix-index-database",
         "nix-openclaw": "nix-openclaw",
+        "nixbot": "nixbot",
         "nixos-config-private": "nixos-config-private",
         "nixos-images": "nixos-images",
         "nixos-needsreboot": "nixos-needsreboot",
@@ -3094,16 +3096,15 @@
     "treefmt-nix_2": {
       "inputs": {
         "nixpkgs": [
-          "nixos-config-private",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1790542030,
-        "narHash": "sha256-U6m0B5+ALyOLYG4OVvtguLdem7iYgN6cIP5Q1RhM+g8=",
+        "lastModified": 1780220602,
+        "narHash": "sha256-eynAfOmbmxJnkp7YewvCEbShNnnYJ9gLLqkzsYtBPeM=",
         "owner": "numtide",
         "repo": "treefmt-nix",
-        "rev": "6aca3b3649eb1edf472eca3e91e6bcc0c84a6ad3",
+        "rev": "db947814a175b7ca6ded66e21383d938df01c227",
         "type": "github"
       },
       "original": {
@@ -3120,11 +3121,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1780220602,
-        "narHash": "sha256-eynAfOmbmxJnkp7YewvCEbShNnnYJ9gLLqkzsYtBPeM=",
+        "lastModified": 1790542030,
+        "narHash": "sha256-U6m0B5+ALyOLYG4OVvtguLdem7iYgN6cIP5Q1RhM+g8=",
         "owner": "numtide",
         "repo": "treefmt-nix",
-        "rev": "db947814a175b7ca6ded66e21383d938df01c227",
+        "rev": "6aca3b3649eb1edf472eca3e91e6bcc0c84a6ad3",
         "type": "github"
       },
       "original": {
