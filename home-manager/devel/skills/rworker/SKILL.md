@@ -106,8 +106,8 @@ rworker down "$w"
   own profile is acceptable. Re-run it
   after the key is rotated.
   Workers created before the feature get nothing and the command says so.
-- Every worker gets its own short-lived niks3 push token (`niks3 push PATH`
-  on the worker; `--no-niks3-token` or MCP `up(niks3_token=false)` opts out,
+- Every worker gets its own short-lived niks3 push token (`niks3 push` on the
+  worker, with the closure on `--stdin`; `--no-niks3-token` or MCP `up(niks3_token=false)` opts out,
   `niks3-token NAME` reissues): see [host-closures](references/host-closures.md).
 
 MCP: the `rworker` MCP server offers the same as tools (`profiles` lists the
@@ -162,8 +162,10 @@ after its client restarts.
 - **Whole host closures and big transfers:** build them on a `--profile
   large-builder` worker and keep the result off the home link; see
   [host-closures](references/host-closures.md); aarch64 targets: [cross-arch](references/cross-arch.md).
-- **Pushing to the S3 cache:** use the worker's own niks3 token (`niks3 push
-  PATH`). Only for what niks3 cannot do may you put the S3 credentials of the
+- **Pushing to the S3 cache:** use the worker's own niks3 token and push the
+  whole closure: `nix path-info -r PATH | niks3 push --stdin`. A bare
+  `niks3 push PATH` uploads nothing when PATH itself is already cached, even
+  if its references are not ([host-closures](references/host-closures.md)). Only for what niks3 cannot do may you put the S3 credentials of the
   agent's own host on a worker without asking: the AWS profile the host's
   `s3://` substituter names, as `nix-cache` transfers it or as a mode-0600
   file (see **Secrets and private inputs**), never the whole credentials file,

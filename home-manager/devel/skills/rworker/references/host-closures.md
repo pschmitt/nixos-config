@@ -29,17 +29,21 @@ raw `nix copy` fails with HTTP 403 `AccessDenied`, and it would bypass signing
 and the server's garbage-collection bookkeeping.
 
 Every ad-hoc worker gets its own short-lived niks3 token (see below), and the
-`niks3` command on the worker already knows the server and the token, so just
-push:
+`niks3` command on the worker already knows the server and the token. Push the
+**whole closure**, not only the top-level path:
 
 ```bash
-rworker ssh "$w" 'niks3 push ~/<host>-system; echo PUSH_RC=$?'
+rworker ssh "$w" 'nix path-info -r ~/<host>-system | niks3 push --stdin > ~/push.jsonl; echo PUSH_RC=$?; jq -r .status ~/push.jsonl | sort | uniq -c'
 ```
 
-   `All N paths already cached` means there is nothing to do: targets can
-   substitute the closure. After a successful push the targets fetch it from
-   S3 (`nixos-upgrade` or `just deploy`), so nothing travels over the home
-   link.
+   `niks3 push PATH` checks only the paths it is given: when the top-level
+   path is already in the cache (for example uploaded by a CI run that is
+   still pushing), it reports `All 1 paths already cached` and uploads
+   nothing, although references are missing. Targets then fail with `some
+   references of path ... could not be realised` (2026-11-20, TermuxPP
+   systems). With the closure on stdin, already-cached paths are skipped
+   cheaply. After a successful push the targets fetch it from S3
+   (`nixos-upgrade` or `just deploy`), so nothing travels over the home link.
 
 The token is an OIDC JWT that the control host signs when the worker is
 created. It expires with the worker, `extend` replaces it with one for the new
