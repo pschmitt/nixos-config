@@ -1844,7 +1844,6 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "__final": true,
         "lastModified": 1795193510,
         "narHash": "sha256-J0W/zVIc6Yj1/kFIR6Q1VEmziDHCP4V+fAEknL1+nQk=",
         "owner": "pschmitt",
