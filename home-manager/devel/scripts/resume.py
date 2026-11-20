@@ -145,7 +145,7 @@ class StartupSpinner:
 
 def active_sessions():
     home = Path.home() / '.config'
-    active = set()
+    active = {}
     for agent in ('claude', 'claude-work', 'claude-auto'):
         for path in (home / agent / 'sessions').glob('*.json'):
             try:
@@ -153,9 +153,20 @@ def active_sessions():
                 pid = int(record['pid'])
                 cmd = (Path('/proc') / str(pid) / 'cmdline').read_bytes().lower()
                 if b'claude' in cmd and record.get('sessionId'):
-                    active.add((agent, record['sessionId']))
+                    active[(agent, record['sessionId'])] = pid
             except (OSError, ValueError, KeyError, TypeError):
                 continue
+    lock_owners = {}
+    try:
+        for line in Path('/proc/locks').read_text().splitlines():
+            fields = line.split()
+            if len(fields) >= 6 and fields[1] == 'FLOCK':
+                try:
+                    lock_owners[int(fields[5].split(':')[-1])] = int(fields[4])
+                except ValueError:
+                    continue
+    except OSError:
+        pass
     for path in (home / 'codex/thread-writer-locks').glob('*.lock'):
         try:
             with path.open('rb') as lock:
@@ -163,10 +174,57 @@ def active_sessions():
                     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     fcntl.flock(lock, fcntl.LOCK_UN)
                 except BlockingIOError:
-                    active.add(('codex', path.stem))
+                    active[('codex', path.stem)] = lock_owners.get(path.stat().st_ino)
         except OSError:
             continue
     return active
+
+
+def tmux_pane_for_pid(pid):
+    if not pid or not os.environ.get('TMUX'):
+        return None
+    try:
+        result = subprocess.run(['tmux', 'list-panes', '-a', '-F', '#{pane_id}\t#{pane_tty}'],
+                                text=True, capture_output=True, check=True)
+        panes = {}
+        for line in result.stdout.splitlines():
+            pane, tty = line.split('\t', 1)
+            panes.setdefault(tty, set()).add(pane)
+        visited = set()
+        while pid > 1 and pid not in visited:
+            visited.add(pid)
+            proc = Path('/proc') / str(pid)
+            try:
+                tty = os.readlink(proc / 'fd/0')
+            except OSError:
+                tty = ''
+            matches = panes.get(tty, set())
+            if len(matches) == 1:
+                return next(iter(matches))
+            stat = (proc / 'stat').read_text()
+            pid = int(stat[stat.rfind(')') + 2:].split()[1])
+    except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+        pass
+    return None
+
+
+def switch_to_live_session(agent, session_id):
+    active = active_sessions()
+    if (agent, session_id) not in active:
+        return False
+    pid = active[(agent, session_id)]
+    pane = tmux_pane_for_pid(pid)
+    if not pane or pane == os.environ.get('TMUX_PANE'):
+        print('resume: session is active, but its tmux pane could not be found; starting native resume.', file=sys.stderr)
+        return False
+    try:
+        subprocess.run(['tmux', 'switch-client', '-t', pane], check=True)
+        subprocess.run(['tmux', 'select-window', '-t', pane], check=True)
+        subprocess.run(['tmux', 'select-pane', '-t', pane], check=True)
+        return True
+    except (OSError, subprocess.SubprocessError):
+        print('resume: could not switch to the active tmux pane; starting native resume.', file=sys.stderr)
+        return False
 
 
 def relative_time(stamp):
@@ -441,6 +499,8 @@ def main():
     if len(matches) != 1:
         parser.error('session not found or ambiguous; use its displayed number')
     _, agent, sid, cwd, _, _ = matches[0]
+    if switch_to_live_session(agent, sid):
+        return
     if not os.path.isdir(cwd):
         parser.error(f'original working directory no longer exists: {cwd}')
     os.chdir(cwd)
