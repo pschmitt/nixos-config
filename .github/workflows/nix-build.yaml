@@ -334,11 +334,15 @@ jobs:
               --copy
 
   build-termuxpp:
-    if: ${{ needs.setup-matrix.outputs.matrix != '' && toJson(fromJson(needs.setup-matrix.outputs.matrix).termuxpp) != '[]' }}
+    # Like build-hosts-aarch64: after the packages, so the guest systems
+    # substitute our packages instead of building them a second time.
+    needs:
+      - setup-matrix
+      - build-pkgs-free
+      - build-pkgs-nonfree
+      - build-pkgs-oci
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && toJson(fromJson(needs.setup-matrix.outputs.matrix).termuxpp) != '[]' }}
     name: build-termuxpp ${{ matrix.pkg.name }} (${{ matrix.system }})
-    # Only the matrix: the phones install these pins (nixpp upgrade), so they
-    # publish as soon as the run starts instead of after the package matrices.
-    needs: setup-matrix
     timeout-minutes: 120
     runs-on: ubuntu-24.04-arm
     strategy:
