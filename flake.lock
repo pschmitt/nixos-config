@@ -1814,15 +1814,15 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1792934095,
-        "narHash": "sha256-FhLQ1a0rEzVWHs39oSJUcefzAnVh7sOu9MeHEAX3JIU=",
-        "owner": "Mic92",
+        "lastModified": 1795196964,
+        "narHash": "sha256-TnOPP5HOb37FKoVr3SGoCGvoq3KQvqZBLpEnnfVdsyc=",
+        "owner": "pschmitt",
         "repo": "nixbot",
-        "rev": "7ffdba2e105df436124770b9c812350460813d33",
+        "rev": "90cf73c595de2cc3630e9f0427b33aec5ce05985",
         "type": "github"
       },
       "original": {
-        "owner": "Mic92",
+        "owner": "pschmitt",
         "repo": "nixbot",
         "type": "github"
       }
@@ -1844,11 +1844,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1795195967,
-        "narHash": "sha256-n3Iy9poRjshF0OTfOyw6jQ8OZ/343V4xySaWkLCmyPQ=",
+        "lastModified": 1795197436,
+        "narHash": "sha256-RE7bfh3uyNl+M1wpa2BWwI7UQtEqNZclVeCx9RFBESc=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "96d367a8ce296a943dbbeff4bf18b48b28b1d8ec",
+        "rev": "ad868411198621843ddb235a60c82684d4824ea3",
         "type": "github"
       },
       "original": {
