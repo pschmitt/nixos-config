@@ -1,0 +1,14 @@
+width=900
+height=600
+filter_rate=100
+term=foot
+allow_markup=true
+allow_images=true
+prompt=
+hide_scroll=true
+insensitive=true
+no_actions=true
+
+# mode=drun
+drun-print_command=true
+run-print_command=true

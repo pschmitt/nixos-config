@@ -4,6 +4,7 @@
     ./autostart.nix
     ./kitty.nix
     ./walker.nix
+    ./wofi.nix
     ./bookmarks.nix
     ./browser.nix
     ./firefox/pip-volume-scroll.nix
