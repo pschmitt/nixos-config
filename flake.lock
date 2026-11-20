@@ -1858,11 +1858,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1795215267,
-        "narHash": "sha256-pasex+r1cA+h0+CEsouyWpCmFXGZl1RGhgcwtBCsJR8=",
+        "lastModified": 1795215403,
+        "narHash": "sha256-lnaYxJfoZznX+qsOmNe5vLrdd6zr0MCniZ/+mF9mYi8=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "64b9434fd4a3e07c0f85cf41d0eea29a8e3531a3",
+        "rev": "e987aa03227f6fb549cadfc1754a4c8029ccd58d",
         "type": "github"
       },
       "original": {
