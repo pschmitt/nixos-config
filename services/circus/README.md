@@ -69,7 +69,7 @@ and the low slot count are what keep nixbot ahead.
 | `circus/github-app/app-id`, `circus/github-app/private-key` | rofl-15 | GitHub App `circus-pschmitt` (id, PEM key) |
 | `circus/github-status-token` | rofl-15 | only without `githubApp`: fine-grained token, commit statuses read/write on `pschmitt/nixos-config` |
 | `circus/s3/access-key-id`, `circus/s3/secret-access-key` | rofl-15 | private `tofu/circus-cache.tf` output |
-| `circus/github-dispatch-token` | rofl-15 | fine-grained token, actions read/write on `pschmitt/nixos-config` |
+| `circus/github-dispatch-token` | rofl-15 | only without `githubApp`: fine-grained token, actions read/write on `pschmitt/nixos-config` |
 
 ## Opt-in parts
 
@@ -105,10 +105,23 @@ Each needs its secret first; a missing SOPS key fails activation.
   Each worker gets the pool's join token (`rworker-pool`) in its user-data;
   only root on the worker can reach the metadata service. Idle workers are
   deleted after 15 minutes.
-- `services.circus.githubActionsAgents.enable` with `agentBinaryUrl`: aarch64
-  agents on GitHub's arm runners. The runners join NetBird with the existing
-  `NB_SETUP_KEY`; that key's group needs a NetBird policy to rofl-15 TCP 443
-  and 8443. Circus only gives them builds of `main`, never pull requests.
+- `services.circus.githubActionsAgents.enable` with `agentBinaryUrl` and
+  `agentBinarySha256`: aarch64 agents on GitHub's arm runners for the
+  aarch64 hosts and packages of `circusJobs` (nixbot builds x86_64 only).
+  - Dispatch: the queue-runner starts `.github/workflows/circus-builder.yml`
+    via `workflow_dispatch` with the App's installation token (the App has
+    Actions: write; the token file is read in place, `runtimeFiles`).
+  - Agent binary: a static `circus-agent-aarch64-linux` released from our
+    fork by its `release-agent-aarch64.yml` on `v*-pschmitt.*` tags; the
+    workflow checks the `#sha256=` fragment before running it. Cut a new
+    tag and update both options whenever the `circus` input moves.
+  - Network: runners join NetBird with `NB_SETUP_KEY` (setup key "GitHub
+    Actions", auto-group `🐙 github-actions`); policy `github-actions →
+    circus` allows TCP 443 and 8443 to rofl-15.
+  - Substitution: `.github/actions/nix-setup` with the read-only niks3
+    secrets `NIKS3_S3_*`.
+  - Circus only gives them builds of `main`, never pull requests (OIDC
+    subject pinned to `refs/heads/main`).
 
 ## Disable or remove
 
