@@ -21,6 +21,8 @@ let
 
   serverPort = 3000;
   rpcPort = 8443;
+  tailnetCertDir = config.security.acme.certs.${tailnetHost}.directory;
+  runnerUrl = "circus+tls://${tailnetHost}:${toString rpcPort}";
 
   secret = name: config.sops.secrets."circus/${name}".path;
   placeholder = name: config.sops.placeholder."circus/${name}";
@@ -271,8 +273,15 @@ in
               # Reachable only on the trusted tailnet interfaces; the public
               # firewall does not open it.
               bind = "[::]:${toString rpcPort}";
-              # Plain TCP inside WireGuard (NetBird/Tailscale).
-              allow_plaintext = true;
+              # TLS with the tailnet vhost's ACME certificate (DNS-01), which
+              # agents verify against the system roots: GitHub Actions agents
+              # send their OIDC token across this, and Circus refuses a
+              # plaintext runner URL for them. The certificate is loaded at
+              # start; renewals restart the queue-runner (security.acme below).
+              tls = {
+                cert_file = "${tailnetCertDir}/fullchain.pem";
+                key_file = "${tailnetCertDir}/key.pem";
+              };
               cache_substituter = "https://${tailnetHost}/nix-cache/";
               cache_public_key = cfg.settings.signing.public_key;
             }
@@ -300,7 +309,7 @@ in
                 # The App's installation token (Actions: write) is minted every
                 # 45 minutes; Circus reads it on every dispatch (runtimeFiles).
                 token_file = if cfg.githubApp.enable then githubTokenFile else secret "github-dispatch-token";
-                runner_url = "circus://${hostName}.${config.domains.netbird}:${toString rpcPort}";
+                runner_url = runnerUrl;
                 oidc_audience = "circus-agent";
                 agent_binary_url = "${cfg.githubActionsAgents.agentBinaryUrl}#sha256=${cfg.githubActionsAgents.agentBinarySha256}";
               };
@@ -493,6 +502,10 @@ in
         };
       };
     };
+
+    # The queue-runner's RPC serves the tailnet vhost's certificate: restart it
+    # on renewal, since Circus loads the certificate once at start.
+    security.acme.certs.${tailnetHost}.reloadServices = [ "circus-queue-runner.service" ];
 
     systemd.services = lib.mkMerge [
       {

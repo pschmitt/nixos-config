@@ -114,7 +114,7 @@ in
     settings.agent = {
       # Placeholder; CIRCUS_AGENT__AGENT__NAME (the worker name) overrides it.
       name = "rworker-circus";
-      runner_url = "circus://${runnerHost}.${config.domains.netbird}:8443";
+      runner_url = "circus+tls://circus.${runnerHost}.${config.domains.netbird}:8443";
       # Native only: the image could run aarch64 through qemu-user, but the
       # queue-runner would then place aarch64 builds here at emulation speed.
       systems = [ "x86_64-linux" ];

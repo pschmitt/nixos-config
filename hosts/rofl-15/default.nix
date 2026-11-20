@@ -26,9 +26,7 @@
     # aarch64 builds of circusJobs on GitHub's arm runners (circus-builder.yml):
     # ephemeral agents started via workflow_dispatch with the App's token.
     githubActionsAgents = {
-      # Off until the queue-runner RPC speaks TLS: Circus refuses a plaintext
-      # runner URL for GitHub Actions agents (their OIDC token crosses it).
-      enable = false;
+      enable = true;
       # Static agent from our fork (release-agent-aarch64.yml), matching the
       # pinned circus input.
       agentBinaryUrl = "https://github.com/pschmitt/circus/releases/download/v0.14.0-pschmitt.1/circus-agent-aarch64-linux";

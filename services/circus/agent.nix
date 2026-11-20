@@ -43,7 +43,8 @@ in
       joinTokenFile = config.sops.secrets."circus/agent-join-token".path;
       settings.agent = {
         name = config.networking.hostName;
-        runner_url = "circus://${cfg.runnerHost}.${config.domains.netbird}:8443";
+        # TLS with the queue-runner host's tailnet ACME certificate.
+        runner_url = "circus+tls://circus.${cfg.runnerHost}.${config.domains.netbird}:8443";
         systems = [ "x86_64-linux" ];
         # What these hosts advertise to nixbot as remote builders.
         supported_features = [
