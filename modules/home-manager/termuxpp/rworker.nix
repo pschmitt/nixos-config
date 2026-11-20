@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -7,7 +8,13 @@
 let
   cfg = config.fullNix.rworker;
 
+  # crane takes build tools such as rsync from the package set it is made
+  # for; the guest's patched rsync would make the compiled client differ from
+  # the one rworker's CI pins for our nixpkgs. Compile with plain nixpkgs; the
+  # wrapper still puts the guest's rsync on PATH.
+  plainPkgs = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system};
   rworker = pkgs.rworker.override {
+    craneLib = inputs.rworker.inputs.crane.mkLib plainPkgs;
     extraRuntimeInputs = [ pkgs.hostname ];
     sshControlMaster = false;
   };
