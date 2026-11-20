@@ -46,9 +46,19 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
      that nixos-config CI built and pinned for the host in the signed cache;
      no evaluation or build on the phone. Only works once CI has published
      the pushed commit; `nixpp upgrade --dry-run` shows whether it has.
-   - **Faster, without waiting for CI:** `nixpp upgrade --rworker --remote-eval`.
-     It leases a disposable rworker, evaluates and builds the configured flake
-     there, and switches. Implies `--build`.
+   - **Without waiting for CI:** `nixpp upgrade --remote-eval` evaluates and
+     builds the configured flake on the first reachable configured builder and
+     switches; `nixpp upgrade --rworker --remote-eval` does the same on a
+     disposable rworker. Both imply `--build`. Nix caches what
+     `github:…/main` resolves to for about an hour; pass
+     `--flake github:pschmitt/nixos-config/<sha>` for an exact commit.
+   - **Built elsewhere (an rworker, by hand):** push the closure with
+     `niks3 push` (worker tokens cannot move the `gh-main-*` pins), then on the
+     phone copy it with `nix --refresh copy --from <cache store>`, using the
+     store, credentials and keys from `/etc/nixpp/upgrade.json`, and run
+     `nixpp prepare PATH` and `nixpp switch NAME`. Without `--refresh` a
+     cached "not in cache" answer makes Nix report that no substituter can
+     build the path.
    - Never build on the phone or the workstation: no plain `--build` without
      `--rworker` unless remote builders are configured (`--max-jobs 0`).
 4. Verify with `nixpp status`: a new current generation with today's date.

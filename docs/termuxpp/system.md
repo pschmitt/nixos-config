@@ -66,10 +66,13 @@ nixpp upgrade --build
 # Build or rebuild an explicit target using configured remote builders:
 nixpp build --flake /path/to/config --host HOST
 nixpp rebuild --flake /path/to/config --host HOST
+# Evaluate on the first reachable configured builder too (only the flake is
+# locked here; a local flake's source is copied over):
+nixpp rebuild --flake /path/to/config --host HOST --remote-eval
 # Alternatively lease a worker through rworker-nix to build there:
 nixpp rebuild --flake /path/to/config --host HOST --rworker
-# ... and evaluate there too (only the flake is locked and shipped from here):
-nixpp rebuild --flake /path/to/config --host HOST --remote-eval
+# ... and evaluate there too:
+nixpp rebuild --flake /path/to/config --host HOST --rworker --remote-eval
 ```
 
 `status` shows the active and previous systems. Use `status --all` or
@@ -79,8 +82,9 @@ pin. `fetch latest` runs the configured upgrade.
 
 `upgrade --build` selects the host and flake from the system configuration. It
 accepts `--flake` and `--host` overrides, `--rworker` to build on the
-disposable worker and `--remote-eval` to evaluate there too; each of them
-implies `--build`. With `--build`, `--dry-run`
+disposable worker instead of the configured builders, and `--remote-eval` to
+evaluate where the system is built (the first reachable configured builder, or
+the worker with `--rworker`); each of them implies `--build`. With `--build`, `--dry-run`
 runs Nix's build planner without contacting the native controller.
 
 Plain `upgrade` (formerly `--from-cache`, still accepted) reads the host's published pin, verifies the system
