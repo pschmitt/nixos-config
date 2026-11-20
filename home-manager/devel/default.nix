@@ -35,6 +35,9 @@ in
   ];
 
   home.packages = with pkgs; [
+    (pkgs.writers.writePython3Bin "resume" { flakeIgnore = [ "E501" ]; } (
+      builtins.readFile ./scripts/resume.py
+    ))
     envsubst
     flarectl
     httpasswdPkg
