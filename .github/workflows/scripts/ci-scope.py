@@ -80,6 +80,9 @@ def empty_matrix():
     return {
         "pkgs": {k: [] for k in ("free", "nonfree", "oci")},
         "hosts": {"aarch64": []},
+        # The TermuxPP guest systems (packages.<system>.termuxpp-system-<host>)
+        # have their own matrix: the phones install their pins.
+        "termuxpp": [],
     }
 
 
@@ -122,11 +125,15 @@ def termuxpp_matrix():
     if not hosts:
         raise ValueError("No TermuxPP systems configured")
     matrix = empty_matrix()
-    matrix["pkgs"]["free"] = [
+    matrix["termuxpp"] = [
         {"pkg": {"name": f"termuxpp-system-{host}"}, "system": GITHUB_SYSTEM}
         for host in hosts
     ]
     return matrix
+
+
+def is_termuxpp_system(entry):
+    return entry["pkg"]["name"].startswith("termuxpp-system-")
 
 
 def lock_reachable(nodes, roots):
@@ -289,14 +296,22 @@ def scope(classify_only):
             }
         broad = False
 
+    termuxpp = {}
     for category in ("free", "nonfree", "oci"):
-        matrix["pkgs"][category] = [
+        selected = [
             {"pkg": package, "system": system}
             for package in matrix["pkgs"][category]
             if broad or package["name"] in packages
             for system in package["systems"]
             if system == GITHUB_SYSTEM
         ]
+        # A guest system can be listed in more than one category; build it once,
+        # in its own matrix.
+        for entry in selected:
+            if is_termuxpp_system(entry):
+                termuxpp.setdefault(entry["pkg"]["name"], entry)
+        matrix["pkgs"][category] = [e for e in selected if not is_termuxpp_system(e)]
+    matrix["termuxpp"] = list(termuxpp.values())
     matrix["hosts"] = {
         "aarch64": [host for host in ordered_hosts if broad or host in hosts]
     }
@@ -355,8 +370,8 @@ def add_stale_termuxpp(matrix):
         or not shutil.which("nix")
     ):
         return matrix
-    free = matrix["pkgs"]["free"]
-    planned = {entry["pkg"]["name"] for entry in free}
+    systems = matrix.setdefault("termuxpp", [])
+    planned = {entry["pkg"]["name"] for entry in systems}
     hosts = json.loads(
         output(
             "nix",
@@ -375,7 +390,7 @@ def add_stale_termuxpp(matrix):
             "nix", "eval", "--raw", f".#packages.{GITHUB_SYSTEM}.{name}.outPath"
         )
         if read_pin(f"gh-main-packages.{GITHUB_SYSTEM}.{name}-0") != want:
-            free.append({"pkg": {"name": name}, "system": GITHUB_SYSTEM})
+            systems.append({"pkg": {"name": name}, "system": GITHUB_SYSTEM})
     return matrix
 
 

@@ -90,6 +90,33 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(json.loads(result)["hosts"], {"aarch64": ["pica4"]})
         self.assertEqual(calls.call_count, 3)
 
+    def test_termuxpp_systems_get_their_own_matrix_once(self):
+        def package(name):
+            return {"name": name, "systems": ["aarch64-linux", "x86_64-linux"]}
+
+        listing = {
+            "pkgs": {
+                "all": [package("hello"), package("termuxpp-system-p11")],
+                "free": [package("hello"), package("termuxpp-system-p11")],
+                "nonfree": [package("termuxpp-system-p11")],
+                "oci": [],
+            },
+            "hosts": {"amd64": [], "aarch64": []},
+        }
+
+        def command(*args):
+            self.assertTrue(args[0].endswith("nix-gh-build-matrix.sh"))
+            return json.dumps(listing)
+
+        result, _ = self.run_scope(["modules/foo.nix"], command)
+        matrix = json.loads(result)
+        self.assertEqual([e["pkg"]["name"] for e in matrix["pkgs"]["free"]], ["hello"])
+        self.assertEqual(matrix["pkgs"]["nonfree"], [])
+        self.assertEqual(
+            [(e["pkg"]["name"], e["system"]) for e in matrix["termuxpp"]],
+            [("termuxpp-system-p11", "aarch64-linux")],
+        )
+
     def test_unknown_and_shared_paths_require_builds(self):
         for path in [
             "modules/foo.nix",
@@ -170,7 +197,7 @@ class StaleTermuxppTests(unittest.TestCase):
             patch.object(scope, "read_pin", side_effect=lambda name: pins.get(name)),
         ):
             result = scope.add_stale_termuxpp(matrix)
-        return [e["pkg"]["name"] for e in result["pkgs"]["free"]], calls
+        return [e["pkg"]["name"] for e in result["termuxpp"]], calls
 
     def pin(self, host, current=True):
         name = f"gh-main-packages.aarch64-linux.termuxpp-system-{host}-0"
@@ -188,7 +215,7 @@ class StaleTermuxppTests(unittest.TestCase):
 
     def test_planned_systems_are_not_added_twice(self):
         matrix = scope.empty_matrix()
-        matrix["pkgs"]["free"].append(
+        matrix["termuxpp"].append(
             {"pkg": {"name": "termuxpp-system-p11"}, "system": "aarch64-linux"}
         )
         names, _ = self.run_check(matrix, dict([self.pin("zf10")]))

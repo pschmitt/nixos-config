@@ -333,6 +333,47 @@ jobs:
               --oci \
               --copy
 
+  build-termuxpp:
+    if: ${{ needs.setup-matrix.outputs.matrix != '' && toJson(fromJson(needs.setup-matrix.outputs.matrix).termuxpp) != '[]' }}
+    name: build-termuxpp ${{ matrix.pkg.name }} (${{ matrix.system }})
+    # Only the matrix: the phones install these pins (nixpp upgrade), so they
+    # publish as soon as the run starts instead of after the package matrices.
+    needs: setup-matrix
+    timeout-minutes: 120
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.setup-matrix.outputs.matrix).termuxpp }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
+        with:
+          nix-conf: ${{ env.nix-conf }}
+          s3-store: ${{ env.NIKS3_S3_STORE }}
+          s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
+          s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
+
+      - name: Build TermuxPP system
+        run: |-
+          ./.github/workflows/scripts/ci-build.sh \
+            --pkg '${{ matrix.pkg.name }}' \
+            --system '${{ matrix.system }}'
+
+      - name: "Push TermuxPP system to niks3"
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            ./.github/workflows/scripts/ci-build.sh \
+              --pkg '${{ matrix.pkg.name }}' \
+              --system '${{ matrix.system }}' \
+              --copy
+
   build-hosts-aarch64:
     needs:
       - setup-matrix
@@ -491,6 +532,7 @@ jobs:
         build-pkgs-free,
         build-pkgs-nonfree,
         build-pkgs-oci,
+        build-termuxpp,
         build-hosts-aarch64,
       ]
     runs-on: ubuntu-latest
