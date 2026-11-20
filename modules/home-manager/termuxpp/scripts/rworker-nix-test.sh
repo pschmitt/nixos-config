@@ -137,13 +137,19 @@ then
   do
     flake="$arg"
   done
+  # No path: metadata's path is not in the store yet (git cache); the
+  # script must take the source from flake prefetch.
   jq -n --arg flake "$flake" '{url: ($flake + "/locked-rev?narHash=sha256-x"),
-    path: "/nix/store/src-top",
     locks: {nodes: {
       root: {inputs: {pub: "pub", priv: "priv"}},
       pub: {locked: {type: "github", owner: "o", repo: "pub", rev: "r1"}},
       priv: {locked: {type: "gitlab", owner: "o", repo: "priv", rev: "r2", dir: "sub"}}
     }}}'
+  exit 0
+fi
+if [[ "$1 $2" == "flake prefetch" ]]
+then
+  printf '{"storePath": "/nix/store/src-top"}\n'
   exit 0
 fi
 if [[ "$1" == eval ]]
@@ -541,6 +547,7 @@ test_remote_build() {
     'github:o/cfg#termuxppConfigurations.p11.system' 'github:o/cfg#termuxppConfigurations.zf10.system'
   expect_rc "$n" 0 \
     && expect_trace "$n" 'nix flake metadata --json --refresh github:o/cfg' \
+    && expect_trace "$n" 'nix flake prefetch --json --refresh github:o/cfg' \
     && expect_trace "$n" "nix copy --no-check-sigs --to $store" \
     && expect_trace "$n" '== /nix/store/src-top /nix/store/src-pub' \
     && expect_trace "$n" 'rworker-ssh-command nix build --no-link --print-out-paths github:o/cfg/locked-rev\?narHash=sha256-x#termuxppConfigurations.p11.system' \

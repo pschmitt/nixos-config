@@ -450,7 +450,10 @@ ship_flake() {
   local -a refresh=() paths=()
   [[ -z "$REMOTE_REFRESH" ]] || refresh=(--refresh)
   meta=$(nix flake metadata --json "${refresh[@]}" "$flake") || return 1
-  path=$(jq -er .path <<< "$meta") || return 1
+  # metadata only reports the source's store path: a GitHub flake is unpacked
+  # into the git cache, not into the store, so the copy below would try to
+  # substitute it. prefetch puts it into the store.
+  path=$(nix flake prefetch --json "${refresh[@]}" "$flake" | jq -er .storePath) || return 1
   paths=("$path")
   while IFS=$'\t' read -r name locked
   do
