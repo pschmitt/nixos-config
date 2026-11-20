@@ -49,13 +49,33 @@ permissions:
   contents: read
   id-token: write
 
+env:
+  # Same caches as nix-build.yaml: the agent substitutes everything it can
+  # (cache.nixos.org, nix-community, niks3) instead of building it.
+  NIKS3_S3_STORE: ${{ secrets.NIKS3_S3_STORE }}
+  nix-conf: |-
+    fallback = true
+    extra-experimental-features = nix-command flakes
+    substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+    trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+
 jobs:
   build-agent:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 360
     steps:
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
+        with:
+          nix-conf: ${{ env.nix-conf }}
+          s3-store: ${{ env.NIKS3_S3_STORE }}
+          s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
+          s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
 
       # The queue-runner (RPC) and its binary cache are reachable only over
       # NetBird; the setup key's group needs a policy to rofl-15 TCP 443/8443.
@@ -81,9 +101,18 @@ jobs:
       - name: Download circus-agent
         env:
           AGENT_BINARY_URL: ${{ inputs.agent_binary_url }}
+        # The queue-runner pins the binary with a "#sha256=<hex>" fragment
+        # (services.circus.githubActionsAgents.agentBinarySha256).
         run: |
           set -euo pipefail
-          curl -fsSL "$AGENT_BINARY_URL" -o "$RUNNER_TEMP/circus-agent"
+          expected="${AGENT_BINARY_URL##*#sha256=}"
+          if [[ "$expected" == "$AGENT_BINARY_URL" || ! "$expected" =~ ^[0-9a-f]{64}$ ]]
+          then
+            echo "::error::agent_binary_url has no #sha256=<hex> fragment"
+            exit 1
+          fi
+          curl -fsSL "${AGENT_BINARY_URL%%#*}" -o "$RUNNER_TEMP/circus-agent"
+          echo "$expected  $RUNNER_TEMP/circus-agent" | sha256sum -c -
           chmod +x "$RUNNER_TEMP/circus-agent"
 
       - name: Run circus-agent

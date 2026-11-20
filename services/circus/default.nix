@@ -132,6 +132,14 @@ in
         default = "";
         description = "URL of a static aarch64 circus-agent matching this queue-runner.";
       };
+      agentBinarySha256 = lib.mkOption {
+        type = lib.types.strMatching "[0-9a-f]{64}";
+        description = ''
+          SHA-256 (hex) of the agent binary. It travels as the URL fragment
+          (`#sha256=...`), which curl ignores and circus-builder.yml checks
+          before running the binary.
+        '';
+      };
     };
   };
 
@@ -183,7 +191,7 @@ in
         "circus/s3/access-key-id" = config.sops.mkHostSecret { };
         "circus/s3/secret-access-key" = config.sops.mkHostSecret { };
       }
-      // lib.optionalAttrs cfg.githubActionsAgents.enable {
+      // lib.optionalAttrs (cfg.githubActionsAgents.enable && !cfg.githubApp.enable) {
         # Fine-grained token: actions read/write on pschmitt/nixos-config.
         "circus/github-dispatch-token" = config.sops.mkHostSecret { };
       };
@@ -213,6 +221,9 @@ in
         queueRunner.enable = true;
         # Native PostgreSQL on this host, peer authentication (upstream module).
         database.createLocally = true;
+        # Rotating App installation token (circus-github-token): read in place,
+        # not copied into a credential at service start.
+        runtimeFiles = lib.optional cfg.githubApp.enable githubTokenFile;
 
         settings = {
           server = {
@@ -286,10 +297,12 @@ in
                 workflow_repository = "pschmitt/nixos-config";
                 workflow = "circus-builder.yml";
                 ref_name = "main";
-                token_file = secret "github-dispatch-token";
+                # The App's installation token (Actions: write) is minted every
+                # 45 minutes; Circus reads it on every dispatch (runtimeFiles).
+                token_file = if cfg.githubApp.enable then githubTokenFile else secret "github-dispatch-token";
                 runner_url = "circus://${hostName}.${config.domains.netbird}:${toString rpcPort}";
                 oidc_audience = "circus-agent";
-                agent_binary_url = cfg.githubActionsAgents.agentBinaryUrl;
+                agent_binary_url = "${cfg.githubActionsAgents.agentBinaryUrl}#sha256=${cfg.githubActionsAgents.agentBinarySha256}";
               };
             };
           };
@@ -340,7 +353,7 @@ in
                 jobsets = [
                   {
                     name = "main";
-                    nix_expression = "herculesCI.onPush.default.outputs";
+                    nix_expression = "circusJobs";
                     branch = "main";
                     only_build_latest = true;
                   }
