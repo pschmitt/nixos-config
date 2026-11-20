@@ -777,7 +777,12 @@ in
   # Manager cannot set this (it's an account property), so it must be
   # declared here. See NousResearch/hermes-agent's nix-setup docs and
   # hermes_cli/gateway.py.
-  users.users.${config.services.hermes-agent.user}.linger = true;
+  users.users.${config.services.hermes-agent.user} = {
+    linger = true;
+    # Its `nixos-rebuild dry-build` fetches the private flake input with the
+    # system GitHub token (profiles/base/nix/secrets.nix).
+    extraGroups = [ "nix-access-tokens" ];
+  };
 
   # Require Authelia before proxying, including from the mesh. The dashboard
   # itself is loopback-only, so NGINX is its only external entry point.
