@@ -2665,11 +2665,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795175154,
-        "narHash": "sha256-nkiabbWQvGGM3dD6OIBAZATI3jVIAc86fcWE9UeOSDE=",
+        "lastModified": 1795177556,
+        "narHash": "sha256-B5driUGdRIZfqGBGrZkcE0gwTyV/mhVfrr0Igxi1NcI=",
         "owner": "pschmitt",
         "repo": "rworker",
-        "rev": "26a937d7e6da0fd9f5f04341572032e84821bf2f",
+        "rev": "a30d2c140598f4899ee44a7c86b2cfc4d5cf9543",
         "type": "github"
       },
       "original": {
