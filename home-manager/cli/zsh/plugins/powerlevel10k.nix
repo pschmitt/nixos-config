@@ -9,6 +9,9 @@ let
 in
 {
   home.packages = [ pkgs.gitstatus ];
+
+  # The prompt config (formerly in yadm), sourced below
+  xdg.configFile."zsh/p10k.zsh".source = ./p10k.zsh;
   programs.zsh.initContent = lib.mkMerge [
     # p10k instant prompt: draw the cached prompt right away while the rest of
     # .zshrc (and the deferred local plugins) load.
@@ -31,7 +34,7 @@ in
         }
       fi
     '')
-    # Share the yadm-managed prompt config;
+    # The shared prompt config (./p10k.zsh);
     # The host color comes from dotfiles.promptColor, overriding any
     # custom/hosts/<host>/zprompt value; p10k.zsh expands it while loading.
     (lib.mkOrder 891 ''
