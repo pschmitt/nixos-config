@@ -631,6 +631,81 @@
       privateIsoHostModule = ./hosts/iso-private;
       privateIsoModules =
         extraModules: [ privateIsoHostModule ] ++ extraModules ++ [ privateIsoFlakeModule ];
+      # The CI packages output uses plain legacyPackages, where unfree
+      # packages (or wrappers around one, like falcon-sensor-wiit)
+      # refuse to evaluate; take those from an unfree-enabled set.
+      # Decided from meta.available, which never forces a derivation
+      # (forcing drvPath would run every package's IFD).
+      inherit (nixpkgs) lib;
+      unfreePackages =
+        system:
+        import ./pkgs {
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+          inherit inputs;
+        };
+      unavailable =
+        pkg:
+        let
+          result = builtins.tryEval (
+            !(pkg.meta.available or true) || !(pkg.unwrapped.meta.available or true)
+          );
+        in
+        result.success && result.value;
+      ciPackages =
+        system:
+        let
+          unfree = unfreePackages system;
+        in
+        lib.mapAttrs (
+          name: pkg: if unavailable pkg then unfree.${name} or pkg else pkg
+        ) self.packages.${system};
+      buildable =
+        system: name: pkg:
+        let
+          result = builtins.tryEval (
+            lib.isDerivation pkg
+            # Re-exported input; its own repository owns the CI build.
+            && name != "browser-daemon"
+            && (
+              if pkg ? passthru.ciBuildSystems then
+                lib.elem system pkg.passthru.ciBuildSystems
+              else
+                lib.meta.availableOn (lib.systems.elaborate system) pkg
+            )
+          );
+        in
+        # Keep packages whose check fails to evaluate: nixbot then
+        # reports them as failed evaluations instead of silently
+        # dropping them from the build.
+        !result.success || result.value;
+      # CI job sets (nixbot's herculesCI below, Circus' circusJobs): every host
+      # system and ISO image of the given systems, supported custom packages and
+      # the flake checks.
+      ciJobs = systems: {
+        hosts = lib.mapAttrs (_: host: host.config.system.build.toplevel) (
+          lib.filterAttrs (
+            _: host: lib.elem host.pkgs.stdenv.hostPlatform.system systems
+          ) self.nixosConfigurations
+        );
+        packages = lib.genAttrs systems (system: lib.filterAttrs (buildable system) (ciPackages system));
+        checks = lib.genAttrs systems (system: self.checks.${system});
+        images =
+          lib.genAttrs [
+            "iso"
+            "iso-graphical"
+            "iso-legacy"
+            "iso-private"
+            "iso-private-legacy"
+          ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage)
+          // {
+            rworker = self.nixosConfigurations.rworker.config.image.repart.image;
+            rworker-browser-daemon = self.nixosConfigurations.rworker-browser-daemon.config.image.repart.image;
+            rworker-circus = self.nixosConfigurations.rworker-circus.config.image.repart.image;
+          };
+      };
     in
     {
       homeConfigurations = import ./profiles/specializations/termuxpp/homes.nix { inherit inputs; };
@@ -778,90 +853,27 @@
       # (services/nix-proprietary-sources.nix).
       herculesCI =
         let
-          inherit (nixpkgs) lib;
           # aarch64-linux builds natively on GitHub's arm runners
-          # (.github/workflows/nix-build.yaml); the build nodes could only
-          # emulate it.
+          # (.github/workflows/nix-build.yaml, and Circus' circusJobs); the
+          # build nodes could only emulate it.
           ciSystems = [ "x86_64-linux" ];
-          # The packages output uses plain legacyPackages, where unfree
-          # packages (or wrappers around one, like falcon-sensor-wiit)
-          # refuse to evaluate; take those from an unfree-enabled set.
-          # Decided from meta.available, which never forces a derivation
-          # (forcing drvPath would run every package's IFD).
-          unfreePackages =
-            system:
-            import ./pkgs {
-              pkgs = import nixpkgs {
-                inherit system;
-                config.allowUnfree = true;
-              };
-              inherit inputs;
-            };
-          unavailable =
-            pkg:
-            let
-              result = builtins.tryEval (
-                !(pkg.meta.available or true) || !(pkg.unwrapped.meta.available or true)
-              );
-            in
-            result.success && result.value;
-          ciPackages =
-            system:
-            let
-              unfree = unfreePackages system;
-            in
-            lib.mapAttrs (
-              name: pkg: if unavailable pkg then unfree.${name} or pkg else pkg
-            ) self.packages.${system};
-          buildable =
-            system: name: pkg:
-            let
-              result = builtins.tryEval (
-                lib.isDerivation pkg
-                # Re-exported input; its own repository owns the CI build.
-                && name != "browser-daemon"
-                && (
-                  if pkg ? passthru.ciBuildSystems then
-                    lib.elem system pkg.passthru.ciBuildSystems
-                  else
-                    lib.meta.availableOn (lib.systems.elaborate system) pkg
-                )
-              );
-            in
-            # Keep packages whose check fails to evaluate: nixbot then
-            # reports them as failed evaluations instead of silently
-            # dropping them from the build.
-            !result.success || result.value;
         in
         {
           inherit ciSystems;
-          onPush.default.outputs = {
-            hosts = lib.mapAttrs (_: host: host.config.system.build.toplevel) (
-              lib.filterAttrs (
-                _: host: lib.elem host.pkgs.stdenv.hostPlatform.system ciSystems
-              ) self.nixosConfigurations
-            );
-            packages = lib.genAttrs ciSystems (system: lib.filterAttrs (buildable system) (ciPackages system));
-            checks = lib.genAttrs ciSystems (system: self.checks.${system});
-            images =
-              lib.genAttrs [
-                "iso"
-                "iso-graphical"
-                "iso-legacy"
-                "iso-private"
-                "iso-private-legacy"
-              ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage)
-              // {
-                rworker = self.nixosConfigurations.rworker.config.image.repart.image;
-                rworker-browser-daemon = self.nixosConfigurations.rworker-browser-daemon.config.image.repart.image;
-                rworker-circus = self.nixosConfigurations.rworker-circus.config.image.repart.image;
-              };
-          };
           # nixbot.toml selects default.outputs as the build job set. Keep
           # effect derivations outside it; nixbot discovers all onPush effects.
+          onPush.default.outputs = ciJobs ciSystems;
           onPush.publish.outputs.effects = inputs.nixos-config-private.lib.ciEffects { flake = self; };
           onEvent = inputs.nixos-config-private.lib.ciEventEffects { };
         };
+
+      # Jobs for Circus (services/circus, trial next to nixbot): nixbot's job set
+      # plus the aarch64-linux hosts and packages, which ephemeral agents on
+      # GitHub's arm runners build natively.
+      circusJobs = ciJobs [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
 
       # Devshell for bootstrapping
       # Accessible through 'nix develop' or 'nix-shell' (legacy)
