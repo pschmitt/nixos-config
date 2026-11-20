@@ -24,9 +24,6 @@ in
   sops.templates."filebrowser-quantum/config.yaml" = {
     content = ''
       server:
-        listen: "127.0.0.1"
-        port: ${toString port}
-        externalUrl: "${externalUrl}"
         # FileBrowser Quantum 2.0 keeps its state in SQLite and refuses the
         # 1.x string form of server.database. The 1.x file (BoltDB despite
         # its old .sqlite name) is migrated from migrateFrom on first start.
@@ -39,28 +36,29 @@ in
           # Backups all live under here) rather than one entry per folder.
           - path: "/srv/syncthing"
             name: "Syncthing"
+            config:
+              # Read-only by default (view + download only). In 2.0 the file
+              # permissions live on the source; userDefaults below only
+              # holds account-level ones. Being in Authelia's
+              # "filebrowser-admin" group makes an account admin, which is
+              # separate from these: an admin still needs modify/create/
+              # delete granted explicitly (Settings > Users) to write.
+              defaultPermissions:
+                view: true
+                download: true
+                modify: false
+                create: false
+                delete: false
       userDefaults:
-        # Read-only by default (view + download only): being in Authelia's
-        # "filebrowser-admin" group only sets Permissions.Admin above, which
-        # is a separate flag from these per-feature ones -- an admin account
-        # still needs modify/share/create/delete granted explicitly (e.g.
-        # from FileBrowser's own Settings > Users page once logged in) to
-        # get write/share access.
         account:
           permissions:
-            modify: false
             share: false
-            create: false
-            delete: false
-            download: true
       http:
-        # v1.4.x-v1.5.x needs these listed explicitly (no trustProxyHeaders
-        # bool yet) for OIDC redirect/callback URLs to come out https://
-        # instead of http:// behind nginx.
-        trustedHeaders:
-          - "X-Forwarded-For"
-          - "X-Forwarded-Proto"
-          - "X-Forwarded-Host"
+        listen: "127.0.0.1"
+        port: ${toString port}
+        externalUrl: "${externalUrl}"
+        # OIDC redirect/callback URLs must come out https:// behind nginx.
+        trustProxyHeaders: true
       auth:
         # Set on every boot (backend/cmd/user.go: any existing user matching
         # adminUsername gets promoted to admin and its password reset to
