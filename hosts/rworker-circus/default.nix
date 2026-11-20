@@ -2,7 +2,11 @@
 # plus a circus-agent that dials the queue-runner on the Circus host over
 # NetBird. The rworker autoscaler on the ad-hoc control host creates these on
 # Circus demand and hands each one the pool's agent join token through the
-# OpenStack user-data (`circus_join_token`), never through the image.
+# OpenStack user-data (`circus_join_token`), never through the image. The
+# same user-data carries the private S3 cache (`nix_cache_conf`,
+# `nix_cache_aws_credentials`: read-only), because a circus-agent substitutes
+# through this host's Nix daemon only; without it every dependency would be
+# rebuilt here.
 {
   config,
   inputs,
@@ -12,6 +16,8 @@
 }:
 let
   joinDir = "/run/circus-join";
+  # Where hosts/rworker/builder.nix includes cache settings from.
+  cacheDir = "/run/rworker-nix";
   # The queue-runner's host (services.circus.agent.runnerHost elsewhere).
   runnerHost = "rofl-15";
 in
@@ -34,6 +40,10 @@ in
     '';
   };
 
+  # Nothing pushes cache settings over SSH to a pool worker: circus-join
+  # writes them at boot and restarts the daemon itself, before the agent.
+  systemd.paths.rworker-nix-config.enable = false;
+
   systemd.services = {
     circus-join = {
       description = "Fetch the Circus agent join token from the user-data";
@@ -42,6 +52,7 @@ in
       requires = [ "rworker-netbird-up.service" ];
       before = [ "circus-agent.service" ];
       path = [
+        config.systemd.package
         pkgs.coreutils
         pkgs.curl
         pkgs.gnused
@@ -67,6 +78,19 @@ in
           exit 1
         fi
         jq -jr '.circus_join_token' "$user_data" > ${joinDir}/token
+
+        # The private S3 cache, where ad-hoc workers get it from
+        # `rworker nix-cache` (hosts/rworker/builder.nix): credentials first,
+        # nix.conf last, then the daemon rereads its configuration before
+        # the agent starts.
+        if jq -e '(.nix_cache_conf | strings) and (.nix_cache_aws_credentials | strings)' "$user_data" >/dev/null
+        then
+          jq -jr '.nix_cache_aws_credentials + "\n"' "$user_data" > ${cacheDir}/aws-credentials
+          jq -jr '.nix_cache_conf + "\n"' "$user_data" > ${cacheDir}/nix.conf
+          systemctl restart nix-daemon.service
+        else
+          echo "circus-join: no private cache in the user-data, substituting from public caches only" >&2
+        fi
         # The worker's OpenStack name, unique in the pool, as agent name.
         printf 'CIRCUS_AGENT__AGENT__NAME=%s\n' "$(hostname)" > ${joinDir}/env
       '';
