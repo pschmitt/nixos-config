@@ -854,6 +854,7 @@
               // {
                 rworker = self.nixosConfigurations.rworker.config.image.repart.image;
                 rworker-browser-daemon = self.nixosConfigurations.rworker-browser-daemon.config.image.repart.image;
+                rworker-circus = self.nixosConfigurations.rworker-circus.config.image.repart.image;
               };
           };
           # nixbot.toml selects default.outputs as the build job set. Keep
@@ -1032,6 +1033,20 @@
             modules = [
               ./modules
               ./hosts/rworker
+              { hardware.type = "server"; }
+            ];
+          };
+
+          # Pool rworker for Circus CI: the build image plus a circus-agent.
+          rworker-circus = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = {
+              inherit inputs outputs;
+              browserWorker = false;
+            };
+            modules = [
+              ./modules
+              ./hosts/rworker-circus
               { hardware.type = "server"; }
             ];
           };
