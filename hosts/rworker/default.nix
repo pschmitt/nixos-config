@@ -6,10 +6,11 @@
 # must not import profiles/base. Everything it needs at runtime (the NetBird
 # setup key and the Tailscale auth key) arrives once through the OpenStack
 # user-data.
+{ inputs, ... }:
 {
   imports = [
     ./builder.nix
-    ./disk.nix
+    inputs.rworker.nixosModules.workerImage
     ./image.nix
     ./netbird.nix
     ./tailscale.nix
