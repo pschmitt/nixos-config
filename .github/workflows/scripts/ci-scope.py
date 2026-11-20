@@ -2,10 +2,12 @@
 """Select build targets from the complete diff; unknown changes build everything."""
 
 import argparse
+import configparser
 import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -169,35 +171,24 @@ def changed_files(base, event):
     ).splitlines()
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--classify-only",
-        action="store_true",
-        help="Print whether Nix setup is needed, without invoking Nix",
-    )
-    args = parser.parse_args()
+def scope(classify_only):
+    """The build matrix, or "true"/"false" for --classify-only."""
     if os.environ.get("CI_TERMUXPP_ONLY") == "1":
-        if args.classify_only:
-            print("true")
-            return
-        print(json.dumps(termuxpp_matrix(), separators=(",", ":")))
-        return
+        if classify_only:
+            return "true"
+        return termuxpp_matrix()
 
     base = os.environ.get("BASE_SHA", "")
     event = os.environ.get("EVENT_NAME", "workflow_dispatch")
     files = changed_files(base, event)
     relevant = None if files is None else [f for f in files if needs_build(f)]
-    if args.classify_only:
-        print("false" if relevant == [] else "true")
-        return
+    if classify_only:
+        return "false" if relevant == [] else "true"
     if relevant == []:
-        print(json.dumps(empty_matrix(), separators=(",", ":")))
-        return
+        return empty_matrix()
     # A termuxpp bump only changes nixpp and the TermuxPP guest systems.
     if relevant == ["flake.lock"] and termuxpp_only_lock_change(base):
-        print(json.dumps(termuxpp_matrix(), separators=(",", ":")))
-        return
+        return termuxpp_matrix()
 
     prune_cache(base)
 
@@ -235,8 +226,7 @@ def main():
                     f"nixosConfigurations.{host}.config.system.build.toplevel.drvPath"
                 )
                 matrix["hosts"]["aarch64"].append(host)
-            print(json.dumps(matrix, separators=(",", ":")))
-            return
+            return matrix
 
     matrix = json.loads(output("./.github/workflows/scripts/nix-gh-build-matrix.sh"))
     package_names = {p["name"] for p in matrix["pkgs"]["all"]}
@@ -310,7 +300,98 @@ def main():
     matrix["hosts"] = {
         "aarch64": [host for host in ordered_hosts if broad or host in hosts]
     }
-    print(json.dumps(matrix, separators=(",", ":")))
+    return matrix
+
+
+def read_pin(name):
+    """The store path niks3 pinned as NAME, or None (missing or unreadable).
+
+    Uses the niks3 S3 store (NIKS3_S3_STORE) and the read-only `niks3` AWS
+    profile that the nix-setup action writes."""
+    store = os.environ.get("NIKS3_S3_STORE", "")
+    match = re.fullmatch(r"s3://([^?]+)\?(.*)", store)
+    if not match:
+        return None
+    bucket, query = match.groups()
+    params = dict(part.split("=", 1) for part in query.split("&") if "=" in part)
+    endpoint, region = params.get("endpoint"), params.get("region", "us-east-1")
+    credentials = configparser.ConfigParser()
+    credentials.read(Path.home() / ".aws" / "credentials")
+    if not endpoint or not credentials.has_section("niks3"):
+        return None
+    profile = credentials["niks3"]
+    config = 'user = "{}:{}"\n'.format(
+        profile.get("aws_access_key_id", ""), profile.get("aws_secret_access_key", "")
+    )
+    result = subprocess.run(
+        [
+            "curl",
+            "--config",
+            "-",
+            "--fail",
+            "--silent",
+            "--max-time",
+            "30",
+            "--aws-sigv4",
+            f"aws:amz:{region}:s3",
+            f"https://{endpoint}/{bucket}/pins/{name}",
+        ],
+        input=config,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip() or None if result.returncode == 0 else None
+
+
+def add_stale_termuxpp(matrix):
+    """Add the TermuxPP guest systems whose main pin is not main's system.
+
+    The phones install that pin (nixpp upgrade). Scoping by this push's diff
+    alone skips them when a run was cancelled or superseded, so compare the
+    pins with the systems main evaluates to and rebuild the stale ones."""
+    if (
+        os.environ.get("EVENT_NAME") != "push"
+        or os.environ.get("GITHUB_REF") != "refs/heads/main"
+        or not shutil.which("nix")
+    ):
+        return matrix
+    free = matrix["pkgs"]["free"]
+    planned = {entry["pkg"]["name"] for entry in free}
+    hosts = json.loads(
+        output(
+            "nix",
+            "eval",
+            "--json",
+            ".#termuxppConfigurations",
+            "--apply",
+            "builtins.attrNames",
+        )
+    )
+    for host in hosts:
+        name = f"termuxpp-system-{host}"
+        if name in planned:
+            continue
+        want = output(
+            "nix", "eval", "--raw", f".#packages.{GITHUB_SYSTEM}.{name}.outPath"
+        )
+        if read_pin(f"gh-main-packages.{GITHUB_SYSTEM}.{name}-0") != want:
+            free.append({"pkg": {"name": name}, "system": GITHUB_SYSTEM})
+    return matrix
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--classify-only",
+        action="store_true",
+        help="Print whether Nix setup is needed, without invoking Nix",
+    )
+    args = parser.parse_args()
+    result = scope(args.classify_only)
+    if isinstance(result, str):
+        print(result)
+        return
+    print(json.dumps(add_stale_termuxpp(result), separators=(",", ":")))
 
 
 if __name__ == "__main__":

@@ -150,6 +150,62 @@ class TermuxppLockTests(unittest.TestCase):
         self.assertFalse(self.changed(termuxpp="x", shared="y"))
 
 
+class StaleTermuxppTests(unittest.TestCase):
+    """Pushes to main rebuild the TermuxPP systems whose pin is stale."""
+
+    def run_check(self, matrix, pins, env=None, nix=True):
+        def fake_output(*args):
+            if args[-1] == "builtins.attrNames":
+                return '["p11", "zf10"]'
+            return "/nix/store/" + args[-1].split(".")[3] + "-want"
+
+        environment = {"EVENT_NAME": "push", "GITHUB_REF": "refs/heads/main"}
+        environment.update(env or {})
+        with (
+            patch.dict(os.environ, environment),
+            patch.object(
+                scope.shutil, "which", return_value="/bin/nix" if nix else None
+            ),
+            patch.object(scope, "output", side_effect=fake_output) as calls,
+            patch.object(scope, "read_pin", side_effect=lambda name: pins.get(name)),
+        ):
+            result = scope.add_stale_termuxpp(matrix)
+        return [e["pkg"]["name"] for e in result["pkgs"]["free"]], calls
+
+    def pin(self, host, current=True):
+        name = f"gh-main-packages.aarch64-linux.termuxpp-system-{host}-0"
+        return name, f"/nix/store/termuxpp-system-{host}-{'want' if current else 'old'}"
+
+    def test_stale_and_missing_pins_are_rebuilt(self):
+        pins = dict([self.pin("p11", current=False)])
+        names, _ = self.run_check(scope.empty_matrix(), pins)
+        self.assertEqual(names, ["termuxpp-system-p11", "termuxpp-system-zf10"])
+
+    def test_current_pins_are_left_alone(self):
+        pins = dict([self.pin("p11"), self.pin("zf10")])
+        names, _ = self.run_check(scope.empty_matrix(), pins)
+        self.assertEqual(names, [])
+
+    def test_planned_systems_are_not_added_twice(self):
+        matrix = scope.empty_matrix()
+        matrix["pkgs"]["free"].append(
+            {"pkg": {"name": "termuxpp-system-p11"}, "system": "aarch64-linux"}
+        )
+        names, _ = self.run_check(matrix, dict([self.pin("zf10")]))
+        self.assertEqual(names, ["termuxpp-system-p11"])
+
+    def test_only_pushes_to_main_with_nix(self):
+        for env, nix in [
+            ({"EVENT_NAME": "pull_request"}, True),
+            ({"GITHUB_REF": "refs/heads/feature"}, True),
+            ({}, False),
+        ]:
+            with self.subTest(env=env, nix=nix):
+                names, calls = self.run_check(scope.empty_matrix(), {}, env, nix)
+                self.assertEqual(names, [])
+                calls.assert_not_called()
+
+
 class DerivationCacheTests(unittest.TestCase):
     attribute = "nixosConfigurations.fnuc.config.system.build.toplevel.drvPath"
     drv = "/nix/store/" + "a" * 32 + "-system.drv"

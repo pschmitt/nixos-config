@@ -15,8 +15,14 @@ its checkout. It uses paths, not PR authors or titles, to select targets:
   exact commit, target and evaluator version, so unchanged baselines can be reused.
   Missing or invalid cache entries are evaluated again; failed evaluations are
   never cached. Restored caches retain only the two compared revisions.
+- A `flake.lock` change that only touches termuxpp and inputs only it uses:
+  build just the TermuxPP guest systems (`termuxpp-system-*`).
 - Shared definitions, lock files, workflows, unknown paths, or manual runs:
   evaluate and build all targets.
+- Pushes to main (with Nix set up): also build every `termuxpp-system-*` whose
+  niks3 pin (`gh-main-packages.aarch64-linux.termuxpp-system-<host>-0`, which
+  `nixpp upgrade` installs) is not the system main evaluates to, so a cancelled
+  or skipped run cannot leave the phones' pin behind.
 - Draft PRs: defer the build workflow until ready for review.
 
 Mixed changes select the union of targets; any shared or unknown path selects
