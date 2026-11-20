@@ -71,10 +71,10 @@ runtime's `/etc` mapping during flake-registry lookup.
 
 `max-jobs = 0` disables local builds. Cached outputs can be downloaded; uncached
 derivations require a reachable remote builder and fail rather than compiling on
-the phone when none is available. Runtime builder entries belong in
-`~/.config/nix/machines` (standard Nix machines-file format). Provision that file
-and the corresponding SSH configuration, authorized identity and trusted host
-keys privately before activating this profile. Do not embed worker addresses or
+the phone when none is available. The builders are the Home Manager
+`nix.settings.builders`, set privately (nixos-config-private
+`hm/termuxpp-builders.nix`) together with the corresponding SSH configuration,
+authorized identity and trusted host keys. Do not embed worker addresses or
 host keys in the public configuration. An ephemeral worker entry must be replaced
 or removed when that worker expires. The builder must support `aarch64-linux`,
 natively or through configured emulation.

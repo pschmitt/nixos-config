@@ -167,7 +167,6 @@ in
     package = lib.mkDefault pkgs.nix;
     extraOptions = ''
       !include ${config.sops.templates."nix-access-tokens".path}
-      !include /etc/nix/termuxpp-builders.conf
     '';
     settings = {
       experimental-features = [

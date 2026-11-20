@@ -14,7 +14,13 @@ in
         options = {
           store = lib.mkOption { type = lib.types.str; };
           pin_reader = lib.mkOption { type = lib.types.str; };
-          public_keys = lib.mkOption { type = lib.types.listOf lib.types.str; };
+          public_keys = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            # Our caches' keys, shared with the NixOS hosts, plus the S3 cache's.
+            default = import ../../../profiles/base/nix-cache-keys.nix ++ [
+              "nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM="
+            ];
+          };
           credentials_file = lib.mkOption {
             type = lib.types.nullOr lib.types.str;
             default = null;

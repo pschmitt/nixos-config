@@ -39,10 +39,6 @@ builtins.mapAttrs (
             cacert
           ];
           etc = {
-            "nix/machines".text =
-              builtins.replaceStrings [ " ; " ";" ] [ "\n" "\n" ] (home.config.nix.settings.builders or "")
-              + "\n";
-            "nix/termuxpp-builders.conf".text = "builders = @/etc/nix/machines\n";
             # The guest zsh reads /etc/zshenv before any user file; point it at
             # the Home Manager dotDir so no ~/.zshenv is needed.
             "zshenv".text = ''
