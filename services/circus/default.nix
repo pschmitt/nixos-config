@@ -59,6 +59,12 @@ let
     "circus-queue-runner"
   ];
 
+  # The host's nix.conf snippet with the git.wiit.one token (private config,
+  # root-only like nixbot's): the evaluator fetches GitLab flake inputs with
+  # it. Agents only realise derivations through the root nix-daemon, which
+  # already includes it.
+  gitlabNixConf = config.sops.templates.nix-access-token-gitlab.path or null;
+
   s3KeyIdEnv = lib.optionalString cfg.s3Upload.enable ''
     CIRCUS_CACHE_UPLOAD__S3__ACCESS_KEY_ID=${placeholder "s3/access-key-id"}
   '';
@@ -179,6 +185,9 @@ in
         + s3KeyIdEnv;
         # The server presigns S3 GETs for cache downloads.
         "circus-server.env".content = s3KeyIdEnv;
+        "circus-evaluator.env".content = lib.optionalString cfg.s3Upload.enable ''
+          CIRCUS_EVALUATOR__S3_SUBSTITUTERS__ACCESS_KEY_ID=${placeholder "s3/access-key-id"}
+        '';
       };
     };
 
@@ -216,6 +225,12 @@ in
             memory_limit_mb = 10240;
             # aarch64 only once the GitHub Actions agents exist.
             systems = [ "x86_64-linux" ] ++ lib.optional cfg.githubActionsAgents.enable "aarch64-linux";
+            # Also count paths niks3 (s3://nix-cache-brkn-lol in nix.conf)
+            # already has as substitutable, signing the lookups with the
+            # Circus S3 key (same project); the key id comes from the env.
+            s3_substituters = lib.mkIf cfg.s3Upload.enable {
+              secret_access_key_file = secret "s3/secret-access-key";
+            };
           };
 
           queue_runner = {
@@ -449,11 +464,18 @@ in
           CPUQuota = "200%";
         };
         circus-evaluator = {
-          environment.NIX_CONFIG = "pure-eval = true";
+          environment = {
+            NIX_CONFIG = "pure-eval = true";
+          }
+          // lib.optionalAttrs (gitlabNixConf != null) {
+            NIX_USER_CONF_FILES = "/run/credentials/circus-evaluator.service/nix-gitlab";
+          };
           serviceConfig = {
+            EnvironmentFile = config.sops.templates."circus-evaluator.env".path;
             # Reads the system nix.conf's private-GitHub token include
             # (profiles/base/nix/secrets.nix, group nix-access-tokens).
             SupplementaryGroups = [ "nix-access-tokens" ];
+            LoadCredential = lib.optional (gitlabNixConf != null) "nix-gitlab:${gitlabNixConf}";
             # Next to nixbot's remote evaluation (up to 2 x 2 x 8 GiB) and its
             # 16 build slots on this 62 GiB / 32 core host.
             MemoryHigh = "12G";
