@@ -33,6 +33,32 @@ let
     "fd8d:fa54:9081::/48"
   ];
 
+  # The one declaratively configured project.
+  repositoryUrl = "https://github.com/pschmitt/nixos-config";
+
+  # GitHub App installation token, refreshed by circus-github-token below.
+  # Circus reads it on every status (pschmitt/circus), so it is passed as a
+  # path the services read live, not as a *_file setting, which the upstream
+  # module would turn into a systemd credential copied once at start.
+  githubTokenDir = "/run/circus-github-token";
+  githubTokenFile = "${githubTokenDir}/token";
+  githubTokenGroup = "circus-github-token";
+  githubTokenMinter = pkgs.writeShellApplication {
+    name = "circus-github-token";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.curl
+      pkgs.jq
+      pkgs.openssl
+    ];
+    text = builtins.readFile ./scripts/circus-github-token.sh;
+  };
+  # Units that send notifications: they get the token's group and its path.
+  notifyingUnits = [
+    "circus-evaluator"
+    "circus-queue-runner"
+  ];
+
   s3KeyIdEnv = lib.optionalString cfg.s3Upload.enable ''
     CIRCUS_CACHE_UPLOAD__S3__ACCESS_KEY_ID=${placeholder "s3/access-key-id"}
   '';
@@ -54,9 +80,23 @@ in
     };
 
     githubStatuses.enable = lib.mkEnableOption ''
-      commit statuses (context circus/<job>) on GitHub, using the token in
-      the host secret circus/github-status-token
+      commit statuses (context circus/<job>) on GitHub, using the GitHub App
+      token (githubApp) or else the token in the host secret
+      circus/github-status-token
     '';
+
+    githubApp = {
+      enable = lib.mkEnableOption ''
+        authenticating to GitHub as a GitHub App: a timer mints installation
+        tokens from the host secrets circus/github-app/app-id and
+        circus/github-app/private-key
+      '';
+      repository = lib.mkOption {
+        type = lib.types.str;
+        default = lib.removePrefix "https://github.com/" repositoryUrl;
+        description = "owner/repo whose App installation the tokens are minted for.";
+      };
+    };
 
     githubWebhook.enable = lib.mkEnableOption ''
       the GitHub webhook endpoint (pull-request evaluations), signed with the
@@ -110,9 +150,14 @@ in
       // lib.optionalAttrs cfg.githubWebhook.enable {
         "circus/github-webhook-secret" = config.sops.mkHostSecret { };
       }
-      // lib.optionalAttrs cfg.githubStatuses.enable {
+      // lib.optionalAttrs (cfg.githubStatuses.enable && !cfg.githubApp.enable) {
         # Fine-grained token: commit statuses read/write on pschmitt/nixos-config.
         "circus/github-status-token" = config.sops.mkHostSecret { };
+      }
+      // lib.optionalAttrs cfg.githubApp.enable {
+        # App id and private key (PEM) of the GitHub App circus-pschmitt.
+        "circus/github-app/app-id" = config.sops.mkHostSecret { };
+        "circus/github-app/private-key" = config.sops.mkHostSecret { };
       }
       // lib.optionalAttrs cfg.s3Upload.enable {
         "circus/s3/access-key-id" = config.sops.mkHostSecret { };
@@ -249,16 +294,20 @@ in
             };
           };
 
-          notifications = lib.mkIf cfg.githubStatuses.enable {
-            github_token_file = secret "github-status-token";
-            enable_retry_queue = true;
-          };
+          notifications = lib.mkIf cfg.githubStatuses.enable (
+            {
+              enable_retry_queue = true;
+            }
+            // lib.optionalAttrs (!cfg.githubApp.enable) {
+              github_token_file = secret "github-status-token";
+            }
+          );
 
           declarative = {
             projects = [
               {
                 name = "nixos-config";
-                repository_url = "https://github.com/pschmitt/nixos-config";
+                repository_url = repositoryUrl;
                 jobsets = [
                   {
                     name = "main";
@@ -339,6 +388,16 @@ in
       };
 
       monit.checks = {
+        circus-github-token = lib.mkIf cfg.githubApp.enable {
+          type = "file";
+          path = githubTokenFile;
+          group = "services";
+          restartUnit = "circus-github-token";
+          conditions = ''
+            if timestamp > 70 minutes then restart
+            if 3 restarts within 10 cycles then alert
+          '';
+        };
         circus-server = {
           type = "host";
           address = "127.0.0.1";
@@ -377,30 +436,85 @@ in
       };
     };
 
-    systemd.services = {
-      circus-server.serviceConfig = {
-        EnvironmentFile = config.sops.templates."circus-server.env".path;
-        MemoryMax = "2G";
-      };
-      circus-queue-runner.serviceConfig = {
-        EnvironmentFile = config.sops.templates."circus-queue-runner.env".path;
-        # Verifies and signs agent outputs (downloads uploaded NARs back).
-        MemoryMax = "4G";
-        CPUQuota = "200%";
-      };
-      circus-evaluator = {
-        environment.NIX_CONFIG = "pure-eval = true";
-        serviceConfig = {
-          # Next to nixbot's remote evaluation (up to 2 x 2 x 8 GiB) and its
-          # 16 build slots on this 62 GiB / 32 core host.
-          MemoryHigh = "12G";
-          MemoryMax = "16G";
-          CPUQuota = "400%";
-          CPUWeight = 50;
-          IOWeight = 50;
+    systemd.services = lib.mkMerge [
+      {
+        circus-server.serviceConfig = {
+          EnvironmentFile = config.sops.templates."circus-server.env".path;
+          MemoryMax = "2G";
         };
+        circus-queue-runner.serviceConfig = {
+          EnvironmentFile = config.sops.templates."circus-queue-runner.env".path;
+          # Verifies and signs agent outputs (downloads uploaded NARs back).
+          MemoryMax = "4G";
+          CPUQuota = "200%";
+        };
+        circus-evaluator = {
+          environment.NIX_CONFIG = "pure-eval = true";
+          serviceConfig = {
+            # Next to nixbot's remote evaluation (up to 2 x 2 x 8 GiB) and its
+            # 16 build slots on this 62 GiB / 32 core host.
+            MemoryHigh = "12G";
+            MemoryMax = "16G";
+            CPUQuota = "400%";
+            CPUWeight = 50;
+            IOWeight = 50;
+          };
+        };
+      }
+
+      (lib.mkIf cfg.githubApp.enable (
+        {
+          circus-github-token = {
+            description = "Mint a GitHub App installation token for Circus";
+            wants = [ "network-online.target" ];
+            after = [ "network-online.target" ];
+            # Refresh before the notifying services start, without making them
+            # depend on GitHub: a failed mint only delays statuses.
+            before = map (unit: "${unit}.service") notifyingUnits;
+            serviceConfig = {
+              Type = "oneshot";
+              ExecStart = lib.escapeShellArgs [
+                (lib.getExe githubTokenMinter)
+                (secret "github-app/app-id")
+                (secret "github-app/private-key")
+                cfg.githubApp.repository
+                githubTokenFile
+              ];
+              TimeoutStartSec = "2min";
+              # root reads the SOPS key; the token goes to root:circus-github-token 0440.
+              Group = githubTokenGroup;
+              RuntimeDirectory = baseNameOf githubTokenDir;
+              RuntimeDirectoryMode = "0750";
+              RuntimeDirectoryPreserve = "yes";
+              UMask = "0227";
+              NoNewPrivileges = true;
+              PrivateTmp = true;
+              ProtectSystem = "strict";
+              ProtectHome = true;
+              ReadWritePaths = [ githubTokenDir ];
+            };
+          };
+        }
+        // lib.genAttrs notifyingUnits (_: {
+          wants = [ "circus-github-token.service" ];
+          # Read on every status by pschmitt/circus, so rotations apply live.
+          environment.CIRCUS_NOTIFICATIONS__GITHUB_TOKEN_FILE = githubTokenFile;
+          serviceConfig.SupplementaryGroups = [ githubTokenGroup ];
+        })
+      ))
+    ];
+
+    systemd.timers.circus-github-token = lib.mkIf cfg.githubApp.enable {
+      description = "Refresh Circus' GitHub App installation token";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "1min";
+        # Installation tokens live one hour.
+        OnUnitActiveSec = "45min";
+        RandomizedDelaySec = "1min";
       };
     };
 
+    users.groups.${githubTokenGroup} = lib.mkIf cfg.githubApp.enable { };
   };
 }

@@ -260,11 +260,11 @@
       };
     };
 
-    # Circus CI, on trial next to nixbot (services/circus). Tracks main, pinned
-    # by flake.lock: the only release, v0.14.0, predates the fixes the
-    # proof of concept ran with.
+    # Circus CI, on trial next to nixbot (services/circus): our fork of
+    # manic-systems/circus, which re-reads forge token files on every status
+    # so the GitHub App's hourly installation tokens apply without restarts.
     circus = {
-      url = "github:manic-systems/circus";
+      url = "github:pschmitt/circus";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

@@ -64,9 +64,10 @@ and the low slot count are what keep nixbot ahead.
 | `circus/users/pschmitt-password` | rofl-15 | dashboard password (rbw `circus.brkn.lol`) |
 | `circus/cache-signing-key` | rofl-15 | generated, public key in `default.nix` |
 | `circus/webhook-encryption-key` | rofl-15 | generated |
-| `circus/github-webhook-secret` | rofl-15 | generated |
+| `circus/github-webhook-secret` | rofl-15 | the GitHub App's webhook secret |
 | `circus/agent-join-token`, `…-sha256` | rofl-15, rofl-16 | generated |
-| `circus/github-status-token` | rofl-15 | fine-grained token, commit statuses read/write on `pschmitt/nixos-config` |
+| `circus/github-app/app-id`, `circus/github-app/private-key` | rofl-15 | GitHub App `circus-pschmitt` (id, PEM key) |
+| `circus/github-status-token` | rofl-15 | only without `githubApp`: fine-grained token, commit statuses read/write on `pschmitt/nixos-config` |
 | `circus/s3/access-key-id`, `circus/s3/secret-access-key` | rofl-15 | private `tofu/circus-cache.tf` output |
 | `circus/github-dispatch-token` | rofl-15 | fine-grained token, actions read/write on `pschmitt/nixos-config` |
 
@@ -74,11 +75,25 @@ and the low slot count are what keep nixbot ahead.
 
 Each needs its secret first; a missing SOPS key fails activation.
 
-- `services.circus.githubStatuses.enable`: commit statuses.
-- `services.circus.githubWebhook.enable`: pull-request evaluations. Add a
-  GitHub webhook (content type JSON, events push and pull request) pointing
-  at `https://circus.brkn.lol/api/v1/webhooks/<project id>/github` with
-  `circus/github-webhook-secret`. The project id is in the dashboard.
+- `services.circus.githubStatuses.enable`: commit statuses, as the GitHub App
+  with `githubApp.enable`, else with `circus/github-status-token`.
+- `services.circus.githubApp.enable`: the GitHub App `circus-pschmitt`
+  (statuses write; contents, metadata and pull requests read; installed on
+  `pschmitt/nixos-config`). `circus-github-token.timer` mints an installation
+  token every 45 minutes (the installation is looked up via
+  `GET /repos/<githubApp.repository>/installation`) into
+  `/run/circus-github-token/token` (root:circus-github-token, 0440). The
+  evaluator and queue-runner read it on every status: our fork
+  `github:pschmitt/circus` re-reads token files instead of caching them at
+  startup, and the path is passed as `CIRCUS_NOTIFICATIONS__GITHUB_TOKEN_FILE`
+  because the upstream module copies `*_file` settings once, at service start.
+  A failed mint keeps the previous token; Monit restarts the minter when the
+  token is older than 70 minutes. Check with
+  `systemctl status circus-github-token`.
+- `services.circus.githubWebhook.enable`: pull-request evaluations. The App's
+  webhook (events push and pull request) points at
+  `https://circus.brkn.lol/api/v1/webhooks/a17bcd61-5372-4d1f-8bba-f32bcb011f97/github`
+  (project `nixos-config`) and is signed with `circus/github-webhook-secret`.
 - `services.circus.s3Upload.enable`: agents upload outputs to niks3's
   `nix-cache-brkn-lol` under the `circus/` prefix. Without it, outputs stream
   to the queue-runner.
