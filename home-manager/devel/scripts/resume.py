@@ -551,12 +551,12 @@ def main():
                 shortcuts = f'{key}^T {hint}search  {key}^G {hint}agent  {key}^D {hint}cwd  {key}^R {hint}reset  {key}Pg↑/↓ {hint}scroll'
                 filters = f'agent: {agent_filter or "all"}  cwd: {folder_label}'
                 list_width = terminal_width // 2 - 5 if terminal_width >= 120 else terminal_width - 4
-                spacing = max(2, list_width - cell_width('^T search  ^G agent  ^D cwd  ^R reset  Pg↑/↓ scroll') - cell_width(filters))
+                spacing = max(2, list_width - cell_width('^T search  ^G agent  ^D cwd  ^R reset  Pg↑/↓ scroll  M-Q quit') - cell_width(filters))
                 footer = f'{shortcuts}{" " * spacing}{hint}{filters}\033[0m'
                 result = subprocess.run(
                     ['fzf', '--ansi', '--info=hidden', '--no-separator', '--no-hscroll', '--delimiter=\t', '--with-nth=1', '--tiebreak=index', '--layout=reverse',
                      '--prompt=󰍉  Session  ❯ ', '--pointer=❯', '--marker=󰄬', theme,
-                     '--bind=alt-up:preview-up,alt-down:preview-down,alt-k:preview-up,alt-j:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
+                     '--bind=alt-Q:abort,alt-up:preview-up,alt-down:preview-down,alt-k:preview-up,alt-j:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
                      '--expect=ctrl-g,ctrl-d,ctrl-r,ctrl-t', '--header=' + columns, '--footer=' + footer, '--footer-border=none',
                      '--preview=' + ' '.join(map(shlex.quote, [sys.executable, __file__, '--preview-session'])) + ' {2} {3} {4} {5} {6} {7} {8}',
                      '--preview-window=right:50%:wrap-word:follow:noinfo:~1:<60(down:40%:wrap-word:follow:noinfo:~1)', '--preview-wrap-sign='],
@@ -597,14 +597,18 @@ def main():
                     found = subprocess.run(
                         ['fzf', '--ansi', '--no-sort', '--no-hscroll', '--layout=reverse', '--delimiter=\t',
                          '--with-nth=1', '--prompt=󰍉  Matches ❯ ', theme,
-                         '--header=Matching messages · Enter: resume · Esc: back',
+                         '--header=Matching messages · Enter: resume · Esc: back · Alt-Shift-Q: quit', '--expect=alt-Q',
                          '--bind=alt-up:preview-up,alt-down:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
                          '--preview=' + ' '.join(map(shlex.quote, [sys.executable, __file__, '--preview-session'])) + ' {2} {3} {4} {5} {6} {7} {8}',
                          '--preview-window=right:50%:wrap-word:follow:noinfo:~1:<60(down:40%:wrap-word:follow:noinfo:~1)'],
                         input='\n'.join(search_lines), text=True, stdout=subprocess.PIPE, env=env)
                     if found.returncode == 0 and found.stdout:
-                        args.selection = found.stdout.split('\t')[5]
-                        break
+                        pressed, _, selected_hit = found.stdout.partition('\n')
+                        if pressed == 'alt-Q':
+                            return
+                        if selected_hit:
+                            args.selection = selected_hit.split('\t')[5]
+                            break
                     continue
                 if key in ('ctrl-g', 'ctrl-d'):
                     options = sorted({row[1] if key == 'ctrl-g' else row[3] for row in sessions})
@@ -618,12 +622,14 @@ def main():
                     else:
                         entries = ['󰒊 All\tAll'] + [f'\033[38;5;109m󰉋\033[0m {directory}\t{directory}' for directory in options]
                         picker_options = ['--ansi', '--delimiter=\t', '--with-nth=1']
-                    choice = subprocess.run(['fzf', '--layout=reverse', '--prompt=' + prompt, theme] + picker_options,
+                    choice = subprocess.run(['fzf', '--layout=reverse', '--prompt=' + prompt, '--expect=alt-Q', theme] + picker_options,
                                             input='\n'.join(entries), text=True,
                                             stdout=subprocess.PIPE, env=env)
                     if choice.returncode == 0:
-                        value = choice.stdout.strip()
-                        value = value.rsplit('\t', 1)[-1]
+                        pressed, _, value = choice.stdout.partition('\n')
+                        if pressed == 'alt-Q':
+                            return
+                        value = value.strip().rsplit('\t', 1)[-1]
                         value = None if value == 'All' else value
                         if key == 'ctrl-g':
                             agent_filter = value
