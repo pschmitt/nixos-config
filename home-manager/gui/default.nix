@@ -24,6 +24,7 @@
     ./yt-dlp-cookies-tx.nix
     ./soundboard.nix
     ./swappy.nix
+    ./terminals.nix
     ./theme.nix
     ./vimium-c.nix
     ./xdg-portal.nix

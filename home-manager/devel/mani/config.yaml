@@ -1,0 +1,37 @@
+# https://manicli.com/config/
+# If this is set to true mani will override the url of any existing remote
+sync_remotes: true
+
+targets:
+  default:
+    all: true
+  work:
+    paths:
+      - ~/devel/work
+  private:
+    paths:
+      - ~/devel/private
+
+shell: zsh
+
+tasks:
+  main:
+    desc: git checkout main
+    cmd: git checkout main
+  prune-merged:
+    desc: git prune merged branches
+    cmd: ~/.config/mani/bin/git-prune-merged-branches.sh
+  pull:
+    desc: git pull --rebase --autostash
+    cmd: git pull --rebase --autostash
+  update:
+    desc: git-update
+    cmd: ~/.config/mani/bin/git-update.sh
+  magic:
+    desc: update and prune
+    cmd: |
+      echo "Git update"
+      ~/.config/mani/bin/git-update.sh
+
+      echo "Prune merged branches"
+      ~/.config/mani/bin/git-prune-merged-branches.sh

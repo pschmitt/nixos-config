@@ -1,0 +1,26 @@
+
+[font]
+size = 14
+
+[font.bold]
+family = "ComicCode Nerd Font"
+style = "Bold"
+
+[font.bold_italic]
+family = "ComicCode Nerd Font"
+style = "Bold Italic"
+
+[font.italic]
+family = "ComicCode Nerd Font"
+style = "Italic"
+
+[font.normal]
+family = "ComicCode Nerd Font"
+style = "Regular"
+
+[font.offset]
+x = 0
+y = 2
+
+[general]
+import = ["/home/pschmitt/.config/alacritty/theme.toml"]

@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   xdgConfigHome = config.xdg.configHome;
   xdgDataHome = config.xdg.dataHome;
@@ -21,6 +26,22 @@ in
     timewarrior-jirapush
     python3Packages.bugwarrior
   ];
+
+  # Config files (formerly in yadm). The taskd sync settings stay an
+  # unmanaged local file (~/.config/taskwarrior/taskd, included by taskrc);
+  # bugwarriorrc and timewsync.conf are in the private repo.
+  xdg.configFile = {
+    "taskwarrior" = {
+      source = ./taskwarrior;
+      recursive = true;
+    };
+    "bugwarrior/udas".source = ./bugwarrior-udas;
+    "timewarrior/data".source = config.lib.file.mkOutOfStoreSymlink "${xdgDataHome}/timewarrior";
+    "timewarrior/extensions/jirapush".source = lib.getExe pkgs.timewarrior-jirapush;
+  };
+  # taskrc's data.location is ~/.local/share/taskwarrior; hooks live there
+  xdg.dataFile."taskwarrior/hooks".source =
+    config.lib.file.mkOutOfStoreSymlink "${xdgConfigHome}/taskwarrior/hooks";
 
   # Same values as the interactive shell's xdg.zsh (see also the noctalia
   # plugin's own TIMEWARRIORDB override, profiles/specializations/laptop/noctalia.nix) —

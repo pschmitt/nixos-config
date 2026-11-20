@@ -16,8 +16,14 @@ in
     enableZshIntegration = false;
   };
 
-  xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
-    # direnv
-    source ${direnvInitFile}/init.zsh
-  '';
+  xdg.configFile = {
+    "zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
+      # direnv
+      source ${direnvInitFile}/init.zsh
+    '';
+  }
+  # Our stdlib helpers (use sops, layout uv, *_password ...), formerly in yadm
+  // lib.mapAttrs' (
+    name: _: lib.nameValuePair "direnv/lib/${name}" { source = ./direnv-lib + "/${name}"; }
+  ) (builtins.readDir ./direnv-lib);
 }

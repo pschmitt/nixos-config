@@ -4,6 +4,7 @@
     ./eget.nix
     ./eza.nix
     ./fd.nix
+    ./git.nix
     ./ripgrep.nix
     ./tmux
     ./zsh

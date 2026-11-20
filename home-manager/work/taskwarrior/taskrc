@@ -1,0 +1,17 @@
+data.location=~/.local/share/taskwarrior
+regex=on
+news.version=2.6.0
+# Hide TASKRC/TASKDATA override from output by removing the "header" from "verbose"
+verbose=affected,blank,context,edit,footnote,label,new-id,project,special,sync,override,recur
+default.command=active
+# Hide "You have more urgent tasks" output when starting a task
+nag=
+
+# theme
+include ~/.config/taskwarrior/dark-violets-256.theme
+
+# taskd
+include ~/.config/taskwarrior/taskd
+
+# bugwarrior
+include ~/.config/bugwarrior/udas

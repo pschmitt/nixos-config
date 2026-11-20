@@ -72,7 +72,12 @@ let
     assert !c.programs.nixvim.lsp.servers.nil_ls.enable;
     assert builtins.any (p: (p.pname or "") == "statix") c.programs.nixvim.extraPackages;
     assert c.programs.zsh.package.stdenv.hostPlatform.system == "aarch64-linux";
-    assert c.programs.tmux.shell == "${home.pkgs.zsh}/bin/zsh";
+    assert !c.programs.tmux.enable;
+    assert
+      c.xdg.configFile."tmux/local.conf".text == ''
+        set -g default-shell ${home.pkgs.zsh}/bin/zsh
+      '';
+    assert c.xdg.configFile."tmux/plugins-nix.conf".text != "";
     assert c.systemd.user.startServices == false;
     assert c.home.sessionVariables.HOST == hostname;
     assert c.dotfiles.promptColor == expectedColor;

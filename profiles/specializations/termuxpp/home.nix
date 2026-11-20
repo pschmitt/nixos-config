@@ -68,8 +68,8 @@ in
     ../../../home-manager/cli/zsh/plugins/local-yadm.nix
     ../../../home-manager/cli/zsh/config/portable.nix
     ../../../home-manager/cli/zsh/config/source-me.nix
+    ../../../home-manager/cli/git.nix
     ../../../home-manager/cli/tmux
-    ../../base/dotfiles/tmux.nix
     ../../../home-manager/cli/zsh/config/runtime.nix
     ../../../home-manager/cli/zsh/plugins
     ../../../home-manager/cli/zsh/tools/termux/home-assistant-cli.nix
@@ -148,6 +148,10 @@ in
   xdg = {
     enable = true;
     configFile."zsh/completions/_nixpp".source = "${nixpp}/share/zsh/site-functions/_nixpp";
+    # OpenSSH starts Bash; tmux panes run zsh
+    configFile."tmux/local.conf".text = ''
+      set -g default-shell ${pkgs.zsh}/bin/zsh
+    '';
   };
   # The TermuxPP app's termuxpp.properties (formerly in yadm). The whole file
   # is written on activation; the app's properties editor does not persist.
@@ -262,10 +266,6 @@ in
         "--height=80%"
         "--layout=reverse"
       ];
-    };
-    tmux = {
-      enable = lib.mkForce true;
-      shell = "${pkgs.zsh}/bin/zsh";
     };
     zsh = {
       enable = true;

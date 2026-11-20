@@ -41,6 +41,13 @@ in
 {
   home.packages = [ pkgs.mani ];
 
+  # Project lists and helper scripts (formerly in yadm); work.yaml is in the
+  # private repo.
+  xdg.configFile."mani" = {
+    source = ./mani;
+    recursive = true;
+  };
+
   systemd.user.services = {
     mani = maniService "private";
     mani-work = maniService "work";

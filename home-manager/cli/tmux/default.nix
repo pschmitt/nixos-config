@@ -1,9 +1,29 @@
+# tmux config (formerly in yadm): ./config is linked file by file into
+# ~/.config/tmux, so runtime state (e.g. resurrect/) can still live there.
+# Plugins replace tpm, see ./plugins.nix.
+{ lib, pkgs, ... }:
+let
+  plugins = import ./plugins.nix { inherit pkgs; };
+
+  # $TMUX_PLUGIN_MANAGER_PATH with tpm's directory names
+  pluginDir = pkgs.linkFarm "tmux-plugins" (
+    map (p: {
+      inherit (p) name;
+      path = dirOf p.plugin.rtp;
+    }) plugins
+  );
+in
 {
-  programs.tmux = {
-    enable = false;
-    extraConfig = ''
-      set -g mouse on
-      set -g history-limit 100000
-    '';
+  xdg = {
+    configFile = {
+      "tmux" = {
+        source = ./config;
+        recursive = true;
+      };
+      "tmux/plugins-nix.conf".text = lib.concatMapStrings (p: ''
+        run-shell ${lib.escapeShellArg "${pluginDir}/${p.name}/${baseNameOf p.plugin.rtp}"}
+      '') plugins;
+    };
+    dataFile."tpm".source = pluginDir;
   };
 }

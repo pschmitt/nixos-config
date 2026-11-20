@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -95,8 +96,26 @@ in
 {
   sops.secrets = sopsSecrets;
 
-  # pinentry-program of the yadm gpg-agent.conf (##distro.nixos).
   home.packages = [ pkgs.pinentry-guess ];
+
+  # The agent itself is started by NixOS (programs.gnupg.agent); this is its
+  # config in GNUPGHOME (formerly in yadm).
+  xdg.configFile."gnupg/gpg-agent.conf".text = ''
+    # https://wiki.archlinux.org/index.php/GnuPG#Unattended_passphrase
+    allow-loopback-pinentry
+    pinentry-program ${lib.getExe pkgs.pinentry-guess}
+
+    # Increase timeout
+    max-cache-ttl 28800
+    default-cache-ttl 28800
+
+    # SSH
+    enable-ssh-support
+
+    # SSH timeouts
+    default-cache-ttl-ssh 28800
+    max-cache-ttl-ssh 28800
+  '';
 
   programs.gpg = {
     enable = true;
