@@ -77,6 +77,31 @@ gotchas). This skill is the order of steps.
    (`AGENTS.md`, deployment gotchas). Release the Concord claim as soon as the switch is verified.
 8. **Report** what was bumped (old and new commit), which hosts, which were skipped or off.
 
+## Slow or hung build nodes
+
+`nixos-upgrade` offloads to the shared build nodes (rofl-13 to rofl-16). When they are busy
+(load around 20, for example while CI runs on them), an upgrade stays `activating` for half an
+hour with the journal stuck at `building ... on 'ssh-ng://...'` or `copying path ... to
+'ssh-ng://...'`, and the unit's cgroup only holds idle `nix` and `ssh` processes. Restarting
+the unit hangs the same way (2026-11-20, fnuc and gk4). Do not wait it out:
+
+1. Stop the upgrades (`systemctl stop nixos-upgrade`, safe before the switch).
+2. Build the hosts' `system.build.toplevel` for the pushed commit on an `rworker` and push the
+   closures to S3 (`rworker` skill, [host-closures](../rworker/references/host-closures.md)).
+   Build with the pinned inputs, authenticated through `nix-auth.conf`
+   ([secrets-private-inputs](../rworker/references/secrets-private-inputs.md)); an
+   `--override-input` of the private input changes the closure, and the targets then miss the
+   cache.
+3. Switch each target without remote builders, so it substitutes from S3 instead of queueing on
+   the busy nodes. Run it as a transient unit so an SSH drop does not kill it:
+   `sudo -n systemd-run --unit=deploy-switch --collect --property=Type=exec bash -lc
+   'nixos-rebuild switch --accept-flake-config --fallback --refresh --flake
+   github:pschmitt/nixos-config/<commit> --option builders ""'`, then follow
+   `journalctl -u deploy-switch`. Hosts that never build themselves (`max-jobs = 0`, e.g. fnuc)
+   fail with `local builds are disabled`; when only small derivations are left (config files,
+   `home-manager-path`, `etc`), add `--option max-jobs 2`, otherwise build them on the worker
+   first.
+
 ## CI
 
 Waiting for CI is optional at this stage. The deploy is the check: do not hold it back for the
@@ -99,3 +124,10 @@ project's own CI is a `release` concern.)
   If upgrades already hang on `building ... on 'ssh-ng://...'`, stop them all
   (`systemctl stop nixos-upgrade`, safe before the switch) and restart in that order.
 - A deploy that touches an agent skill or `CONTEXT.md` only takes effect in new sessions.
+- **Files that used to come from yadm.** After a config moved from yadm to Home Manager,
+  `home-manager-<user>.service` can fail on the first switch: a yadm alternate symlink
+  (`foo##distro.nixos`) "would be clobbered", and identical old copies are "skipped since they
+  are the same", so Home Manager never links them. Compare each skipped file with the new
+  `home-manager-files` (`cmp`), delete the identical ones, move alternates aside, then
+  `sudo -n systemctl restart home-manager-<user>`. See the `nix` skill's
+  [yadm-to-home-manager](../nix/references/yadm-to-home-manager.md).

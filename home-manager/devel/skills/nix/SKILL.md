@@ -71,6 +71,11 @@ skill's `scripts/` directory replace the hand-typed rsync/ssh and `gh run` loops
   own `--name`. Clean up your own `~/build/<name>` directories afterwards.
 - After pushing, load the `ci-watch` skill to wait for CI without polling.
 
+## Moving dotfiles from yadm
+
+To move a tool's config from yadm into Home Manager (inventory, public/private split, rollout
+order, first-switch cleanup), follow [yadm-to-home-manager](references/yadm-to-home-manager.md).
+
 ## Repositories
 
 ### nixos-config (Public)
