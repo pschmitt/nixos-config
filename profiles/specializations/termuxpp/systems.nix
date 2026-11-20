@@ -26,12 +26,18 @@ builtins.mapAttrs (
             name = home.config.home.username;
             home = home.config.home.homeDirectory;
           };
-          system.stateVersion = "1";
-          # The Android NDK only runs on x86_64 Linux; the result is still the
-          # Android/AArch64 executable.
-          system.nativeNixpp =
-            (inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux)
-            .nixpp-runtime-termux;
+          system = {
+            stateVersion = "1";
+            # Enforce the Nix config: a file Home Manager would overwrite is moved
+            # to <file>.backup instead of failing the switch (the nightly upgrade
+            # too). `nixpp upgrade --no-backup` fails on such files instead.
+            homeManagerBackupExtension = "backup";
+            # The Android NDK only runs on x86_64 Linux; the result is still the
+            # Android/AArch64 executable.
+            nativeNixpp =
+              (inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux)
+              .nixpp-runtime-termux;
+          };
           environment = {
             systemPackages = with home.pkgs; [
               bashInteractive
