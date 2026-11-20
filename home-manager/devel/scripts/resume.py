@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """List and resume locally recorded agent conversations."""
 import argparse
 from collections import deque
