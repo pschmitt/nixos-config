@@ -1,1 +1,1 @@
-{"disks":{"data":{"az":"sz1","device":"/dev/sdb","id":"528a1594-6516-4046-9b2c-9966d619e274","name":"blobarr"},"root":{"az":"sz1","id":"16796903-8bbe-42b7-b859-d22ba222cfc1","name":"rofl-11-boot-volume"}},"network":{"floating_ip":"89.163.172.83"}}
+{"disks":{"data":{"az":"sz1","device":"/dev/sdb","id":"528a1594-6516-4046-9b2c-9966d619e274","name":"blobarr"},"root":{"az":"sz1","id":"c51e1ca5-40e6-4b77-9344-3d88ff7a63c5","name":"rofl-11-boot-volume"}},"network":{"floating_ip":"89.163.172.83"}}
