@@ -97,6 +97,14 @@ Each needs its secret first; a missing SOPS key fails activation.
 - `services.circus.s3Upload.enable`: agents upload outputs to niks3's
   `nix-cache-brkn-lol` under the `circus/` prefix. Without it, outputs stream
   to the queue-runner.
+- `services.circus.rworkerPool.enable`: ephemeral agents on rworkers. The
+  autoscaler on rofl-10 (private `services/rworker-circus-pool.nix`) polls
+  `/api/v1/operator/queue` on the tailnet-only vhost with a read-only API key
+  and creates up to 3 `circus-worker-*` VMs from the `rworker-circus` image
+  (`hosts/rworker-circus`) when more than 8 builds stay queued for two minutes.
+  Each worker gets the pool's join token (`rworker-pool`) in its user-data;
+  only root on the worker can reach the metadata service. Idle workers are
+  deleted after 15 minutes.
 - `services.circus.githubActionsAgents.enable` with `agentBinaryUrl`: aarch64
   agents on GitHub's arm runners. The runners join NetBird with the existing
   `NB_SETUP_KEY`; that key's group needs a NetBird policy to rofl-15 TCP 443
