@@ -368,14 +368,6 @@
       };
     };
 
-    lazyvim = {
-      url = "github:pfassina/lazyvim-nix";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-      };
-    };
-
     ldifj = {
       url = "github:pschmitt/ldifj";
       inputs = {
@@ -389,6 +381,15 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
+      };
+    };
+
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+        systems.follows = "systems";
       };
     };
 

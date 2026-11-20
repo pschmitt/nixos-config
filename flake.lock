@@ -1399,29 +1399,6 @@
         "type": "github"
       }
     },
-    "lazyvim": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1794094341,
-        "narHash": "sha256-mZayBFqS/teJY/6qezBwSa+MqzLd8es97r3RfvRUioI=",
-        "owner": "pfassina",
-        "repo": "lazyvim-nix",
-        "rev": "30f8896fa0728844905a2e34f55d93fa42e69bf9",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pfassina",
-        "repo": "lazyvim-nix",
-        "type": "github"
-      }
-    },
     "ldifj": {
       "inputs": {
         "flake-utils": [
@@ -2206,6 +2183,32 @@
         "type": "github"
       }
     },
+    "nixvim": {
+      "inputs": {
+        "flake-parts": [
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "systems": [
+          "systems"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794943345,
+        "narHash": "sha256-1d33ym1V/UxX9pcNbrpG0/P8riFHE8VuVAc3T8WN52I=",
+        "owner": "nix-community",
+        "repo": "nixvim",
+        "rev": "b67578f451bd779e79ec42f8153a403421a4b266",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixvim",
+        "type": "github"
+      }
+    },
     "noctalia": {
       "inputs": {
         "nixpkgs": [
@@ -2533,7 +2536,6 @@
         "jcalapi": "jcalapi",
         "jellysync": "jellysync",
         "lan-mouse": "lan-mouse",
-        "lazyvim": "lazyvim",
         "ldifj": "ldifj",
         "llm-agents": "llm-agents",
         "luks-mount": "luks-mount",
@@ -2556,6 +2558,7 @@
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-terraform-157": "nixpkgs-terraform-157",
+        "nixvim": "nixvim",
         "noctalia": "noctalia",
         "noctalia-plugins": "noctalia-plugins",
         "obs-cli": "obs-cli",

@@ -1,23 +1,56 @@
--- Keymaps are automatically loaded on the VeryLazy event
--- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
--- Add any additional keymaps here
+-- Keymaps, loaded after the plugins are set up (nixvim extraConfigLuaPost)
+local map = vim.keymap.set
 
--- Remove some default keys
-local disabled_keys = {
-  -- quit
-  "<leader>qq",
-  -- yanky.nvim
-  "<leader>p",
-  -- windows
-  "<leader>wd",
-  "<leader>wm",
-}
-for _, key in ipairs(disabled_keys) do
-  pcall(vim.keymap.del, "n", key)
-end
+-- Former LazyVim defaults we got used to
+map("n", "<C-h>", "<C-w>h", { desc = "Go to left window" })
+map("n", "<C-j>", "<C-w>j", { desc = "Go to lower window" })
+map("n", "<C-k>", "<C-w>k", { desc = "Go to upper window" })
+map("n", "<C-l>", "<C-w>l", { desc = "Go to right window" })
+map("n", "<S-h>", "<cmd>bprevious<cr>", { desc = "Prev buffer" })
+map("n", "<S-l>", "<cmd>bnext<cr>", { desc = "Next buffer" })
+map({ "i", "n", "s" }, "<esc>", function()
+  vim.cmd("noh")
+  return "<esc>"
+end, { expr = true, desc = "Escape and clear hlsearch" })
+map({ "i", "x", "n", "s" }, "<C-s>", "<cmd>w<cr><esc>", { desc = "Save file" })
+map("x", "<", "<gv")
+map("x", ">", ">gv")
 
--- remap lazyvim's <leader>wm to <leader>Wm
--- LazyVim.ui.maximize():map("<leader>Wm")
+-- Pickers
+map("n", "<leader><space>", function() Snacks.picker.smart() end, { desc = "Smart find files" })
+map("n", "<leader>/", function() Snacks.picker.grep() end, { desc = "Grep" })
+map("n", "<leader>,", function() Snacks.picker.buffers() end, { desc = "Buffers" })
+map("n", "<leader>:", function() Snacks.picker.command_history() end, { desc = "Command history" })
+map("n", "<leader>ff", function() Snacks.picker.files() end, { desc = "Find files" })
+map("n", "<leader>fr", function() Snacks.picker.recent() end, { desc = "Recent files" })
+map("n", "<leader>sh", function() Snacks.picker.help() end, { desc = "Help pages" })
+map("n", "<leader>sk", function() Snacks.picker.keymaps() end, { desc = "Keymaps" })
+map("n", "<leader>sd", function() Snacks.picker.diagnostics() end, { desc = "Diagnostics" })
+map("n", "<leader>st", function() Snacks.picker.todo_comments() end, { desc = "Todo comments" })
+map("n", "<leader>sR", function() Snacks.picker.resume() end, { desc = "Resume picker" })
+map("n", "<leader>n", function() Snacks.notifier.show_history() end, { desc = "Notification history" })
+
+-- LSP (Neovim's own defaults: K, grn, gra, grr, gri, gO, ]d, [d)
+map("n", "gd", function() Snacks.picker.lsp_definitions() end, { desc = "Goto definition" })
+map("n", "gr", function() Snacks.picker.lsp_references() end, { nowait = true, desc = "References" })
+map("n", "gI", function() Snacks.picker.lsp_implementations() end, { desc = "Goto implementation" })
+map("n", "gy", function() Snacks.picker.lsp_type_definitions() end, { desc = "Goto type definition" })
+map("n", "<leader>ss", function() Snacks.picker.lsp_symbols() end, { desc = "LSP symbols" })
+map({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, { desc = "Code action" })
+map("n", "<leader>cr", vim.lsp.buf.rename, { desc = "Rename" })
+map("n", "<leader>cd", vim.diagnostic.open_float, { desc = "Line diagnostics" })
+
+-- Git hunks (gitsigns)
+map("n", "]h", function() require("gitsigns").nav_hunk("next") end, { desc = "Next hunk" })
+map("n", "[h", function() require("gitsigns").nav_hunk("prev") end, { desc = "Prev hunk" })
+map({ "n", "x" }, "<leader>ghs", "<cmd>Gitsigns stage_hunk<cr>", { desc = "Stage hunk" })
+map({ "n", "x" }, "<leader>ghr", "<cmd>Gitsigns reset_hunk<cr>", { desc = "Reset hunk" })
+map("n", "<leader>ghp", "<cmd>Gitsigns preview_hunk_inline<cr>", { desc = "Preview hunk inline" })
+map("n", "<leader>ghb", function() require("gitsigns").blame_line({ full = true }) end, { desc = "Blame line" })
+
+-- Whitespace (trim.nvim)
+map("n", "<F8>", "<cmd>Trim<cr>", { silent = true, desc = "Trim whitespace" })
+map("n", "<leader>8", "<cmd>Trim<cr>", { silent = true, desc = "Trim whitespace" })
 
 -- Exit and write
 vim.keymap.set("n", "<M-Q>", "<cmd>quitall!<cr>", { desc = "Just exit." })
@@ -91,12 +124,9 @@ vim.keymap.set(
 
 -- lsp
 vim.keymap.set("n", "<leader>F", "<cmd>Format<cr>", { desc = "LSP Format" })
-vim.keymap.set(
-  "n",
-  "<leader>T",
-  "<cmd>Trouble diagnostics toggle<cr>",
-  { desc = "TroubleToggle" }
-)
+vim.keymap.set("n", "<leader>T", function()
+  Snacks.picker.diagnostics_buffer()
+end, { desc = "Buffer diagnostics" })
 
 -- Windows
 vim.keymap.set("n", "<leader>Ww", "<C-W>p", { desc = "Other window" })
@@ -114,21 +144,19 @@ vim.keymap.set(
   { desc = "Split window horizontally" }
 )
 
--- FZF
+-- Pickers (custom)
 vim.keymap.set(
   "n",
   "<C-b>",
   function()
     Snacks.picker.buffers()
   end,
-  -- "<cmd>FzfLua buffers resume=true<CR>",
   { desc = "Find buffers" }
 )
 
 vim.keymap.set(
   "n",
   "<C-p>",
-  -- "<cmd>FzfLua files resume=true<cr>",
   "<cmd>GitOrFiles<cr>",
   { desc = "Find files in cwd" }
 )
@@ -141,7 +169,6 @@ vim.keymap.set(
 vim.keymap.set(
   "n",
   "<leader>l",
-  -- "<cmd>FzfLua grep resume=true<CR>",
   function()
     Snacks.picker.grep()
   end,
@@ -151,7 +178,7 @@ vim.keymap.set(
   "n",
   "<leader>y",
   "<cmd>YadmFiles<cr>",
-  { desc = "Telescope YADM Files" }
+  { desc = "YADM Files" }
 )
 
 -- Git

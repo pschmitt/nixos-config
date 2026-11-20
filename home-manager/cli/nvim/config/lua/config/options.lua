@@ -1,36 +1,83 @@
--- Options are automatically loaded before lazy.nvim startup
--- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
--- Add any additional options here
+-- Options, loaded before any plugin is set up (nixvim extraConfigLuaPre).
+-- mapleader (space) and maplocalleader (comma) are set by nixvim.
 
-dofile(vim.fn.stdpath("config") .. "/lua/config/portable-options.lua")
+require("config.portable-options")
 
-vim.opt.wrap = true
-vim.opt.spell = true
-vim.opt.cursorcolumn = true
-vim.opt.termguicolors = true -- required for --headless
-vim.opt.list = true
+local opt = vim.opt
 
--- Setting statuscolumn to empty string has the effect of having gitsigns
--- placed on the left-most side of the window and not of the right of the
--- line number
-vim.opt.statuscolumn = ""
+-- Former LazyVim defaults we got used to
+opt.autowrite = true
+opt.completeopt = "menu,menuone,noselect"
+opt.confirm = true
+opt.cursorline = true
+opt.ignorecase = true
+opt.smartcase = true
+opt.inccommand = "nosplit"
+opt.jumpoptions = "view"
+opt.laststatus = 3
+opt.mouse = "a"
+opt.relativenumber = true
+opt.scrolloff = 4
+opt.sidescrolloff = 8
+opt.shiftround = true
+opt.showmode = false
+opt.signcolumn = "yes"
+opt.smartindent = true
+opt.splitbelow = true
+opt.splitright = true
+opt.splitkeep = "screen"
+opt.timeoutlen = 300
+opt.undofile = true
+opt.undolevels = 10000
+opt.updatetime = 200
+opt.virtualedit = "block"
+opt.wildmode = "longest:full,full"
+opt.winminwidth = 5
+opt.fillchars = { foldopen = "", foldclose = "", fold = " ", foldsep = " ", diff = "╱", eob = " " }
+
+opt.grepprg = "rg --vimgrep"
+opt.grepformat = "%f:%l:%c:%m"
+opt.linebreak = true
+opt.smoothscroll = true
+-- Treesitter folds, everything unfolded on open
+opt.foldlevel = 99
+opt.foldmethod = "expr"
+opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+opt.foldtext = ""
+
+local sev = vim.diagnostic.severity
+vim.diagnostic.config({
+  severity_sort = true,
+  underline = true,
+  update_in_insert = false,
+  virtual_text = { spacing = 4, source = "if_many", prefix = "●" },
+  float = { border = "rounded" },
+  signs = {
+    text = {
+      [sev.ERROR] = " ",
+      [sev.WARN] = " ",
+      [sev.HINT] = " ",
+      [sev.INFO] = " ",
+    },
+  },
+})
+
+-- Ours
+opt.wrap = true
+opt.spell = true
+opt.cursorcolumn = true
+opt.termguicolors = true -- required for --headless
+opt.list = true
 
 -- Append '-' to the list of keywords (fixes # navigation on shell func names
 -- that contain hyphens)
-vim.opt.iskeyword:append("-,:")
+opt.iskeyword:append("-,:")
 
--- Disable menu transparency (cmp + nvim command line)
-vim.opt.pumblend = 0
+-- Disable menu transparency (completion + nvim command line)
+opt.pumblend = 0
 
--- Set local leader to comma
-vim.g.maplocalleader = ","
-
+require("config.filetypes")
 require("config.clipboard")
-
--- Let lazy.nvim lazy-load require()d plugins from lazyvim-nix's
--- "<owner>--<repo>" dev dirs (otherwise lualine's trouble statusline fails)
-require("config.lazy-dev-find")
-
--- These used to be required from init.lua, which lazyvim-nix generates
 require("config.usercmds")
+require("config.notes")
 require("config.vimwikisync")

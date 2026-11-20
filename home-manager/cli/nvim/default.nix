@@ -2,129 +2,28 @@
   config,
   inputs,
   lib,
+  options,
   pkgs,
   ...
 }:
 let
-  appName = "nvim";
-
-  # The unwrapped nightly binary from your flake input.
-  nvimNightly = inputs.neovim-nightly.packages.${pkgs.stdenv.hostPlatform.system}.neovim;
-
-  # nvim-nightly reuses the lazyvim-nix generated init.lua
-  sharedInitLua = ''
-    dofile(vim.fn.stdpath("config") .. "/init.lua")
-  '';
-
-  # Define common configuration to avoid duplication.
-  commonConfig = {
-    withRuby = false;
-    withPython3 = false;
-
-    extraPackages = with pkgs; [
-      # vimPlugins.nvim-treesitter.withAllGrammars
-      codespell
-      tree-sitter
-
-      # for random plugins that need to compile native extensions
-      # eg: luasnip
-      gcc
-
-      # for copilot
-      copilot-language-server
-      nodejs
-
-      # for image.nvim, snacks.images etc.
-      ghostscript
-      imagemagick
-
-      # ansible
-      ansible-lint
-      ansible-language-server
-
-      # docker
-      docker-language-server
-      dockerfile-language-server
-      hadolint
-
-      # golang
-      go
-      gopls
-
-      # jsonnet
-      jsonnet-language-server
-
-      # lua
-      luajit
-      lua-language-server
-      stylua
-
-      # markdown
-      marksman
-      markdown-toc
-      markdownlint-cli2
-
-      # nix
-      nil
-      nixpkgs-fmt
-
-      # python
-      pyright
-      ruff
-
-      # shell
-      bash-language-server
-      shellcheck
-      shfmt
-
-      # tofu/terraform
-      terraform-ls
-
-      # toml
-      taplo
-
-      # yaml
-      yaml-language-server
-    ];
-
-    extraLuaPackages = ps: [ ps.magick ];
-  };
-
-  nvimNightlyLua = nvimNightly.lua.withPackages commonConfig.extraLuaPackages;
-
-  nvimNightlyInitLua = pkgs.writeText "nvim-nightly-init.lua" sharedInitLua;
-
-  nvimNightlyProviderLua = pkgs.neovimUtils.generateProviderRc {
-    inherit (commonConfig) withPython3 withRuby;
-    withNodeJs = false;
-    withPerl = false;
-  };
-
-  nvimNightlyWrapped = pkgs.symlinkJoin {
-    name = "nvim-nightly-wrapped";
-    paths = [ nvimNightly ];
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-    postBuild = ''
-      rm -f "$out/bin/nvim"
-      makeWrapper ${nvimNightly}/bin/nvim "$out/bin/nvim" \
-        --add-flag "--cmd" \
-        --add-flag "lua ${nvimNightlyProviderLua}" \
-        --set-default VIMINIT "lua dofile('${nvimNightlyInitLua}')" \
-        --prefix PATH : ${
-          pkgs.lib.makeBinPath (
-            commonConfig.extraPackages
-            ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.wl-clipboard ]
-          )
-        } \
-        --prefix LUA_PATH ';' '${nvimNightly.lua.pkgs.luaLib.genLuaPathAbsStr nvimNightlyLua}' \
-        --prefix LUA_CPATH ';' '${nvimNightly.lua.pkgs.luaLib.genLuaCPathAbsStr nvimNightlyLua}'
-    '';
-  };
+  # The same Nixvim configuration, built around the nightly binary and with
+  # the config wrapped into the package (nvim-nightly must not pick up the
+  # stable init.lua from ~/.config/nvim).
+  nvimNightly =
+    (options.programs.nixvim.valueMeta.configuration.extendModules {
+      modules = [
+        {
+          package = inputs.neovim-nightly.packages.${pkgs.stdenv.hostPlatform.system}.neovim;
+          wrapRc = true;
+          # Keep ~/.config/nvim on the runtimepath for lua/local/
+          impureRtp = true;
+        }
+      ];
+    }).config.build.package;
 in
 {
-  imports = [
-    inputs.lazyvim.homeManagerModules.default
-  ];
+  imports = [ inputs.nixvim.homeModules.nixvim ];
 
   options.programs.neovim.nightly.enable = lib.mkOption {
     type = lib.types.bool;
@@ -133,78 +32,18 @@ in
   };
 
   config = {
-    programs.lazyvim = {
+    programs.nixvim = {
       enable = true;
-      inherit appName;
-
-      # Parsers not covered by the extras below
-      treesitterParsers = with pkgs.vimPlugins.nvim-treesitter-parsers; [
-        fish
-        git_config
-        hyprlang
-        rasi
-      ];
-
-      extras = {
-        ai = {
-          copilot-native.enable = true;
-          sidekick.enable = true;
-        };
-        coding = {
-          luasnip.enable = true;
-          yanky.enable = true;
-        };
-        editor = {
-          snacks-explorer.enable = true;
-          snacks-picker.enable = true;
-        };
-        formatting = {
-          black.enable = true;
-          prettier.enable = true;
-        };
-        lang =
-          lib.genAttrs
-            [
-              "ansible"
-              "docker"
-              "go"
-              "json"
-              "nix"
-              "python"
-              "terraform"
-              "toml"
-              "yaml"
-            ]
-            (_: {
-              enable = true;
-              installDependencies = true;
-            });
-        lsp.none-ls.enable = true;
-        util = {
-          dot.enable = true;
-          project.enable = true;
-        };
-      };
+      # Our pkgs: overlays (e.g. the TermuxPP neovim patch) and allowUnfree
+      # (copilot-language-server)
+      nixpkgs.useGlobalPackages = true;
+      imports = [ ./nixvim ];
     };
 
-    programs.neovim = {
-      inherit (commonConfig) extraPackages extraLuaPackages withRuby;
-      # lazyvim-nix enables python3, we don't need it
-      withPython3 = lib.mkForce commonConfig.withPython3;
-      viAlias = false;
-      vimAlias = true;
-    };
-
-    # Our Lua config: lazyvim-nix's configFiles only picks up
-    # config/{keymaps,options,autocmds}.lua and plugins/, so link the whole
-    # tree ourselves. init.lua is generated by lazyvim-nix.
-    xdg.configFile = import ./config-files.nix { inherit appName lib; };
-
-    # Provide the nvim-nightly command.
     home.packages = lib.optionals config.programs.neovim.nightly.enable [
       (pkgs.runCommand "nvim-nightly" { } ''
         mkdir -p $out/bin
-        ln -s ${nvimNightlyWrapped}/bin/nvim $out/bin/nvim-nightly
+        ln -s ${nvimNightly}/bin/nvim $out/bin/nvim-nightly
       '')
     ];
   };

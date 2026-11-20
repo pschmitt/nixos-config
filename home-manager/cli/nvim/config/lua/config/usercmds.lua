@@ -35,10 +35,7 @@ vim.api.nvim_create_user_command("PrintCurrentFilePath", function()
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("Format", function()
-  -- Regular, vanilla format command
-  -- vim.lsp.buf.format()
-  local Util = require("lazyvim.util")
-  Util.format({ force = true })
+  require("conform").format({ async = true })
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("NotificationsHistory", function()
@@ -114,19 +111,27 @@ end, {
 })
 
 vim.api.nvim_create_user_command("YadmFiles", function()
-  -- require("fzf-custom").yadm_files()
   require("picker-custom").yadm_files()
 end, { nargs = "*", complete = vim.fn.getcwd })
 
 vim.api.nvim_create_user_command("GitOrFiles", function()
-  -- require("fzf-custom").git_or_files()
   require("picker-custom").git_or_files()
 end, { nargs = "*", complete = vim.fn.getcwd })
 
 vim.api.nvim_create_user_command("GitOrYadmFiles", function()
-  -- require("fzf-custom").git_or_yadm_files()
   require("picker-custom").yadm_files()
 end, { nargs = "*", complete = vim.fn.getcwd })
+
+-- Write as root (suda.vim)
+vim.api.nvim_create_user_command("Sw", "SudaWrite %", {})
+vim.cmd("cnoremap w!! SudaWrite %")
+
+vim.api.nvim_create_user_command("WhitespaceHighlightingDisable", function()
+  vim.cmd([[highlight clear ExtraWhitespace]])
+end, {})
+vim.api.nvim_create_user_command("WhitespaceHighlightingEnable", function()
+  require("trim").setup({ highlight = true })
+end, {})
 
 -- Below is a workaround for the issue with pasting from the clipboard in
 -- a Neovim instance running in kitty/ghostty + tmux

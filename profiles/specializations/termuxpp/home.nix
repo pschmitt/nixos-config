@@ -148,14 +148,6 @@ in
   xdg = {
     enable = true;
     configFile."zsh/completions/_nixpp".source = "${nixpp}/share/zsh/site-functions/_nixpp";
-    configFile."nvim/lua/plugins/full-nix.lua".text = ''
-      return {
-        {
-          "neovim/nvim-lspconfig",
-          opts = { servers = { nil_ls = { enabled = false }, nixd = {} } },
-        },
-      }
-    '';
   };
   # The TermuxPP app's termuxpp.properties (formerly in yadm). The whole file
   # is written on activation; the app's properties editor does not persist.
@@ -240,13 +232,16 @@ in
       # rbw falls back to pinentry before it has a local vault database.
       pinentry.command = lib.mkForce (lib.getExe' pkgs.pinentry-tty "pinentry-tty");
     };
-    neovim = {
-      nightly.enable = false;
-      extraPackages = [
-        pkgs.nixd
-        pkgs.statix
-      ];
-      initLua = ''
+    neovim.nightly.enable = false;
+    nixvim = {
+      clipboard.providers.wl-copy.enable = false;
+      lsp.servers = {
+        copilot.enable = false;
+        nil_ls.enable = false;
+        nixd.enable = true;
+      };
+      extraPackages = [ pkgs.statix ];
+      extraConfigLua = ''
         vim.schedule(function()
           local osc52 = require("vim.ui.clipboard.osc52")
           local function paste()

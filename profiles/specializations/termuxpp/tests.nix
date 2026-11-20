@@ -66,11 +66,11 @@ let
     # ZDOTDIR comes from the guest /etc/zshenv (systems.nix), not ~/.zshenv.
     assert !c.home.file.".zshenv".enable;
     assert c.dotfiles.zsh.nixShell.default;
-    assert c.programs.neovim.enable;
+    assert c.programs.nixvim.enable;
     assert !c.programs.neovim.nightly.enable;
-    assert c.programs.lazyvim.appName == "nvim";
-    assert builtins.any (p: (p.pname or "") == "nixd") c.programs.neovim.extraPackages;
-    assert builtins.any (p: (p.pname or "") == "statix") c.programs.neovim.extraPackages;
+    assert c.programs.nixvim.lsp.servers.nixd.enable;
+    assert !c.programs.nixvim.lsp.servers.nil_ls.enable;
+    assert builtins.any (p: (p.pname or "") == "statix") c.programs.nixvim.extraPackages;
     assert c.programs.zsh.package.stdenv.hostPlatform.system == "aarch64-linux";
     assert c.programs.tmux.shell == "${home.pkgs.zsh}/bin/zsh";
     assert c.systemd.user.startServices == false;

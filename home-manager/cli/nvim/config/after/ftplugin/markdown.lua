@@ -1,2 +1,2 @@
--- By default this is set to 3 in LazyVim, which hides code block headers.
+-- 2 keeps code block headers visible (3 hides them).
 vim.opt_local.conceallevel = 2
