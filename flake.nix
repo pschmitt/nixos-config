@@ -260,6 +260,14 @@
       };
     };
 
+    # Circus CI, on trial next to nixbot (services/circus). Tracks main, pinned
+    # by flake.lock: the only release, v0.14.0, predates the fixes the
+    # proof of concept ran with.
+    circus = {
+      url = "github:manic-systems/circus";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # Self-hosted Nix CI (rofl-14, configured in the private repo): our fork
     # of Mic92/nixbot with the changes we run (remote evaluation hooks,
     # builders page, ...), meant to go upstream piece by piece.
