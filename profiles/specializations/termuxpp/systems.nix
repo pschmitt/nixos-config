@@ -28,10 +28,6 @@ builtins.mapAttrs (
           };
           system = {
             stateVersion = "1";
-            # Enforce the Nix config: a file Home Manager would overwrite is moved
-            # to <file>.backup instead of failing the switch (the nightly upgrade
-            # too). `nixpp upgrade --no-backup` fails on such files instead.
-            homeManagerBackupExtension = "backup";
             # The Android NDK only runs on x86_64 Linux; the result is still the
             # Android/AArch64 executable.
             nativeNixpp =

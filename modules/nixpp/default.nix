@@ -125,16 +125,19 @@ in
       };
       homeManagerBackupExtension = mkOption {
         type = types.nullOr (types.strMatching "[A-Za-z0-9][A-Za-z0-9._-]{0,31}");
-        default = null;
-        example = "backup";
+        default = "nixpp.bak";
+        example = "hm-old";
         description = ''
-          When set, `nixpp switch`, `upgrade`, `rebuild` and `fetch` have Home
+          The extension under which `nixpp switch`, `upgrade`, `rebuild` and
+          `fetch` (the nightly upgrade too) have Home
           Manager move an existing, unmanaged file that blocks its activation
           to `<file>.<extension>` (HOME_MANAGER_BACKUP_EXT) instead of failing
           with "would be clobbered". An existing `<file>.<extension>` is never
           overwritten: the activation fails and says so. Written to
           /etc/nixpp/upgrade.json by the system profile; `--no-backup`
-          overrides it for one run. Off (null) by default.
+          overrides it for one run, `--backup=EXT` sets another extension for
+          one run. null turns backups off: the activation then fails on such
+          files. Default: nixpp.bak, which enforces the Nix configuration.
         '';
       };
       nativeNixpp = mkOption {

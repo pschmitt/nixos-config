@@ -52,7 +52,7 @@ nixpp doctor
 nixpp list-generations
 nixpp check HASH-termuxpp-system-HOST
 nixpp switch HASH-termuxpp-system-HOST
-# Back up (<file>.backup) files that block the Home Manager activation:
+# Back up (<file>.nixpp.bak) files that block the Home Manager activation:
 nixpp switch HASH-termuxpp-system-HOST --backup
 nixpp rollback
 nixpp recover
@@ -103,21 +103,21 @@ unmanaged file ("Existing file ... would be clobbered"). The activating
 commands (`switch`, `upgrade`, `fetch latest`, `rebuild`) take
 `--backup[=EXT]`: the native controller then runs the Home Manager activation
 with `HOME_MANAGER_BACKUP_EXT=EXT`, and Home Manager moves each such file to
-`<file>.EXT` (`EXT` defaults to `backup`: `~/.config/tmux/tmux.conf` becomes
-`~/.config/tmux/tmux.conf.backup`). Nothing is deleted or overwritten: if
+`<file>.EXT` (`EXT` defaults to `nixpp.bak`: `~/.config/tmux/tmux.conf` becomes
+`~/.config/tmux/tmux.conf.nixpp.bak`). Nothing is deleted or overwritten: if
 `<file>.EXT` already exists, Home Manager fails before changing anything and
 names it. Move that file away (or pick another `EXT`), run `nixpp recover`, and
 retry. Only the activation of the new generation gets the variable, not
 `recover`, `rollback` or the acceptance checks. `EXT` is 1 to 32 letters,
 digits, `.`, `_` or `-`.
 
-A system can enable it by default: set `system.homeManagerBackupExtension`
-(default `null`, off) in `hosts/<host>/system.nix`; the profile writes it as
-`homeManagerBackupExtension` to `/etc/nixpp/upgrade.json`, and every
-activating command then backs up, including the nightly `upgrade`.
-`--no-backup` turns it off for one run, an explicit `--backup=EXT` overrides
-the configured `EXT`. No host enables it today, so a blocked file still fails
-loudly. The request carries the extension to the controller as the optional
+It is on by default: `system.homeManagerBackupExtension` (default
+`nixpp.bak`) is written as `homeManagerBackupExtension` to
+`/etc/nixpp/upgrade.json`, and every activating command backs up with it,
+including the nightly `upgrade`, so the Nix configuration is enforced. Set
+another extension in `hosts/<host>/system.nix`, or `null` to fail on such
+files instead. `--no-backup` turns it off for one run, an explicit
+`--backup=EXT` overrides the configured `EXT`. The request carries the extension to the controller as the optional
 `backupExtension` key of the `switch` management request; a controller started
 before the option existed rejects it and the client says so.
 
