@@ -29,6 +29,7 @@ in
 {
   imports = [
     ../../../modules/home-manager/termuxpp/adb-shell.nix
+    ../../../modules/home-manager/termuxpp/properties.nix
     ../../../modules/home-manager/termuxpp/appearance.nix
     ../../../modules/home-manager/termuxpp/cache.nix
     ../../../modules/home-manager/termuxpp/gpg.nix
@@ -156,7 +157,57 @@ in
       }
     '';
   };
+  # The TermuxPP app's termuxpp.properties (formerly in yadm). The whole file
+  # is written on activation; the app's properties editor does not persist.
+  fullNix.properties = {
+    extra-keys = lib.concatStrings [
+      "[ ['ESC', {key: '/', popup: BACKSLASH}, {key: -, popup: _}, 'HOME', "
+      "{key: UP, popup: PGUP}, 'END', 'PGUP', '|'], "
+      "['TAB', {key: CTRL, popup: SHIFT}, 'ALT', {key: LEFT, popup: HOME}, "
+      "{key: DOWN, popup: PGDN}, {key: RIGHT, popup: END}, 'PGDN', {key: BKSP, popup: DEL}] ]"
+    ];
+    allow-external-apps = true;
+    use-black-ui = true;
+    bell-character = "vibrate";
+    back-key = "back";
+    "shortcut.create-session" = "ctrl + t";
+    "shortcut.previous-session" = "ctrl + 1";
+    "shortcut.next-session" = "ctrl + 2";
+    "shortcut.rename-session" = "ctrl + 3";
+    # Latched modifiers and pressed keys in the logo palette.
+    extra-keys-button-active-text-color = "#D8B4FE";
+    extra-keys-button-active-background-color = "#3B1D6A";
+    extra-keys-button-corner-radius = 8;
+    # Extra keys row: finger to the right = previous session, to the left = next
+    # session (the default), further to the right = new session.
+    extra-keys-swipe-left-action = "previous-session";
+    extra-keys-long-swipe-left-action = "new-session";
+    # Focus an existing fnuc tmux client before asking the local zsh prompt to attach.
+    terminal-triple-tap-focus-title = "^(!?t:fnuc([.]lan)?:|tmux(:[^@ ]+)?@fnuc([.]lan)?( |$))";
+    terminal-triple-tap-action = "send-keys";
+    terminal-triple-tap-keys = "CTRL SHIFT F12";
+    terminal-triple-tap-command = "ssh::tmux f";
+    terminal-onclick-url-open = true;
+    create-session-on-single-session-switch = true;
+    terminal-toast-position = "top-right";
+  };
+  # The scripts the app runs for shared files and URLs (formerly in yadm), and a
+  # README. The app reads ~/.config/termuxpp outside the guest, so install real
+  # files, not store links (see config-README.md).
+  home.activation.termuxppScripts = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    run ${pkgs.coreutils}/bin/install -D -m 0644 ${./config-README.md} \
+      ${config.xdg.configHome}/termuxpp/README.md
+    run ${pkgs.coreutils}/bin/install -D -m 0755 ${./bin/termux-file-editor} \
+      ${config.xdg.configHome}/termuxpp/bin/termux-file-editor
+    run ${pkgs.coreutils}/bin/install -D -m 0755 ${./bin/termux-url-opener} \
+      ${config.xdg.configHome}/termuxpp/bin/termux-url-opener
+  '';
+  # The ADB shell listener runs only on the home Wi-Fi networks; their names
+  # stay in SOPS (each phone's own list).
+  fullNix.adbShell.allowedSsidsFile = config.sops.secrets."wifi/home-ssids".path;
+
   sops = {
+    secrets."wifi/home-ssids" = { };
     secrets."nix/github_token".sopsFile = config.host.sopsDefaultFile;
     templates."nix-access-tokens".content = ''
       access-tokens = github.com=${config.sops.placeholder."nix/github_token"}

@@ -1,0 +1,22 @@
+#!/data/data/dev.pschmitt.termux/files/usr/bin/env bash
+# Opened by TermuxPP for shared URLs.
+
+zhj() {
+  "${HOME}/bin/zhj-termux" "$@"
+}
+
+URL="$1"
+case "$URL" in
+  *porn*)
+    zhj peepee::grab-url "$URL"
+    ;;
+  *github.com/*/nixpkgs/pull/*)
+    zhj nixpkgs::pr-watch "$URL"
+    ;;
+  *)
+    printf 'Unsupported URL: %s\n' "$URL" >&2
+    exit 1
+    ;;
+esac
+
+# vim: set ft=sh :

@@ -1,0 +1,3 @@
+#!/data/data/dev.pschmitt.termux/files/usr/bin/bash
+# Opened by TermuxPP for shared files: edit them in the guest's nvim.
+exec "${PREFIX:-/data/data/dev.pschmitt.termux/files/usr}/bin/nixpp" enter -- nvim "$@"
