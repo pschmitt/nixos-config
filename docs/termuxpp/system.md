@@ -52,6 +52,8 @@ nixpp doctor
 nixpp list-generations
 nixpp check HASH-termuxpp-system-HOST
 nixpp switch HASH-termuxpp-system-HOST
+# Back up (<file>.backup) files that block the Home Manager activation:
+nixpp switch HASH-termuxpp-system-HOST --backup
 nixpp rollback
 nixpp recover
 
@@ -93,6 +95,34 @@ the read-only cache credentials rendered by SOPS. It does not fetch or
 evaluate the flake and does not require SSH to a builder. Ordinary Nix
 commands also use this S3 cache as a substituter. They use the rendered
 read-only cache credentials when `AWS_SHARED_CREDENTIALS_FILE` is unset.
+
+### Files in the way: `--backup`
+
+Home Manager refuses to activate when a file it manages already exists as an
+unmanaged file ("Existing file ... would be clobbered"). The activating
+commands (`switch`, `upgrade`, `fetch latest`, `rebuild`) take
+`--backup[=EXT]`: the native controller then runs the Home Manager activation
+with `HOME_MANAGER_BACKUP_EXT=EXT`, and Home Manager moves each such file to
+`<file>.EXT` (`EXT` defaults to `backup`: `~/.config/tmux/tmux.conf` becomes
+`~/.config/tmux/tmux.conf.backup`). Nothing is deleted or overwritten: if
+`<file>.EXT` already exists, Home Manager fails before changing anything and
+names it. Move that file away (or pick another `EXT`), run `nixpp recover`, and
+retry. Only the activation of the new generation gets the variable, not
+`recover`, `rollback` or the acceptance checks. `EXT` is 1 to 32 letters,
+digits, `.`, `_` or `-`.
+
+A system can enable it by default: set `system.homeManagerBackupExtension`
+(default `null`, off) in `hosts/<host>/system.nix`; the profile writes it as
+`homeManagerBackupExtension` to `/etc/nixpp/upgrade.json`, and every
+activating command then backs up, including the nightly `upgrade`.
+`--no-backup` turns it off for one run, an explicit `--backup=EXT` overrides
+the configured `EXT`. No host enables it today, so a blocked file still fails
+loudly. The request carries the extension to the controller as the optional
+`backupExtension` key of the `switch` management request; a controller started
+before the option existed rejects it and the client says so.
+
+Without `--backup`, a failed activation leaves the journal as before ("recovery
+is required"), and the error now points at `nixpp recover` and `--backup`.
 
 `build` returns a store path. `rebuild` builds, prepares a candidate if needed,
 then requests a coordinated switch. `--max-jobs 0` prevents phone-side compilation

@@ -61,6 +61,12 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
      build the path.
    - Never build on the phone or the workstation: no plain `--build` without
      `--rworker` unless remote builders are configured (`--max-jobs 0`).
+   - **"Existing file ... would be clobbered":** Home Manager found an
+     unmanaged file where it wants a link. Run `nixpp recover` (the failed
+     activation leaves a journal and blocks the next switch), then repeat the
+     command with `--backup` (or `--backup=EXT`): the file moves to
+     `<file>.backup`, nothing is deleted. Works on `upgrade`, `fetch latest`,
+     `rebuild` and `switch`. Do not move files by hand.
 4. Verify with `nixpp status`: a new current generation with today's date.
    Release the device claim afterwards.
 
@@ -73,6 +79,13 @@ readiness without activating anything.
 - `nixpp rollback` activates the retained previous generation.
 - `nixpp recover` restores the generation recorded before an interrupted
   activation.
+  A failed activation (for example Home Manager refusing to clobber an
+  existing file) needs it before the next switch; then retry with `--backup`.
+  If the error says `<file>.EXT` "would be clobbered by backing up", that
+  backup already exists: move it away or use another `--backup=EXT`.
+  `system.homeManagerBackupExtension` (null by default, set per host in
+  `hosts/<host>/system.nix`) makes every activation, nightly included, do this;
+  `--no-backup` overrides it.
 - From an Android failsafe session, `nixpp native-shell` opens the native
   TermuxPP shell; the native controller runs independently of the guest.
 - `nixpp gc --keep-generations N` prunes old generations; keep at least the
