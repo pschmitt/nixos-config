@@ -23,6 +23,15 @@
     # Ephemeral agents on rworkers (rworker-circus image), scaled by the
     # autoscaler on rofl-10 (private services/rworker-circus-pool.nix).
     rworkerPool.enable = true;
+    # aarch64 builds of circusJobs on GitHub's arm runners (circus-builder.yml):
+    # ephemeral agents started via workflow_dispatch with the App's token.
+    githubActionsAgents = {
+      enable = true;
+      # Static agent from our fork (release-agent-aarch64.yml), matching the
+      # pinned circus input.
+      agentBinaryUrl = "https://github.com/pschmitt/circus/releases/download/v0.14.0-pschmitt.1/circus-agent-aarch64-linux";
+      agentBinarySha256 = "e83a29b64b3f52d0f4401169ba70d08d0214155c39b6f10a145eab405f6cf0fa";
+    };
   };
 
   # Pinned per host: bumping it changes stateful service defaults.
