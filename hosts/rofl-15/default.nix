@@ -20,6 +20,9 @@
     githubApp.enable = true;
     githubStatuses.enable = true;
     githubWebhook.enable = true;
+    # Ephemeral agents on rworkers (rworker-circus image), scaled by the
+    # autoscaler on rofl-10 (private services/rworker-circus-pool.nix).
+    rworkerPool.enable = true;
   };
 
   # Pinned per host: bumping it changes stateful service defaults.
