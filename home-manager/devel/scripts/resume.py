@@ -299,6 +299,81 @@ def file_state(paths):
     return tuple(state)
 
 
+def extract_message(agent, obj):
+    if agent == 'agy':
+        kind = obj.get('type')
+        if kind == 'USER_INPUT' and obj.get('source') != 'SYSTEM_SDK':
+            role = 'user'
+        elif kind == 'PLANNER_RESPONSE':
+            role = 'assistant'
+        else:
+            return None
+        content = obj.get('content', '')
+    elif agent == 'codex':
+        item = obj.get('payload', {})
+        if obj.get('type') != 'response_item' or item.get('type') != 'message':
+            return None
+        role, content = item.get('role'), item.get('content', [])
+    else:
+        if obj.get('type') not in ('user', 'assistant'):
+            return None
+        item = obj.get('message') or {}
+        role, content = obj['type'], item.get('content', '')
+    if role not in ('user', 'assistant'):
+        return None
+    if isinstance(content, list):
+        content = '\n'.join(part.get('text', '') for part in content
+                            if isinstance(part, dict) and part.get('type') in ('text', 'input_text', 'output_text'))
+    if not isinstance(content, str):
+        return None
+    content = content.strip()
+    if agent == 'agy' and role == 'user' and content.startswith('<USER_REQUEST'):
+        match = re.search(r'<USER_REQUEST(?:\s[^>]*)?>(.*?)</USER_REQUEST>', content, re.DOTALL)
+        if not match:
+            return None
+        content = match.group(1).strip()
+    if not content or (agent != 'agy' and content.startswith(('<', '# AGENTS.md', '# Developer', '# system'))):
+        return None
+    return role, ''.join(c for c in content if c in '\n\t' or 32 <= ord(c) < 127 or ord(c) >= 160)
+
+
+def search_transcripts(rows, query, progress):
+    pattern = re.compile(re.escape(query), re.IGNORECASE)
+    # Match both literal UTF-8 and JSON-escaped text before parsing records.
+    needles = {query.lower().encode('utf-8'), json.dumps(query, ensure_ascii=True)[1:-1].lower().encode('ascii')}
+    for index, row in enumerate(rows):
+        _, agent, sid, cwd, title, source = row
+        progress(f'Searching conversations {index + 1}/{len(rows)}')
+        paths = agy_transcript_paths(source, sid) if agent == 'agy' else [Path(source)]
+        path = next((p for p in paths if p.is_file()), None)
+        if path is None:
+            continue
+        hit = None
+        try:
+            with path.open('rb') as stream:
+                for raw in stream:
+                    lowered = raw.lower()
+                    if query.isascii() and not any(needle in lowered for needle in needles):
+                        continue
+                    try:
+                        message = extract_message(agent, json.loads(raw))
+                        if not message:
+                            continue
+                        role, content = message
+                        text = ' '.join(content.split())
+                        match = pattern.search(text)
+                        if match:
+                            start = max(0, match.start() - 50)
+                            end = min(len(text), match.end() + 90)
+                            hit = (role, ('…' if start else '') + text[start:end] + ('…' if end < len(text) else ''))
+                    except (ValueError, TypeError, AttributeError):
+                        continue
+        except OSError:
+            continue
+        if hit:
+            yield row, hit
+
+
 def preview(agent, path, cwd, title, session_id, timestamp):
     reset = '\033[0m'
 
@@ -358,42 +433,10 @@ def preview(agent, path, cwd, title, session_id, timestamp):
                 line = raw_line.decode('utf-8', errors='replace')
                 try:
                     obj = json.loads(line)
-                    if agent == 'agy':
-                        kind = obj.get('type')
-                        if kind == 'USER_INPUT' and obj.get('source') != 'SYSTEM_SDK':
-                            role = 'user'
-                        elif kind == 'PLANNER_RESPONSE':
-                            role = 'assistant'
-                        else:
-                            continue
-                        content = obj.get('content', '')
-                    elif agent == 'codex':
-                        item = obj.get('payload', {})
-                        if obj.get('type') != 'response_item' or item.get('type') != 'message':
-                            continue
-                        role, content = item.get('role'), item.get('content', [])
-                    else:
-                        if obj.get('type') not in ('user', 'assistant'):
-                            continue
-                        item = obj.get('message') or {}
-                        role, content = obj['type'], item.get('content', '')
-                    if role not in ('user', 'assistant'):
+                    message = extract_message(agent, obj)
+                    if not message:
                         continue
-                    if isinstance(content, list):
-                        content = '\n'.join(part.get('text', '') for part in content
-                                            if isinstance(part, dict) and part.get('type') in ('text', 'input_text', 'output_text'))
-                    if not isinstance(content, str):
-                        continue
-                    content = content.strip()
-                    if agent == 'agy' and role == 'user' and content.startswith('<USER_REQUEST'):
-                        match = re.search(r'<USER_REQUEST(?:\s[^>]*)?>(.*?)</USER_REQUEST>', content, re.DOTALL)
-                        if not match:
-                            continue
-                        content = match.group(1).strip()
-                    if not content or (agent != 'agy' and content.startswith(('<', '# AGENTS.md', '# Developer', '# system'))):
-                        continue
-                    # Escape terminal control sequences in transcript content.
-                    content = ''.join(c for c in content if c in '\n\t' or ord(c) >= 32 and ord(c) != 127)
+                    role, content = message
                     if role == 'user':
                         latest_user = content
                     messages.append((role, content[-3000:]))
@@ -505,16 +548,16 @@ def main():
                 folder_label = Path(cwd_filter).name if cwd_filter else 'all'
                 key = '\033[1;38;5;110m'
                 hint = '\033[38;5;60m'
-                shortcuts = f'{key}^G {hint}agent  {key}^D {hint}cwd  {key}^R {hint}reset  {key}Pg↑/↓ {hint}scroll'
+                shortcuts = f'{key}^T {hint}search  {key}^G {hint}agent  {key}^D {hint}cwd  {key}^R {hint}reset  {key}Pg↑/↓ {hint}scroll'
                 filters = f'agent: {agent_filter or "all"}  cwd: {folder_label}'
                 list_width = terminal_width // 2 - 5 if terminal_width >= 120 else terminal_width - 4
-                spacing = max(2, list_width - cell_width('^G agent  ^D cwd  ^R reset  Pg↑/↓ scroll') - cell_width(filters))
+                spacing = max(2, list_width - cell_width('^T search  ^G agent  ^D cwd  ^R reset  Pg↑/↓ scroll') - cell_width(filters))
                 footer = f'{shortcuts}{" " * spacing}{hint}{filters}\033[0m'
                 result = subprocess.run(
-                    ['fzf', '--ansi', '--info=hidden', '--no-separator', '--delimiter=\t', '--with-nth=1', '--no-sort', '--layout=reverse',
+                    ['fzf', '--ansi', '--info=hidden', '--no-separator', '--no-hscroll', '--delimiter=\t', '--with-nth=1', '--no-sort', '--layout=reverse',
                      '--prompt=󰍉  Session  ❯ ', '--pointer=❯', '--marker=󰄬', theme,
                      '--bind=alt-up:preview-up,alt-down:preview-down,alt-k:preview-up,alt-j:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
-                     '--expect=ctrl-g,ctrl-d,ctrl-r', '--header=' + columns, '--footer=' + footer, '--footer-border=none',
+                     '--expect=ctrl-g,ctrl-d,ctrl-r,ctrl-t', '--header=' + columns, '--footer=' + footer, '--footer-border=none',
                      '--preview=' + ' '.join(map(shlex.quote, [sys.executable, __file__, '--preview-session'])) + ' {2} {3} {4} {5} {6} {7} {8}',
                      '--preview-window=right:50%:wrap-word:follow:noinfo:~1:<60(down:40%:wrap-word:follow:noinfo:~1)', '--preview-wrap-sign='],
                     input=lines, text=True, stdout=subprocess.PIPE, env=env,
@@ -524,6 +567,44 @@ def main():
                 key, _, selected = result.stdout.partition('\n')
                 if key == 'ctrl-r':
                     agent_filter = cwd_filter = None
+                    continue
+                if key == 'ctrl-t':
+                    try:
+                        query = input('Search conversation messages: ').strip()
+                    except EOFError:
+                        return
+                    if not query:
+                        continue
+                    with StartupSpinner(sys.stderr.isatty()) as spinner:
+                        hits = list(search_transcripts(filtered(), query, spinner.update))
+                    if not hits:
+                        try:
+                            input('No matching messages. Press Enter to return. ')
+                        except EOFError:
+                            return
+                        continue
+                    search_lines = []
+                    matcher = re.compile(re.escape(query), re.IGNORECASE)
+                    for row, (role, excerpt) in hits:
+                        _, provider, sid, directory, title, source = row
+                        icon, color = AGENT_ICONS[provider]
+                        highlighted = matcher.sub(lambda match: '\033[1;38;5;221m' + match.group() + '\033[0m', excerpt)
+                        line = f'\033[{color}m{icon}\033[0m {provider}  \033[38;5;109m{Path(directory).name}\033[0m  {role}: {highlighted}'
+                        fields = [line, provider, source, directory, ' '.join(str(title).split()), sid,
+                                  dt.datetime.fromtimestamp(row[0]).strftime('%Y-%m-%d %H:%M:%S %Z'),
+                                  '1' if provider == 'agy' or (provider, sid) in active else '0']
+                        search_lines.append('\t'.join(fields))
+                    found = subprocess.run(
+                        ['fzf', '--ansi', '--no-sort', '--no-hscroll', '--layout=reverse', '--delimiter=\t',
+                         '--with-nth=1', '--prompt=󰍉  Matches ❯ ', theme,
+                         '--header=Matching messages · Enter: resume · Esc: back',
+                         '--bind=alt-up:preview-up,alt-down:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
+                         '--preview=' + ' '.join(map(shlex.quote, [sys.executable, __file__, '--preview-session'])) + ' {2} {3} {4} {5} {6} {7} {8}',
+                         '--preview-window=right:50%:wrap-word:follow:noinfo:~1:<60(down:40%:wrap-word:follow:noinfo:~1)'],
+                        input='\n'.join(search_lines), text=True, stdout=subprocess.PIPE, env=env)
+                    if found.returncode == 0 and found.stdout:
+                        args.selection = found.stdout.split('\t')[5]
+                        break
                     continue
                 if key in ('ctrl-g', 'ctrl-d'):
                     options = sorted({row[1] if key == 'ctrl-g' else row[3] for row in sessions})
@@ -535,15 +616,14 @@ def main():
                         ]
                         picker_options = ['--ansi', '--delimiter=\t', '--with-nth=1']
                     else:
-                        entries = ['All'] + options
-                        picker_options = []
+                        entries = ['󰒊 All\tAll'] + [f'\033[38;5;109m󰉋\033[0m {directory}\t{directory}' for directory in options]
+                        picker_options = ['--ansi', '--delimiter=\t', '--with-nth=1']
                     choice = subprocess.run(['fzf', '--layout=reverse', '--prompt=' + prompt, theme] + picker_options,
                                             input='\n'.join(entries), text=True,
                                             stdout=subprocess.PIPE, env=env)
                     if choice.returncode == 0:
                         value = choice.stdout.strip()
-                        if key == 'ctrl-g':
-                            value = value.rsplit('\t', 1)[-1]
+                        value = value.rsplit('\t', 1)[-1]
                         value = None if value == 'All' else value
                         if key == 'ctrl-g':
                             agent_filter = value
