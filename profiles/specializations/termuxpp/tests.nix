@@ -31,7 +31,8 @@ let
     assert c.programs.home-manager.enable;
     assert builtins.match "file:///nix/store/.*" c.nix.settings.flake-registry != null;
     assert c.fullNix.rworker.enable;
-    assert c.fullNix.rworker.controller == null;
+    assert c.fullNix.rworker.controller != null;
+    assert c.fullNix.rworker.awsCredentialsFile == c.fullNix.upgradeCache.credentials_file;
     assert c.fullNix.rworker.system == "aarch64-linux";
     assert c.programs.eza.package.name == "eza-full-nix";
     assert builtins.elem c.programs.eza.package c.home.packages;

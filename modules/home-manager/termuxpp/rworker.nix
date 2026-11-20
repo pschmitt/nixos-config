@@ -26,6 +26,7 @@ let
   configLines = lib.concatStringsSep "\n" (
     lib.optional (cfg.controller != null) "controller=${cfg.controller}"
     ++ lib.optional (cfg.key != null) "key=${cfg.key}"
+    ++ lib.optional (cfg.awsCredentialsFile != null) "aws_credentials=${cfg.awsCredentialsFile}"
     ++ [
       "ttl=${cfg.ttl}"
       "system=${cfg.system}"
@@ -86,6 +87,19 @@ in
       type = lib.types.nullOr lib.types.str;
       default = null;
       description = "rworker profile to lease; null uses the controller's default.";
+    };
+
+    awsCredentialsFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default =
+        if config.fullNix.upgradeCache != null then config.fullNix.upgradeCache.credentials_file else null;
+      defaultText = lib.literalExpression "config.fullNix.upgradeCache.credentials_file";
+      description = ''
+        Read-only AWS credentials of the private `s3://` substituter. With
+        them, `rworker-nix remote-build` (nixpp `--remote-eval`) lets the
+        worker substitute from that cache; without, the worker builds what no
+        public cache has, and outputs that only exist there cannot be built.
+      '';
     };
   };
 

@@ -29,6 +29,7 @@ make_fakes() {
   cat > "$WORK/bin/rworker" <<'FAKE'
 #!/usr/bin/env bash
 printf 'rworker %s\n' "$*" >> "$FAKE_TRACE"
+[[ "${1:-}" != up ]] || printf 'RWORKER_AWS_CREDENTIALS_FILE=%s\n' "${RWORKER_AWS_CREDENTIALS_FILE:-}" >> "$FAKE_TRACE"
 hostkey='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAItestkeytestkeytestkeytestkeytest'
 action="${1:-}"
 shift
@@ -136,7 +137,25 @@ then
   do
     flake="$arg"
   done
-  printf '{"url":"%s/locked-rev?narHash=sha256-x"}\n' "$flake"
+  jq -n --arg flake "$flake" '{url: ($flake + "/locked-rev?narHash=sha256-x"),
+    path: "/nix/store/src-top",
+    locks: {nodes: {
+      root: {inputs: {pub: "pub", priv: "priv"}},
+      pub: {locked: {type: "github", owner: "o", repo: "pub", rev: "r1"}},
+      priv: {locked: {type: "gitlab", owner: "o", repo: "priv", rev: "r2", dir: "sub"}}
+    }}}'
+  exit 0
+fi
+if [[ "$1" == eval ]]
+then
+  if [[ "$LOCKED" == *'"dir"'* ]]
+  then
+    exit 9
+  fi
+  case "$LOCKED" in
+    *'"repo":"pub"'*) printf '/nix/store/src-pub' ;;
+    *) exit 1 ;;
+  esac
   exit 0
 fi
 case "$FAKE_SCENARIO" in
@@ -522,12 +541,14 @@ test_remote_build() {
     'github:o/cfg#termuxppConfigurations.p11.system' 'github:o/cfg#termuxppConfigurations.zf10.system'
   expect_rc "$n" 0 \
     && expect_trace "$n" 'nix flake metadata --json --refresh github:o/cfg' \
-    && expect_trace "$n" "nix flake archive --refresh --to $store" \
+    && expect_trace "$n" "nix copy --no-check-sigs --to $store" \
+    && expect_trace "$n" '== /nix/store/src-top /nix/store/src-pub' \
     && expect_trace "$n" 'rworker-ssh-command nix build --no-link --print-out-paths github:o/cfg/locked-rev\?narHash=sha256-x#termuxppConfigurations.p11.system' \
     && expect_trace "$n" "nix copy --no-check-sigs --from $store" \
     && expect_trace "$n" ' /nix/store/aaaa-system-a /nix/store/bbbb-system-b' \
     && expect_trace "$n" 'NIX_SSHOPTS=-o StrictHostKeyChecking=yes' \
     && expect_trace "$n" 'rworker down w-test1' \
+    && expect_err "$n" "skipping input 'priv'" \
     && expect_no_trace "$n" '--max-jobs 0' \
     && pass "$n"
   if [[ "$(< "$WORK/out")" != $'/nix/store/aaaa-system-a\n/nix/store/bbbb-system-b' ]]
@@ -538,6 +559,25 @@ test_remote_build() {
   fi
 }
 
+test_remote_build_nix_cache() {
+  local n=remote-nix-cache
+  : > "$WORK/creds"
+  SCENARIO_ENV="RWORKER_NIX_AWS_CREDENTIALS=$WORK/creds" run_scenario ok remote-build --no-link 'github:o/cfg#x'
+  expect_rc "$n" 0 \
+    && expect_no_trace "$n" '--no-nix-cache' \
+    && expect_trace "$n" 'RWORKER_AWS_CREDENTIALS_FILE='"$WORK/creds" \
+    && pass "$n"
+  n=remote-nix-cache-unreadable
+  SCENARIO_ENV="RWORKER_NIX_AWS_CREDENTIALS=$WORK/missing" run_scenario ok remote-build --no-link 'github:o/cfg#x'
+  expect_rc "$n" 0 \
+    && expect_trace "$n" '--no-nix-cache' \
+    && expect_err "$n" 'not readable' \
+    && pass "$n"
+  n=build-never-gets-cache
+  SCENARIO_ENV="RWORKER_NIX_AWS_CREDENTIALS=$WORK/creds" run_scenario ok build '.#x'
+  expect_rc "$n" 0 && expect_trace "$n" '--no-nix-cache' && pass "$n"
+}
+
 test_remote_build_failures() {
   local n scenario
   for scenario in remote-bad-output remote-no-output remote-build-fails remote-lock-fails
@@ -545,7 +585,7 @@ test_remote_build_failures() {
     n="$scenario"
     run_scenario "$scenario" remote-build --no-link 'github:o/cfg#x'
     expect_rc "$n" 1 \
-      && expect_no_trace "$n" 'nix copy' \
+      && expect_no_trace "$n" 'nix copy --no-check-sigs --from' \
       && expect_trace "$n" 'rworker down w-test1' \
       && pass "$n"
   done

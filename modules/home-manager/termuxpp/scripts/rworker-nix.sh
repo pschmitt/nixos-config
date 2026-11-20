@@ -16,9 +16,10 @@ Lease a disposable rworker, run "nix SUBCOMMAND --max-jobs 0 --builders LINE
 NIX_ARGS..." against it and delete the worker afterwards, also on failure.
 Nix evaluation still runs locally.
 
-remote-build evaluates on the worker too: it locks each flake here, copies
-its source and inputs (private ones included) to the worker with "nix flake
-archive", builds the locked installables there and copies the outputs back.
+remote-build evaluates on the worker too: it locks each flake here, fetches
+its source and every locked input this side can fetch (private ones
+included; the others are skipped with a warning), copies them to the worker,
+builds the locked installables there and copies the outputs back.
 
 Options:
   --ttl DURATION    worker lifetime backstop (default: 1h)
@@ -37,6 +38,11 @@ SYSTEM}, else ~/.config/rworker-nix/config and then local.conf beside it
   controller   ssh alias of the rworker controller (required); its address
                and pinned host key belong in ~/.ssh/config and known_hosts
   key          public key file ending in .pub (default ~/.ssh/id_ed25519.pub)
+  aws_credentials
+               read-only AWS credentials of this side's s3:// substituter;
+               remote-build then lets the worker substitute from that cache
+               (rworker nix-cache), else the worker builds what no public
+               cache has (RWORKER_NIX_AWS_CREDENTIALS overrides it)
 EOF
 }
 
@@ -65,6 +71,7 @@ read_config_file() {
       key) CFG_KEY="$value" ;;
       ttl) CFG_TTL="$value" ;;
       profile) CFG_PROFILE="$value" ;;
+      aws_credentials) CFG_AWS_CREDENTIALS="$value" ;;
       system) CFG_SYSTEM="$value" ;;
       *) warn "ignoring unknown key '$key' in $file" ;;
     esac
@@ -73,7 +80,7 @@ read_config_file() {
 
 read_config() {
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/rworker-nix"
-  CFG_CONTROLLER="" CFG_KEY="" CFG_TTL="" CFG_PROFILE="" CFG_SYSTEM=""
+  CFG_CONTROLLER="" CFG_KEY="" CFG_TTL="" CFG_PROFILE="" CFG_SYSTEM="" CFG_AWS_CREDENTIALS=""
   read_config_file "$dir/config"
   read_config_file "$dir/local.conf"
 }
@@ -229,8 +236,9 @@ on_exit() {
 }
 
 lease_worker() {
-  local ttl="$1" topic="$2" profile="$3" flavor="$4" disk="$5"
-  local -a args=(--json --ttl "$ttl" --topic "$topic" --no-nix-cache --no-niks3-token)
+  local ttl="$1" topic="$2" profile="$3" flavor="$4" disk="$5" nix_cache="${6:-}"
+  local -a args=(--json --ttl "$ttl" --topic "$topic" --no-niks3-token)
+  [[ -n "$nix_cache" ]] || args+=(--no-nix-cache)
   local name
   [[ -z "$profile" ]] || args+=(--profile "$profile")
   [[ -z "$flavor" ]] || args+=(--flavor "$flavor")
@@ -433,6 +441,32 @@ worker_store_url() {
   printf '%s?ssh-key=%s&base64-ssh-public-host-key=%s\n' "${f[0]}" "${f[2]}" "${f[7]}"
 }
 
+# Fetches the source and the locked inputs of FLAKE here and copies them to
+# STORE, so the worker can evaluate inputs it cannot fetch itself. Inputs this
+# side cannot fetch either are skipped: evaluation fetches lazily, so they
+# only matter if the build uses them.
+ship_flake() {
+  local store="$1" flake="$2" meta locked path name
+  local -a refresh=() paths=()
+  [[ -z "$REMOTE_REFRESH" ]] || refresh=(--refresh)
+  meta=$(nix flake metadata --json "${refresh[@]}" "$flake") || return 1
+  path=$(jq -er .path <<< "$meta") || return 1
+  paths=("$path")
+  while IFS=$'\t' read -r name locked
+  do
+    if path=$(LOCKED="$locked" nix eval --raw --impure --expr \
+      '(builtins.fetchTree (builtins.fromJSON (builtins.getEnv "LOCKED"))).outPath' 2> /dev/null)
+    then
+      paths+=("$path")
+    else
+      warn "skipping input '$name': cannot fetch it here"
+    fi
+  done < <(jq -r '.locks.nodes | to_entries[]
+    | select(.value.locked != null)
+    | "\(.key)\t\(.value.locked | del(.dir) | tojson)"' <<< "$meta")
+  nix copy --no-check-sigs --to "$store" "${paths[@]}"
+}
+
 # Locks the installables here, ships their sources to the worker, builds them
 # there and copies the outputs back. Prints the output paths on request.
 remote_build() {
@@ -448,7 +482,7 @@ remote_build() {
       warn "cannot lock flake '$flake'"
       return 1
     }
-    nix flake archive "${refresh[@]}" --to "$store" "$flake" > /dev/null || {
+    ship_flake "$store" "$flake" || {
       warn "cannot copy flake '$flake' to worker $name"
       return 1
     }
@@ -480,7 +514,7 @@ remote_build() {
 
 main() {
   local ttl="" topic="" profile="" flavor="" disk="" target="" down_name=""
-  local controller key subcommand worker_system line value rc=0
+  local controller key subcommand worker_system line value rc=0 aws_credentials nix_cache
   local -a nix_args=()
 
   read_config
@@ -528,6 +562,7 @@ main() {
   key="${RWORKER_NIX_KEY:-${CFG_KEY:-$HOME/.ssh/id_ed25519.pub}}"
   ttl="${ttl:-${RWORKER_NIX_TTL:-${CFG_TTL:-1h}}}"
   profile="${profile:-${RWORKER_NIX_PROFILE:-$CFG_PROFILE}}"
+  aws_credentials="${RWORKER_NIX_AWS_CREDENTIALS:-$CFG_AWS_CREDENTIALS}"
   target="${target:-${RWORKER_NIX_SYSTEM:-${CFG_SYSTEM:-aarch64-linux}}}"
   subcommand="${1:-}"
   nix_args=("${@:2}")
@@ -577,8 +612,21 @@ main() {
   trap 'exit 143' TERM
   trap 'exit 129' HUP
 
+  # remote-build evaluates and builds on the worker, which then needs this
+  # side's private cache: some outputs exist nowhere else.
+  nix_cache=""
+  if [[ "$subcommand" == remote-build && -n "$aws_credentials" ]]
+  then
+    if [[ -r "$aws_credentials" ]]
+    then
+      export RWORKER_AWS_CREDENTIALS_FILE="$aws_credentials"
+      nix_cache=1
+    else
+      warn "AWS credentials $aws_credentials are not readable; the worker gets no private cache"
+    fi
+  fi
   lease_worker "$ttl" "full-nix rworker-nix ${topic:-$subcommand} $LEASE_NONCE" \
-    "$profile" "$flavor" "$disk" || return 1
+    "$profile" "$flavor" "$disk" "$nix_cache" || return 1
   worker_system=$(probe_worker "$WORKER_NAME" "$target") || return 1
   line=$(build_builder_line "$WORKER_NAME" "$target" "$worker_system" "$WORKER_INFO") \
     || return 1
