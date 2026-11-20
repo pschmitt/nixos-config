@@ -76,6 +76,14 @@ in
   ];
 
   options.services.circus = {
+    rworkerPool.enable = lib.mkEnableOption ''
+      ephemeral pool agents on rworkers (the rworker autoscaler on the ad-hoc
+      control host, profile circus): a second agent join token
+      (circus/pool-join-token-sha256) and a read-only API key
+      (circus/autoscaler-api-key) for its demand checks, which read the
+      operator queue on the tailnet-only vhost
+    '';
+
     allowLocalBuilds = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -153,6 +161,12 @@ in
         # SHA-256 of circus/agent-join-token (./agent.nix).
         "circus/agent-join-token-sha256" = config.sops.mkHostSecret { };
       }
+      // lib.optionalAttrs cfg.rworkerPool.enable {
+        # SHA-256 of the pool's join token (held by the autoscaler, handed to
+        # each pool worker in its user-data) and the autoscaler's API key.
+        "circus/pool-join-token-sha256" = config.sops.mkHostSecret { };
+        "circus/autoscaler-api-key" = config.sops.mkHostSecret { };
+      }
       // lib.optionalAttrs cfg.githubWebhook.enable {
         "circus/github-webhook-secret" = config.sops.mkHostSecret { };
       }
@@ -180,7 +194,7 @@ in
       # rpc table.
       templates = {
         "circus-queue-runner.env".content = ''
-          CIRCUS_QUEUE_RUNNER__RPC__JOIN_TOKENS="[{ name = 'rofl', token_hash = '${placeholder "agent-join-token-sha256"}' }]"
+          CIRCUS_QUEUE_RUNNER__RPC__JOIN_TOKENS="[{ name = 'rofl', token_hash = '${placeholder "agent-join-token-sha256"}' }${lib.optionalString cfg.rworkerPool.enable ", { name = 'rworker-pool', token_hash = '${placeholder "pool-join-token-sha256"}' }"}]"
         ''
         + s3KeyIdEnv;
         # The server presigns S3 GETs for cache downloads.
@@ -343,7 +357,13 @@ in
                 role = "admin";
                 key_file = secret "admin-api-key";
               }
-            ];
+            ]
+            ++ lib.optional cfg.rworkerPool.enable {
+              # Demand checks of the rworker pool autoscaler: read only.
+              name = "rworker-autoscaler";
+              role = "read-only";
+              key_file = secret "autoscaler-api-key";
+            };
             # Dashboard login (rbw entry circus.brkn.lol); the server applies
             # Circus' password policy to it.
             users = [
@@ -392,6 +412,16 @@ in
           locations = {
             "/".return = "404";
             "/nix-cache/" = {
+              proxyPass = "http://127.0.0.1:${toString serverPort}";
+              extraConfig = ''
+                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
+                deny all;
+              '';
+            };
+          }
+          // lib.optionalAttrs cfg.rworkerPool.enable {
+            # The pool autoscaler's demand check (API key required).
+            "= /api/v1/operator/queue" = {
               proxyPass = "http://127.0.0.1:${toString serverPort}";
               extraConfig = ''
                 ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
