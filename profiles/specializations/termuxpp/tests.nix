@@ -39,6 +39,11 @@ let
     assert c.programs.eza.package == home.pkgs.eza;
     assert home.pkgs.bat.fullNixSignalStackPrograms == [ "bat" ];
     assert home.pkgs.fd.fullNixSignalStackPrograms == [ "fd" ];
+    assert home.pkgs.rworker.fullNixSignalStackPrograms == [ "rworker" ];
+    assert
+      (home.pkgs.rworker.override { sshControlMaster = false; }).fullNixSignalStackPrograms == [
+        "rworker"
+      ];
     assert home.pkgs.ripgrep.fullNixSignalStackPrograms == [ "rg" ];
     assert
       home.pkgs.rbw.fullNixSignalStackPrograms == [

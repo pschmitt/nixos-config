@@ -67,6 +67,19 @@ in
     "rbw-agent"
   ];
   openstack-rs = withSignalStack prev.openstack-rs [ "osc" ];
+  # rworker (Rust) segfaults on the Pixel (p11) without the larger signal
+  # stack: `rworker ls` exits 139, with stack.so it works (2026-11-20).
+  # Overridable, since modules/home-manager/termuxpp/rworker.nix overrides it.
+  rworker = final.lib.makeOverridable (
+    args:
+    let
+      package = prev.rworker.override args;
+    in
+    (withSignalStack package [ "rworker" ])
+    // {
+      inherit (package) version;
+    }
+  ) { };
   vivid = withSignalStack prev.vivid [ "vivid" ];
   zoxide = withSignalStack prev.zoxide [ "zoxide" ];
   # The guest cannot reliably allocate LuaJIT executable memory at startup.
