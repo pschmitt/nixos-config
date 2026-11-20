@@ -25,11 +25,10 @@ in
     content = ''
       server:
         # FileBrowser Quantum 2.0 keeps its state in SQLite and refuses the
-        # 1.x string form of server.database. The 1.x file (BoltDB despite
-        # its old .sqlite name) is migrated from migrateFrom on first start.
+        # 1.x string form of server.database. The 1.x BoltDB file was
+        # migrated into this one on 2026-11-21 (migrateFrom since removed).
         database:
           path: "${stateDir}/filebrowser-v2.sqlite"
-          migrateFrom: "${stateDir}/filebrowser.bolt.old"
         cacheDir: "${stateDir}/cache"
         sources:
           # One source over the whole synced tree (Documents/Music/Pictures/
@@ -118,6 +117,9 @@ in
       # directory only grants "other" execute, so join its owning group.
       SupplementaryGroups = [ "keys" ];
       StateDirectory = "filebrowser-quantum";
+      # The SQLite files are created 0644 and hold password hashes and the
+      # auth signing key: keep the directory private to the service user.
+      StateDirectoryMode = "0700";
       WorkingDirectory = stateDir;
       ExecStart = "${pkgs.filebrowser-quantum}/bin/filebrowser-quantum -c ${
         config.sops.templates."filebrowser-quantum/config.yaml".path
