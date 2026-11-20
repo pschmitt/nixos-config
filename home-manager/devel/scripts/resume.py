@@ -534,7 +534,7 @@ def main():
         env = os.environ.copy()
         env.pop('FZF_DEFAULT_OPTS', None)
         env.pop('FZF_DEFAULT_OPTS_FILE', None)
-        theme = '--color=fg:#cdd6f4,bg:#1e1e2e,fg+:#ffffff,bg+:#313244,hl:#f9e2af,hl+:#f9e2af,pointer:#cba6f7,prompt:#89b4fa,header:#94e2d5,border:#6c7086'
+        theme = '--color=fg:#cdd6f4,bg:#1e1e2e,fg+:#ffffff,bg+:#313244,hl:#f9e2af,hl+:#f9e2af,pointer:#cba6f7,prompt:#89b4fa,header:#94e2d5,border:#6c7086,preview-scrollbar:#45475a'
         try:
             while True:
                 rows = filtered()
