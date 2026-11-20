@@ -335,12 +335,12 @@ jobs:
 
   build-termuxpp:
     # Like build-hosts-aarch64: after the packages, so the guest systems
-    # substitute our packages instead of building them a second time.
+    # substitute our packages instead of building them a second time. The OCI
+    # images are not part of a guest system.
     needs:
       - setup-matrix
       - build-pkgs-free
       - build-pkgs-nonfree
-      - build-pkgs-oci
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && toJson(fromJson(needs.setup-matrix.outputs.matrix).termuxpp) != '[]' }}
     name: build-termuxpp ${{ matrix.pkg.name }} (${{ matrix.system }})
     timeout-minutes: 120
