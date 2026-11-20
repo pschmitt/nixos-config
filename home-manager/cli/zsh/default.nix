@@ -4,9 +4,6 @@
   pkgs,
   ...
 }:
-let
-  termuxMode = config.termux.enable or false;
-in
 {
   imports = [
     ./atuin.nix
@@ -31,7 +28,7 @@ in
         run rm -f ${config.xdg.cacheHome}/zcompdump
       '';
 
-      packages = lib.optionals (!termuxMode) [
+      packages = [
         pkgs.gitstatus # used by p10k
         pkgs.nix-your-shell
       ];

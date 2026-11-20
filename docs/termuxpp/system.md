@@ -33,11 +33,12 @@ nix build '.#termuxppConfigurations.p11.system'
 ## Guest command: nixpp
 
 The user-facing interface is **`nixpp`**, a Rust executable built for the Linux
-guest and Android/Bionic from the same source in `pkgs/nixpp/source`. The guest client and
-native controller no longer require a Python interpreter. The native executable
-runs independently of the guest so broken guest activation cannot disable recovery.
-The old native bundle manager is retained only for unmigrated installations and
-existing recovery; it is not the manager for this declarative guest system.
+guest and Android/Bionic from the same source, maintained in the
+[termuxpp repository](https://github.com/pschmitt/termuxpp/tree/main/nix/nixpp) and
+taken from its flake input (`inputs.termuxpp.lib.nixpp.packagesFor pkgs`). The guest
+client and native controller no longer require a Python interpreter. The native
+executable runs independently of the guest so broken guest activation cannot
+disable recovery.
 
 Human-readable output uses restrained terminal colors; redirected output and
 `NO_COLOR` disable automatic styling. Use `--json` for machine-readable results.

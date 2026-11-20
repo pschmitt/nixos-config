@@ -18,11 +18,11 @@
       flake = false;
     };
 
-    # Sources (MIT) of the full-Nix Android launcher and bootstrap seed, built
-    # here (pkgs/nixpp/bootstrap-seed.nix); no droid-nix binary is used.
-    droid-nix-src = {
-      url = "github:lassulus/droid-nix/bb08d50117568e9994b6d87c918c4c2d7b5de9b1";
-      flake = false;
+    # nixpp (the full-Nix Android runtime and guest system manager) and its
+    # helpers; built with this flake's Nixpkgs (lib.nixpp.packagesFor).
+    termuxpp = {
+      url = "github:pschmitt/termuxpp";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Main user's public SSH keys (mainUser.authorizedKeys); `nix flake update
@@ -491,11 +491,6 @@
       };
     };
 
-    termux-tools = {
-      url = "github:pschmitt/termux.sh";
-      flake = false;
-    };
-
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -622,52 +617,6 @@
       homeConfigurations = import ./profiles/specializations/termuxpp/homes.nix { inherit inputs; };
       termuxppConfigurations = import ./profiles/specializations/termuxpp/systems.nix { inherit inputs; };
 
-      lib.termux = {
-        mkBundle =
-          {
-            modules ? [ ],
-            extraSpecialArgs ? { },
-          }:
-          let
-            system = "x86_64-linux";
-            basePkgs = import nixpkgs {
-              inherit system;
-              config = {
-                allowUnfree = true;
-                android_sdk.accept_license = true;
-              };
-            };
-          in
-          (import ./pkgs/termux/native { inherit basePkgs inputs; }).mkTermuxBundle {
-            inherit modules extraSpecialArgs;
-          };
-
-        # Wrap a prepared Termux archive (built outside Nix, e.g. by
-        # nixos-config-private's build-termux-bootstrap) as a reference-free
-        # store path. Needs --impure since the archive lives outside the flake:
-        #   nix build --impure --expr '(builtins.getFlake "path:/repo").lib.termux.mkCacheArchive {
-        #     archive = /abs/termux-prefix.tar.gz; }'
-        mkCacheArchive =
-          {
-            archive,
-            archiveName ? baseNameOf (toString archive),
-            system ? "x86_64-linux",
-          }:
-          nixpkgs.legacyPackages.${system}.callPackage ./pkgs/termux/cache-archive {
-            archive = builtins.path {
-              path = archive;
-              name = "${archiveName}-source";
-            };
-            inherit archiveName;
-          };
-
-        mkPackageSet =
-          { pkgs }:
-          import ./pkgs/termux/native/package-set.nix {
-            inherit inputs pkgs;
-          };
-      };
-
       # Your custom packages
       # Accessible through 'nix build', 'nix shell', etc
       packages = forAllSystems (
@@ -675,51 +624,8 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           customPackages = import ./pkgs { inherit pkgs inputs; };
-          termuxNativePackages = nixpkgs.lib.optionalAttrs (system == "x86_64-linux") (
-            let
-              termuxNative = import ./pkgs/termux/native {
-                basePkgs = pkgs;
-                inherit inputs;
-              };
-              termuxHostBundles =
-                nixpkgs.lib.mapAttrs
-                  (
-                    hostname: hostModule:
-                    termuxNative.mkTermuxBundle {
-                      modules = [ hostModule ];
-                      extraSpecialArgs = { inherit hostname; };
-                    }
-                  )
-                  {
-                    mp4 = ./hosts/mp4;
-                    p11 = ./hosts/p11;
-                    zf10 = ./hosts/zf10;
-                  };
-              hostBundlePackages = nixpkgs.lib.mapAttrs' (
-                hostname: bundle: nixpkgs.lib.nameValuePair "termux-native-${hostname}-bundle" bundle.bundle
-              ) termuxHostBundles;
-              forkBundlePackages =
-                nixpkgs.lib.mapAttrs'
-                  (
-                    hostname: hostModule:
-                    nixpkgs.lib.nameValuePair "termuxpp-native-${hostname}-bundle"
-                      (termuxNative.mkTermuxBundle {
-                        modules = [ hostModule ];
-                        extraSpecialArgs = { inherit hostname; };
-                        termuxpp = true;
-                      }).bundle
-                  )
-                  {
-                    mp4 = ./hosts/mp4;
-                    p11 = ./hosts/p11;
-                    zf10 = ./hosts/zf10;
-                  };
-            in
-            hostBundlePackages // forkBundlePackages
-          );
         in
         customPackages
-        // termuxNativePackages
         // nixpkgs.lib.optionalAttrs (system == "aarch64-linux") (
           nixpkgs.lib.mapAttrs' (
             host: guest: nixpkgs.lib.nameValuePair "termuxpp-system-${host}" guest.system
@@ -950,9 +856,6 @@
 
       # Your custom packages and modifications, exported as overlays
       overlays = import ./overlays { inherit inputs; };
-
-      # Build a Termux bundle with additional Home Manager modules and arguments.
-      lib.mkTermuxBundle = import ./pkgs/termux/native/mkTermuxBundle.nix;
 
       # Public service modules, also handed to nixos-config-private as the
       # `publicModules` specialArg.

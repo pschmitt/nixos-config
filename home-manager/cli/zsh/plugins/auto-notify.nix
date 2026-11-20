@@ -1,11 +1,9 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
-  termuxMode = config.termux.enable or false;
   autoNotify = pkgs.fetchFromGitHub {
     owner = "MichaelAquilina";
     repo = "zsh-auto-notify";
@@ -14,16 +12,14 @@ let
   };
 in
 {
-  programs.zsh.initContent = lib.mkIf (!termuxMode) (
-    lib.mkOrder 900 ''
-      if [[ -o interactive && -z "''${NO_PLUGINS:-}" && -z "$SSH_CONNECTION" ]] \
-        && (( $+commands[notify-send] )) \
-        && ! is_termux
-      then
-        zsh::source-plugin ${autoNotify}/auto-notify.plugin.zsh
-        AUTO_NOTIFY_IGNORE+=(journalctl watch)
-        export AUTO_NOTIFY_THRESHOLD=30 AUTO_NOTIFY_EXPIRE_TIME=5000
-      fi
-    ''
-  );
+  programs.zsh.initContent = lib.mkOrder 900 ''
+    if [[ -o interactive && -z "''${NO_PLUGINS:-}" && -z "$SSH_CONNECTION" ]] \
+      && (( $+commands[notify-send] )) \
+      && ! is_termux
+    then
+      zsh::source-plugin ${autoNotify}/auto-notify.plugin.zsh
+      AUTO_NOTIFY_IGNORE+=(journalctl watch)
+      export AUTO_NOTIFY_THRESHOLD=30 AUTO_NOTIFY_EXPIRE_TIME=5000
+    fi
+  '';
 }

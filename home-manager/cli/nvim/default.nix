@@ -6,7 +6,6 @@
   ...
 }:
 let
-  termuxMode = config.termux.enable or false;
   appName = "nvim";
 
   # The unwrapped nightly binary from your flake input.
@@ -125,7 +124,6 @@ in
 {
   imports = [
     inputs.lazyvim.homeManagerModules.default
-    ./termux.nix
   ];
 
   options.programs.neovim.nightly.enable = lib.mkOption {
@@ -134,7 +132,7 @@ in
     description = "Install the additional nvim-nightly command alongside configured Neovim.";
   };
 
-  config = lib.mkIf (!termuxMode) {
+  config = {
     programs.lazyvim = {
       enable = true;
       inherit appName;

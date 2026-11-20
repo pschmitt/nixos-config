@@ -82,8 +82,6 @@ Continue with [Deployment](docs/deploy.md) to roll out a change, or with
 | [home-manager/README.md](home-manager/README.md) | Home Manager layout and module conventions |
 | [services/harmonia/README.md](services/harmonia/README.md) | CI cache delivery and the LAN mirror |
 | [services/http-static/README.md](services/http-static/README.md) | Blob archive listing |
-| [Native bundle manager](pkgs/nixpp/legacy/README.md) | Termux client for reference-free Nix outputs |
-| [android/termux-native/README.md](android/termux-native/README.md) | Native Termux environments built with Nix |
 | [AGENTS.md](AGENTS.md) | Code style, service conventions and rules for AI agents |
 
 ## License

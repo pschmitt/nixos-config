@@ -1,16 +1,15 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
-  inherit (import ./path.nix { inherit config lib; }) pluginPath termuxMode;
+  inherit (import ./path.nix { inherit lib; }) pluginPath;
   extractDir = "${pkgs.oh-my-zsh}/share/oh-my-zsh/plugins/extract";
 in
 {
   programs.zsh.shellAliases.x = "extract";
-  xdg.configFile."zsh/completions/_extract" = lib.mkIf (!termuxMode) {
+  xdg.configFile."zsh/completions/_extract" = {
     source = "${extractDir}/_extract";
   };
 

@@ -8,8 +8,7 @@
 let
   cfg = config.fullNix.androidBridge;
 
-  api = pkgs.callPackage ../../../pkgs/nixpp/android-api.nix {
-    inherit inputs;
+  api = (inputs.termuxpp.lib.nixpp.packagesFor pkgs).termuxpp-api.override {
     notificationTimeouts = config.programs.notify-send.android.timeout;
   };
 

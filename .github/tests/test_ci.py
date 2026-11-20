@@ -108,6 +108,48 @@ class ScopeTests(unittest.TestCase):
             self.assertFalse(scope.needs_build(path))
 
 
+class TermuxppLockTests(unittest.TestCase):
+    """A termuxpp-only flake.lock bump builds only the TermuxPP systems."""
+
+    @staticmethod
+    def lock(termuxpp="a", own="b", shared="c", nixpkgs="d"):
+        def node(rev, inputs=None):
+            return {"locked": {"rev": rev}, **({"inputs": inputs} if inputs else {})}
+
+        return {
+            "root": node(
+                None, {"nixpkgs": "nixpkgs", "fenix": "fenix", "termuxpp": "termuxpp"}
+            ),
+            "nixpkgs": node(nixpkgs),
+            "fenix": node(shared),
+            "termuxpp": node(termuxpp, {"nixpkgs": ["nixpkgs"], "fenix": "fenix_2"}),
+            "fenix_2": node(own),
+        }
+
+    def changed(self, **new):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "flake.lock").write_text(
+                json.dumps({"nodes": self.lock(**new)})
+            )
+            old = json.dumps({"nodes": self.lock()})
+            with patch.object(scope, "output", return_value=old):
+                cwd = os.getcwd()
+                os.chdir(directory)
+                try:
+                    return scope.termuxpp_only_lock_change("BASE")
+                finally:
+                    os.chdir(cwd)
+
+    def test_termuxpp_and_its_own_inputs(self):
+        self.assertTrue(self.changed(termuxpp="x"))
+        self.assertTrue(self.changed(termuxpp="x", own="y"))
+
+    def test_shared_or_unrelated_changes_build_broadly(self):
+        self.assertFalse(self.changed())
+        self.assertFalse(self.changed(nixpkgs="x"))
+        self.assertFalse(self.changed(termuxpp="x", shared="y"))
+
+
 class DerivationCacheTests(unittest.TestCase):
     attribute = "nixosConfigurations.fnuc.config.system.build.toplevel.drvPath"
     drv = "/nix/store/" + "a" * 32 + "-system.drv"

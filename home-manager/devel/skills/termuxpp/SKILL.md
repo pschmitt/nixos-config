@@ -5,17 +5,19 @@ description: Build, package, debug or validate the TermuxPP fork, its AArch64 ni
 
 # TermuxPP development and validation
 
-Use this for TermuxPP application and companion development. For managed nixpp
-profiles, yadm initialization, upgrades or recovery, use `termux-init` instead.
-Load `adb` before device work and `rworker` before Android/native builds. Read
+Use this for TermuxPP application, companion and nixpp development. nixpp (the
+full-Nix guest runtime and system manager) lives in the core repository under
+`nix/nixpp`; nixos-config consumes it through its `termuxpp` flake input. Load `adb` before device work and `rworker` before Android/native builds. Read
 each repository's applicable instructions and claim the scope through Concord.
 
 ## Sources of truth
 
 All forks use `main`:
 
-- [Core](https://github.com/pschmitt/termux-app): `docs/en/aarch64-bootstrap.md`,
-  `scripts/build-aarch64-bootstrap.py`, `scripts/package-helpers.py`.
+- [Core](https://github.com/pschmitt/termuxpp): `docs/en/aarch64-bootstrap.md`,
+  `scripts/build-aarch64-bootstrap.py`, `scripts/package-helpers.py`, and nixpp
+  in `nix/nixpp` (flake outputs `nixpp`, `nixpp-runtime-termux`,
+  `nixpp-runtime-termux-seed`, `lib.nixpp.packagesFor`).
 - [API app](https://github.com/pschmitt/termux-api).
 - [Tasker app](https://github.com/pschmitt/termux-tasker).
 - [Native API tools](https://github.com/pschmitt/termux-api-package).
@@ -76,7 +78,7 @@ The custom AArch64 bootstrap is opt-in. Supply both
 without them builds retain upstream archives. Other ABIs remain independent.
 
 - Use a verified upstream base, a retained dependency lock/debs, the real
-  Android/Bionic AArch64 nixpp binary, OpenSSH and fork-compatible helpers.
+  Android/Bionic AArch64 nixpp binary (`.#nixpp-runtime-termux`), OpenSSH and fork-compatible helpers.
   Do not use Linux/glibc outputs or a synthetic test binary.
 - `fetch` requires `--base-zip`; custom `build --base-zip` inputs also need
   `--base-sha256`. Inspect current `--help` for complete arguments.
@@ -113,8 +115,7 @@ Test the final artifacts, not stale APKs left under older output filenames:
    profiles. Command parameters belong to the nested Locale bundle; reading
    them from the top-level host intent breaks execution.
 5. Run the exact bootstrap nixpp binary with `--version` on the device. This
-   does not prove a configured profile, successful upgrade or yadm completion;
-   use `termux-init` for those checks.
+   does not prove a configured guest system or a successful upgrade.
 
 `run-as` does not inherit the normal Termux shell environment. If it is needed,
 use a short-lived private launcher with HOME, PREFIX, PATH and LD_LIBRARY_PATH.

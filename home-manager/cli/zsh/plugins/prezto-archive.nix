@@ -1,11 +1,10 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
-  inherit (import ./path.nix { inherit config lib; }) pluginTree;
+  inherit (import ./path.nix { inherit lib; }) pluginTree;
 in
 {
   programs.zsh.initContent = lib.mkOrder 525 ''

@@ -106,6 +106,60 @@ def needs_build(path):
     )
 
 
+def termuxpp_matrix():
+    hosts = json.loads(
+        output(
+            "nix",
+            "eval",
+            "--json",
+            ".#termuxppConfigurations",
+            "--apply",
+            "builtins.attrNames",
+        )
+    )
+    if not hosts:
+        raise ValueError("No TermuxPP systems configured")
+    matrix = empty_matrix()
+    matrix["pkgs"]["free"] = [
+        {"pkg": {"name": f"termuxpp-system-{host}"}, "system": GITHUB_SYSTEM}
+        for host in hosts
+    ]
+    return matrix
+
+
+def lock_reachable(nodes, roots):
+    """Lock nodes reachable from the given node names (follows are paths)."""
+    seen, stack = set(), list(roots)
+    while stack:
+        name = stack.pop()
+        if name in seen or name not in nodes:
+            continue
+        seen.add(name)
+        for target in nodes[name].get("inputs", {}).values():
+            if isinstance(target, str):
+                stack.append(target)
+    return seen
+
+
+def termuxpp_only_lock_change(base):
+    """True when the lock diff touches only nodes that termuxpp alone uses."""
+    old = json.loads(output("git", "show", f"{base}:flake.lock"))["nodes"]
+    new = json.loads(Path("flake.lock").read_text())["nodes"]
+    termuxpp = new["root"]["inputs"].get("termuxpp")
+    if not isinstance(termuxpp, str) or old["root"] != new["root"]:
+        return False
+    others = [
+        target
+        for name, target in new["root"]["inputs"].items()
+        if name != "termuxpp" and isinstance(target, str)
+    ]
+    own = lock_reachable(new, [termuxpp]) - lock_reachable(new, others)
+    changed = {
+        name for name in old.keys() | new.keys() if old.get(name) != new.get(name)
+    }
+    return bool(changed) and changed <= own
+
+
 def changed_files(base, event):
     if event == "workflow_dispatch" or not base or set(base) == {"0"}:
         return None
@@ -127,24 +181,7 @@ def main():
         if args.classify_only:
             print("true")
             return
-        hosts = json.loads(
-            output(
-                "nix",
-                "eval",
-                "--json",
-                ".#termuxppConfigurations",
-                "--apply",
-                "builtins.attrNames",
-            )
-        )
-        if not hosts:
-            raise ValueError("No TermuxPP systems configured")
-        matrix = empty_matrix()
-        matrix["pkgs"]["free"] = [
-            {"pkg": {"name": f"termuxpp-system-{host}"}, "system": GITHUB_SYSTEM}
-            for host in hosts
-        ]
-        print(json.dumps(matrix, separators=(",", ":")))
+        print(json.dumps(termuxpp_matrix(), separators=(",", ":")))
         return
 
     base = os.environ.get("BASE_SHA", "")
@@ -156,6 +193,10 @@ def main():
         return
     if relevant == []:
         print(json.dumps(empty_matrix(), separators=(",", ":")))
+        return
+    # A termuxpp bump only changes nixpp and the TermuxPP guest systems.
+    if relevant == ["flake.lock"] and termuxpp_only_lock_change(base):
+        print(json.dumps(termuxpp_matrix(), separators=(",", ":")))
         return
 
     prune_cache(base)
@@ -214,12 +255,6 @@ def main():
                 name = parts[2]
             if name in package_names:
                 packages.add(name)
-                if name == "nixpp":
-                    packages.update(
-                        package
-                        for package in package_names
-                        if package.startswith("termuxpp-system-")
-                    )
             else:
                 broad = True
         else:

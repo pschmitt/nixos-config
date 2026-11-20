@@ -7,7 +7,8 @@
   ...
 }:
 let
-  nixpp = pkgs.callPackage ../../../pkgs/nixpp { };
+  termuxpp = inputs.termuxpp.lib.nixpp.packagesFor pkgs;
+  inherit (termuxpp) nixpp;
   tmad = "${lib.getExe pkgs.tmux} -f ${lib.escapeShellArg "${config.xdg.configHome}/tmux/tmux.conf"} -u new-session -A -D -s main";
   readTripleTapCommand =
     pkgs.writers.writePython3 "termuxpp-triple-tap-command"
@@ -50,7 +51,6 @@ in
     ../../../home-manager/bitwarden.nix
     ../../../home-manager/devel/nix-tools.nix
     ../../../home-manager/nix-index-database.nix
-    ../../../home-manager/termux-options.nix
     ../../../home-manager/cli/bat.nix
     ../../../home-manager/cli/fd.nix
     ../../../home-manager/cli/ripgrep.nix
@@ -95,8 +95,8 @@ in
       NIX_CONF_DIR = "${config.xdg.configHome}/nix";
     };
     packages = [
-      (pkgs.callPackage ../../../pkgs/nixpp/rish.nix { })
-      (pkgs.callPackage ../../../pkgs/nixpp/storage.nix { })
+      termuxpp.termuxpp-rish
+      termuxpp.termuxpp-storage
     ]
     ++ builtins.attrValues {
       inherit (pkgs) iputils;

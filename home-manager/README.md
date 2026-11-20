@@ -5,9 +5,6 @@ There is **one** shared home config tree, used as a NixOS submodule. It is
 `config.mainUser` / `config.domains` / the `hostname` specialArg — never
 `osConfig`.
 
-Termux bundles are separate: `pkgs/termux/native/mkTermuxBundle.nix` builds a
-standalone profile from `modules/home-manager/termux.nix`, without `home.nix`.
-
 ## Entrypoints
 
 - `default.nix`

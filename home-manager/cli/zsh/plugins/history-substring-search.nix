@@ -1,11 +1,10 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
-  inherit (import ./path.nix { inherit config lib; }) pluginPath;
+  inherit (import ./path.nix { inherit lib; }) pluginPath;
 in
 {
   # After zsh-syntax-highlighting (1550), as its README asks: it highlights

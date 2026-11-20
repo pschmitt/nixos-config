@@ -105,21 +105,7 @@ in
   mmonit = pkgs.callPackage ./mmonit { };
   inherit msteams-mcp;
   inherit msoutlook-mcp;
-  nixpp-termux = pkgs.callPackage ./nixpp/legacy.nix { inherit inputs; };
-  nixpp = pkgs.callPackage ./nixpp { };
-  termuxpp-rish = pkgs.callPackage ./nixpp/rish.nix { };
-  termuxpp-ip = pkgs.callPackage ./nixpp/ip.nix { };
-  termuxpp-storage = pkgs.callPackage ./nixpp/storage.nix { };
-  termuxpp-api = pkgs.callPackage ./nixpp/android-api.nix { inherit inputs; };
   nixpp-system-tests = import ../modules/nixpp/tests.nix { inherit inputs pkgs; };
-  nixpp-runtime-termux = import ./nixpp/native.nix {
-    inherit inputs pkgs;
-    inherit (pkgs) lib;
-  };
-  nixpp-runtime-termux-seed = import ./nixpp/bootstrap-seed.nix {
-    inherit inputs pkgs;
-    inherit (pkgs) lib;
-  };
   native-client = pkgs.callPackage ./native-client { };
   console-tui = pkgs.callPackage ./console-tui { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
@@ -137,7 +123,6 @@ in
   stui = pkgs.callPackage ./stui { };
   syncthingtui = pkgs.callPackage ./syncthingtui { };
   teams-live = inputs.teams-live.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  termux-apt-prefix-builder = pkgs.callPackage ./termux/apt-prefix-builder { };
   termuxpp-adb-shell = pkgs.callPackage ./termuxpp-adb-shell { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
@@ -189,3 +174,6 @@ in
 
   falcon-sensor-wiit = pkgs.callPackage ./falcon-sensor-wiit { inherit inputs; };
 }
+# nixpp and the TermuxPP helpers. nixbot builds the x86_64-only Android
+# runtime (nixpp-runtime-termux), which the aarch64 guest systems substitute.
+// inputs.termuxpp.lib.nixpp.packagesFor pkgs

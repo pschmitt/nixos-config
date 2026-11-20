@@ -21,8 +21,7 @@ let
         (inputs.nixos-config-private.outPath + "/hm/termuxpp-cache.nix")
         (inputs.nixos-config-private.outPath + "/modules/main-user.nix")
         (../../../hosts + "/${hostname}/prompt.nix")
-        # Host-local guest Home Manager settings, when present (hosts/<host>/
-        # default.nix is the native Termux bundle, not this guest home).
+        # Host-local guest Home Manager settings, when present.
         (
           let
             home = ../../../hosts + "/${hostname}/home.nix";

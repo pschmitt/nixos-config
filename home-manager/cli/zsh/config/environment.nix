@@ -21,9 +21,7 @@ let
   );
   shellSessionVariables = {
     BROWSER =
-      if (config.termux.enable or false) then
-        "termux-open"
-      else if (config.programs.ssh-client-browser.enable or false) then
+      if (config.programs.ssh-client-browser.enable or false) then
         lib.getExe config.programs.ssh-client-browser.package
       else
         "firefox";

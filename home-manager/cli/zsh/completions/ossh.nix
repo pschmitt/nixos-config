@@ -1,11 +1,9 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
-  termuxMode = config.termux.enable or false;
   completion = pkgs.linkFarm "zsh-completion-ossh" [
     {
       name = "_ossh";
@@ -64,9 +62,7 @@ in
 {
   xdg.configFile."zsh/completions/_ossh".source = "${completion}/_ossh";
 
-  programs.zsh.initContent = lib.mkIf (!termuxMode) (
-    lib.mkOrder 520 ''
-      fpath=(${completion} $fpath)
-    ''
-  );
+  programs.zsh.initContent = lib.mkOrder 520 ''
+    fpath=(${completion} $fpath)
+  '';
 }

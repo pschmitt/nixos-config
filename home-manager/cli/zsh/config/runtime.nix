@@ -1,8 +1,7 @@
 { config, lib, ... }:
 let
   localPluginDir = "${config.xdg.configHome}/zsh/plugins/local";
-  termuxMode = config.termux.enable or false;
-  sourcePlugin = if termuxMode then ''source "$source_file" ""'' else ''source "$source_file"'';
+  sourcePlugin = ''source "$source_file"'';
 in
 {
   programs.zsh.initContent = lib.mkMerge [

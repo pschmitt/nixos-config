@@ -1,12 +1,4 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
-let
-  termuxMode = config.termux.enable or false;
-in
+{ pkgs, ... }:
 {
   imports = [
     ./core.nix
@@ -14,7 +6,7 @@ in
     ./ssh-tools.nix
   ];
 
-  home.packages = lib.optionals (!termuxMode) [
+  home.packages = [
     pkgs.atuin
     pkgs.direnv
     pkgs.emoji-fzf

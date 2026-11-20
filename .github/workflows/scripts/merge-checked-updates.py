@@ -59,7 +59,6 @@ def main():
             f"pkgs/local/{package}/",
             f"pkgs/fonts/{package}/",
             f"pkgs/oci/{package}/",
-            f"pkgs/termux/{package}/",
         ]
         package_files = {
             "tesmart-cli": "pkgs/zsh-tools/tesmart-cli.nix",

@@ -5,18 +5,10 @@
   ...
 }:
 let
-  termuxMode = config.termux.enable or false;
-  # The OS is known when the config is built: Termux bundles are Termux and
-  # NixOS-integrated Home Manager runs on NixOS. Only containers/distroboxes
+  # The OS is known when the config is built: NixOS-integrated Home Manager
+  # runs on NixOS. Only containers/distroboxes
   # sharing this home (or unknown hosts) need runtime /etc/os-release parsing.
-  staticOsKind =
-    if termuxMode then
-      "termux"
-    else if config.submoduleSupport.enable then
-      "nixos"
-    else
-      null;
-  termuxYqo = import ./termux-yqo.nix;
+  staticOsKind = if config.submoduleSupport.enable then "nixos" else null;
   genericYqo = ''
     yqo() {
       case "$(os-release::kind)" in
@@ -64,10 +56,10 @@ let
       esac
     }
   '';
-  yqoInit = if termuxMode then termuxYqo else genericYqo;
+  yqoInit = genericYqo;
 in
 {
-  home.packages = lib.optionals (!termuxMode) [ pkgs.update-and-deploy ];
+  home.packages = [ pkgs.update-and-deploy ];
 
   programs.zsh.initContent = lib.mkOrder 520 ''
     if [[ -n "''${DISTROBOX_ENTER_PATH:-}" && "$TERM" == wezterm ]]
@@ -92,17 +84,11 @@ in
         done < /etc/os-release
       fi
 
-      ${lib.optionalString termuxMode ''
+      if is_termux
+      then
         __OS_KIND=termux
         return 0
-      ''}
-      ${lib.optionalString (!termuxMode) ''
-        if is_termux
-        then
-          __OS_KIND=termux
-          return 0
-        fi
-      ''}
+      fi
 
       case "''${__OS_RELEASE[ID]}" in
         neon|ubuntu) __OS_KIND=ubuntu ;;
@@ -136,16 +122,9 @@ in
     }
 
     is_termux() {
-      ${
-        if termuxMode then
-          "return 0"
-        else
-          ''
-            # Static: a non-Termux build never runs in Termux; CI exercises
-            # the Termux paths on Linux.
-            [[ "''${TERMUX_RUN_MODE:-}" == ci ]]
-          ''
-      }
+      # Static: a non-Termux build never runs in Termux; CI exercises
+      # the Termux paths on Linux.
+      [[ "''${TERMUX_RUN_MODE:-}" == ci ]]
     }
 
     is_nixos() { [[ "$__OS_KIND" == nixos || -e /etc/NIXOS ]] }
@@ -318,29 +297,11 @@ in
     }
 
     yup() {
-      ${
-        if termuxMode then
-          ''
-            command pkg upgrade "$@"
-          ''
-        else
-          ''
-            command update-and-deploy "$@"
-          ''
-      }
+      command update-and-deploy "$@"
     }
 
     yupnc() {
-      ${
-        if termuxMode then
-          ''
-            command pkg upgrade -y "$@"
-          ''
-        else
-          ''
-            yup --flake-update --print-build-logs "$@"
-          ''
-      }
+      yup --flake-update --print-build-logs "$@"
     }
 
     ${yqoInit}

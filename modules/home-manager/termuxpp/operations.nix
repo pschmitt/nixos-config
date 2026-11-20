@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -9,7 +10,9 @@
 
   config = {
     home.packages = [
-      (pkgs.callPackage ../../../pkgs/nixpp/ip.nix { inherit (config.fullNix) rooted; })
+      ((inputs.termuxpp.lib.nixpp.packagesFor pkgs).termuxpp-ip.override {
+        inherit (config.fullNix) rooted;
+      })
     ]
     ++ builtins.attrValues {
       inherit (pkgs)

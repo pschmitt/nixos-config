@@ -1,11 +1,10 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
-  inherit (import ./path.nix { inherit config lib; }) pluginPath;
+  inherit (import ./path.nix { inherit lib; }) pluginPath;
   manydots = pkgs.fetchFromGitHub {
     owner = "knu";
     repo = "zsh-manydots-magic";

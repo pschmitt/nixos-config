@@ -1,15 +1,14 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
   plugin = pkgs.zsh-diff-so-fancy;
-  inherit (import ./path.nix { inherit config lib; }) pluginPath termuxMode;
+  inherit (import ./path.nix { inherit lib; }) pluginPath;
 in
 {
-  home.packages = lib.optionals (!termuxMode) [
+  home.packages = [
     pkgs.diff-so-fancy
     plugin
   ];

@@ -1,5 +1,6 @@
 { pkgs, inputs }:
 let
+  nixppSrc = inputs.termuxpp.lib.nixpp.src;
   mkSystem =
     extra:
     import ./eval.nix {
@@ -54,13 +55,13 @@ pkgs.runCommand "termuxpp-system-assembly-tests" { nativeBuildInputs = [ pkgs.py
   test -x ${valid.system}/sw/bin/hello
   ${valid.system}/sw/bin/svc --help >/dev/null
   ${valid.system}/sw/bin/nixpp --help
-  python3 -I ${../../pkgs/nixpp/tests/test_nixpp_cli.py} ${valid.system}/sw/bin/nixpp
-  cp ${../../pkgs/nixpp/tests/prepare-session.py} prepare-session.py
-  cp ${../../pkgs/nixpp/tests/test_prepare_session.py} test_prepare_session.py
+  python3 -I ${nixppSrc}/tests/test_nixpp_cli.py ${valid.system}/sw/bin/nixpp
+  cp ${nixppSrc}/tests/prepare-session.py prepare-session.py
+  cp ${nixppSrc}/tests/test_prepare_session.py test_prepare_session.py
   python3 -I test_prepare_session.py
-  bash ${../../pkgs/nixpp/tests/test-start-transitions.sh} ${valid.system}/sw/bin/nixpp \
-    ${../../pkgs/nixpp/source/src/assets/start-system-control.sh}
-  python3 -I ${../../pkgs/nixpp/tests/test_nixpp_parity.py} ${../../pkgs/nixpp/tests/prepare-session.py} \
+  bash ${nixppSrc}/tests/test-start-transitions.sh ${valid.system}/sw/bin/nixpp \
+    ${nixppSrc}/source/src/assets/start-system-control.sh
+  python3 -I ${nixppSrc}/tests/test_nixpp_parity.py ${nixppSrc}/tests/prepare-session.py \
     ${valid.system}/sw/bin/nixpp ${valid.system} ${integrated.system}
   mkdir -p runtime/root/etc
   cp ${runtimeManifest} runtime/session.json

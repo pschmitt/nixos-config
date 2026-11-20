@@ -1,21 +1,8 @@
-{ config, lib }:
-let
-  termuxMode = config.termux.enable or false;
-in
+{ lib }:
 {
-  inherit termuxMode;
-
   pluginPath =
-    name: relativePath: nixPath:
-    if termuxMode then
-      ''"$TERMUX_GENERATION/shell/plugins/${name}/${relativePath}"''
-    else
-      lib.escapeShellArg (toString nixPath);
+    _name: _relativePath: nixPath:
+    lib.escapeShellArg (toString nixPath);
 
-  pluginTree =
-    name: relativePath: nixPath:
-    if termuxMode then
-      ''"$TERMUX_GENERATION/shell/plugins/${name}/${relativePath}"''
-    else
-      toString nixPath;
+  pluginTree = _name: _relativePath: toString;
 }

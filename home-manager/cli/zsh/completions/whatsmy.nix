@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   pkgs,
   ...
@@ -43,9 +42,7 @@ in
 {
   xdg.configFile."zsh/completions/_whatsmy".source = "${completion}/_whatsmy";
 
-  programs.zsh.initContent = lib.mkIf (!(config.termux.enable or false)) (
-    lib.mkOrder 520 ''
-      fpath=(${completion} $fpath)
-    ''
-  );
+  programs.zsh.initContent = lib.mkOrder 520 ''
+    fpath=(${completion} $fpath)
+  '';
 }

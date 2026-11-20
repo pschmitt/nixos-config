@@ -503,6 +503,29 @@
         "type": "github"
       }
     },
+    "fenix_2": {
+      "inputs": {
+        "nixpkgs": [
+          "termuxpp",
+          "nixpkgs"
+        ],
+        "rust-analyzer-src": "rust-analyzer-src_2"
+      },
+      "locked": {
+        "lastModified": 1793537868,
+        "narHash": "sha256-a6WgeC/aUP43oXL+NFDNfBMl7tokr20mUalQRnKT9n8=",
+        "owner": "nix-community",
+        "repo": "fenix",
+        "rev": "ba9210be006df88ed8c14562f97ad4b4ffb048a0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "ref": "monthly",
+        "repo": "fenix",
+        "type": "github"
+      }
+    },
     "firefox-addons": {
       "inputs": {
         "nixpkgs": [
@@ -2453,7 +2476,6 @@
         "colors-jq": "colors-jq",
         "declaroid": "declaroid",
         "disko": "disko",
-        "droid-nix-src": "droid-nix-src",
         "falcon-sensor": "falcon-sensor",
         "fenix": "fenix",
         "firefox-addons": "firefox-addons",
@@ -2518,7 +2540,7 @@
         "tdc": "tdc",
         "teams-auth-source": "teams-auth-source",
         "teams-live": "teams-live",
-        "termux-tools": "termux-tools",
+        "termuxpp": "termuxpp",
         "tmux-slay": "tmux-slay",
         "tmux-xpanes": "tmux-xpanes",
         "tsvtool": "tsvtool",
@@ -2557,6 +2579,23 @@
       }
     },
     "rust-analyzer-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793356632,
+        "narHash": "sha256-sDRn+SFPNzi5QTa7o8iB2+6TQ6ZBhZ34dLO5I1hVYd4=",
+        "owner": "rust-lang",
+        "repo": "rust-analyzer",
+        "rev": "9e0d1ec24eb81de12160ecfa7f31c89735bda951",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rust-lang",
+        "ref": "nightly",
+        "repo": "rust-analyzer",
+        "type": "github"
+      }
+    },
+    "rust-analyzer-src_2": {
       "flake": false,
       "locked": {
         "lastModified": 1793356632,
@@ -2970,19 +3009,25 @@
         "type": "github"
       }
     },
-    "termux-tools": {
-      "flake": false,
+    "termuxpp": {
+      "inputs": {
+        "droid-nix-src": "droid-nix-src",
+        "fenix": "fenix_2",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
       "locked": {
-        "lastModified": 1793548723,
-        "narHash": "sha256-YrPqytpw+gumI5FBXbvd2bOyBDLMaGqqEL6SbgQvUDg=",
+        "lastModified": 1795162182,
+        "narHash": "sha256-8E8ZZnp/D5GxkPtqyczDmMBv25ROZrpr9JRpJO+haoQ=",
         "owner": "pschmitt",
-        "repo": "termux.sh",
-        "rev": "43e61fd75487b52dc85204ff57eb6a9d59d7a67f",
+        "repo": "termuxpp",
+        "rev": "89ccc6e596b460880c3f6e02b28cb3afabcfe72e",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
-        "repo": "termux.sh",
+        "repo": "termuxpp",
         "type": "github"
       }
     },

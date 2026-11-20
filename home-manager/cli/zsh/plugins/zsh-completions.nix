@@ -1,14 +1,13 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
-  inherit (import ./path.nix { inherit config lib; }) pluginTree termuxMode;
+  inherit (import ./path.nix { inherit lib; }) pluginTree;
 in
 {
-  home.packages = lib.optionals (!termuxMode) [ pkgs.zsh-completions ];
+  home.packages = [ pkgs.zsh-completions ];
   programs.zsh.initContent = lib.mkOrder 520 ''
     fpath=("${
       pluginTree "completions" "src" "${pkgs.zsh-completions}/share/zsh/site-functions"

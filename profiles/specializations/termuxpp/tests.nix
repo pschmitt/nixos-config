@@ -55,8 +55,6 @@ let
     assert c.nix.nixPath == [ "nixpkgs=${c.nix.registry.nixpkgs.to.path}" ];
     assert builtins.any (p: (p.pname or "") == "iputils") c.home.packages;
     assert c.home.sessionVariables.NIX_CONF_DIR == "/home/pschmitt/.config/nix";
-    assert c.termux.enable == false;
-    assert c.termux.packages == [ ];
     assert c.programs.zsh.enable;
     assert c.programs.zsh.dotDir == "/home/pschmitt/.config/zsh";
     # ZDOTDIR comes from the guest /etc/zshenv (systems.nix), not ~/.zshenv.
