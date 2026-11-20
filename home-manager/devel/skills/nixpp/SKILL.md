@@ -1,0 +1,69 @@
+---
+name: nixpp
+description: Use when upgrading, inspecting, rolling back or debugging the Nix guest system on a TermuxPP phone with `nixpp` (status, generations, upgrade, rebuild, doctor, gc, recover), when deploying a nixos-config or termuxpp change to the phones, or when a phone's guest system is stale or broken after an upgrade.
+---
+
+# nixpp
+
+`nixpp` manages the declarative Nix guest system of a TermuxPP phone. The guest
+system is `termuxppConfigurations.<host>.system` in nixos-config; its source
+and the `nixpp` code live in the termuxpp repository (`nix/nixpp`), consumed by
+nixos-config through its `termuxpp` flake input. Background and the full command
+reference: nixos-config `docs/termuxpp/system.md` and `docs/termuxpp/README.md`.
+App builds and the fork itself are the `termuxpp` skill.
+
+## Reach the guest
+
+- Every change on a phone needs the exclusive Concord claim `android:<device>`
+  in the nixos-config workspace first (`adb` skill, private `brkn-infra`
+  android reference). Read-only `nixpp status` may run without it.
+- Use the guest's SSH server: the phones have SSH aliases (see the private
+  `brkn-infra` android reference). Run non-interactive commands with
+  `ssh -o BatchMode=yes HOST 'nixpp status'`.
+- Without SSH (another network, sshd gated by Wi-Fi), use
+  `termuxpp-adb-shell --serial SERIAL -- COMMAND` over ADB. Connect a Wi-Fi ADB
+  device first with `zsh -lc 'zhj adb::connect HOST'`.
+
+## Inspect
+
+```sh
+nixpp status            # active and previous generation (JSON with --json)
+nixpp generations       # all retained generations
+nixpp doctor            # native controller, store, builders, signed cache pin
+nixpp diff              # closure diff previous -> current
+cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
+```
+
+## Deploy a change to the phones
+
+1. Push the change: to termuxpp `main` for nixpp or helper code, to
+   nixos-config for the guest configuration.
+2. For termuxpp changes, bump the input in nixos-config
+   (`nix flake lock --update-input termuxpp`), check that only that input moved,
+   commit `flake.lock` by path and push (`deploy` skill, steps 1-4).
+3. Upgrade each phone, both in parallel:
+   - **Published system (default):** `nixpp upgrade`. It installs the system
+     that nixos-config CI built and pinned for the host in the signed cache;
+     no evaluation or build on the phone. Only works once CI has published
+     the pushed commit; `nixpp upgrade --dry-run` shows whether it has.
+   - **Faster, without waiting for CI:** `nixpp upgrade --rworker --remote-eval`.
+     It leases a disposable rworker, evaluates and builds the configured flake
+     there, and switches. Implies `--build`.
+   - Never build on the phone or the workstation: no plain `--build` without
+     `--rworker` unless remote builders are configured (`--max-jobs 0`).
+4. Verify with `nixpp status`: a new current generation with today's date.
+   Release the device claim afterwards.
+
+The nightly job (`termuxpp-nightly-update`) already runs the published-system
+upgrade on Wi-Fi while charging; `termuxpp-nightly-update --check` shows its
+readiness without activating anything.
+
+## Recover
+
+- `nixpp rollback` activates the retained previous generation.
+- `nixpp recover` restores the generation recorded before an interrupted
+  activation.
+- From an Android failsafe session, `nixpp native-shell` opens the native
+  TermuxPP shell; the native controller runs independently of the guest.
+- `nixpp gc --keep-generations N` prunes old generations; keep at least the
+  previous one until a new generation is verified.
