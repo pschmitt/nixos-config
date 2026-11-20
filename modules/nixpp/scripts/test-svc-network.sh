@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Exercise `svc supervise` Wi-Fi gating with real runit.
-# Needs bash, coreutils, jq, runit and util-linux (flock) on PATH, e.g.
-#   nix shell nixpkgs#jq nixpkgs#runit nixpkgs#util-linux -c bash modules/nixpp/scripts/test-svc-network.sh
+# Needs bash, coreutils, inotify-tools, jq, runit and util-linux (flock) on PATH, e.g.
+#   nix shell nixpkgs#inotify-tools nixpkgs#jq nixpkgs#runit nixpkgs#util-linux -c bash modules/nixpp/scripts/test-svc-network.sh
+# Run it again with SVC_TEST_INOTIFY=crash for the polling fallback.
 
 set -euo pipefail
 
@@ -61,6 +62,14 @@ mkdir -p "$work/shim"
 real_jq=$(command -v jq)
 printf '#!/bin/sh\necho >>"%s"\nexec "%s" "$@"\n' "$work/jq.calls" "$real_jq" >"$work/shim/jq"
 chmod +x "$work/shim/jq"
+# SVC_TEST_INOTIFY=crash: an inotifywait that segfaults, like the one in the
+# Android 17 guest; the supervisor must fall back to quiet polling.
+if [[ ${SVC_TEST_INOTIFY:-} == crash ]]
+then
+  printf '#!/bin/sh\nkill -SEGV $$\n' >"$work/shim/inotifywait"
+  chmod +x "$work/shim/inotifywait"
+  export NIXPP_SVC_POLL_SECONDS=2
+fi
 export PATH=$work/shim:$PATH
 jq_calls() {
   [[ -e $work/jq.calls ]] && wc -l <"$work/jq.calls" || echo 0

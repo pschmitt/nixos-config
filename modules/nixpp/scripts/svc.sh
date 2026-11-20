@@ -463,6 +463,10 @@ main() {
     done
     include="^(${include#|})\$"
     local stamp=$runtime/.supervise-stamp evaluate=1 idle=0 input
+    # Once inotifywait fails (missing, or crashing: it segfaults in the
+    # Android 17 guest), poll the inputs' mtimes instead, as rarely as the
+    # inotify timeout would wake.
+    local inotify=1 wait_rc poll=${NIXPP_SVC_POLL_SECONDS:-10}
 
     while kill -0 "$runsvdir_pid" 2>/dev/null
     do
@@ -518,29 +522,34 @@ main() {
         [[ $input -nt $stamp ]] && evaluate=1
       done
       ((evaluate)) && continue
-      if inotifywait -qq -t 10 -e close_write,moved_to,moved_from,create,delete,attrib \
-        --include "$include" "${watch_dirs[@]}" 2>/dev/null
+      wait_rc=2
+      if ((inotify))
       then
-        evaluate=1 idle=0
+        inotifywait -qq -t 10 -e close_write,moved_to,moved_from,create,delete,attrib \
+          --include "$include" "${watch_dirs[@]}" 2>/dev/null && wait_rc=0 || wait_rc=$?
       else
-        case $? in
-          2)
-            # Timed out: catch a change that landed before the wait began
-            # (builtin tests, no process), and the minute-long staleness.
-            idle=$((idle + 1))
-            for input in "${inputs[@]}"
-            do
-              [[ $input -nt $stamp ]] && evaluate=1
-            done
-            ((idle % 6 == 0)) && evaluate=1
-            ;;
-          *)
-            # No inotify (or no inotifywait): fall back to polling.
-            evaluate=1
-            sleep 1
-            ;;
-        esac
+        sleep "$poll"
       fi
+      case $wait_rc in
+        0)
+          evaluate=1 idle=0
+          ;;
+        2)
+          # Timed out (or polled): catch a change that landed before the wait
+          # began (builtin tests, no process), and the minute-long staleness.
+          idle=$((idle + 1))
+          for input in "${inputs[@]}"
+          do
+            [[ $input -nt $stamp ]] && evaluate=1
+          done
+          ((idle % 6 == 0)) && evaluate=1
+          ;;
+        *)
+          # No usable inotifywait: poll from now on. Evaluate once, since a
+          # change may have landed while it failed.
+          inotify=0 evaluate=1
+          ;;
+      esac
     done
     shutdown_supervisors "$runsvdir_pid"
     return 75
