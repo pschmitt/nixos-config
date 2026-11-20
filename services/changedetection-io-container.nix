@@ -6,7 +6,7 @@
 }:
 let
   # renovate: datasource=docker depName=ghcr.io/dgtlmoon/changedetection.io
-  changedetectionVersion = "0.70.3";
+  changedetectionVersion = "0.70.4";
   domain = "changes.${config.domains.main}";
   dataDir = "/mnt/data/srv/changedetection-io";
   listenPort = 24264;
