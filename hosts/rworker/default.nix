@@ -10,6 +10,7 @@
 {
   imports = [
     ./builder.nix
+    ./glance.nix
     inputs.rworker.nixosModules.workerImage
     ./image.nix
     ./netbird.nix

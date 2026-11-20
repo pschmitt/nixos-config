@@ -92,7 +92,7 @@ in
           echo "circus-join: no private cache in the user-data, substituting from public caches only" >&2
         fi
         # The worker's OpenStack name, unique in the pool, as agent name.
-        printf 'CIRCUS_AGENT__AGENT__NAME=%s\n' "$(hostname)" > ${joinDir}/env
+        printf 'CIRCUS_AGENT_NAME=%s\n' "$(hostname)" > ${joinDir}/env
       '';
     };
 
@@ -107,14 +107,22 @@ in
     };
   };
 
+  rworker.image = {
+    # nf-md-tent
+    icon = "U+F0508";
+    label = "Circus agent";
+    pool = "circus";
+  };
+
   services.circus-agent = {
     enable = true;
     # Read by systemd (LoadCredential) when the agent starts.
     joinTokenFile = "${joinDir}/token";
     settings.agent = {
-      # Placeholder; CIRCUS_AGENT__AGENT__NAME (the worker name) overrides it.
+      # Placeholder; CIRCUS_AGENT_NAME (the worker name) overrides it, as
+      # Circus refuses a second agent under a name that is in use.
       name = "rworker-circus";
-      runner_url = "circus+tls://circus.${runnerHost}.${config.domains.netbird}:8443";
+      runner_url = "circus://${runnerHost}.${config.domains.netbird}:8443";
       # Native only: the image could run aarch64 through qemu-user, but the
       # queue-runner would then place aarch64 builds here at emulation speed.
       systems = [ "x86_64-linux" ];

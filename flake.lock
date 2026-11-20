@@ -222,11 +222,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795216927,
-        "narHash": "sha256-9eNpp17FMq7LRInjjqs5EAISGfLDRnMeMeU+8wt9NFg=",
+        "lastModified": 1795217707,
+        "narHash": "sha256-A/mYJYjB4HdMKHxlx0DArfLGP6EICBKCXfdydVU7lYY=",
         "owner": "pschmitt",
         "repo": "circus",
-        "rev": "0d61201c73cb225e65d9bf2af9e46ce356b79066",
+        "rev": "17dd6f69212d88ac5909cf434ab8b4c609bb145a",
         "type": "github"
       },
       "original": {
@@ -2707,11 +2707,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795216186,
-        "narHash": "sha256-IZw8S/rc2dgk2LgvQOhh2QQ/vCh7KrtECwh78kogKnE=",
+        "lastModified": 1795218851,
+        "narHash": "sha256-wPt1ZzI+OTSzAONz90y/CpaqhImyNuQ75TE20ntCXYU=",
         "owner": "pschmitt",
         "repo": "rworker",
-        "rev": "c0d39fe8306a1a4adf51a3fd0e65e93591aaab0c",
+        "rev": "108a95b3d83d0972899a97ef6c678ec5cad28c8c",
         "type": "github"
       },
       "original": {

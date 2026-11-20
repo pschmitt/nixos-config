@@ -13,6 +13,12 @@ in
 {
   imports = [ ../rworker ];
 
+  rworker.image = {
+    # nf-md-web
+    icon = "U+F059F";
+    label = "browser-daemon node";
+  };
+
   environment.systemPackages = [
     daemon
     pkgs.chromium
