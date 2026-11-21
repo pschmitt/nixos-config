@@ -1,8 +1,8 @@
-# Circus CI (trial)
+# Circus CI
 
-[Circus](https://github.com/manic-systems/circus) runs next to nixbot to compare
-the two. It reports to GitHub under its own `circus/<job>` contexts, which are
-never required checks. nixbot stays the CI of record.
+[Circus](https://github.com/manic-systems/circus) evaluates and builds the
+configured repositories. It reports build statuses to GitHub under
+`circus/<job>` and keeps a summary comment updated on each pull request.
 
 ## Layout
 
@@ -30,10 +30,9 @@ agent.
 | `circus://rofl-15.nb.brkn.lol:8443` (agent RPC) | queue-runner | trusted tailnet interfaces only |
 | `127.0.0.1:3000` | circus-server | local |
 
-Sign in at `https://circus.brkn.lol` (after Authelia) with the rbw entry
-`circus.brkn.lol`: user `pschmitt`, whose admin API key (for `circusctl` and
-the API) is in its "API Token" field. The session cookie is always `Secure`
-(`force_secure_cookies`), which is fine since nginx serves the dashboard only
+Sign in to [the build dashboard](https://build.brkn.lol/dash) through Authelia
+OIDC. For `circusctl` and API access, the admin API key is in the "API Token"
+field of the rbw entry `circus.brkn.lol`. Dashboard sessions use secure cookies
 over TLS.
 
 ## Evaluation
@@ -48,14 +47,13 @@ nvim module failed with EACCES. The unit also runs with `ProtectHome`.
 
 | Unit | Limit |
 | --- | --- |
-| `circus-evaluator` | One 20 GiB worker, one evaluation at a time; `MemoryHigh` 22G, `MemoryMax` 26G, `CPUQuota` 800% |
+| `circus-evaluator` | One 24 GiB worker and one evaluation at a time. `MemoryHigh` 26G, `MemoryMax` 30G, `CPUQuota` 800% |
 | `circus-queue-runner` | `MemoryMax` 4G, `CPUQuota` 200% (verifies and signs agent outputs) |
 | `circus-server` | `MemoryMax` 2G |
 | `circus-agent` (each) | 4 builds, 4 cores each; the queue-runner skips a builder above 60% PSI |
 
-nixbot's remote evaluation (up to 2 × 2 × 8 GiB) and its 16 build slots share
-these hosts. Agent builds run in the Nix daemon's cgroup, so the PSI threshold
-and the low slot count are what keep nixbot ahead.
+Agent builds run in the Nix daemon's cgroup. The slot limits and PSI threshold
+leave capacity for other services on the build hosts.
 
 ## Secrets (host SOPS files)
 
@@ -128,38 +126,28 @@ Each needs its secret first; a missing SOPS key fails activation.
     circus` allows TCP 443 and 8443 to rofl-15.
   - Substitution: `.github/actions/nix-setup` with the read-only niks3
     secrets `NIKS3_S3_*`.
-  - Circus only gives them builds of `main`, never pull requests (OIDC
-    subject pinned to `refs/heads/main`).
+  - The main pool builds trusted branch commits. A separate workflow and OIDC
+    identity build current same-repository PR heads from GitHub accounts listed
+    in `pullRequestAuthorIdsFile`. The PR workflow uploads outputs through
+    Circus's per-build S3 URLs.
 
 ## Effects (`services.circus.effects`)
 
-Circus has no effects, so `circus-effects` (`./effects`) runs the flake's push
-effects (`herculesCI.onPush.*.outputs.effects`: ISO publishing, rworker images
-to Glance) after a green Circus build, with nixbot's effect runner
-(`nbo effects run`: the same bwrap sandbox and `secrets.json` as nixbot).
+`circus-effects` runs the flake's push effects with `nbo effects run` in the
+same sandbox and with the same secrets format as nixbot. It resolves the ISO
+and worker image store paths for the current `main` commit and checks the Circus
+cache once a minute. Each effect can run as soon as its own artifact is
+cached. A commit check immediately before publishing prevents an older commit
+from replacing a newer artifact.
 
-- Trigger: Circus' instance webhook (`[notifications] webhook_url`, our fork's
-  `evaluation_finished` event) on `http://127.0.0.1:3010/hook`, HMAC-signed
-  with `circus/effects-webhook-hmac`. Build events are off for that webhook.
-- Gate: status `success`, no pull request, not superseded, project
-  `nixos-config`, jobset and branch `main`, and the commit must still be the
-  head of `main` (`git ls-remote`) when it runs.
-- Order and state: `after` dependencies, one `flock` per `lock`, and
-  `when.changed` compared with the effect's last real success (state in
-  `/var/lib/circus-effects`). Events are queued on disk and deduplicated by
-  evaluation id.
-- `dryRun = true` (default) only logs `dry-run <commit>: would run <effect>`
-  (`journalctl -u circus-effects`), without secrets or statuses.
-
-Switch-over (nixbot and circus-effects must never both publish):
-
-1. Compare a few dry runs with nixbot's `nixbot/effect …` check runs for the
-   same commits.
-2. In one change: `services.circus.effects.dryRun = false;` on rofl-15, and
-   stop nixbot's publish effects (`herculesCI.onPush.publish` in
-   `flake.nix`, or nixbot's per-repo effects for this repository).
-3. Watch the first real run: `circus-effects/<effect>` commit statuses and the
-   journal.
+- Effects respect `after` dependencies, `lock` and `when.changed`. The runner
+  records completed effects per commit in `/var/lib/circus-effects`.
+- `dryRun = true` logs the effects that would run and tracks them separately
+  from live publishing.
+- Cutover requires a dry run with cached artifacts, then stopping nixbot before
+  enabling live Circus effects. Keep `herculesCI.onPush.publish` so Circus can
+  discover the effects. Check the first live run in the journal and in the
+  `circus-effects/<effect>` commit statuses.
 
 The effects' inputs (ISOs, images) are fetched by rofl-15's Nix daemon through
 the local Circus HTTP cache. The effects module registers that substituter
@@ -174,7 +162,4 @@ build is pending or a fetch fails.
 
 Disable: remove `../../services/circus` from `hosts/rofl-15/default.nix` and
 `../../services/circus/agent.nix` from `hosts/rofl-16/default.nix`. The
-database stays in PostgreSQL on rofl-15 (`circus`); drop it with
-`sudo -u postgres dropdb circus` once the trial is over. Then remove the
-`circus` input from `flake.nix`, this directory, the workflow, the SOPS keys
-and the private `tofu/circus-cache.tf`.
+database stays in PostgreSQL on rofl-15 (`circus`), preserving build history.

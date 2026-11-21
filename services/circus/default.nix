@@ -323,8 +323,8 @@ in
             eval_workers = 1;
             # circusJobs (about 245 attributes, 26 hosts) on a shared host.
             nix_timeout = 60 * 60;
-            # Some large desktop evaluations exhaust a 16 GiB worker.
-            memory_limit_mb = 20480;
+            # The Nix worker aborts when large desktop evaluations reach a 20 GiB data limit.
+            memory_limit_mb = 24576;
             # aarch64 only once the GitHub Actions agents exist.
             systems = [ "x86_64-linux" ] ++ lib.optional cfg.githubActionsAgents.enable "aarch64-linux";
             # Also count paths niks3 (s3://nix-cache-brkn-lol in nix.conf)
@@ -748,10 +748,9 @@ in
             # (profiles/base/nix/secrets.nix, group nix-access-tokens).
             SupplementaryGroups = [ "nix-access-tokens" ];
             LoadCredential = lib.optional (gitlabNixConf != null) "nix-gitlab:${gitlabNixConf}";
-            # Leave room for the evaluator's coordinator and the 20 GiB
-            # worker while nixbot and Circus agents share this host.
-            MemoryHigh = "22G";
-            MemoryMax = "26G";
+            # Allow a 24 GiB Nix worker plus the evaluator coordinator.
+            MemoryHigh = "26G";
+            MemoryMax = "30G";
             CPUQuota = "800%";
             CPUWeight = 100;
             IOWeight = 50;

@@ -1,13 +1,9 @@
-"""Run a flake's Hercules-style effects after Circus finished an evaluation.
+"""Publish current branch artifacts independently as Circus caches them.
 
-Circus (pschmitt/circus) sends an HMAC-signed `evaluation_finished` webhook
-once all top-level jobs of an evaluation are done. This service queues the
-event on disk, checks that it is a green build of the configured branch that
-is still that branch's head, and then runs the flake's push effects with
-nixbot's effect runner (`nbo effects run`, same sandbox and secrets format as
-nixbot), honouring their `after` order, `lock` and `when.changed`.
-
-In dry-run mode it only logs which effects it would run.
+The publisher uses nixbot's sandbox and secrets format and respects each
+effect's dependencies, lock and when.changed metadata. Dry runs only log
+which effects are ready. The legacy webhook mode is available for callers
+that need an evaluation-wide trigger.
 """
 
 from __future__ import annotations
@@ -51,6 +47,7 @@ class Settings:
     dry_run: bool = True
     status_token_file: Path | None = None
     status_dir: Path | None = None
+    cache_url: str | None = None
 
     @property
     def queue_dir(self) -> Path:
@@ -313,14 +310,22 @@ def run_one(settings: Settings, effect: Effect, flake_ref: str, commit: str, che
     return result.returncode
 
 
-def process(event: dict[str, Any], settings: Settings) -> Outcome:
+def process(
+    event: dict[str, Any],
+    settings: Settings,
+    effects: dict[str, Effect] | None = None,
+    ready: set[str] | None = None,
+    states: dict[str, tuple[str, str]] | None = None,
+    receipt: Path | None = None,
+) -> Outcome:
     """Run (or, in dry-run, list) the effects for one evaluation event."""
     outcome = Outcome()
-    reason = gate(event, settings, branch_head(settings.repository, settings.branch))
-    if reason:
-        log.info("evaluation %s: no effects: %s", event.get("evaluation_id"), reason)
-        outcome.skipped["*"] = reason
-        return outcome
+    if ready is None:
+        reason = gate(event, settings, branch_head(settings.repository, settings.branch))
+        if reason:
+            log.info("evaluation %s: no effects: %s", event.get("evaluation_id"), reason)
+            outcome.skipped["*"] = reason
+            return outcome
 
     commit = event["commit_hash"]
     if not re.fullmatch(r"[0-9a-f]{40,64}", commit):
@@ -328,8 +333,10 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
         outcome.skipped["*"] = "invalid commit hash"
         return outcome
     flake_ref = f"github:{settings.repository}/{commit}"
-    effects = list_effects(settings, flake_ref)
-    states = {name: ("pending", "Waiting for the effects runner.") for name in effects}
+    if effects is None:
+        effects = list_effects(settings, flake_ref)
+    if states is None:
+        states = {name: ("pending", "Waiting for the effects runner.") for name in effects}
     write_status(settings, commit, states)
     failed: set[str] = set()
     with tempfile.TemporaryDirectory(prefix="circus-effects-") as tmp:
@@ -354,16 +361,31 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
             )
         for name in order(effects):
             effect = effects[name]
+            if ready is not None:
+                if states[name][0] in {"success", "dry_run", "skipped", "failed"}:
+                    if states[name][0] in {"failed", "skipped"} and states[name][1] != "Inputs are unchanged since the last successful run.":
+                        failed.add(name)
+                    continue
+                if any(states[d][0] in {"pending", "running"} for d in effect.after):
+                    continue
+                if name not in ready:
+                    continue
+                if branch_head(settings.repository, settings.branch) != commit:
+                    break
             if blocked := [d for d in effect.after if d in failed]:
                 outcome.skipped[name] = f"dependency failed: {', '.join(blocked)}"
                 failed.add(name)
                 states[name] = ("skipped", "An earlier dependency did not succeed.")
                 write_status(settings, commit, states)
+                if receipt is not None:
+                    atomic_write(receipt, json.dumps(states))
                 continue
             if unchanged(effect, settings.changed_dir):
                 outcome.skipped[name] = "when.changed: inputs unchanged"
                 states[name] = ("skipped", "Inputs are unchanged since the last successful run.")
                 write_status(settings, commit, states)
+                if receipt is not None:
+                    atomic_write(receipt, json.dumps(states))
                 continue
             if settings.dry_run:
                 log.info(
@@ -376,12 +398,17 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
                 outcome.ran.append(name)
                 states[name] = ("dry_run", "The effect was selected in a dry run.")
                 write_status(settings, commit, states)
+                if receipt is not None:
+                    atomic_write(receipt, json.dumps(states))
                 continue
             states[name] = ("running", "The effects runner started processing this effect.")
             write_status(settings, commit, states)
             post_status(settings, commit, name, "pending", "running")
             try:
                 with EffectLock(settings.lock_dir, effect.lock):
+                    if ready is not None and branch_head(settings.repository, settings.branch) != commit:
+                        states[name] = ("pending", "The branch moved before publishing.")
+                        break
                     returncode = run_one(settings, effect, flake_ref, commit, checkout)
             except subprocess.TimeoutExpired:
                 returncode = None
@@ -402,9 +429,96 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
                 states[name] = ("failed", message)
                 post_status(settings, commit, name, "failure", "effect failed")
             write_status(settings, commit, states)
+            if receipt is not None:
+                atomic_write(receipt, json.dumps(states))
     for name, why in outcome.skipped.items():
         log.info("%s %s: skipped %s: %s", "dry-run" if settings.dry_run else "run", commit[:12], name, why)
     return outcome
+
+
+ARTIFACT_JOBS = {
+    "publish.standard": "iso",
+    "publish.private": "iso-private",
+    "publish.standard-legacy": "iso-legacy",
+    "publish.private-legacy": "iso-private-legacy",
+    "publish.graphical": "iso-graphical",
+    "publish.multios": "iso",
+    "publish.private-multios": "iso-private",
+    "publish.publish-browser-worker-image": "rworker-browser-daemon",
+    "publish.publish-nixbot-worker-image": "rworker",
+    "publish.publish-circus-worker-image": "rworker-circus",
+    "publish.publish-circus-qemu-worker-image": "rworker-circus-qemu",
+}
+
+
+def load_artifacts(flake_ref: str, effects: dict[str, Effect]) -> dict[str, str]:
+    jobs = {name: ARTIFACT_JOBS[name] for name in effects}
+    result = subprocess.run(
+        [
+            "nix", "eval", "--json", f"{flake_ref}#circusJobs.images",
+            "--apply", f"images: {{ {' '.join(f'{json.dumps(name)} = toString images.{job};' for name, job in jobs.items())} }}",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=1800,
+    )
+    return json.loads(result.stdout)
+
+
+def artifact_cached(cache_url: str, path: str) -> bool:
+    match = re.fullmatch(r"/nix/store/([0-9a-z]{32})-[^/]+", path)
+    if not match:
+        raise ValueError("invalid artifact store path")
+    try:
+        with urlopen(f"{cache_url.rstrip('/')}/{match[1]}.narinfo", timeout=15) as response:
+            return f"StorePath: {path}" in response.read(65536).decode().splitlines()
+    except OSError:
+        return False
+
+
+def watch_artifacts(settings: Settings) -> None:
+    """Reconcile the current branch and resume individual effects after restarts."""
+    assert settings.cache_url is not None
+    previous = None
+    while True:
+        try:
+            commit = branch_head(settings.repository, settings.branch)
+            if commit and re.fullmatch(r"[0-9a-f]{40,64}", commit):
+                if commit != previous:
+                    flake_ref = f"github:{settings.repository}/{commit}"
+                    effects = list_effects(settings, flake_ref)
+                    artifacts = load_artifacts(flake_ref, effects)
+                    if effects.keys() != artifacts.keys():
+                        raise ValueError("publishing effects and artifact prerequisites differ")
+                    states = {
+                        name: ("pending", "Waiting for the artifact in the Circus cache.") for name in effects
+                    }
+                    mode = "dry-run" if settings.dry_run else "live"
+                    receipt = settings.state_dir / f"artifact-{mode}-{commit}.json"
+                    if receipt.exists():
+                        for name, state in json.loads(receipt.read_text()).items():
+                            if name in states:
+                                states[name] = tuple(state)
+                    write_status(settings, commit, states)
+                    previous = commit
+                cached = {
+                    path: artifact_cached(settings.cache_url, path)
+                    for path in {artifacts[name] for name in effects if states[name][0] in {"pending", "running"}}
+                }
+                ready = {name for name, path in artifacts.items() if cached.get(path)}
+                if ready:
+                    process(
+                        {"commit_hash": commit},
+                        settings,
+                        effects,
+                        ready,
+                        states,
+                        receipt,
+                    )
+        except Exception:
+            log.exception("checking publishing prerequisites failed")
+        time.sleep(60)
 
 
 def enqueue(settings: Settings, event: dict[str, Any]) -> bool:
@@ -487,7 +601,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--listen", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=3010)
     parser.add_argument("--state-dir", type=Path, required=True)
-    parser.add_argument("--secret-file", type=Path, required=True, help="HMAC key")
+    parser.add_argument("--secret-file", type=Path, help="HMAC key for webhook mode")
+    parser.add_argument("--cache-url", help="Check publishing artifacts in this Circus cache")
     parser.add_argument("--project", required=True)
     parser.add_argument("--jobset", required=True)
     parser.add_argument("--branch", required=True)
@@ -502,7 +617,7 @@ def main(argv: list[str] | None = None) -> int:
 
     settings = Settings(
         state_dir=args.state_dir,
-        secret_key=args.secret_file.read_bytes().strip(),
+        secret_key=args.secret_file.read_bytes().strip() if args.secret_file else b"",
         project=args.project,
         jobset=args.jobset,
         branch=args.branch,
@@ -512,12 +627,17 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=not args.run,
         status_token_file=args.status_token_file,
         status_dir=args.status_dir,
+        cache_url=args.cache_url,
     )
-    if not settings.secret_key:
+    if not settings.cache_url and not settings.secret_key:
         parser.error("the HMAC key file is empty")
     for d in (settings.queue_dir, settings.done_dir, settings.changed_dir, settings.lock_dir):
         d.mkdir(parents=True, exist_ok=True)
         d.chmod(0o700)
+
+    if settings.cache_url:
+        watch_artifacts(settings)
+        return 0
 
     wake = threading.Event()
     wake.set()  # drain whatever was queued before a restart

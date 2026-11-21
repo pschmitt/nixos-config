@@ -152,6 +152,28 @@ class LockTest(unittest.TestCase):
 
 
 class DryRunTest(unittest.TestCase):
+    def test_ready_artifacts_run_independently_and_only_once(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            receipt = directory / "receipt.json"
+            s = settings(directory, dry_run=True)
+            effects = {
+                "iso": ce.Effect("iso"),
+                "worker": ce.Effect("worker"),
+                "dependent": ce.Effect("dependent", after=("worker",)),
+            }
+            states = {name: ("pending", "") for name in effects}
+            original = ce.branch_head
+            ce.branch_head = lambda _repo, _branch: "a" * 40  # type: ignore[assignment]
+            try:
+                first = ce.process(good_event(), s, effects, {"iso", "dependent"}, states, receipt)
+                self.assertEqual(first.ran, ["iso"])
+                self.assertEqual(json.loads(receipt.read_text())["worker"][0], "pending")
+                later = ce.process(good_event(), s, effects, set(effects), states, receipt)
+                self.assertEqual(later.ran, ["worker", "dependent"])
+            finally:
+                ce.branch_head = original  # type: ignore[assignment]
+
     def test_dry_run_lists_without_running(self) -> None:
         d = Path(tempfile.mkdtemp())
         nbo = d / "nbo"

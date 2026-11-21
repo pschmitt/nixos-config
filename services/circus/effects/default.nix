@@ -1,8 +1,5 @@
-# Effects for Circus (see README.md): circus-effects receives Circus'
-# HMAC-signed evaluation_finished webhook (pschmitt/circus) on loopback, and
-# for a green build of the branch's head runs the flake's push effects with
-# nixbot's effect runner (`nbo effects run`: the same sandbox and secrets.json
-# as nixbot). Dry-run by default: it only logs what it would publish.
+# Publish each artifact as it reaches the Circus cache. The publisher uses
+# nixbot's effect sandbox and secrets.json and defaults to dry-run mode.
 {
   config,
   inputs,
@@ -89,18 +86,8 @@ in
     };
 
     sops.secrets = {
-      # HMAC key shared by Circus (signs) and circus-effects (verifies).
-      "circus/effects-webhook-hmac" = config.sops.mkHostSecret { };
       # The effects' secrets.json, same shape as nixbot's per-repo file.
       "circus/effects-secrets" = config.sops.mkHostSecret { };
-    };
-
-    # Instance-level generic webhook: evaluation events only.
-    services.circus.settings.notifications = {
-      webhook_url = "http://127.0.0.1:${toString cfg.port}/hook";
-      webhook_secret_file = secret "effects-webhook-hmac";
-      webhook_build_events = false;
-      webhook_evaluation_events = true;
     };
 
     users = {
@@ -116,7 +103,7 @@ in
     };
 
     systemd.services.circus-effects = {
-      description = "Run flake effects after Circus evaluations";
+      description = "Publish cached Circus build artifacts";
       wantedBy = [ "multi-user.target" ];
       after = [
         "network-online.target"
@@ -149,11 +136,9 @@ in
         StateDirectoryMode = "0711";
         WorkingDirectory = "/var/lib/circus-effects";
         UMask = "0077";
-        LoadCredential = [
-          "hmac:${secret "effects-webhook-hmac"}"
-        ]
-        ++ lib.optional (!cfg.dryRun) "secrets:${secret "effects-secrets"}"
-        ++ lib.optional (gitlabNixConf != null) "nix-gitlab:${gitlabNixConf}";
+        LoadCredential =
+          lib.optional (!cfg.dryRun) "secrets:${secret "effects-secrets"}"
+          ++ lib.optional (gitlabNixConf != null) "nix-gitlab:${gitlabNixConf}";
         ExecStart = lib.escapeShellArgs (
           [
             (lib.getExe runner)
@@ -161,8 +146,8 @@ in
             (toString cfg.port)
             "--state-dir"
             "/var/lib/circus-effects"
-            "--secret-file"
-            "%d/hmac"
+            "--cache-url"
+            "http://127.0.0.1:${toString circusCfg.settings.server.port}/nix-cache/"
             "--project"
             cfg.project
             "--jobset"
