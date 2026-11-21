@@ -40,6 +40,22 @@
         "type": "github"
       }
     },
+    "android-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1794758742,
+        "narHash": "sha256-Syj3TJoQkTbWncuKyIzmQfQL2jhwcBo/DHHdHCbivaY=",
+        "owner": "android",
+        "repo": "skills",
+        "rev": "c72942584fff970dac86ced78b367fce0c441e52",
+        "type": "github"
+      },
+      "original": {
+        "owner": "android",
+        "repo": "skills",
+        "type": "github"
+      }
+    },
     "anika-blue": {
       "inputs": {
         "crane": "crane",
@@ -1807,11 +1823,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1795269192,
-        "narHash": "sha256-r9NqSs+oGbIgoKOUlcWH++Hfp5m07P2ADHquLf4NUN4=",
+        "lastModified": 1795270033,
+        "narHash": "sha256-tYp0WBqjMONY2wJFss8MtGk92NieZP3ewdWeukQ7vyw=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "7b3ae975d329ea05b450decbe39181382fb688cf",
+        "rev": "b304363e6f388327ea008e69fd3de799dbb2c4ee",
         "type": "github"
       },
       "original": {
@@ -2441,6 +2457,7 @@
     "root": {
       "inputs": {
         "ai-memory": "ai-memory",
+        "android-skills": "android-skills",
         "anika-blue": "anika-blue",
         "browser-daemon": "browser-daemon",
         "bruvtab": "bruvtab",
