@@ -1,3 +1,4 @@
+{ config, ... }:
 {
   imports = [
     ../../profiles/specializations/rofl-build-node
@@ -7,6 +8,11 @@
     ./networking.nix
     ./prompt.nix
   ];
+
+  sops.secrets."circus/pr-author-ids" = config.sops.mkHostSecret {
+    owner = "circus";
+    restartUnits = [ "circus-queue-runner.service" ];
+  };
 
   # Circus CI trial (services/circus/README.md).
   services.circus = {
@@ -28,6 +34,7 @@
     # ephemeral agents started via workflow_dispatch with the App's token.
     githubActionsAgents = {
       enable = true;
+      pullRequestAuthorIdsFile = config.sops.secrets."circus/pr-author-ids".path;
       # Static agent from our fork (release-agent-aarch64.yml), matching the
       # pinned circus input.
       agentBinaryUrl = "https://github.com/pschmitt/circus/releases/download/v0.14.0-pschmitt.1/circus-agent-aarch64-linux";

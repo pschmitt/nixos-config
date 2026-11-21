@@ -44,6 +44,53 @@ on:
       agent_name:
         required: true
         type: string
+  workflow_call:
+    inputs:
+      runner_url:
+        required: true
+        type: string
+      oidc_audience:
+        required: true
+        type: string
+      agent_binary_url:
+        description: Pinned circus-agent binary matching the queue-runner
+        required: true
+        type: string
+      systems:
+        description: Comma-separated Nix systems
+        required: true
+        type: string
+      supported_features:
+        description: Comma-separated supported system features
+        required: false
+        type: string
+        default: ""
+      mandatory_features:
+        description: Comma-separated mandatory system features
+        required: false
+        type: string
+        default: ""
+      max_jobs:
+        required: true
+        type: string
+      cores:
+        required: true
+        type: string
+      speed_factor:
+        required: true
+        type: string
+      agent_name:
+        required: true
+        type: string
+    secrets:
+      NB_SETUP_KEY:
+        required: true
+      NIKS3_S3_STORE:
+        required: false
+      NIKS3_S3_ACCESS_KEY:
+        required: false
+      NIKS3_S3_SECRET_KEY:
+        required: false
 
 permissions:
   contents: read

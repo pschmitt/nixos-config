@@ -181,6 +181,11 @@ in
         ephemeral aarch64 circus-agents on GitHub Actions arm runners
         (.github/workflows/circus-builder.yml), joining over NetBird
       '';
+      pullRequestAuthorIdsFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Runtime JSON array of GitHub account IDs whose verified PRs may use the separate ARM worker pool.";
+      };
       agentBinaryUrl = lib.mkOption {
         type = lib.types.str;
         default = "";
@@ -211,6 +216,10 @@ in
       {
         assertion = !cfg.githubActionsAgents.enable || cfg.githubActionsAgents.agentBinaryUrl != "";
         message = "services.circus.githubActionsAgents.agentBinaryUrl must be set.";
+      }
+      {
+        assertion = cfg.githubActionsAgents.pullRequestAuthorIdsFile == null || cfg.s3Upload.enable;
+        message = "Circus GitHub PR workers require presigned S3 uploads.";
       }
     ];
 
@@ -282,7 +291,10 @@ in
         # not copied into a credential at service start.
         runtimeFiles =
           lib.optional cfg.githubApp.enable githubTokenFile
-          ++ lib.optional cfg.qemuOverflow.enable qemuOverflowStatusPath;
+          ++ lib.optional cfg.qemuOverflow.enable qemuOverflowStatusPath
+          ++ lib.optional (
+            cfg.githubActionsAgents.pullRequestAuthorIdsFile != null
+          ) cfg.githubActionsAgents.pullRequestAuthorIdsFile;
 
         settings = {
           server = {
@@ -356,41 +368,63 @@ in
                 allowed_subject_prefixes = [ "repo:pschmitt/nixos-config:ref:refs/heads/main" ];
                 allowed_workflow_refs = [
                   "pschmitt/nixos-config/.github/workflows/circus-builder.yml@refs/heads/main"
-                ];
+                ]
+                ++ lib.optional (
+                  cfg.githubActionsAgents.pullRequestAuthorIdsFile != null
+                ) "pschmitt/nixos-config/.github/workflows/circus-pr-builder.yml@refs/heads/main";
               };
             };
-            ephemeral_pools = lib.optional cfg.githubActionsAgents.enable (
-              {
-                name = "gha-aarch64-linux";
-                allowed_build_repositories = [ "pschmitt/nixos-config" ];
-                systems = [ "aarch64-linux" ];
-                supported_features = [ "big-parallel" ];
-                max_jobs = 2;
-                max_inflight = 4;
-                github_actions = {
-                  workflow_repository = "pschmitt/nixos-config";
-                  workflow = "circus-builder.yml";
-                  ref_name = "main";
-                  # The App's installation token (Actions: write) is minted every
-                  # 45 minutes; Circus reads it on every dispatch (runtimeFiles).
-                  token_file = if cfg.githubApp.enable then githubTokenFile else secret "github-dispatch-token";
-                  runner_url = runnerUrl;
-                  oidc_audience = "circus-agent";
-                  agent_binary_url = "${cfg.githubActionsAgents.agentBinaryUrl}#sha256=${cfg.githubActionsAgents.agentBinarySha256}";
-                };
-              }
-              // lib.optionalAttrs cfg.qemuOverflow.enable {
-                qemu_overflow = {
-                  agent_name = "circus-qemu";
-                  system = "aarch64-linux";
-                  supported_features = [ ];
+            ephemeral_pools =
+              let
+                mainPool = {
+                  name = "gha-aarch64-linux";
                   allowed_build_repositories = [ "pschmitt/nixos-config" ];
-                  grace_secs = 120;
-                  status_file = qemuOverflowStatusPath;
-                  status_ttl_secs = 90;
+                  systems = [ "aarch64-linux" ];
+                  supported_features = [ "big-parallel" ];
+                  max_jobs = 2;
+                  max_inflight = 4;
+                  github_actions = {
+                    workflow_repository = "pschmitt/nixos-config";
+                    workflow = "circus-builder.yml";
+                    ref_name = "main";
+                    # The App's installation token (Actions: write) is minted every
+                    # 45 minutes; Circus reads it on every dispatch (runtimeFiles).
+                    token_file = if cfg.githubApp.enable then githubTokenFile else secret "github-dispatch-token";
+                    runner_url = runnerUrl;
+                    oidc_audience = "circus-agent";
+                    agent_binary_url = "${cfg.githubActionsAgents.agentBinaryUrl}#sha256=${cfg.githubActionsAgents.agentBinarySha256}";
+                  };
                 };
-              }
-            );
+              in
+              lib.optional cfg.githubActionsAgents.enable (
+                mainPool
+                // lib.optionalAttrs cfg.qemuOverflow.enable {
+                  qemu_overflow = {
+                    agent_name = "circus-qemu";
+                    system = "aarch64-linux";
+                    supported_features = [ ];
+                    allowed_build_repositories = [ "pschmitt/nixos-config" ];
+                    grace_secs = 120;
+                    status_file = qemuOverflowStatusPath;
+                    status_ttl_secs = 90;
+                  };
+                }
+              )
+              ++
+                lib.optional
+                  (cfg.githubActionsAgents.enable && cfg.githubActionsAgents.pullRequestAuthorIdsFile != null)
+                  (
+                    mainPool
+                    // {
+                      name = "gha-pr-aarch64-linux";
+                      max_inflight = 1;
+                      poll_interval_secs = 15;
+                      pull_request_author_ids_file = cfg.githubActionsAgents.pullRequestAuthorIdsFile;
+                      github_actions = mainPool.github_actions // {
+                        workflow = "circus-pr-builder.yml";
+                      };
+                    }
+                  );
           };
 
           cache = {
