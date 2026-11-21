@@ -270,6 +270,7 @@ in
           ui.brand_subtitle = "Nix CI (trial next to nixbot)";
 
           evaluator = {
+            github_token_file = lib.mkIf cfg.githubApp.enable githubTokenFile;
             # Pure, restricted evaluation like nixbot's. With an impure one, the
             # lazyvim-nix module stats ~/.config at eval time (README.md).
             restrict_eval = true;
@@ -512,6 +513,7 @@ in
                 '';
               };
             "= /simple" = tailnetDashboardLocation "/simple";
+            "~ \"^/simple/project/[0-9a-f-]{36}$\"" = tailnetDashboardLocation "";
             "= /login" = tailnetDashboardLocation "/login" // {
               extraConfig = ''
                 ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
@@ -577,10 +579,11 @@ in
           address = "127.0.0.1";
           group = "services";
           restartUnit = "circus-server";
+          # /health also depends on evaluator and queue-runner heartbeats.
+          # Check the listener so their startup cannot restart the server.
           conditions = ''
             if failed
               port ${toString serverPort}
-              protocol http request "/health" status 200
               with timeout 15 seconds
               for 3 cycles
             then restart
