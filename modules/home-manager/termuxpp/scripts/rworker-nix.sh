@@ -4,7 +4,7 @@ WORKER_NAME=""
 WORKER_INFO=""
 LEASE_NONCE=""
 LEASE_STARTED=""
-SHIP_MODE="auto"
+UPLOAD_MODE="auto"
 
 usage() {
   cat <<EOF
@@ -32,14 +32,14 @@ Options:
   --disk GIB        root disk size
   --system SYSTEM   platform to build for (default: aarch64-linux); the
                     worker must run it natively or via qemu-user binfmt
-  --ship MODE       what remote-build uploads: auto (default; only what the
+  --upload MODE     what remote-build uploads: auto (default; only what the
                     worker cannot fetch itself), all (every locked input,
                     fetched here) or none (nothing, the worker fetches all)
   --down WORKER     delete a worker left behind and exit
   -h, --help        show this help
 
 Settings come from the options, else RWORKER_NIX_{CONTROLLER,KEY,TTL,PROFILE,
-SYSTEM,SHIP}, else ~/.config/rworker-nix/config and then local.conf beside it
+SYSTEM,UPLOAD}, else ~/.config/rworker-nix/config and then local.conf beside it
 (key=value lines; local.conf wins):
   controller   ssh alias of the rworker controller (required); its address
                and pinned host key belong in ~/.ssh/config and known_hosts
@@ -83,7 +83,7 @@ read_config_file() {
       profile) CFG_PROFILE="$value" ;;
       aws_credentials) CFG_AWS_CREDENTIALS="$value" ;;
       system) CFG_SYSTEM="$value" ;;
-      ship) CFG_SHIP="$value" ;;
+      upload) CFG_UPLOAD="$value" ;;
       *) warn "ignoring unknown key '$key' in $file" ;;
     esac
   done < "$file"
@@ -91,7 +91,7 @@ read_config_file() {
 
 read_config() {
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/rworker-nix"
-  CFG_CONTROLLER="" CFG_KEY="" CFG_TTL="" CFG_PROFILE="" CFG_SYSTEM="" CFG_SHIP="" CFG_AWS_CREDENTIALS=""
+  CFG_CONTROLLER="" CFG_KEY="" CFG_TTL="" CFG_PROFILE="" CFG_SYSTEM="" CFG_UPLOAD="" CFG_AWS_CREDENTIALS=""
   read_config_file "$dir/config"
   read_config_file "$dir/local.conf"
 }
@@ -472,18 +472,18 @@ remote_fetchable() {
   ' <<< "$1" > /dev/null 2>&1
 }
 
-# Fetches what the worker cannot fetch itself (SHIP_MODE auto), everything
+# Fetches what the worker cannot fetch itself (UPLOAD_MODE auto), everything
 # (all) or nothing (none) of the source and the locked inputs of FLAKE here
 # and copies it to STORE. Inputs this side cannot fetch either are skipped:
 # evaluation fetches lazily, so they only matter if the build uses them.
-ship_flake() {
+upload_flake() {
   local store="$1" flake="$2" meta locked path name bytes
   local -a refresh=() paths=()
   local remote=0
   [[ -z "$REMOTE_REFRESH" ]] || refresh=(--refresh)
   meta=$(nix flake metadata --json "${refresh[@]}" "$flake") || return 1
-  if [[ "$SHIP_MODE" == all ]] \
-    || { [[ "$SHIP_MODE" == auto ]] && ! remote_fetchable "$(jq -c .locked <<< "$meta")"; }
+  if [[ "$UPLOAD_MODE" == all ]] \
+    || { [[ "$UPLOAD_MODE" == auto ]] && ! remote_fetchable "$(jq -c .locked <<< "$meta")"; }
   then
     # metadata only reports the source's store path: a GitHub flake is
     # unpacked into the git cache, not into the store, so the copy below would
@@ -495,8 +495,8 @@ ship_flake() {
   fi
   while IFS=$'\t' read -r name locked
   do
-    if [[ "$SHIP_MODE" == none ]] \
-      || { [[ "$SHIP_MODE" == auto ]] && remote_fetchable "$locked"; }
+    if [[ "$UPLOAD_MODE" == none ]] \
+      || { [[ "$UPLOAD_MODE" == auto ]] && remote_fetchable "$locked"; }
     then
       remote=$((remote + 1))
       continue
@@ -522,7 +522,7 @@ ship_flake() {
   nix copy --no-check-sigs --to "$store" "${paths[@]}"
 }
 
-# Locks the installables here, ships their sources to the worker, builds them
+# Locks the installables here, uploads their sources to the worker, builds them
 # there and copies the outputs back. Prints the output paths on request.
 remote_build() {
   local name="$1" store="$2" installable flake attr locked remote out path
@@ -537,7 +537,7 @@ remote_build() {
       warn "cannot lock flake '$flake'"
       return 1
     }
-    ship_flake "$store" "$flake" || {
+    upload_flake "$store" "$flake" || {
       warn "cannot copy flake '$flake' to worker $name"
       return 1
     }
@@ -568,7 +568,7 @@ remote_build() {
 }
 
 main() {
-  local ttl="" topic="" profile="" flavor="" disk="" target="" down_name="" ship=""
+  local ttl="" topic="" profile="" flavor="" disk="" target="" down_name="" upload=""
   local controller key subcommand worker_system line value rc=0 aws_credentials nix_cache nix_auth
   local -a nix_args=()
 
@@ -580,7 +580,7 @@ main() {
         usage
         return 0
         ;;
-      --ttl|--topic|--profile|--flavor|--disk|--system|--ship|--down)
+      --ttl|--topic|--profile|--flavor|--disk|--system|--upload|--down)
         if [[ -z "${2:-}" ]]
         then
           warn "$1 needs a value"
@@ -594,7 +594,7 @@ main() {
           --flavor) flavor="$2" ;;
           --disk) disk="$2" ;;
           --system) target="$2" ;;
-          --ship) ship="$2" ;;
+          --upload) upload="$2" ;;
           --down) down_name="$2" ;;
         esac
         shift 2
@@ -620,11 +620,11 @@ main() {
   profile="${profile:-${RWORKER_NIX_PROFILE:-$CFG_PROFILE}}"
   aws_credentials="${RWORKER_NIX_AWS_CREDENTIALS:-$CFG_AWS_CREDENTIALS}"
   target="${target:-${RWORKER_NIX_SYSTEM:-${CFG_SYSTEM:-aarch64-linux}}}"
-  ship="${ship:-${RWORKER_NIX_SHIP:-${CFG_SHIP:-auto}}}"
-  case "$ship" in
-    auto|all|none) SHIP_MODE="$ship" ;;
+  upload="${upload:-${RWORKER_NIX_UPLOAD:-${CFG_UPLOAD:-auto}}}"
+  case "$upload" in
+    auto|all|none) UPLOAD_MODE="$upload" ;;
     *)
-      warn "--ship must be auto, all or none (got '$ship')"
+      warn "--upload must be auto, all or none (got '$upload')"
       return 2
       ;;
   esac
@@ -692,7 +692,7 @@ main() {
   # Unless everything is uploaded, the worker fetches inputs itself and needs
   # this side's access-tokens for the private ones.
   nix_auth=""
-  if [[ "$subcommand" == remote-build && "$SHIP_MODE" != all ]]
+  if [[ "$subcommand" == remote-build && "$UPLOAD_MODE" != all ]]
   then
     nix_auth=1
   fi
