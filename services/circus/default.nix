@@ -36,7 +36,7 @@ let
     "fd8d:fa54:9081::/48"
   ];
 
-  tailnetDashboardLocation = uri: {
+  dashboardLocation = tailnetOnly: methods: uri: {
     proxyPass = "http://127.0.0.1:${toString serverPort}${uri}";
     proxyWebsockets = true;
     recommendedProxySettings = false;
@@ -44,11 +44,34 @@ let
       proxy_set_header Host ${buildHost};
       proxy_set_header X-Forwarded-Host ${buildHost};
       proxy_set_header X-Forwarded-Proto https;
+    ''
+    + lib.optionalString tailnetOnly ''
       ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
       deny all;
-      limit_except GET { deny all; }
+    ''
+    + ''
+      limit_except ${methods} { deny all; }
     '';
   };
+
+  dashboardLocations =
+    tailnetOnly:
+    let
+      get = dashboardLocation tailnetOnly "GET";
+      stream = get "";
+    in
+    {
+      "/".return = "404";
+      "= /simple" = get "/simple";
+      "~ \"^/simple/project/[0-9a-f-]{36}$\"" = get "";
+      "= /login" = dashboardLocation tailnetOnly "GET POST" "/login";
+      "^~ /_topcoat/" = get "";
+      "^~ /static/" = get "";
+      "~ \"^/build/[0-9a-f-]{36}/log$\"" = get "";
+      "~ \"^/api/v1/builds/[0-9a-f-]{36}/log/stream$\"" = stream // {
+        extraConfig = stream.extraConfig + "proxy_buffering off;\n";
+      };
+    };
 
   # The infrastructure project, which has its own jobset and build policy.
   repositoryUrl = "https://github.com/pschmitt/nixos-config";
@@ -488,6 +511,29 @@ in
           };
         };
 
+        ${buildHost} = {
+          enableACME = true;
+          forceSSL = true;
+          authelia = {
+            enable = true;
+            resolver.addresses =
+              if config.networking.nameservers != [ ] then config.networking.nameservers else [ "127.0.0.53" ];
+          };
+          locations = dashboardLocations false // {
+            # Topcoat opens its WebSocket on the origin root.
+            "= /" =
+              let
+                live = dashboardLocation false "GET" "/_build-live";
+              in
+              live
+              // {
+                extraConfig = live.extraConfig + ''
+                  if ($http_upgrade != "websocket") { return 302 /simple; }
+                '';
+              };
+          };
+        };
+
         # Binary cache for agents: tailnet clients only, no SSO (Nix cannot
         # log in). The server only serves paths Circus built or evaluated.
         ${tailnetHost} = {
@@ -498,68 +544,49 @@ in
             resolver.addresses =
               if config.networking.nameservers != [ ] then config.networking.nameservers else [ "127.0.0.53" ];
           };
-          locations = {
-            "/".return = "404";
-            # The build dashboard forwards its root WebSocket to the
-            # restricted renderer. Ordinary requests cannot use this route.
-            "= /_build-live" =
-              let
-                live = tailnetDashboardLocation "/_build-live";
-              in
-              live
-              // {
-                extraConfig = live.extraConfig + ''
-                  if ($http_upgrade != "websocket") { return 404; }
+          locations =
+            dashboardLocations true
+            // {
+              # The build dashboard forwards its root WebSocket to the
+              # restricted renderer. Ordinary requests cannot use this route.
+              "= /_build-live" =
+                let
+                  live = dashboardLocation true "GET" "/_build-live";
+                in
+                live
+                // {
+                  extraConfig = live.extraConfig + ''
+                    if ($http_upgrade != "websocket") { return 404; }
+                  '';
+                };
+              "/nix-cache/" = {
+                proxyPass = "http://127.0.0.1:${toString serverPort}";
+                authelia = false;
+                extraConfig = ''
+                  ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
+                  deny all;
                 '';
               };
-            "= /simple" = tailnetDashboardLocation "/simple";
-            "~ \"^/simple/project/[0-9a-f-]{36}$\"" = tailnetDashboardLocation "";
-            "= /login" = tailnetDashboardLocation "/login" // {
-              extraConfig = ''
-                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
-                deny all;
-                limit_except GET POST { deny all; }
-              '';
-            };
-            "^~ /_topcoat/" = tailnetDashboardLocation "";
-            "^~ /static/" = tailnetDashboardLocation "";
-            "~ \"^/build/[0-9a-f-]{36}/log$\"" = tailnetDashboardLocation "";
-            "~ \"^/api/v1/builds/[0-9a-f-]{36}/log/stream$\"" =
-              let
-                stream = tailnetDashboardLocation "";
-              in
-              stream
-              // {
-                extraConfig = stream.extraConfig + "proxy_buffering off;\n";
+              "~ ^/job/nixos-config/main/hosts\\.[a-z0-9-]+/latest$" = {
+                proxyPass = "http://127.0.0.1:${toString serverPort}";
+                authelia = false;
+                extraConfig = ''
+                  ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
+                  deny all;
+                  if ($arg_commit !~ "^[0-9a-f]{40}$") { return 400; }
+                '';
               };
-            "/nix-cache/" = {
-              proxyPass = "http://127.0.0.1:${toString serverPort}";
-              authelia = false;
-              extraConfig = ''
-                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
-                deny all;
-              '';
+            }
+            // lib.optionalAttrs cfg.rworkerPool.enable {
+              # The pool autoscaler's demand check (API key required).
+              "= /api/v1/operator/queue" = {
+                proxyPass = "http://127.0.0.1:${toString serverPort}";
+                extraConfig = ''
+                  ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
+                  deny all;
+                '';
+              };
             };
-            "~ ^/job/nixos-config/main/hosts\\.[a-z0-9-]+/latest$" = {
-              proxyPass = "http://127.0.0.1:${toString serverPort}";
-              authelia = false;
-              extraConfig = ''
-                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
-                deny all;
-                if ($arg_commit !~ "^[0-9a-f]{40}$") { return 400; }
-              '';
-            };
-          }
-          // lib.optionalAttrs cfg.rworkerPool.enable {
-            # The pool autoscaler's demand check (API key required).
-            "= /api/v1/operator/queue" = {
-              proxyPass = "http://127.0.0.1:${toString serverPort}";
-              extraConfig = ''
-                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
-                deny all;
-              '';
-            };
-          };
         };
       };
 
