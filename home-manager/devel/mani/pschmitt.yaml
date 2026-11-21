@@ -12,63 +12,18 @@ projects:
   bruvtab:
     url: https://github.com/pschmitt/bruvtab.git
     path: ~/devel/private/pschmitt/bruvtab.git
-  bwpy:
-    url: https://github.com/pschmitt/bwpy.git
-    path: ~/devel/private/pschmitt/bwpy.git
-  chatgpt-prompts:
-    url: https://github.com/pschmitt/ai-prompts
-    path: ~/devel/private/pschmitt/chatgpt-prompts.git
   clouds-yaml-generator:
     url: https://github.com/pschmitt/clouds-yaml-generator
     path: ~/devel/private/pschmitt/clouds-yaml-generator.git
   container-debug:
     url: https://github.com/pschmitt/container-debug
     path: ~/devel/private/pschmitt/container-debug.git
-  dlink-dgs:
-    url: https://github.com/pschmitt/dlink-dgs-cli.git
-    path: ~/devel/private/pschmitt/dlink-dgs.git
-  docker-compose-bulk:
-    url: https://github.com/pschmitt/docker-compose-bulk.git
-    path: ~/devel/private/pschmitt/docker-compose-bulk.git
-  docker-debug:
-    url: https://github.com/pschmitt/docker-debug
-    path: ~/devel/private/pschmitt/docker-debug.git
-  docker-pyinstaller:
-    url: https://github.com/pschmitt/docker-pyinstaller
-    path: ~/devel/private/pschmitt/docker-pyinstaller.git
-  docker-ssh-luks-unlocker:
-    path: ~/devel/private/pschmitt/docker-ssh-luks-unlocker.git
-    url: https://github.com/pschmitt/docker-ssh-luks-unlocker
-  docker-sshd:
-    url: https://github.com/pschmitt/docker-sshd.git
-    path: ~/devel/private/pschmitt/docker-sshd.git
-  docker-sshfs:
-    url: https://github.com/pschmitt/docker-sshfs.git
-    path: ~/devel/private/pschmitt/docker-sshfs.git
-  easypysmb:
-    url: https://github.com/pschmitt/easypysmb
-    path: ~/devel/private/pschmitt/easypysmb.git
   esphome-config:
     url: https://github.com/pschmitt/esphome-config.git
     path: ~/devel/private/pschmitt/esphome-config.git
-  font-resizer:
-    path: ~/devel/private/pschmitt/font-resizer.git
-    url: https://github.com/pschmitt/font-resizer
   gadgetbridge:
     url: https://github.com/pschmitt/gadgetbridge
     path: ~/devel/private/pschmitt/gadgetbridge.git
-  gcal-import-ics:
-    url: https://github.com/pschmitt/gcal-import-ics
-    path: ~/devel/private/pschmitt/gcal-import-ics.git
-  github-backup:
-    url: https://github.com/pschmitt/github-backup
-    path: ~/devel/private/pschmitt/github-backup.git
-  guacapy:
-    url: https://github.com/pschmitt/guacapy
-    path: ~/devel/private/pschmitt/guacapy.git
-  hass-rename-entities:
-    path: ~/devel/private/pschmitt/hass-rename-entities.git
-    url: https://github.com/pschmitt/hass-rename-entities.git
   home-assistant-apps:
     path: ~/devel/private/pschmitt/home-assistant-apps.git
     url: https://github.com/pschmitt/home-assistant-apps
@@ -81,18 +36,6 @@ projects:
   jellysync:
     path: ~/devel/private/pschmitt/jellysync.git
     url: https://github.com/pschmitt/jellysync.git
-  kubectx:
-    url: https://github.com/pschmitt/kubectx
-    path: ~/devel/private/pschmitt/kubectx.git
-  kubernetes-ssh-backdoor:
-    path: ~/devel/private/pschmitt/kubernetes-ssh-backdoor.git
-    url: https://github.com/pschmitt/kubernetes-ssh-backdoor
-  kubetnl:
-    url: https://github.com/pschmitt/kubetnl
-    path: ~/devel/private/pschmitt/kubetnl.git
-  luks-mount.sh:
-    path: ~/devel/private/pschmitt/luks-mount.sh.git
-    url: https://github.com/pschmitt/luks-mount.sh.git
   luks-ssh-unlock:
     path: ~/devel/private/pschmitt/luks-ssh-unlock.git
     url: https://github.com/pschmitt/luks-ssh-unlock
@@ -117,15 +60,6 @@ projects:
   openwrt-tools:
     url: https://github.com/pschmitt/openwrt-tools
     path: ~/devel/private/pschmitt/openwrt-tools.git
-  pkp:
-    url: https://github.com/pschmitt/pkp
-    path: ~/devel/private/pschmitt/pkp.git
-  pmos-config:
-    path: ~/devel/private/pschmitt/pmos-config.git
-    url: https://github.com/pschmitt/pmos-config
-  pmos.sh:
-    path: ~/devel/private/pschmitt/pmos.sh.git
-    url: https://github.com/pschmitt/pmos.sh
   poor-tools:
     url: https://github.com/pschmitt/poor-tools.git
     path: ~/devel/private/pschmitt/poor-tools.git
@@ -138,15 +72,9 @@ projects:
   pynuki:
     url: https://github.com/pschmitt/pynuki
     path: ~/devel/private/pschmitt/pynuki.git
-  pyrundeck:
-    url: https://github.com/pschmitt/pyrundeck
-    path: ~/devel/private/pschmitt/pyrundeck.git
   rbw:
     url: https://github.com/pschmitt/rbw
     path: ~/devel/private/pschmitt/rbw.git
-  rbw-auto:
-    url: https://github.com/pschmitt/rbw-auto.git
-    path: ~/devel/private/pschmitt/rbw-auto.git
   roombapy:
     url: https://github.com/pschmitt/roombapy
     path: ~/devel/private/pschmitt/roombapy.git
@@ -162,33 +90,12 @@ projects:
   stricknani:
     path: ~/devel/private/pschmitt/stricknani.git
     url: https://github.com/pschmitt/stricknani.git
-  tailscale-hosts:
-    url: https://github.com/pschmitt/tailscale-hosts
-    path: ~/devel/private/pschmitt/tailscale-hosts.git
   tdc:
     url: https://github.com/pschmitt/tdc.git
     path: ~/devel/private/pschmitt/tdc.git
-  termux.sh:
-    url: https://github.com/pschmitt/termux.sh.git
-    path: ~/devel/private/pschmitt/termux.sh.git
-  tmux-ssh-split:
-    url: https://github.com/pschmitt/tmux-ssh-split
-    path: ~/devel/private/pschmitt/tmux-ssh-split.git
-  vodafone-station-cli:
-    url: https://github.com/pschmitt/vodafone-station-cli
-    path: ~/devel/private/pschmitt/vodafone-station-cli.git
-  wiki-js-data:
-    url: https://github.com/pschmitt/wiki-js-data
-    path: ~/devel/private/pschmitt/wiki-js-data.git
   yadm-init:
     url: https://github.com/pschmitt/yadm-init
     path: ~/devel/private/pschmitt/yadm-init.git
-  zerotier-hosts:
-    url: https://github.com/pschmitt/zerotier-hosts
-    path: ~/devel/private/pschmitt/zerotier-hosts.git
-  zoom-calendar-events:
-    path: ~/devel/private/pschmitt/zoom-calendar-events.git
-    url: https://github.com/pschmitt/zoom-calendar-events.git
 
   # android apps
   augh:
@@ -200,3 +107,6 @@ projects:
   nyetbox:
     url: https://github.com/pschmitt/nyetbox
     path: ~/devel/private/pschmitt/nyetbox.git
+  termuxpp:
+    url: https://github.com/pschmitt/termuxpp
+    path: ~/devel/private/pschmitt/termuxpp.git

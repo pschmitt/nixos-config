@@ -1,4 +1,3 @@
 import:
   - ./pschmitt.yaml
   - ./orgs.yaml
-  - ./misc.yaml

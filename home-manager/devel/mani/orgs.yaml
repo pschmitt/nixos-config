@@ -4,17 +4,6 @@ projects:
     url: https://github.com/libkeepass/pykeepass
     path: ~/devel/private/libkeepass/pykeepass.git
 
-  # curl-pipe-sh
-  kubectl:
-    url: https://github.com/curl-pipe-sh/kubectl.git
-    path: ~/devel/private/curl-pipe-sh/kubectl.git
-  sshd.sh:
-    url: https://github.com/curl-pipe-sh/sshd.git
-    path: ~/devel/private/curl-pipe-sh/sshd.sh.git
-  tailscale-backdoor:
-    url: https://github.com/curl-pipe-sh/tailscale-backdoor.git
-    path: ~/devel/private/curl-pipe-sh/tailscale-backdoor.git
-
   # zdharma-continuum
   zinit:
     url: https://github.com/zdharma-continuum/zinit.git
