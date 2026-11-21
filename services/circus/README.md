@@ -79,7 +79,8 @@ Each needs its secret first; a missing SOPS key fails activation.
   with `githubApp.enable`, else with `circus/github-status-token`.
 - `services.circus.githubApp.enable`: the GitHub App `circus-pschmitt`
   (statuses write; contents and metadata read; pull requests read/write;
-  installed on `pschmitt/nixos-config`). `circus-github-token.timer` mints an installation
+  installed on `pschmitt/nixos-config` and the four public pilot repositories).
+  `circus-github-token.timer` mints an installation
   token every 45 minutes (the installation is looked up via
   `GET /repos/<githubApp.repository>/installation`) into
   `/run/circus-github-token/token` (root:circus-github-token, 0440). The
@@ -90,10 +91,12 @@ Each needs its secret first; a missing SOPS key fails activation.
   A failed mint keeps the previous token; Monit restarts the minter when the
   token is older than 70 minutes. Check with
   `systemctl status circus-github-token`.
-- `services.circus.githubWebhook.enable`: pull-request evaluations. The App's
-  webhook (events push and pull request) points at
-  `https://circus.brkn.lol/api/v1/webhooks/a17bcd61-5372-4d1f-8bba-f32bcb011f97/github`
-  (project `nixos-config`) and is signed with `circus/github-webhook-secret`.
+- `services.circus.githubWebhook.enable` enables pull-request evaluations.
+  The App sends signed push and pull request events to
+  `https://circus.brkn.lol/api/v1/webhooks/github`. Circus selects the project by
+  repository and verifies the delivery using `circus/github-webhook-secret`.
+  With the GitHub App and status reporting enabled, Circus keeps one comment
+  current with evaluation and build results for the PR head.
 - `services.circus.s3Upload.enable`: agents upload outputs to niks3's
   `nix-cache-brkn-lol` under the `circus/` prefix. Without it, outputs stream
   to the queue-runner.
