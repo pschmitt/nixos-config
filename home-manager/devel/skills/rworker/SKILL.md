@@ -207,6 +207,14 @@ See [maintenance](references/maintenance.md) when changing the client.
 
 ## Rules
 
+- **Before `down`, push what the worker built to the S3 cache.** After any
+  Nix build on a worker (host closures, packages, expensive derivations, also
+  a failed run that got part-way), push the closure with the worker's own niks3
+  token: `nix path-info -r PATH | niks3 push --stdin` (see **Pushing to the S3
+  cache**). Agents have deleted workers before pushing, and the expensive
+  derivations had to be built again for no reason. Check the push succeeded
+  (`nix path-info --store 's3://…' PATH`, or the `niks3` exit status) before
+  you run `down`; if it cannot be pushed, copy the result back or ask first.
 - Always `down` the worker when the task is done, even after a failure; do
   not leave it for the TTL. Extend instead of creating a second one.
 - Nothing on a worker survives. Copy results off before `down`.
