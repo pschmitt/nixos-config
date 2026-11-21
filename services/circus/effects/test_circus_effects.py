@@ -9,6 +9,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import circus_effects as ce
 
@@ -149,6 +150,17 @@ class LockTest(unittest.TestCase):
     def test_no_lock_name_is_a_no_op(self) -> None:
         with ce.EffectLock(Path(tempfile.mkdtemp()), None) as lock:
             self.assertIsNone(lock.fd)
+
+
+class ArtifactCacheTest(unittest.TestCase):
+    def test_locally_restored_artifact_is_ready(self) -> None:
+        path = f"/nix/store/{'a' * 32}-worker"
+        with patch.object(ce, "urlopen", side_effect=OSError), patch.object(ce.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            self.assertTrue(ce.artifact_cached("http://127.0.0.1:3000/nix-cache/", path))
+            self.assertEqual(run.call_args.args[0], ["nix-store", "--check-validity", path])
+            run.return_value.returncode = 1
+            self.assertFalse(ce.artifact_cached("http://127.0.0.1:3000/nix-cache/", path))
 
 
 class DryRunTest(unittest.TestCase):

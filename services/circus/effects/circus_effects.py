@@ -470,9 +470,19 @@ def artifact_cached(cache_url: str, path: str) -> bool:
         raise ValueError("invalid artifact store path")
     try:
         with urlopen(f"{cache_url.rstrip('/')}/{match[1]}.narinfo", timeout=15) as response:
-            return f"StorePath: {path}" in response.read(65536).decode().splitlines()
+            if f"StorePath: {path}" in response.read(65536).decode().splitlines():
+                return True
     except OSError:
-        return False
+        pass
+    # An operator can restore a signed artifact from the shared S3 cache
+    # even when Circus has no upload record for a reused build.
+    return subprocess.run(
+        ["nix-store", "--check-validity", path],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+        timeout=15,
+    ).returncode == 0
 
 
 def watch_artifacts(settings: Settings) -> None:

@@ -137,7 +137,8 @@ Each needs its secret first; a missing SOPS key fails activation.
 same sandbox and with the same secrets format as nixbot. It resolves the ISO
 and worker image store paths for the current `main` commit and checks the Circus
 cache once a minute. Each effect can run as soon as its own artifact is
-cached. A commit check immediately before publishing prevents an older commit
+cached or restored from S3 into the local Nix store. A commit check immediately
+before publishing prevents an older commit
 from replacing a newer artifact.
 
 - Effects respect `after` dependencies, `lock` and `when.changed`. The runner
