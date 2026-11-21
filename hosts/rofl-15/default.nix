@@ -23,6 +23,7 @@
     # Ephemeral agents on rworkers (rworker-circus image), scaled by the
     # autoscaler on rofl-10 (private services/rworker-circus-pool.nix).
     rworkerPool.enable = true;
+    qemuOverflow.enable = true;
     # aarch64 builds of circusJobs on GitHub's arm runners (circus-builder.yml):
     # ephemeral agents started via workflow_dispatch with the App's token.
     githubActionsAgents = {
