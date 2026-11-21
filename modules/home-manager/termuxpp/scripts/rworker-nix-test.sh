@@ -548,7 +548,7 @@ test_bad_inputs() {
 test_remote_build() {
   local n=remote-build store
   store='ssh-ng://agent@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
-  # Default (--upload auto): the worker fetches the github flake and inputs
+  # Default (--upload-inputs auto): the worker fetches the github flake and inputs
   # itself; only the path input that exists here only is uploaded.
   run_scenario ok remote-build --refresh --no-link --print-out-paths \
     'github:o/cfg#termuxppConfigurations.p11.system' 'github:o/cfg#termuxppConfigurations.zf10.system'
@@ -582,8 +582,8 @@ test_remote_build() {
 test_remote_build_upload() {
   local n=remote-upload-all store
   store='ssh-ng://agent@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
-  # --upload all: the old behaviour, everything is fetched here and uploaded.
-  run_scenario ok --upload all remote-build --refresh --no-link --print-out-paths 'github:o/cfg#x'
+  # --upload-inputs all: the old behaviour, everything is fetched here and uploaded.
+  run_scenario ok --upload-inputs all remote-build --refresh --no-link --print-out-paths 'github:o/cfg#x'
   expect_rc "$n" 0 \
     && expect_trace "$n" 'nix flake prefetch --json --refresh github:o/cfg' \
     && expect_trace "$n" "nix copy --no-check-sigs --to $store" \
@@ -593,7 +593,7 @@ test_remote_build_upload() {
     && expect_err "$n" "skipping input 'priv'" \
     && pass "$n"
   n=remote-upload-none
-  run_scenario ok --upload none remote-build --no-link --print-out-paths 'github:o/cfg#x'
+  run_scenario ok --upload-inputs none remote-build --no-link --print-out-paths 'github:o/cfg#x'
   expect_rc "$n" 0 \
     && expect_no_trace "$n" 'nix copy --no-check-sigs --to' \
     && expect_no_trace "$n" 'nix flake prefetch' \
@@ -601,7 +601,7 @@ test_remote_build_upload() {
     && expect_err "$n" 'nothing to upload' \
     && pass "$n"
   n=remote-upload-env
-  SCENARIO_ENV='RWORKER_NIX_UPLOAD=none' run_scenario ok remote-build --no-link 'github:o/cfg#x'
+  SCENARIO_ENV='RWORKER_NIX_UPLOAD_INPUTS=none' run_scenario ok remote-build --no-link 'github:o/cfg#x'
   expect_rc "$n" 0 && expect_no_trace "$n" 'nix copy --no-check-sigs --to' && pass "$n"
   # A flake that only exists here is uploaded, even in auto mode.
   n=remote-upload-local-top
@@ -612,8 +612,8 @@ test_remote_build_upload() {
     && expect_no_trace "$n" '/nix/store/src-pub' \
     && pass "$n"
   n=upload-invalid
-  run_scenario ok --upload bogus remote-build --no-link 'github:o/cfg#x'
-  expect_rc "$n" 2 && expect_err "$n" '--upload must be' && expect_no_lease "$n" && pass "$n"
+  run_scenario ok --upload-inputs bogus remote-build --no-link 'github:o/cfg#x'
+  expect_rc "$n" 2 && expect_err "$n" '--upload-inputs must be' && expect_no_lease "$n" && pass "$n"
   # Only remote-build uploads anything: no tokens for the other subcommands.
   n=build-no-nix-auth
   run_scenario ok build '.#x'

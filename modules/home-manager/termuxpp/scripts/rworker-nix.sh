@@ -32,14 +32,15 @@ Options:
   --disk GIB        root disk size
   --system SYSTEM   platform to build for (default: aarch64-linux); the
                     worker must run it natively or via qemu-user binfmt
-  --upload MODE     what remote-build uploads: auto (default; only what the
+  --upload-inputs MODE
+                    what remote-build uploads: auto (default; only what the
                     worker cannot fetch itself), all (every locked input,
                     fetched here) or none (nothing, the worker fetches all)
   --down WORKER     delete a worker left behind and exit
   -h, --help        show this help
 
 Settings come from the options, else RWORKER_NIX_{CONTROLLER,KEY,TTL,PROFILE,
-SYSTEM,UPLOAD}, else ~/.config/rworker-nix/config and then local.conf beside it
+SYSTEM,UPLOAD_INPUTS}, else ~/.config/rworker-nix/config and then local.conf beside it
 (key=value lines; local.conf wins):
   controller   ssh alias of the rworker controller (required); its address
                and pinned host key belong in ~/.ssh/config and known_hosts
@@ -83,7 +84,7 @@ read_config_file() {
       profile) CFG_PROFILE="$value" ;;
       aws_credentials) CFG_AWS_CREDENTIALS="$value" ;;
       system) CFG_SYSTEM="$value" ;;
-      upload) CFG_UPLOAD="$value" ;;
+      upload_inputs) CFG_UPLOAD_INPUTS="$value" ;;
       *) warn "ignoring unknown key '$key' in $file" ;;
     esac
   done < "$file"
@@ -91,7 +92,7 @@ read_config_file() {
 
 read_config() {
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/rworker-nix"
-  CFG_CONTROLLER="" CFG_KEY="" CFG_TTL="" CFG_PROFILE="" CFG_SYSTEM="" CFG_UPLOAD="" CFG_AWS_CREDENTIALS=""
+  CFG_CONTROLLER="" CFG_KEY="" CFG_TTL="" CFG_PROFILE="" CFG_SYSTEM="" CFG_UPLOAD_INPUTS="" CFG_AWS_CREDENTIALS=""
   read_config_file "$dir/config"
   read_config_file "$dir/local.conf"
 }
@@ -580,7 +581,7 @@ main() {
         usage
         return 0
         ;;
-      --ttl|--topic|--profile|--flavor|--disk|--system|--upload|--down)
+      --ttl|--topic|--profile|--flavor|--disk|--system|--upload-inputs|--down)
         if [[ -z "${2:-}" ]]
         then
           warn "$1 needs a value"
@@ -594,7 +595,7 @@ main() {
           --flavor) flavor="$2" ;;
           --disk) disk="$2" ;;
           --system) target="$2" ;;
-          --upload) upload="$2" ;;
+          --upload-inputs) upload="$2" ;;
           --down) down_name="$2" ;;
         esac
         shift 2
@@ -620,11 +621,11 @@ main() {
   profile="${profile:-${RWORKER_NIX_PROFILE:-$CFG_PROFILE}}"
   aws_credentials="${RWORKER_NIX_AWS_CREDENTIALS:-$CFG_AWS_CREDENTIALS}"
   target="${target:-${RWORKER_NIX_SYSTEM:-${CFG_SYSTEM:-aarch64-linux}}}"
-  upload="${upload:-${RWORKER_NIX_UPLOAD:-${CFG_UPLOAD:-auto}}}"
+  upload="${upload:-${RWORKER_NIX_UPLOAD_INPUTS:-${CFG_UPLOAD_INPUTS:-auto}}}"
   case "$upload" in
     auto|all|none) UPLOAD_MODE="$upload" ;;
     *)
-      warn "--upload must be auto, all or none (got '$upload')"
+      warn "--upload-inputs must be auto, all or none (got '$upload')"
       return 2
       ;;
   esac

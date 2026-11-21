@@ -101,9 +101,9 @@ RWORKER_NIX_CONTROLLER=rworker-controller rworker-nix shell nixpkgs#hello -c hel
 the flake and its inputs itself: `rworker setup nix` (run by `rworker up`)
 gives it this host's Nix `access-tokens`, so private GitHub and GitLab inputs
 work. Only what the worker cannot fetch (a local path flake, `git+file`,
-ssh-only git) is uploaded. `--upload all` uploads every locked input instead,
-`--upload none` nothing (`RWORKER_NIX_UPLOAD` or `upload=` in the config also set
-it); the default is `--upload auto`.
+ssh-only git) is uploaded. `--upload-inputs all` uploads every locked input instead,
+`--upload-inputs none` nothing (`RWORKER_NIX_UPLOAD_INPUTS` or `upload_inputs=` in the config also set
+it); the default is `--upload-inputs auto`.
 
 The public key defaults to `~/.ssh/id_ed25519.pub`; override it with
 `RWORKER_NIX_KEY`. The matching private key and pinned controller host key must
