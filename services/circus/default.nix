@@ -58,6 +58,7 @@ let
   # path the services read live, not as a *_file setting, which the upstream
   # module would turn into a systemd credential copied once at start.
   githubTokenDir = "/run/circus-github-token";
+  qemuOverflowStatusPath = "/var/lib/circus/qemu-overflow.json";
   githubTokenFile = "${githubTokenDir}/token";
   githubTokenGroup = "circus-github-token";
   githubTokenMinter = pkgs.writeShellApplication {
@@ -249,7 +250,9 @@ in
         database.createLocally = true;
         # Rotating App installation token (circus-github-token): read in place,
         # not copied into a credential at service start.
-        runtimeFiles = lib.optional cfg.githubApp.enable githubTokenFile;
+        runtimeFiles =
+          lib.optional cfg.githubApp.enable githubTokenFile
+          ++ lib.optional cfg.qemuOverflow.enable qemuOverflowStatusPath;
 
         settings = {
           server = {
@@ -352,7 +355,7 @@ in
                   supported_features = [ ];
                   allowed_build_repositories = [ "pschmitt/nixos-config" ];
                   grace_secs = 120;
-                  status_file = "/var/lib/circus/qemu-overflow.json";
+                  status_file = qemuOverflowStatusPath;
                   status_ttl_secs = 90;
                 };
               }
