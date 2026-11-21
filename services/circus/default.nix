@@ -514,44 +514,61 @@ in
           };
         };
 
-        ${buildHost} = {
-          enableACME = true;
-          forceSSL = true;
-          authelia = {
-            enable = true;
-            resolver.addresses =
-              if config.networking.nameservers != [ ] then config.networking.nameservers else [ "127.0.0.53" ];
-          };
-          locations =
-            dashboardLocations false
-            // {
-              # Topcoat opens its WebSocket on the origin root.
-              "= /" =
-                let
-                  live = dashboardLocation false "GET" "/_build-live";
-                in
-                live
+        ${buildHost} =
+          let
+            oidc = (config.services.circus.settings.oauth.oidc or { }) ? authelia;
+            login = dashboardLocation false "GET POST" "/login";
+          in
+          {
+            enableACME = true;
+            forceSSL = true;
+            authelia = {
+              enable = true;
+              resolver.addresses =
+                if config.networking.nameservers != [ ] then config.networking.nameservers else [ "127.0.0.53" ];
+            };
+            locations =
+              lib.mapAttrs (_: location: location // lib.optionalAttrs oidc { authelia = false; }) (
+                dashboardLocations false
                 // {
-                  extraConfig = live.extraConfig + ''
-                    if ($http_upgrade != "websocket") { return 302 /dash; }
+                  # Topcoat opens its WebSocket on the origin root.
+                  "= /" =
+                    let
+                      live = dashboardLocation false "GET" "/_build-live";
+                    in
+                    live
+                    // {
+                      extraConfig = live.extraConfig + ''
+                        if ($http_upgrade != "websocket") { return 302 /dash; }
+                      '';
+                    };
+                }
+                // lib.optionalAttrs oidc {
+                  "= /api/v1/auth/oidc/authelia" = dashboardLocation false "GET" "";
+                  "= /api/v1/auth/oidc/authelia/callback" =
+                    let
+                      callback = dashboardLocation false "GET" "";
+                    in
+                    callback
+                    // {
+                      extraConfig = callback.extraConfig + "access_log off;\n";
+                    };
+                }
+              )
+              // lib.optionalAttrs oidc {
+                # Circus protects dashboard data with its OIDC session. Keep
+                # explicit local login and sign-in errors behind Authelia.
+                "= /login" = login // {
+                  authelia = true;
+                  extraConfig = login.extraConfig + ''
+                    set $circus_login_mode "$request_method:$arg_error:$arg_local";
+                    if ($circus_login_mode = "GET::") {
+                      return 302 /api/v1/auth/oidc/authelia$is_args$args;
+                    }
                   '';
                 };
-            }
-            // lib.optionalAttrs ((config.services.circus.settings.oauth.oidc or { }) ? authelia) {
-              "= /api/v1/auth/oidc/authelia" = dashboardLocation false "GET" "";
-              "= /api/v1/auth/oidc/authelia/callback" =
-                let
-                  callback = dashboardLocation false "GET" "";
-                in
-                callback
-                // {
-                  extraConfig = callback.extraConfig + "access_log off;\n";
-                };
-              # Keep existing-account linking behind Authelia during migration.
-              "= /account" = dashboardLocation false "GET" "";
-              "= /account/link/authelia" = dashboardLocation false "GET POST" "";
-            };
-        };
+              };
+          };
 
         # Binary cache for agents: tailnet clients only, no SSO (Nix cannot
         # log in). The server only serves paths Circus built or evaluated.
