@@ -48,7 +48,7 @@ let
     '';
   };
 
-  # The one declaratively configured project.
+  # The infrastructure project, which has its own jobset and build policy.
   repositoryUrl = "https://github.com/pschmitt/nixos-config";
 
   # GitHub App installation token, refreshed by circus-github-token below.
@@ -379,24 +379,35 @@ in
           );
 
           declarative = {
-            projects = [
-              {
-                name = "nixos-config";
-                repository_url = repositoryUrl;
-                jobsets = [
-                  {
-                    name = "main";
-                    nix_expression = "circusJobs";
-                    branch = "main";
-                    only_build_latest = true;
+            projects =
+              map
+                (
+                  project:
+                  project
+                  // {
+                    webhooks = lib.optional cfg.githubWebhook.enable {
+                      forge_type = "github";
+                      secret_file = secret "github-webhook-secret";
+                    };
                   }
-                ];
-                webhooks = lib.optional cfg.githubWebhook.enable {
-                  forge_type = "github";
-                  secret_file = secret "github-webhook-secret";
-                };
-              }
-            ];
+                )
+                (
+                  [
+                    {
+                      name = "nixos-config";
+                      repository_url = repositoryUrl;
+                      jobsets = [
+                        {
+                          name = "main";
+                          nix_expression = "circusJobs";
+                          branch = "main";
+                          only_build_latest = true;
+                        }
+                      ];
+                    }
+                  ]
+                  ++ import ./pilot-projects.nix
+                );
             api_keys = [
               {
                 name = "admin";

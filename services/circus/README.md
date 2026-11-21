@@ -100,7 +100,7 @@ Each needs its secret first; a missing SOPS key fails activation.
 - `services.circus.rworkerPool.enable`: ephemeral agents on rworkers. The
   autoscaler on rofl-10 (private `services/rworker-circus-pool.nix`) polls
   `/api/v1/operator/queue` on the tailnet-only vhost with a read-only API key
-  and creates up to 3 `circus-worker-*` VMs from the `rworker-circus` image
+  and creates up to 3 `circus-*` VMs from the `rworker-circus` image
   (`hosts/rworker-circus`) when more than 8 builds stay queued for two minutes.
   Each worker gets the pool's join token (`rworker-pool`) in its user-data;
   only root on the worker can reach the metadata service. Idle workers are
