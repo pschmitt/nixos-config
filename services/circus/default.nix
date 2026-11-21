@@ -41,6 +41,8 @@ let
     proxyWebsockets = true;
     recommendedProxySettings = false;
     extraConfig = ''
+      proxy_set_header Host ${buildHost};
+      proxy_set_header X-Forwarded-Host ${buildHost};
       proxy_set_header X-Forwarded-Proto https;
       ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
       deny all;
@@ -473,16 +475,18 @@ in
           };
           locations = {
             "/".return = "404";
-            # Topcoat's live connection uses the origin root. Permit only the
-            # WebSocket upgrade here; ordinary requests cannot reach Circus.
-            "= /" = tailnetDashboardLocation "/" // {
-              extraConfig = ''
-                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
-                deny all;
-                if ($http_upgrade != "websocket") { return 404; }
-                limit_except GET { deny all; }
-              '';
-            };
+            # The build dashboard forwards its root WebSocket to the
+            # restricted renderer. Ordinary requests cannot use this route.
+            "= /_build-live" =
+              let
+                live = tailnetDashboardLocation "/_build-live";
+              in
+              live
+              // {
+                extraConfig = live.extraConfig + ''
+                  if ($http_upgrade != "websocket") { return 404; }
+                '';
+              };
             "= /simple" = tailnetDashboardLocation "/simple";
             "= /login" = tailnetDashboardLocation "/login" // {
               extraConfig = ''
