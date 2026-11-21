@@ -2,7 +2,7 @@
 # App webhook to each project.
 [
   {
-    name = "luks-mount.sh";
+    name = "luks-mount-sh";
     repository_url = "https://github.com/pschmitt/luks-mount.sh";
     jobsets = [
       {
