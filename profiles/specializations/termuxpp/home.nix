@@ -40,6 +40,7 @@ in
     ../../../modules/home-manager/termuxpp/permissions.nix
     ../../../modules/home-manager/termuxpp/self-update.nix
     ../../../modules/home-manager/termuxpp/bridge.nix
+    ../../../modules/home-manager/termuxpp/git-wiit.nix
     ../../../modules/home-manager/termuxpp/lifecycle.nix
     ../../../modules/home-manager/termuxpp/mani.nix
     ../../../modules/home-manager/termuxpp/nightly.nix
