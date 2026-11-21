@@ -260,7 +260,7 @@
       };
     };
 
-    # Circus CI, on trial next to nixbot (services/circus): our fork of
+    # Circus CI (services/circus): our fork of
     # manic-systems/circus, which re-reads forge token files on every status
     # so the GitHub App's hourly installation tokens apply without restarts.
     circus = {
@@ -863,7 +863,7 @@
           onEvent = inputs.nixos-config-private.lib.ciEventEffects { };
         };
 
-      # Jobs for Circus (services/circus, trial next to nixbot): nixbot's job set
+      # Jobs for Circus (services/circus): the shared CI job set
       # plus the aarch64-linux hosts and packages, which ephemeral agents on
       # GitHub's arm runners build natively.
       circusJobs = ciJobs [

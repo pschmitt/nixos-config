@@ -309,7 +309,7 @@ in
             webhook_secret_encryption_key_file = secret "webhook-encryption-key";
           };
 
-          ui.brand_subtitle = "Nix CI (trial next to nixbot)";
+          ui.brand_subtitle = "";
 
           evaluator = {
             github_token_file = lib.mkIf cfg.githubApp.enable githubTokenFile;
