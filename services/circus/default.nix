@@ -87,9 +87,6 @@ let
   '';
 in
 {
-  # The queue-runner writes its short-lived QEMU demand report under its
-  # StateDirectory; the API server can read group-readable atomic snapshots.
-
   imports = [
     inputs.circus.nixosModules.circus
     ./agent.nix
@@ -103,6 +100,11 @@ in
       (circus/pool-join-token-sha256) and a read-only API key
       (circus/autoscaler-api-key) for its demand checks, which read the
       operator queue on the tailnet-only vhost
+    '';
+
+    qemuOverflow.enable = lib.mkEnableOption ''
+      the one-worker ARM overflow fallback after the QEMU image is available
+      in the worker pool
     '';
 
     allowLocalBuilds = lib.mkOption {
@@ -165,7 +167,8 @@ in
   };
 
   config = {
-    users.users.circus-server.extraGroups = [ "circus" ];
+    # The queue-runner writes the short-lived report in its StateDirectory.
+    users.users.circus-server.extraGroups = lib.mkIf cfg.qemuOverflow.enable [ "circus" ];
 
     assertions = [
       {
@@ -322,34 +325,38 @@ in
                 ];
               };
             };
-            ephemeral_pools = lib.optional cfg.githubActionsAgents.enable {
-              name = "gha-aarch64-linux";
-              allowed_build_repositories = [ "pschmitt/nixos-config" ];
-              systems = [ "aarch64-linux" ];
-              supported_features = [ "big-parallel" ];
-              max_jobs = 2;
-              max_inflight = 4;
-              qemu_overflow = {
-                agent_name = "circus-qemu";
-                system = "aarch64-linux";
-                supported_features = [ ];
+            ephemeral_pools = lib.optional cfg.githubActionsAgents.enable (
+              {
+                name = "gha-aarch64-linux";
                 allowed_build_repositories = [ "pschmitt/nixos-config" ];
-                grace_secs = 120;
-                status_file = "/var/lib/circus/qemu-overflow.json";
-                status_ttl_secs = 90;
-              };
-              github_actions = {
-                workflow_repository = "pschmitt/nixos-config";
-                workflow = "circus-builder.yml";
-                ref_name = "main";
-                # The App's installation token (Actions: write) is minted every
-                # 45 minutes; Circus reads it on every dispatch (runtimeFiles).
-                token_file = if cfg.githubApp.enable then githubTokenFile else secret "github-dispatch-token";
-                runner_url = runnerUrl;
-                oidc_audience = "circus-agent";
-                agent_binary_url = "${cfg.githubActionsAgents.agentBinaryUrl}#sha256=${cfg.githubActionsAgents.agentBinarySha256}";
-              };
-            };
+                systems = [ "aarch64-linux" ];
+                supported_features = [ "big-parallel" ];
+                max_jobs = 2;
+                max_inflight = 4;
+                github_actions = {
+                  workflow_repository = "pschmitt/nixos-config";
+                  workflow = "circus-builder.yml";
+                  ref_name = "main";
+                  # The App's installation token (Actions: write) is minted every
+                  # 45 minutes; Circus reads it on every dispatch (runtimeFiles).
+                  token_file = if cfg.githubApp.enable then githubTokenFile else secret "github-dispatch-token";
+                  runner_url = runnerUrl;
+                  oidc_audience = "circus-agent";
+                  agent_binary_url = "${cfg.githubActionsAgents.agentBinaryUrl}#sha256=${cfg.githubActionsAgents.agentBinarySha256}";
+                };
+              }
+              // lib.optionalAttrs cfg.qemuOverflow.enable {
+                qemu_overflow = {
+                  agent_name = "circus-qemu";
+                  system = "aarch64-linux";
+                  supported_features = [ ];
+                  allowed_build_repositories = [ "pschmitt/nixos-config" ];
+                  grace_secs = 120;
+                  status_file = "/var/lib/circus/qemu-overflow.json";
+                  status_ttl_secs = 90;
+                };
+              }
+            );
           };
 
           cache = {
@@ -512,6 +519,14 @@ in
             "^~ /_topcoat/" = tailnetDashboardLocation "";
             "^~ /static/" = tailnetDashboardLocation "";
             "~ \"^/build/[0-9a-f-]{36}/log$\"" = tailnetDashboardLocation "";
+            "~ \"^/api/v1/builds/[0-9a-f-]{36}/log/stream$\"" =
+              let
+                stream = tailnetDashboardLocation "";
+              in
+              stream
+              // {
+                extraConfig = stream.extraConfig + "proxy_buffering off;\n";
+              };
             "/nix-cache/" = {
               proxyPass = "http://127.0.0.1:${toString serverPort}";
               authelia = false;
