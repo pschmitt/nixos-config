@@ -18,7 +18,6 @@ organization audit; it does not claim every application works on every platform.
 | Headless-browser import-only wrapper | Consumers import the browser-daemon service directly |
 | Unused NixOS placeholder and legacy package entrypoint | Removed `modules/nixos/default.nix` and `nixpkgs.nix`; package composition requires explicit `pkgs` and `inputs` |
 | Misleading standalone development-shell entrypoint | `shell.nix` explicitly receives the flake's package set and checks |
-| Duplicate MultiOS configuration outputs | Publishing uses the canonical ISO configurations; artifact names remain unchanged |
 | Evaluation-time build in the private SOPS template | Assign the generated INI file directly to the template's `file`, without `builtins.readFile` |
 | Inconsistent owned Home Manager output names | Public modules and jcalapi use `homeManagerModules`; the jcalapi pin and consumer migrate together |
 | Legacy package output names | Replaced `defaultPackage` in the six affected application flakes with `packages.<system>.default` |

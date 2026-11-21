@@ -442,8 +442,6 @@ ARTIFACT_JOBS = {
     "publish.standard-legacy": "iso-legacy",
     "publish.private-legacy": "iso-private-legacy",
     "publish.graphical": "iso-graphical",
-    "publish.multios": "iso",
-    "publish.private-multios": "iso-private",
     "publish.publish-browser-worker-image": "rworker-browser-daemon",
     "publish.publish-nixbot-worker-image": "rworker",
     "publish.publish-circus-worker-image": "rworker-circus",
