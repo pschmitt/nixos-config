@@ -31,7 +31,7 @@ stdenvNoCC.mkDerivation {
 
   postInstall = ''
     set -o pipefail
-    jq -er '.skills[] | sub("^\./"; "")' "${androidSkillsSrc}/.codex-plugin/plugin.json" |
+    jq -er '.skills[] | sub("^\\./"; "")' "${androidSkillsSrc}/.codex-plugin/plugin.json" |
       while IFS= read -r skill
       do
         installSkill "${androidSkillsSrc}/$skill"
