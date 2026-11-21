@@ -14,6 +14,18 @@ Both upload their results to the binary cache. See
 [services/harmonia/README.md](../services/harmonia/README.md) for how the cache
 delivers them.
 
+## Circus rollout
+
+Circus evaluates `circusJobs` for x86_64 and aarch64. It sends ARM jobs to
+ephemeral GitHub Actions builders and reports commit statuses to GitHub.
+The publishing runner observes successful builds in dry-run mode while
+nixbot still publishes the artifacts.
+
+The LAN cache mirror looks up successful Circus host outputs for the current
+`main` commit and pulls their signed closures. It keeps the existing local
+roots until replacement builds are available. See the [Circus service
+configuration](../services/circus/README.md) for details.
+
 ## Workflows
 
 | Workflow | Trigger | Purpose |
