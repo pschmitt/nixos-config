@@ -89,7 +89,6 @@ in
 {
   # The queue-runner writes its short-lived QEMU demand report under its
   # StateDirectory; the API server can read group-readable atomic snapshots.
-  users.users.circus-server.extraGroups = [ "circus" ];
 
   imports = [
     inputs.circus.nixosModules.circus
@@ -166,6 +165,8 @@ in
   };
 
   config = {
+    users.users.circus-server.extraGroups = [ "circus" ];
+
     assertions = [
       {
         assertion =
