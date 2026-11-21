@@ -6,10 +6,11 @@
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") APP_ID_FILE PRIVATE_KEY_FILE OWNER/REPO OUT_FILE
+Usage: $(basename "$0") APP_ID_FILE PRIVATE_KEY_FILE OWNER/REPO OUT_FILE NIX_CONFIG_FILE AUTH_REPOSITORIES_JSON
 
 Look up the App's installation on OWNER/REPO and write a fresh installation
-token to OUT_FILE (mode 0440, group of its directory).
+token to OUT_FILE and a Nix extra-access-tokens config to NIX_CONFIG_FILE
+(both mode 0440, group of their directory).
 EOF
 }
 
@@ -54,10 +55,16 @@ mint() {
   local key_file="$2"
   local repo="$3"
   local out_file="$4"
-  local work_dir="$5"
+  local nix_config_file="$5"
+  local repositories_json="$6"
+  local work_dir="$7"
   local app_id
   local jwt
   local installation_id
+  local owner
+  local repo_names
+  local nix_prefixes
+  local token
 
   app_id="$(tr -d '[:space:]' < "$app_id_file")" || return 1
   if [[ ! "$app_id" =~ ^[0-9]+$ ]]
@@ -92,6 +99,50 @@ mint() {
   chgrp --reference="$(dirname "$out_file")" "$work_dir/token" || return 1
   mv -f "$work_dir/token" "$out_file" || return 1
 
+  owner="${repo%%/*}"
+  if [[ "$repo" != */* || -z "$owner" ]]
+  then
+    printf 'App repository must be OWNER/REPO\n' >&2
+    return 1
+  fi
+
+  if ! jq -e --arg owner "$owner" 'type == "array" and all(.[]; type == "string" and (split("/") | length == 2) and (split("/")[0] == $owner) and (split("/")[1] != ""))' \
+    <<<"$repositories_json" >/dev/null
+  then
+    printf 'Nix auth repositories must be OWNER/REPO entries under %s\n' "$owner" >&2
+    return 1
+  fi
+
+  repo_names="$(jq -c --arg owner "$owner" '[.[] | split("/")[1]]' <<<"$repositories_json")" || return 1
+  nix_prefixes="$(jq -r '[.[] | "github.com/" + .] | join(" ")' <<<"$repositories_json")" || return 1
+  if [[ "$repositories_json" != '[]' ]]
+  then
+    github_api "$work_dir/app-auth" --request POST \
+      --data "$(jq -cn --argjson repositories "$repo_names" '{repositories: $repositories, permissions: {contents: "read"}}')" \
+      "https://api.github.com/app/installations/${installation_id}/access_tokens" \
+      > "$work_dir/nix-response" || return 1
+    jq -er '.token' "$work_dir/nix-response" > "$work_dir/nix-token" || return 1
+    if [[ ! -s "$work_dir/nix-token" ]]
+    then
+      printf 'GitHub returned an empty scoped Nix token\n' >&2
+      return 1
+    fi
+
+    # Scoped archive reads use their own token; the broader notification token
+    # was atomically published above so this failure cannot block statuses.
+    token="$(<"$work_dir/nix-token")" || return 1
+    printf 'extra-access-tokens = %s\n' \
+      "$(jq -nr --arg prefixes "$nix_prefixes" --arg token "$token" '$prefixes | split(" ") | map(. + "=" + $token) | join(" ")')" \
+      > "$work_dir/nix-extra.conf" || return 1
+    unset token
+  else
+    : > "$work_dir/nix-extra.conf" || return 1
+  fi
+
+  chmod 0440 "$work_dir/nix-extra.conf" || return 1
+  chgrp --reference="$(dirname "$nix_config_file")" "$work_dir/nix-extra.conf" || return 1
+  mv -f "$work_dir/nix-extra.conf" "$nix_config_file" || return 1
+
   printf 'Minted an installation token for %s (installation %s), expires %s\n' \
     "$repo" "$installation_id" "$(jq -r '.expires_at' "$work_dir/response")"
 }
@@ -104,7 +155,7 @@ main() {
       ;;
   esac
 
-  if [[ $# -ne 4 ]]
+  if [[ $# -ne 6 ]]
   then
     usage >&2
     return 2

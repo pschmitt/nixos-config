@@ -86,6 +86,10 @@ let
   githubTokenDir = "/run/circus-github-token";
   qemuOverflowStatusPath = "/var/lib/circus/qemu-overflow.json";
   githubTokenFile = "${githubTokenDir}/token";
+  githubAuthRepositories = config.services.circus.settings.evaluator.github_auth_repositories or [ ];
+  # Nix's canonical GitHub tarball fetch needs a token for private project
+  # sources; the minter writes a path-scoped extra-access-tokens config here.
+  githubNixConfigFile = "${githubTokenDir}/nix-extra.conf";
   githubTokenGroup = "circus-github-token";
   githubTokenMinter = pkgs.writeShellApplication {
     name = "circus-github-token";
@@ -696,8 +700,13 @@ in
           environment = {
             NIX_CONFIG = "pure-eval = true";
           }
-          // lib.optionalAttrs (gitlabNixConf != null) {
-            NIX_USER_CONF_FILES = "/run/credentials/circus-evaluator.service/nix-gitlab";
+          // lib.optionalAttrs (cfg.githubApp.enable || gitlabNixConf != null) {
+            # The scoped App token covers the configured private projects.
+            # The global GitHub PAT remains the fallback for other inputs.
+            NIX_USER_CONF_FILES = lib.concatStringsSep ":" (
+              lib.optional cfg.githubApp.enable githubNixConfigFile
+              ++ lib.optional (gitlabNixConf != null) "/run/credentials/circus-evaluator.service/nix-gitlab"
+            );
           };
           serviceConfig = {
             EnvironmentFile = config.sops.templates."circus-evaluator.env".path;
@@ -733,6 +742,8 @@ in
                 (secret "github-app/private-key")
                 cfg.githubApp.repository
                 githubTokenFile
+                githubNixConfigFile
+                (builtins.toJSON githubAuthRepositories)
               ];
               TimeoutStartSec = "2min";
               # root reads the SOPS key; the token goes to root:circus-github-token 0440.
