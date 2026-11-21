@@ -18,6 +18,18 @@ let
   absGroup = config.users.users.${absUser}.group;
 in
 {
+  # The module only accepts a StateDirectory-relative dataDir, so keep the
+  # config/database on the data disk (covered by the /mnt/data/srv restic
+  # backup) by bind-mounting it over the state directory.
+  fileSystems."/var/lib/${config.services.audiobookshelf.dataDir}" = {
+    device = "/mnt/data/srv/audiobookshelf";
+    fsType = "none";
+    options = [
+      "bind"
+      "x-systemd.requires-mounts-for=/mnt/data"
+    ];
+  };
+
   systemd.tmpfiles.rules = [
     "d /mnt/data/audiobooks 2775 ${absUser} ${absGroup} - -"
     "Z /mnt/data/audiobooks 2775 ${absUser} ${absGroup} - -"
