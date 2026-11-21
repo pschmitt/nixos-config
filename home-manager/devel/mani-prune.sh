@@ -9,8 +9,8 @@ Without --force nothing is removed: the repositories are listed, with what
 would happen to each of them.
 
 A repository that holds work existing nowhere else (uncommitted or untracked
-changes, commits on no remote, stashes, no remote at all) is kept unless
---dirty is given. Linked worktrees are kept unless --worktrees is given.
+changes, ignored files that are not mere build output, commits on no remote,
+stashes, no remote at all) is kept unless --dirty is given. Linked worktrees are kept unless --worktrees is given.
 A repository that contains a managed project, or the current directory, is
 always kept.
 
@@ -29,6 +29,9 @@ EOF
 warn() {
   printf '%s: %s\n' "$(basename "$0")" "$*" >&2
 }
+
+# Ignored paths that are build output or caches, not someone's data.
+BUILD_OUTPUT='(^|/)(target|node_modules|\.direnv|result|result-[a-z]+|__pycache__|\.venv|venv|\.terraform|dist|build|\.mypy_cache|\.pytest_cache|\.ruff_cache|\.cache|\.gradle|\.idea|\.vscode)(/|$)|\.(pyc|pyo|swp)$|\.egg-info/?$|^\.pre-commit-config\.yaml$'
 
 # Prints the absolute path PATH_ARG of a mani project, "~" expanded and a
 # relative one taken from the directory of its config.
@@ -100,6 +103,16 @@ repo_kind() {
   esac
 }
 
+# Prints the first ignored file or directory of DIR that is not plain build
+# output: a .env, a data directory, results that nothing else regenerates.
+ignored_files() {
+  local dir="$1"
+  git -C "$dir" status --ignored --porcelain 2> /dev/null \
+    | sed -n 's/^!! //p' \
+    | grep -Ev "$BUILD_OUTPUT" \
+    | head -n 1 || true
+}
+
 # Prints why DIR must not lose its repository, one reason per line: work
 # that exists nowhere else.
 local_work() {
@@ -107,6 +120,10 @@ local_work() {
   if [[ -n "$(git -C "$dir" status --porcelain 2> /dev/null)" ]]
   then
     printf 'uncommitted changes\n'
+  fi
+  if [[ -n "$(ignored_files "$dir")" ]]
+  then
+    printf 'ignored files\n'
   fi
   if [[ -n "$(git -C "$dir" stash list 2> /dev/null)" ]]
   then

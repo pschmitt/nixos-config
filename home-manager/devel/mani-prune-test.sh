@@ -156,6 +156,33 @@ test_local_work_is_kept() {
     && pass "$n-forced"
 }
 
+test_ignored_data_is_local_work_but_build_output_is_not() {
+  local n=ignored
+  printf '.env\nresults/\ntarget/\n' > "$HOME/devel/private/stray.git/.gitignore"
+  tgit -C "$HOME/devel/private/stray.git" add .gitignore
+  tgit -C "$HOME/devel/private/stray.git" commit -q -m ignore
+  tgit -C "$HOME/devel/private/stray.git" push -q origin main 2> /dev/null
+  mkdir -p "$HOME/devel/private/stray.git/target" "$HOME/devel/misc/deep/stray2.git/results"
+  printf 'build\n' > "$HOME/devel/private/stray.git/target/out"
+  # stray.git only has build output ignored: removable. stray2.git gets data.
+  printf 'results/\n' > "$HOME/devel/misc/deep/stray2.git/.gitignore"
+  tgit -C "$HOME/devel/misc/deep/stray2.git" add .gitignore
+  tgit -C "$HOME/devel/misc/deep/stray2.git" commit -q -m ignore
+  tgit -C "$HOME/devel/misc/deep/stray2.git" push -q origin main 2> /dev/null
+  printf 'precious\n' > "$HOME/devel/misc/deep/stray2.git/results/r1"
+  run
+  expect_out "$n" "remove  $HOME/devel/private/stray.git" \
+    && expect_out "$n" "keep    $HOME/devel/misc/deep/stray2.git  (ignored files (--dirty))" \
+    && pass "$n-report"
+  run --force
+  expect_rc "$n" 0 \
+    && ! exists private/stray.git \
+    && exists misc/deep/stray2.git/results \
+    && pass "$n-kept-data"
+  run --force --dirty
+  ! exists misc/deep/stray2.git && pass "$n-dirty-removes"
+}
+
 test_stash_counts_as_local_work() {
   local n=stash
   printf 'z\n' >> "$HOME/devel/private/stray.git/file"
