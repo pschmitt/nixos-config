@@ -41,7 +41,7 @@ map (repo: project repo "main" "packages.x86_64-linux") [
   "tsvtool"
   "vodafone-station-cli"
 ]
-++ map (repo: project repo "main" "hydraJobs") [
+++ map (repo: project repo "main" "hydraJobs.x86_64-linux") [
   "anika-blue"
   "browser-daemon"
   "bruvtab"
