@@ -466,8 +466,23 @@ in
         ${tailnetHost} = {
           enableACME = true;
           forceSSL = true;
+          authelia = {
+            enable = true;
+            resolver.addresses =
+              if config.networking.nameservers != [ ] then config.networking.nameservers else [ "127.0.0.53" ];
+          };
           locations = {
             "/".return = "404";
+            # Topcoat's live connection uses the origin root. Permit only the
+            # WebSocket upgrade here; ordinary requests cannot reach Circus.
+            "= /" = tailnetDashboardLocation "/" // {
+              extraConfig = ''
+                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
+                deny all;
+                if ($http_upgrade != "websocket") { return 404; }
+                limit_except GET { deny all; }
+              '';
+            };
             "= /simple" = tailnetDashboardLocation "/simple";
             "= /login" = tailnetDashboardLocation "/login" // {
               extraConfig = ''
@@ -478,8 +493,10 @@ in
             };
             "^~ /_topcoat/" = tailnetDashboardLocation "";
             "^~ /static/" = tailnetDashboardLocation "";
+            "~ \"^/build/[0-9a-f-]{36}/log$\"" = tailnetDashboardLocation "";
             "/nix-cache/" = {
               proxyPass = "http://127.0.0.1:${toString serverPort}";
+              authelia = false;
               extraConfig = ''
                 ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
                 deny all;
@@ -487,6 +504,7 @@ in
             };
             "~ ^/job/nixos-config/main/hosts\\.[a-z0-9-]+/latest$" = {
               proxyPass = "http://127.0.0.1:${toString serverPort}";
+              authelia = false;
               extraConfig = ''
                 ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
                 deny all;
