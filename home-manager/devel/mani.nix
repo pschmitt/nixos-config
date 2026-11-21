@@ -37,9 +37,25 @@ let
       WantedBy = [ "timers.target" ];
     };
   };
+
+  # Removes the repositories below ~/devel that no mani config manages.
+  maniPrune = pkgs.writeShellApplication {
+    name = "mani-prune";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.findutils
+      pkgs.git
+      pkgs.gnused
+      pkgs.yq-go
+    ];
+    text = builtins.readFile ./mani-prune.sh;
+  };
 in
 {
-  home.packages = [ pkgs.mani ];
+  home.packages = [
+    pkgs.mani
+    maniPrune
+  ];
 
   # Project lists and helper scripts (formerly in yadm); work.yaml is in the
   # private repo.
