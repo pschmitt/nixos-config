@@ -6,6 +6,34 @@
 }:
 let
   domainName = config.domains.main;
+  codexTrustedProjects =
+    paths:
+    lib.genAttrs paths (_: {
+      trust_level = "trusted";
+    });
+  maniProjectPathsFromFile =
+    file:
+    lib.filter (path: path != null) (
+      map (
+        line:
+        let
+          match = builtins.match "^[[:space:]]*path:[[:space:]]*([^[:space:]]+).*" line;
+        in
+        if match == null then null else builtins.head match
+      ) (lib.splitString "\n" (builtins.readFile (./mani + "/${file}")))
+    );
+  maniYamlFiles = lib.attrNames (
+    lib.filterAttrs (name: type: type == "regular" && lib.hasSuffix ".yaml" name) (
+      builtins.readDir ./mani
+    )
+  );
+  maniProjectPaths = lib.concatMap maniProjectPathsFromFile maniYamlFiles;
+  expandManiProjectPath =
+    path:
+    if lib.hasPrefix "~/" path then
+      "${config.home.homeDirectory}/${lib.removePrefix "~/" path}"
+    else
+      path;
   # Keep the proxy on the stable Python set: unstable mcp-proxy requires MCP
   # 1.27.1, while unstable currently ships MCP 2.x.
   mcpProxy = pkgs.stable.mcp-proxy;
@@ -746,24 +774,15 @@ in
             };
           };
 
-          projects = {
-            "/etc/nixos".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/ansible-stuff.git".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/browser-daemon.git".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/bruvtab.git".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/ci-workflows.git".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/home-assistant-apps.git".trust_level =
-              "trusted";
-            "/mnt/ha".trust_level = "trusted";
-            "/mnt/turris".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/rbw.git".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/monarch.git".trust_level = "trusted";
-            "${config.home.homeDirectory}".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git".trust_level = "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config-private.git".trust_level =
-              "trusted";
-            "${config.home.homeDirectory}/devel/private/pschmitt/stricknani.git".trust_level = "trusted";
-          };
+          projects = codexTrustedProjects (
+            [
+              "/etc/nixos"
+              "/mnt/ha"
+              "/mnt/turris"
+              config.home.homeDirectory
+            ]
+            ++ map expandManiProjectPath maniProjectPaths
+          );
 
           sandbox_mode = "danger-full-access";
           # The Nixpkgs CLI package does not include the complete package layout
