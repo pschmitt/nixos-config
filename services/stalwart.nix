@@ -6,6 +6,7 @@
   config,
   lib,
   pkgs,
+  stalwartProvisioningPlan,
   ...
 }:
 let
@@ -156,6 +157,22 @@ let
     mode = "0400";
     restartUnits = [ "stalwart-provision.service" ];
   };
+  provisioningSecretNames = [
+    "dns-provider-token"
+    "oidc-encryption-key"
+    "oidc-signature-key"
+    "web-push-key"
+  ];
+  runtimeSecret = name: { "$stalwartSecret" = name; };
+  provisioningPlan = pkgs.writeText "stalwart-provisioning.ndjson" (
+    lib.concatMapStringsSep "\n" builtins.toJSON (stalwartProvisioningPlan {
+      dnsProviderToken = runtimeSecret "dns-provider-token";
+      oidcEncryptionKey = runtimeSecret "oidc-encryption-key";
+      oidcSignatureKey = runtimeSecret "oidc-signature-key";
+      webPushKey = runtimeSecret "web-push-key";
+    })
+    + "\n"
+  );
   datastoreBootstrap = (pkgs.formats.json { }).generate "stalwart-config.json" {
     "@type" = "Sqlite";
     path = "${dataDir}/database.sqlite";
@@ -182,15 +199,29 @@ in
       reloadSettings = false;
       urls = [ "http://127.0.0.1:${toString (listenerPort "http")}" ];
       runtimePlan = {
-        file = config.sops.secrets."stalwart/configuration-snapshot".path;
+        file = toString provisioningPlan;
+        secretFiles = lib.genAttrs provisioningSecretNames (
+          name: config.sops.secrets."stalwart/${name}".path
+        );
         usernameFile = config.sops.secrets."stalwart/provisioning-username".path;
         passwordFile = config.sops.secrets."stalwart/provisioning-password".path;
+        # Stalwart 0.16 rejects writes of these existing empty expressions.
+        requiredFields =
+          let
+            emptyExpression = {
+              "else" = "";
+              match = { };
+            };
+          in
+          {
+            MtaQueueQuota.match = emptyExpression;
+            SieveSystemInterpreter.defaultReturnPath = emptyExpression;
+          };
       };
     };
   };
 
   sops.secrets = {
-    "stalwart/configuration-snapshot" = provisioningSecret;
     "stalwart/provisioning-username" = provisioningSecret;
     "stalwart/provisioning-password" = provisioningSecret;
     "stalwart/dns-reconcile-password" = config.sops.mkHostSecret {
@@ -198,7 +229,8 @@ in
       group = "stalwart";
       mode = "0400";
     };
-  };
+  }
+  // lib.genAttrs (map (name: "stalwart/${name}") provisioningSecretNames) (_: provisioningSecret);
 
   environment.etc."stalwart/config.json".source = datastoreBootstrap;
 

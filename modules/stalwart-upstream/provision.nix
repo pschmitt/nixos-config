@@ -28,6 +28,16 @@ in
               type = lib.types.str;
               description = "Runtime path to the provisioning account password.";
             };
+            secretFiles = lib.mkOption {
+              type = lib.types.attrsOf lib.types.str;
+              default = { };
+              description = "Runtime files used to substitute $stalwartSecret references in the plan.";
+            };
+            requiredFields = lib.mkOption {
+              type = lib.types.attrsOf (lib.types.attrsOf lib.types.json);
+              default = { };
+              description = "Existing field values that must match before provisioning objects of each type.";
+            };
           };
         }
       );
@@ -180,7 +190,13 @@ in
             "plan:${cfg.runtimePlan.file}"
             "username:${cfg.runtimePlan.usernameFile}"
             "password:${cfg.runtimePlan.passwordFile}"
-          ];
+          ]
+          ++ lib.mapAttrsToList (name: path: "plan-secret-${name}:${path}") cfg.runtimePlan.secretFiles
+          ++
+            lib.optional (cfg.runtimePlan.requiredFields != { })
+              "required-fields:${
+                (pkgs.formats.json { }).generate "stalwart-required-fields.json" cfg.runtimePlan.requiredFields
+              }";
           TimeoutStartSec = if cfg.timeout == null then 120 else cfg.timeout;
           UMask = "0077";
           NoNewPrivileges = true;
@@ -195,6 +211,7 @@ in
                   cfg.package
                   pkgs.coreutils
                   pkgs.curl
+                  pkgs.jq
                 ];
                 text = builtins.readFile ../scripts/stalwart-provision.sh;
               };
