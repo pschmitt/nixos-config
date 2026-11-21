@@ -309,7 +309,22 @@ in
             webhook_secret_encryption_key_file = secret "webhook-encryption-key";
           };
 
-          ui.brand_subtitle = "";
+          ui = {
+            brand_subtitle = "";
+            custom_css = toString (
+              pkgs.writeText "circus-sidebar.css" ''
+                @media (min-width: 761px) {
+                  .app-shell {
+                    grid-template-columns: 168px minmax(0, 1fr);
+                  }
+                  .app-shell > .sidebar {
+                    width: auto;
+                    min-width: 0;
+                  }
+                }
+              ''
+            );
+          };
 
           evaluator = {
             github_token_file = lib.mkIf cfg.githubApp.enable githubTokenFile;
