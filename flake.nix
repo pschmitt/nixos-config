@@ -737,6 +737,7 @@
           pkgs = nixpkgs.legacyPackages.${system};
           privateSkills = "${inputs.nixos-config-private}/hm/skills";
           upstreamSkills = import ./home-manager/devel/upstream-skills.nix {
+            androidSkills = self.packages.${system}.android-skills;
             inherit (pkgs) fetchFromGitHub;
             inherit (self.packages.${system}) todoist-cli;
             inherit (inputs.llm-agents.packages.${system}) terminal-browser;

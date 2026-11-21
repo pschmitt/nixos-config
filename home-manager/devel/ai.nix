@@ -219,6 +219,7 @@ let
   };
 
   upstreamSkills = import ./upstream-skills.nix {
+    androidSkills = pkgs.android-skills;
     inherit (pkgs) fetchFromGitHub todoist-cli;
     inherit (pkgs.llm-agents) terminal-browser;
   };

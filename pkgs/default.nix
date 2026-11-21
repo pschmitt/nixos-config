@@ -34,6 +34,7 @@ let
 in
 {
   # local pkgs
+  android-skills = pkgs.callPackage ./android-skills { };
   agent-secret-guard = pkgs.callPackage ./local/agent-secret-guard { };
   agent-secret-scan = pkgs.callPackage ./local/agent-secret-scan { };
   agent-tmux-context-hook = pkgs.callPackage ./local/agent-tmux-context-hook { };

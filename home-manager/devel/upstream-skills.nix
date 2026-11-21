@@ -2,6 +2,7 @@
 # (home-manager/devel/ai.nix). The skills check in flake.nix derives its
 # `--external` names from the same list, so a new entry needs no lint change.
 {
+  androidSkills,
   fetchFromGitHub,
   terminal-browser,
   todoist-cli,
@@ -36,6 +37,9 @@ in
   "${rewriteSkills}/skills/misc"
   "${frontendDesign}/plugins/frontend-design/skills"
   "${n8nSkills}/skills"
+]
+++ [
+  "${androidSkills}/share/skills/android-skills"
   "${todoist-cli}/share/skills/todoist-cli"
   "${terminal-browser}/lib/terminal-browser/skills/default"
 ]

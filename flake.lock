@@ -40,22 +40,6 @@
         "type": "github"
       }
     },
-    "android-skills": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1794758742,
-        "narHash": "sha256-Syj3TJoQkTbWncuKyIzmQfQL2jhwcBo/DHHdHCbivaY=",
-        "owner": "android",
-        "repo": "skills",
-        "rev": "c72942584fff970dac86ced78b367fce0c441e52",
-        "type": "github"
-      },
-      "original": {
-        "owner": "android",
-        "repo": "skills",
-        "type": "github"
-      }
-    },
     "anika-blue": {
       "inputs": {
         "crane": "crane",
@@ -2457,7 +2441,6 @@
     "root": {
       "inputs": {
         "ai-memory": "ai-memory",
-        "android-skills": "android-skills",
         "anika-blue": "anika-blue",
         "browser-daemon": "browser-daemon",
         "bruvtab": "bruvtab",
