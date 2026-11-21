@@ -87,6 +87,10 @@ let
   '';
 in
 {
+  # The queue-runner writes its short-lived QEMU demand report under its
+  # StateDirectory; the API server can read group-readable atomic snapshots.
+  users.users.circus-server.extraGroups = [ "circus" ];
+
   imports = [
     inputs.circus.nixosModules.circus
     ./agent.nix
@@ -324,6 +328,15 @@ in
               supported_features = [ "big-parallel" ];
               max_jobs = 2;
               max_inflight = 4;
+              qemu_overflow = {
+                agent_name = "circus-qemu";
+                system = "aarch64-linux";
+                supported_features = [ ];
+                allowed_build_repositories = [ "pschmitt/nixos-config" ];
+                grace_secs = 120;
+                status_file = "/var/lib/circus/qemu-overflow.json";
+                status_ttl_secs = 90;
+              };
               github_actions = {
                 workflow_repository = "pschmitt/nixos-config";
                 workflow = "circus-builder.yml";

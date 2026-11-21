@@ -11,6 +11,7 @@ never required checks. nixbot stays the CI of record.
 | rofl-15 | `circus-server`, `circus-evaluator`, `circus-queue-runner`, `postgresql`, nginx | `default.nix` |
 | rofl-15, rofl-16 | `circus-agent` | `agent.nix` |
 | GitHub Actions (opt-in) | ephemeral aarch64 `circus-agent` | `.github/workflows/circus-builder.yml` |
+| rworker (on demand) | one x86_64 QEMU `circus-agent` for delayed ARM overflow | `hosts/rworker-circus-qemu` |
 
 Server, evaluator and queue-runner must share one Nix store, so they run on
 one host. The server's `/nix-cache/` reads `.drv` files from the local Nix
@@ -107,7 +108,11 @@ Each needs its secret first; a missing SOPS key fails activation.
   (`hosts/rworker-circus`) when more than 8 builds stay queued for two minutes.
   Each worker gets the pool's join token (`rworker-pool`) in its user-data;
   only root on the worker can reach the metadata service. Idle workers are
-  deleted after 15 minutes.
+  deleted after 15 minutes. A separate one-worker QEMU pool handles feature-free
+  ARM jobs only after they have waited 120 seconds and the native ARM pool has
+  no matched live or launched capacity. Its x86_64 image uses qemu-user/binfmt,
+  advertises only `aarch64-linux`, and never advertises `big-parallel`. The
+  queue-runner rechecks native agents first when it reserves a job.
 - `services.circus.githubActionsAgents.enable` with `agentBinaryUrl` and
   `agentBinarySha256`: aarch64 agents on GitHub's arm runners for the
   aarch64 hosts and packages of `circusJobs` (nixbot builds x86_64 only).

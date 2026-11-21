@@ -698,6 +698,7 @@
             rworker = self.nixosConfigurations.rworker.config.image.repart.image;
             rworker-browser-daemon = self.nixosConfigurations.rworker-browser-daemon.config.image.repart.image;
             rworker-circus = self.nixosConfigurations.rworker-circus.config.image.repart.image;
+            rworker-circus-qemu = self.nixosConfigurations.rworker-circus-qemu.config.image.repart.image;
           };
       };
     in
@@ -1053,6 +1054,21 @@
             modules = [
               ./modules
               ./hosts/rworker-circus
+              { hardware.type = "server"; }
+            ];
+          };
+
+          # Single-slot x86_64 image for trusted ARM overflow builds. The
+          # agent advertises only aarch64-linux and the image enables binfmt.
+          rworker-circus-qemu = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = {
+              inherit inputs outputs;
+              browserWorker = false;
+            };
+            modules = [
+              ./modules
+              ./hosts/rworker-circus-qemu
               { hardware.type = "server"; }
             ];
           };
