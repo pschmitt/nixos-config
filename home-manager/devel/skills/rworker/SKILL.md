@@ -94,18 +94,23 @@ rworker down "$w"
   Print each step's result (`; echo STEP_DONE`) and keep stderr: with
   `set -e` and `>/dev/null`, a failure leaves no output at all.
 - `builder NAME` prints a Nix `--builders` line for the worker.
-- `nix-cache NAME [--dry-run]` (MCP `nix_cache`) lets the worker substitute
-  from the private S3 Nix cache. `up` and `exec` do it by default when your
-  host's Nix has an `s3://` substituter; `--no-nix-cache` (MCP
-  `up(nix_cache=false)`) skips it. Your host pushes its
-  `s3://` substituters, the trusted public keys and the one AWS profile
-  those URLs name over SSH into `/run/rworker-nix` (tmpfs, agent-owned,
-  0700); nothing else of `nix.conf` is copied. The worker's nix-daemon
-  restarts on its own. It puts a credential on the worker, which anyone with
-  a shell there can read; the worker is private and temporary, so the host's
-  own profile is acceptable. Re-run it
-  after the key is rotated.
-  Workers created before the feature get nothing and the command says so.
+- `setup nix NAME [--no-cache] [--no-auth] [--auth-host HOST]... [--dry-run]`
+  (MCP `setup_nix`) gets the worker ready to use your host's Nix, in two
+  parts, both on by default: **cache**, so it substitutes from the private
+  S3 Nix cache (your host's `s3://` substituters, the trusted public keys and
+  the one AWS profile those URLs name), and **auth**, your host's Nix
+  `access-tokens` (for example github.com and git.wiit.one), so it fetches
+  private flake inputs itself instead of receiving them from you. `up` and
+  `exec` do both by default as far as your host has something to give
+  (`--no-nix-cache` / `--no-nix-auth`, MCP `up(nix_cache=false,
+  nix_auth=false)` skip one). Everything goes over SSH into `/run/rworker-nix`
+  (tmpfs, agent-owned, 0700); nothing else of `nix.conf` is copied. The
+  worker's nix-daemon restarts on its own. It puts credentials on the worker,
+  which anyone with a shell there can read; the worker is private and
+  temporary, so the host's own profile is acceptable. Re-run it after a key
+  or token is rotated. `nix-cache NAME` (MCP `nix_cache`) is the cache part
+  alone. Workers created before the feature get nothing and the command says
+  so. `setup` is where more preparation (gradle, ssh, ...) will go.
 - Every worker gets its own short-lived niks3 push token (`niks3 push` on the
   worker, with the closure on `--stdin`; `--no-niks3-token` or MCP `up(niks3_token=false)` opts out,
   `niks3-token NAME` reissues): see [host-closures](references/host-closures.md).

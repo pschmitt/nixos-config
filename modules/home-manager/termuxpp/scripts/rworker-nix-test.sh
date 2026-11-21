@@ -139,11 +139,15 @@ then
   done
   # No path: metadata's path is not in the store yet (git cache); the
   # script must take the source from flake prefetch.
-  jq -n --arg flake "$flake" '{url: ($flake + "/locked-rev?narHash=sha256-x"),
+  top=github
+  [[ "$FAKE_SCENARIO" != remote-local-top ]] || top=path
+  jq -n --arg flake "$flake" --arg top "$top" '{url: ($flake + "/locked-rev?narHash=sha256-x"),
+    locked: {type: $top, owner: "o", repo: "cfg", rev: "top"},
     locks: {nodes: {
-      root: {inputs: {pub: "pub", priv: "priv"}},
+      root: {inputs: {pub: "pub", priv: "priv", loc: "loc"}},
       pub: {locked: {type: "github", owner: "o", repo: "pub", rev: "r1"}},
-      priv: {locked: {type: "gitlab", owner: "o", repo: "priv", rev: "r2", dir: "sub"}}
+      priv: {locked: {type: "gitlab", owner: "o", repo: "priv", rev: "r2", dir: "sub"}},
+      loc: {locked: {type: "path", path: "/home/u/loc"}}
     }}}'
   exit 0
 fi
@@ -160,6 +164,7 @@ then
   fi
   case "$LOCKED" in
     *'"repo":"pub"'*) printf '/nix/store/src-pub' ;;
+    *'"type":"path"'*) printf '/nix/store/src-local' ;;
     *) exit 1 ;;
   esac
   exit 0
@@ -543,19 +548,27 @@ test_bad_inputs() {
 test_remote_build() {
   local n=remote-build store
   store='ssh-ng://agent@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
+  # Default (--ship auto): the worker fetches the github flake and inputs
+  # itself; only the path input that exists here only is uploaded.
   run_scenario ok remote-build --refresh --no-link --print-out-paths \
     'github:o/cfg#termuxppConfigurations.p11.system' 'github:o/cfg#termuxppConfigurations.zf10.system'
   expect_rc "$n" 0 \
     && expect_trace "$n" 'nix flake metadata --json --refresh github:o/cfg' \
-    && expect_trace "$n" 'nix flake prefetch --json --refresh github:o/cfg' \
+    && expect_no_trace "$n" 'nix flake prefetch' \
     && expect_trace "$n" "nix copy --no-check-sigs --to $store" \
-    && expect_trace "$n" '== /nix/store/src-top /nix/store/src-pub' \
+    && expect_trace "$n" '== /nix/store/src-local' \
+    && expect_no_trace "$n" '/nix/store/src-top' \
+    && expect_no_trace "$n" '/nix/store/src-pub' \
+    && expect_trace "$n" 'rworker up --json' \
+    && expect_trace "$n" '--nix-auth' \
+    && expect_no_trace "$n" '--no-nix-auth' \
+    && expect_err "$n" 'uploading 1 sources' \
+    && expect_err "$n" 'the worker fetches 3 itself' \
     && expect_trace "$n" 'rworker-ssh-command nix build --no-link --print-out-paths github:o/cfg/locked-rev\?narHash=sha256-x#termuxppConfigurations.p11.system' \
     && expect_trace "$n" "nix copy --no-check-sigs --from $store" \
     && expect_trace "$n" ' /nix/store/aaaa-system-a /nix/store/bbbb-system-b' \
     && expect_trace "$n" 'NIX_SSHOPTS=-o StrictHostKeyChecking=yes' \
     && expect_trace "$n" 'rworker down w-test1' \
-    && expect_err "$n" "skipping input 'priv'" \
     && expect_no_trace "$n" '--max-jobs 0' \
     && pass "$n"
   if [[ "$(< "$WORK/out")" != $'/nix/store/aaaa-system-a\n/nix/store/bbbb-system-b' ]]
@@ -564,6 +577,47 @@ test_remote_build() {
   else
     pass "$n-stdout"
   fi
+}
+
+test_remote_build_ship() {
+  local n=remote-ship-all store
+  store='ssh-ng://agent@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
+  # --ship all: the old behaviour, everything is fetched here and uploaded.
+  run_scenario ok --ship all remote-build --refresh --no-link --print-out-paths 'github:o/cfg#x'
+  expect_rc "$n" 0 \
+    && expect_trace "$n" 'nix flake prefetch --json --refresh github:o/cfg' \
+    && expect_trace "$n" "nix copy --no-check-sigs --to $store" \
+    && expect_trace "$n" '== /nix/store/src-top /nix/store/src-pub /nix/store/src-local' \
+    && expect_trace "$n" '--no-nix-auth' \
+    && expect_no_trace "$n" ' --nix-auth' \
+    && expect_err "$n" "skipping input 'priv'" \
+    && pass "$n"
+  n=remote-ship-none
+  run_scenario ok --ship none remote-build --no-link --print-out-paths 'github:o/cfg#x'
+  expect_rc "$n" 0 \
+    && expect_no_trace "$n" 'nix copy --no-check-sigs --to' \
+    && expect_no_trace "$n" 'nix flake prefetch' \
+    && expect_trace "$n" '--nix-auth' \
+    && expect_err "$n" 'nothing to upload' \
+    && pass "$n"
+  n=remote-ship-env
+  SCENARIO_ENV='RWORKER_NIX_SHIP=none' run_scenario ok remote-build --no-link 'github:o/cfg#x'
+  expect_rc "$n" 0 && expect_no_trace "$n" 'nix copy --no-check-sigs --to' && pass "$n"
+  # A flake that only exists here is uploaded, even in auto mode.
+  n=remote-ship-local-top
+  run_scenario remote-local-top remote-build --no-link 'github:o/cfg#x'
+  expect_rc "$n" 0 \
+    && expect_trace "$n" 'nix flake prefetch --json github:o/cfg' \
+    && expect_trace "$n" '== /nix/store/src-top /nix/store/src-local' \
+    && expect_no_trace "$n" '/nix/store/src-pub' \
+    && pass "$n"
+  n=ship-invalid
+  run_scenario ok --ship bogus remote-build --no-link 'github:o/cfg#x'
+  expect_rc "$n" 2 && expect_err "$n" '--ship must be' && expect_no_lease "$n" && pass "$n"
+  # Only remote-build uploads anything: no tokens for the other subcommands.
+  n=build-no-nix-auth
+  run_scenario ok build '.#x'
+  expect_rc "$n" 0 && expect_trace "$n" '--no-nix-auth' && pass "$n"
 }
 
 test_remote_build_nix_cache() {

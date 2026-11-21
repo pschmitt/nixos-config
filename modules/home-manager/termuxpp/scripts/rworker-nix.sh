@@ -4,6 +4,7 @@ WORKER_NAME=""
 WORKER_INFO=""
 LEASE_NONCE=""
 LEASE_STARTED=""
+SHIP_MODE="auto"
 
 usage() {
   cat <<EOF
@@ -16,10 +17,12 @@ Lease a disposable rworker, run "nix SUBCOMMAND --max-jobs 0 --builders LINE
 NIX_ARGS..." against it and delete the worker afterwards, also on failure.
 Nix evaluation still runs locally.
 
-remote-build evaluates on the worker too: it locks each flake here, fetches
-its source and every locked input this side can fetch (private ones
-included; the others are skipped with a warning), copies them to the worker,
-builds the locked installables there and copies the outputs back.
+remote-build evaluates on the worker too: it locks each flake here and lets
+the worker fetch the flake and its inputs itself (rworker setup nix gives the
+worker this side's access-tokens, so private GitHub inputs work too). Only
+what the worker cannot fetch is uploaded: a flake or input that only exists
+here (a local path, git+file, ssh-only git). It then builds the locked
+installables there and copies the outputs back.
 
 Options:
   --ttl DURATION    worker lifetime backstop (default: 1h)
@@ -29,11 +32,14 @@ Options:
   --disk GIB        root disk size
   --system SYSTEM   platform to build for (default: aarch64-linux); the
                     worker must run it natively or via qemu-user binfmt
+  --ship MODE       what remote-build uploads: auto (default; only what the
+                    worker cannot fetch itself), all (every locked input,
+                    fetched here) or none (nothing, the worker fetches all)
   --down WORKER     delete a worker left behind and exit
   -h, --help        show this help
 
 Settings come from the options, else RWORKER_NIX_{CONTROLLER,KEY,TTL,PROFILE,
-SYSTEM}, else ~/.config/rworker-nix/config and then local.conf beside it
+SYSTEM,SHIP}, else ~/.config/rworker-nix/config and then local.conf beside it
 (key=value lines; local.conf wins):
   controller   ssh alias of the rworker controller (required); its address
                and pinned host key belong in ~/.ssh/config and known_hosts
@@ -47,6 +53,10 @@ EOF
 }
 
 warn() {
+  printf '%s: %s\n' "$(basename "$0")" "$*" >&2
+}
+
+note() {
   printf '%s: %s\n' "$(basename "$0")" "$*" >&2
 }
 
@@ -73,6 +83,7 @@ read_config_file() {
       profile) CFG_PROFILE="$value" ;;
       aws_credentials) CFG_AWS_CREDENTIALS="$value" ;;
       system) CFG_SYSTEM="$value" ;;
+      ship) CFG_SHIP="$value" ;;
       *) warn "ignoring unknown key '$key' in $file" ;;
     esac
   done < "$file"
@@ -80,7 +91,7 @@ read_config_file() {
 
 read_config() {
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/rworker-nix"
-  CFG_CONTROLLER="" CFG_KEY="" CFG_TTL="" CFG_PROFILE="" CFG_SYSTEM="" CFG_AWS_CREDENTIALS=""
+  CFG_CONTROLLER="" CFG_KEY="" CFG_TTL="" CFG_PROFILE="" CFG_SYSTEM="" CFG_SHIP="" CFG_AWS_CREDENTIALS=""
   read_config_file "$dir/config"
   read_config_file "$dir/local.conf"
 }
@@ -236,9 +247,16 @@ on_exit() {
 }
 
 lease_worker() {
-  local ttl="$1" topic="$2" profile="$3" flavor="$4" disk="$5" nix_cache="${6:-}"
+  local ttl="$1" topic="$2" profile="$3" flavor="$4" disk="$5" nix_cache="${6:-}" nix_auth="${7:-}"
   local -a args=(--json --ttl "$ttl" --topic "$topic" --no-niks3-token)
   [[ -n "$nix_cache" ]] || args+=(--no-nix-cache)
+  # The access-tokens let the worker fetch private flake inputs itself.
+  if [[ -n "$nix_auth" ]]
+  then
+    args+=(--nix-auth)
+  else
+    args+=(--no-nix-auth)
+  fi
   local name
   [[ -z "$profile" ]] || args+=(--profile "$profile")
   [[ -z "$flavor" ]] || args+=(--flavor "$flavor")
@@ -441,22 +459,48 @@ worker_store_url() {
   printf '%s?ssh-key=%s&base64-ssh-public-host-key=%s\n' "${f[0]}" "${f[2]}" "${f[7]}"
 }
 
-# Fetches the source and the locked inputs of FLAKE here and copies them to
-# STORE, so the worker can evaluate inputs it cannot fetch itself. Inputs this
-# side cannot fetch either are skipped: evaluation fetches lazily, so they
-# only matter if the build uses them.
+# Whether the worker can fetch a locked flake input itself: a hosted source
+# (GitHub, GitLab, SourceHut) or an http(s)/git URL. Anything that only
+# exists on this side (path, git+file, ssh-only git, mercurial) or that is
+# unknown has to be uploaded. Takes the input's "locked" JSON.
+remote_fetchable() {
+  jq -e '
+    (.type // "") as $type | (.url // "") as $url
+    | ($type | IN("github", "gitlab", "sourcehut"))
+      or (($type | IN("tarball", "file")) and ($url | test("^https?://")))
+      or ($type == "git" and ($url | test("^(https?|git)://")))
+  ' <<< "$1" > /dev/null 2>&1
+}
+
+# Fetches what the worker cannot fetch itself (SHIP_MODE auto), everything
+# (all) or nothing (none) of the source and the locked inputs of FLAKE here
+# and copies it to STORE. Inputs this side cannot fetch either are skipped:
+# evaluation fetches lazily, so they only matter if the build uses them.
 ship_flake() {
-  local store="$1" flake="$2" meta locked path name
+  local store="$1" flake="$2" meta locked path name bytes
   local -a refresh=() paths=()
+  local remote=0
   [[ -z "$REMOTE_REFRESH" ]] || refresh=(--refresh)
   meta=$(nix flake metadata --json "${refresh[@]}" "$flake") || return 1
-  # metadata only reports the source's store path: a GitHub flake is unpacked
-  # into the git cache, not into the store, so the copy below would try to
-  # substitute it. prefetch puts it into the store.
-  path=$(nix flake prefetch --json "${refresh[@]}" "$flake" | jq -er .storePath) || return 1
-  paths=("$path")
+  if [[ "$SHIP_MODE" == all ]] \
+    || { [[ "$SHIP_MODE" == auto ]] && ! remote_fetchable "$(jq -c .locked <<< "$meta")"; }
+  then
+    # metadata only reports the source's store path: a GitHub flake is
+    # unpacked into the git cache, not into the store, so the copy below would
+    # try to substitute it. prefetch puts it into the store.
+    path=$(nix flake prefetch --json "${refresh[@]}" "$flake" | jq -er .storePath) || return 1
+    paths=("$path")
+  else
+    remote=$((remote + 1))
+  fi
   while IFS=$'\t' read -r name locked
   do
+    if [[ "$SHIP_MODE" == none ]] \
+      || { [[ "$SHIP_MODE" == auto ]] && remote_fetchable "$locked"; }
+    then
+      remote=$((remote + 1))
+      continue
+    fi
     if path=$(LOCKED="$locked" nix eval --raw --impure --expr \
       '(builtins.fetchTree (builtins.fromJSON (builtins.getEnv "LOCKED"))).outPath' 2> /dev/null)
     then
@@ -467,6 +511,14 @@ ship_flake() {
   done < <(jq -r '.locks.nodes | to_entries[]
     | select(.value.locked != null)
     | "\(.key)\t\(.value.locked | del(.dir) | tojson)"' <<< "$meta")
+  if (( ${#paths[@]} == 0 ))
+  then
+    note "$flake: the worker fetches all $remote sources itself, nothing to upload"
+    return 0
+  fi
+  bytes=$(nix path-info --json "${paths[@]}" 2> /dev/null \
+    | jq -r '[.. | .narSize? // empty] | add // 0') || bytes=0
+  note "$flake: uploading ${#paths[@]} sources ($((bytes / 1048576)) MiB), the worker fetches $remote itself"
   nix copy --no-check-sigs --to "$store" "${paths[@]}"
 }
 
@@ -516,8 +568,8 @@ remote_build() {
 }
 
 main() {
-  local ttl="" topic="" profile="" flavor="" disk="" target="" down_name=""
-  local controller key subcommand worker_system line value rc=0 aws_credentials nix_cache
+  local ttl="" topic="" profile="" flavor="" disk="" target="" down_name="" ship=""
+  local controller key subcommand worker_system line value rc=0 aws_credentials nix_cache nix_auth
   local -a nix_args=()
 
   read_config
@@ -528,7 +580,7 @@ main() {
         usage
         return 0
         ;;
-      --ttl|--topic|--profile|--flavor|--disk|--system|--down)
+      --ttl|--topic|--profile|--flavor|--disk|--system|--ship|--down)
         if [[ -z "${2:-}" ]]
         then
           warn "$1 needs a value"
@@ -542,6 +594,7 @@ main() {
           --flavor) flavor="$2" ;;
           --disk) disk="$2" ;;
           --system) target="$2" ;;
+          --ship) ship="$2" ;;
           --down) down_name="$2" ;;
         esac
         shift 2
@@ -567,6 +620,14 @@ main() {
   profile="${profile:-${RWORKER_NIX_PROFILE:-$CFG_PROFILE}}"
   aws_credentials="${RWORKER_NIX_AWS_CREDENTIALS:-$CFG_AWS_CREDENTIALS}"
   target="${target:-${RWORKER_NIX_SYSTEM:-${CFG_SYSTEM:-aarch64-linux}}}"
+  ship="${ship:-${RWORKER_NIX_SHIP:-${CFG_SHIP:-auto}}}"
+  case "$ship" in
+    auto|all|none) SHIP_MODE="$ship" ;;
+    *)
+      warn "--ship must be auto, all or none (got '$ship')"
+      return 2
+      ;;
+  esac
   subcommand="${1:-}"
   nix_args=("${@:2}")
 
@@ -628,8 +689,15 @@ main() {
       warn "AWS credentials $aws_credentials are not readable; the worker gets no private cache"
     fi
   fi
+  # Unless everything is uploaded, the worker fetches inputs itself and needs
+  # this side's access-tokens for the private ones.
+  nix_auth=""
+  if [[ "$subcommand" == remote-build && "$SHIP_MODE" != all ]]
+  then
+    nix_auth=1
+  fi
   lease_worker "$ttl" "full-nix rworker-nix ${topic:-$subcommand} $LEASE_NONCE" \
-    "$profile" "$flavor" "$disk" "$nix_cache" || return 1
+    "$profile" "$flavor" "$disk" "$nix_cache" "$nix_auth" || return 1
   worker_system=$(probe_worker "$WORKER_NAME" "$target") || return 1
   line=$(build_builder_line "$WORKER_NAME" "$target" "$worker_system" "$WORKER_INFO") \
     || return 1

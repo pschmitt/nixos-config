@@ -97,6 +97,14 @@ RWORKER_NIX_CONTROLLER=rworker-controller rworker-nix --ttl 1h build '.#package'
 RWORKER_NIX_CONTROLLER=rworker-controller rworker-nix shell nixpkgs#hello -c hello
 ```
 
+`rworker-nix remote-build` evaluates on the worker as well. The worker fetches
+the flake and its inputs itself: `rworker setup nix` (run by `rworker up`)
+gives it this host's Nix `access-tokens`, so private GitHub and GitLab inputs
+work. Only what the worker cannot fetch (a local path flake, `git+file`,
+ssh-only git) is uploaded. `--ship all` uploads every locked input instead,
+`--ship none` nothing (`RWORKER_NIX_SHIP` or `ship=` in the config also set
+it); the default is `--ship auto`.
+
 The public key defaults to `~/.ssh/id_ed25519.pub`; override it with
 `RWORKER_NIX_KEY`. The matching private key and pinned controller host key must
 already be available. No cloud credentials are needed on the phone. The optional
