@@ -75,6 +75,9 @@ projects:
   rbw:
     url: https://github.com/pschmitt/rbw
     path: ~/devel/private/pschmitt/rbw.git
+  rworker:
+    url: https://github.com/pschmitt/rworker.git
+    path: ~/devel/private/pschmitt/rworker.git
   roombapy:
     url: https://github.com/pschmitt/roombapy
     path: ~/devel/private/pschmitt/roombapy.git
