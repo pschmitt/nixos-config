@@ -47,7 +47,7 @@ nvim module failed with EACCES. The unit also runs with `ProtectHome`.
 
 | Unit | Limit |
 | --- | --- |
-| `circus-evaluator` | One 16 GiB worker, one evaluation at a time; `MemoryHigh` 20G, `MemoryMax` 24G, `CPUQuota` 800% |
+| `circus-evaluator` | One 20 GiB worker, one evaluation at a time; `MemoryHigh` 22G, `MemoryMax` 26G, `CPUQuota` 800% |
 | `circus-queue-runner` | `MemoryMax` 4G, `CPUQuota` 200% (verifies and signs agent outputs) |
 | `circus-server` | `MemoryMax` 2G |
 | `circus-agent` (each) | 4 builds, 4 cores each; the queue-runner skips a builder above 60% PSI |
@@ -78,8 +78,8 @@ Each needs its secret first; a missing SOPS key fails activation.
 - `services.circus.githubStatuses.enable`: commit statuses, as the GitHub App
   with `githubApp.enable`, else with `circus/github-status-token`.
 - `services.circus.githubApp.enable`: the GitHub App `circus-pschmitt`
-  (statuses write; contents, metadata and pull requests read; installed on
-  `pschmitt/nixos-config`). `circus-github-token.timer` mints an installation
+  (statuses write; contents and metadata read; pull requests read/write;
+  installed on `pschmitt/nixos-config`). `circus-github-token.timer` mints an installation
   token every 45 minutes (the installation is looked up via
   `GET /repos/<githubApp.repository>/installation`) into
   `/run/circus-github-token/token` (root:circus-github-token, 0440). The

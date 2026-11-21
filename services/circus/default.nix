@@ -17,6 +17,7 @@ let
   # Public dashboard behind Authelia, and a NetBird-only name that agents
   # (rofl-16, GitHub runners joined to NetBird) use for the binary cache.
   publicHost = "circus.${config.domains.main}";
+  buildHost = "build.${config.domains.main}";
   tailnetHost = "circus.${hostName}.${config.domains.netbird}";
 
   serverPort = 3000;
@@ -34,6 +35,18 @@ let
     "fd7a:115c:a1e0::/48"
     "fd8d:fa54:9081::/48"
   ];
+
+  tailnetDashboardLocation = uri: {
+    proxyPass = "http://127.0.0.1:${toString serverPort}${uri}";
+    proxyWebsockets = true;
+    recommendedProxySettings = false;
+    extraConfig = ''
+      proxy_set_header X-Forwarded-Proto https;
+      ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
+      deny all;
+      limit_except GET { deny all; }
+    '';
+  };
 
   # The one declaratively configured project.
   repositoryUrl = "https://github.com/pschmitt/nixos-config";
@@ -234,7 +247,10 @@ in
             port = serverPort;
             # nginx terminates TLS (publicHost).
             force_secure_cookies = true;
-            allowed_origins = [ "https://${publicHost}" ];
+            allowed_origins = [
+              "https://${publicHost}"
+              "https://${buildHost}"
+            ];
             webhook_secret_encryption_key_file = secret "webhook-encryption-key";
           };
 
@@ -251,8 +267,8 @@ in
             eval_workers = 1;
             # circusJobs (about 245 attributes, 26 hosts) on a shared host.
             nix_timeout = 60 * 60;
-            # Some desktop hosts exhaust a 10 GiB evaluator worker.
-            memory_limit_mb = 16384;
+            # Some large desktop evaluations exhaust a 16 GiB worker.
+            memory_limit_mb = 20480;
             # aarch64 only once the GitHub Actions agents exist.
             systems = [ "x86_64-linux" ] ++ lib.optional cfg.githubActionsAgents.enable "aarch64-linux";
             # Also count paths niks3 (s3://nix-cache-brkn-lol in nix.conf)
@@ -353,6 +369,10 @@ in
             {
               enable_retry_queue = true;
             }
+            // lib.optionalAttrs (cfg.githubApp.enable && cfg.githubWebhook.enable) {
+              github_pr_comments = true;
+              circus_base_url = "https://${publicHost}";
+            }
             // lib.optionalAttrs (!cfg.githubApp.enable) {
               github_token_file = secret "github-status-token";
             }
@@ -437,6 +457,16 @@ in
           forceSSL = true;
           locations = {
             "/".return = "404";
+            "= /simple" = tailnetDashboardLocation "/simple";
+            "= /login" = tailnetDashboardLocation "/login" // {
+              extraConfig = ''
+                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
+                deny all;
+                limit_except GET POST { deny all; }
+              '';
+            };
+            "^~ /_topcoat/" = tailnetDashboardLocation "";
+            "^~ /static/" = tailnetDashboardLocation "";
             "/nix-cache/" = {
               proxyPass = "http://127.0.0.1:${toString serverPort}";
               extraConfig = ''
@@ -544,10 +574,10 @@ in
             # (profiles/base/nix/secrets.nix, group nix-access-tokens).
             SupplementaryGroups = [ "nix-access-tokens" ];
             LoadCredential = lib.optional (gitlabNixConf != null) "nix-gitlab:${gitlabNixConf}";
-            # Leave room for the evaluator's coordinator and the 16 GiB
+            # Leave room for the evaluator's coordinator and the 20 GiB
             # worker while nixbot and Circus agents share this host.
-            MemoryHigh = "20G";
-            MemoryMax = "24G";
+            MemoryHigh = "22G";
+            MemoryMax = "26G";
             CPUQuota = "800%";
             CPUWeight = 100;
             IOWeight = 50;

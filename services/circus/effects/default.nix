@@ -104,9 +104,12 @@ in
     };
 
     users = {
+      groups.circus-effects-dashboard = { };
+      users.circus-server.extraGroups = [ "circus-effects-dashboard" ];
       users.circus-effects = {
         isSystemUser = true;
-        group = "circus-effects";
+        group = "circus-effects-dashboard";
+        extraGroups = [ "circus-effects" ];
         home = "/var/lib/circus-effects";
       };
       groups.circus-effects = { };
@@ -133,15 +136,19 @@ in
       };
       serviceConfig = {
         User = "circus-effects";
-        Group = "circus-effects";
+        Group = "circus-effects-dashboard";
         # Private GitHub flake inputs (system token) and the App token.
         SupplementaryGroups = [
+          "circus-effects"
           "nix-access-tokens"
         ]
         ++ lib.optional cfg.githubStatuses "circus-github-token";
         StateDirectory = "circus-effects";
-        StateDirectoryMode = "0700";
+        # The server can traverse this parent to reach public-status, but the
+        # queue, done, changed, and lock subdirectories stay mode 0700.
+        StateDirectoryMode = "0711";
         WorkingDirectory = "/var/lib/circus-effects";
+        UMask = "0077";
         LoadCredential = [
           "hmac:${secret "effects-webhook-hmac"}"
         ]
@@ -166,6 +173,8 @@ in
             cfg.repository
             "--nbo"
             (lib.getExe nbo)
+            "--status-dir"
+            "/var/lib/circus-effects/public-status"
           ]
           ++ lib.optionals (!cfg.dryRun) [
             "--run"

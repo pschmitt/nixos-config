@@ -19,6 +19,7 @@ import hmac
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -49,6 +50,7 @@ class Settings:
     secrets_file: Path | None = None
     dry_run: bool = True
     status_token_file: Path | None = None
+    status_dir: Path | None = None
 
     @property
     def queue_dir(self) -> Path:
@@ -159,7 +161,44 @@ def record_success(effect: Effect, changed_dir: Path) -> None:
     if not effect.changed:
         return
     changed_dir.mkdir(parents=True, exist_ok=True)
+    changed_dir.chmod(0o700)
     atomic_write(changed_dir / f"{effect.name}.json", json.dumps(effect.changed))
+
+
+def write_status(settings: Settings, commit: str, effects: dict[str, str]) -> None:
+    """Write the small, read-only summary consumed by the build dashboard."""
+    if settings.status_dir is None:
+        return
+    if settings.status_dir.is_symlink():
+        log.warning("refusing to write effect status through a symlink")
+        return
+    settings.status_dir.mkdir(parents=True, exist_ok=True, mode=0o750)
+    if not settings.status_dir.is_dir() or settings.status_dir.is_symlink():
+        log.warning("refusing to write effect status outside its directory")
+        return
+    settings.status_dir.chmod(0o750)
+    target = settings.status_dir / f"{commit}.json"
+    atomic_write(
+        target,
+        json.dumps(
+            {
+                "commit": commit,
+                "updated_at": int(time.time()),
+                "effects": [
+                    {"name": name, "state": state}
+                    for name, state in sorted(effects.items())
+                ],
+            }
+        ),
+    )
+    target.chmod(0o640)
+    snapshots = sorted(
+        settings.status_dir.glob("[0-9a-f]*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for stale in snapshots[10:]:
+        stale.unlink(missing_ok=True)
 
 
 def atomic_write(target: Path, text: str) -> None:
@@ -284,8 +323,14 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
         return outcome
 
     commit = event["commit_hash"]
+    if not re.fullmatch(r"[0-9a-f]{40,64}", commit):
+        log.warning("evaluation %s has an invalid commit hash", event.get("evaluation_id"))
+        outcome.skipped["*"] = "invalid commit hash"
+        return outcome
     flake_ref = f"github:{settings.repository}/{commit}"
     effects = list_effects(settings, flake_ref)
+    states = {name: "pending" for name in effects}
+    write_status(settings, commit, states)
     failed: set[str] = set()
     with tempfile.TemporaryDirectory(prefix="circus-effects-") as tmp:
         checkout = Path(tmp) / "checkout"
@@ -312,9 +357,13 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
             if blocked := [d for d in effect.after if d in failed]:
                 outcome.skipped[name] = f"dependency failed: {', '.join(blocked)}"
                 failed.add(name)
+                states[name] = "skipped"
+                write_status(settings, commit, states)
                 continue
             if unchanged(effect, settings.changed_dir):
                 outcome.skipped[name] = "when.changed: inputs unchanged"
+                states[name] = "skipped"
+                write_status(settings, commit, states)
                 continue
             if settings.dry_run:
                 log.info(
@@ -325,18 +374,25 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
                     json.dumps(effect.changed, sort_keys=True),
                 )
                 outcome.ran.append(name)
+                states[name] = "dry_run"
+                write_status(settings, commit, states)
                 continue
+            states[name] = "running"
+            write_status(settings, commit, states)
             post_status(settings, commit, name, "pending", "running")
             with EffectLock(settings.lock_dir, effect.lock):
                 ok = run_one(settings, effect, flake_ref, commit, checkout)
             if ok:
                 record_success(effect, settings.changed_dir)
                 outcome.ran.append(name)
+                states[name] = "success"
                 post_status(settings, commit, name, "success", "effect succeeded")
             else:
                 failed.add(name)
                 outcome.failed.append(name)
+                states[name] = "failed"
                 post_status(settings, commit, name, "failure", "effect failed")
+            write_status(settings, commit, states)
     for name, why in outcome.skipped.items():
         log.info("%s %s: skipped %s: %s", "dry-run" if settings.dry_run else "run", commit[:12], name, why)
     return outcome
@@ -351,6 +407,7 @@ def enqueue(settings: Settings, event: dict[str, Any]) -> bool:
     if (settings.done_dir / eval_id).exists() or (settings.queue_dir / f"{eval_id}.json").exists():
         return False
     settings.queue_dir.mkdir(parents=True, exist_ok=True)
+    settings.queue_dir.chmod(0o700)
     atomic_write(settings.queue_dir / f"{eval_id}.json", json.dumps(event))
     return True
 
@@ -429,6 +486,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--nbo", default="nbo")
     parser.add_argument("--secrets-file", type=Path, help="effects secrets.json")
     parser.add_argument("--status-token-file", type=Path)
+    parser.add_argument("--status-dir", type=Path)
     parser.add_argument("--run", action="store_true", help="run effects (default: dry-run)")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s", stream=sys.stderr)
@@ -444,11 +502,13 @@ def main(argv: list[str] | None = None) -> int:
         secrets_file=args.secrets_file,
         dry_run=not args.run,
         status_token_file=args.status_token_file,
+        status_dir=args.status_dir,
     )
     if not settings.secret_key:
         parser.error("the HMAC key file is empty")
     for d in (settings.queue_dir, settings.done_dir, settings.changed_dir, settings.lock_dir):
         d.mkdir(parents=True, exist_ok=True)
+        d.chmod(0o700)
 
     wake = threading.Event()
     wake.set()  # drain whatever was queued before a restart
