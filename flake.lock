@@ -2971,11 +2971,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795299092,
-        "narHash": "sha256-iopma545gzfwzSHbPKbQ5EU0SIT/PeclF9MTNiSExB4=",
+        "lastModified": 1795302204,
+        "narHash": "sha256-GYOcL0bG9/QoMdR8IIvvVPRzZ09ZH86A9Xjlm0luRZg=",
         "owner": "pschmitt",
         "repo": "termuxpp",
-        "rev": "949e79acf2767b9eef8bea02e5307cc9d9b053c8",
+        "rev": "00cd9d71f89b70965801b06e135181d18def550e",
         "type": "github"
       },
       "original": {
