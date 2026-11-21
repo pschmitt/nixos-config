@@ -38,12 +38,6 @@ in
       '';
     };
 
-    port = lib.mkOption {
-      type = lib.types.port;
-      default = 3010;
-      description = "Loopback port the webhook listener binds.";
-    };
-
     project = lib.mkOption {
       type = lib.types.str;
       default = "nixos-config";
@@ -142,8 +136,6 @@ in
         ExecStart = lib.escapeShellArgs (
           [
             (lib.getExe runner)
-            "--port"
-            (toString cfg.port)
             "--state-dir"
             "/var/lib/circus-effects"
             "--cache-url"
@@ -182,7 +174,8 @@ in
         ProtectSystem = "strict";
         ProtectHome = true;
         ReadWritePaths = [ "/var/lib/circus-effects" ];
-        ProtectKernelTunables = true;
+        # Bubblewrap mounts a fresh procfs in its user namespace. systemd's
+        # procfs masks from ProtectKernelTunables prevent that mount.
         ProtectKernelModules = true;
         ProtectControlGroups = true;
         RestrictAddressFamilies = [
@@ -195,12 +188,12 @@ in
     };
 
     services.monit.checks.circus-effects = {
-      type = "host";
-      address = "127.0.0.1";
+      type = "program";
+      path = "${pkgs.systemd}/bin/systemctl is-active circus-effects";
       group = "services";
       restartUnit = "circus-effects";
       conditions = ''
-        if failed port ${toString cfg.port} type tcp for 3 cycles then restart
+        if status > 0 for 3 cycles then restart
         if 3 restarts within 15 cycles then alert
       '';
     };
