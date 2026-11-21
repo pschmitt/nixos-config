@@ -1,8 +1,7 @@
 # NOTE: Use the upstream services.stalwart module for the account, tmpfiles,
 # hardening, and systemd service. Its generated TOML is for pkgs.stalwart
 # 0.15.x, while this host's existing database is served by pkgs.stalwart_0_16
-# and requires the upstream JSON datastore bootstrap. The custom Stalwart
-# module reconciles the database-backed listener objects from Nix.
+# and requires the upstream JSON datastore bootstrap.
 {
   config,
   lib,
@@ -153,21 +152,10 @@ let
     ];
     text = builtins.readFile ./scripts/stalwart-dns-reconcile.sh;
   };
-  listenerObjectName = {
-    imap = "imap-starttls";
-    smtps = "submissions";
+  provisioningSecret = config.sops.mkHostSecret {
+    mode = "0400";
+    restartUnits = [ "stalwart-provision.service" ];
   };
-  desiredNetworkListeners = lib.mapAttrs (
-    name: listener:
-    listener
-    // {
-      name = listenerObjectName.${name} or name;
-      tlsImplicit = builtins.elem name [
-        "imaps"
-        "smtps"
-      ];
-    }
-  ) stalwartListeners;
   datastoreBootstrap = (pkgs.formats.json { }).generate "stalwart-config.json" {
     "@type" = "Sqlite";
     path = "${dataDir}/database.sqlite";
@@ -175,6 +163,8 @@ let
   };
 in
 {
+  imports = [ ../modules/stalwart-upstream/provision.nix ];
+
   security.acme.certs."${mailHost}" = {
     group = config.services.stalwart.group;
     reloadServices = [ "stalwart.service" ];
@@ -187,13 +177,27 @@ in
     inherit dataDir;
     openFirewall = true;
     settings.server.listener = stalwartListeners;
-    networkListeners = desiredNetworkListeners;
+    provision = {
+      enable = true;
+      reloadSettings = false;
+      urls = [ "http://127.0.0.1:${toString (listenerPort "http")}" ];
+      runtimePlan = {
+        file = config.sops.secrets."stalwart/configuration-snapshot".path;
+        usernameFile = config.sops.secrets."stalwart/provisioning-username".path;
+        passwordFile = config.sops.secrets."stalwart/provisioning-password".path;
+      };
+    };
   };
 
-  sops.secrets."stalwart/dns-reconcile-password" = config.sops.mkHostSecret {
-    owner = "stalwart";
-    group = "stalwart";
-    mode = "0400";
+  sops.secrets = {
+    "stalwart/configuration-snapshot" = provisioningSecret;
+    "stalwart/provisioning-username" = provisioningSecret;
+    "stalwart/provisioning-password" = provisioningSecret;
+    "stalwart/dns-reconcile-password" = config.sops.mkHostSecret {
+      owner = "stalwart";
+      group = "stalwart";
+      mode = "0400";
+    };
   };
 
   environment.etc."stalwart/config.json".source = datastoreBootstrap;
