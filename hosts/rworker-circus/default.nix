@@ -126,7 +126,9 @@ in
       # Placeholder; CIRCUS_AGENT_NAME (the worker name) overrides it, as
       # Circus refuses a second agent under a name that is in use.
       name = "rworker-circus";
-      runner_url = "circus://${runnerHost}.${config.domains.netbird}:8443";
+      # TLS with the queue-runner host's tailnet ACME certificate, like the
+      # persistent agents (services/circus/agent.nix).
+      runner_url = "circus+tls://circus.${runnerHost}.${config.domains.netbird}:8443";
       # Native only: the image could run aarch64 through qemu-user, but the
       # queue-runner would then place aarch64 builds here at emulation speed.
       systems = [ "x86_64-linux" ];
