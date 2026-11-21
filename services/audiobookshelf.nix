@@ -16,24 +16,26 @@ let
   audiobookshelfPort = 8000;
   absUser = config.services.audiobookshelf.user;
   absGroup = config.users.users.${absUser}.group;
+  stateDir = "/mnt/data/srv/audiobookshelf";
 in
 {
-  # The module only accepts a StateDirectory-relative dataDir, so keep the
-  # config/database on the data disk (covered by the /mnt/data/srv restic
-  # backup) by bind-mounting it over the state directory.
-  fileSystems."/var/lib/${config.services.audiobookshelf.dataDir}" = {
-    device = "/mnt/data/srv/audiobookshelf";
-    fsType = "none";
-    options = [
-      "bind"
-      "x-systemd.requires-mounts-for=/mnt/data"
-    ];
-  };
-
   systemd.tmpfiles.rules = [
     "d /mnt/data/audiobooks 2775 ${absUser} ${absGroup} - -"
     "Z /mnt/data/audiobooks 2775 ${absUser} ${absGroup} - -"
+    "d ${stateDir} 0750 ${absUser} ${absGroup} - -"
   ];
+
+  # The module only accepts a StateDirectory-relative dataDir. It is not
+  # sandboxed and keeps config/ and metadata/ in its working directory, so
+  # point that at the data disk (covered by the /mnt/data/srv restic backup)
+  # and drop the now unused StateDirectory.
+  systemd.services.audiobookshelf = {
+    serviceConfig = {
+      WorkingDirectory = lib.mkForce stateDir;
+      StateDirectory = lib.mkForce [ ];
+    };
+    unitConfig.RequiresMountsFor = [ "/mnt/data" ];
+  };
 
   users.users.${config.mainUser.username}.extraGroups = [ absGroup ];
 
