@@ -165,7 +165,7 @@ def record_success(effect: Effect, changed_dir: Path) -> None:
     atomic_write(changed_dir / f"{effect.name}.json", json.dumps(effect.changed))
 
 
-def write_status(settings: Settings, commit: str, effects: dict[str, str]) -> None:
+def write_status(settings: Settings, commit: str, effects: dict[str, tuple[str, str]]) -> None:
     """Write the small, read-only summary consumed by the build dashboard."""
     if settings.status_dir is None:
         return
@@ -185,8 +185,8 @@ def write_status(settings: Settings, commit: str, effects: dict[str, str]) -> No
                 "commit": commit,
                 "updated_at": int(time.time()),
                 "effects": [
-                    {"name": name, "state": state}
-                    for name, state in sorted(effects.items())
+                    {"name": name, "state": state, "message": message}
+                    for name, (state, message) in sorted(effects.items())
                 ],
             }
         ),
@@ -290,7 +290,7 @@ def post_status(settings: Settings, commit: str, name: str, state: str, text: st
         log.warning("commit status for %s failed: %s", name, e)
 
 
-def run_one(settings: Settings, effect: Effect, flake_ref: str, commit: str, checkout: Path) -> bool:
+def run_one(settings: Settings, effect: Effect, flake_ref: str, commit: str, checkout: Path) -> int:
     cmd = [
         settings.nbo,
         "effects",
@@ -310,7 +310,7 @@ def run_one(settings: Settings, effect: Effect, flake_ref: str, commit: str, che
         cmd += ["--secrets", str(settings.secrets_file)]
     cmd.append(f"{flake_ref}#{effect.name}")
     result = subprocess.run(cmd, check=False, timeout=6 * 3600)
-    return result.returncode == 0
+    return result.returncode
 
 
 def process(event: dict[str, Any], settings: Settings) -> Outcome:
@@ -329,7 +329,7 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
         return outcome
     flake_ref = f"github:{settings.repository}/{commit}"
     effects = list_effects(settings, flake_ref)
-    states = {name: "pending" for name in effects}
+    states = {name: ("pending", "Waiting for the effects runner.") for name in effects}
     write_status(settings, commit, states)
     failed: set[str] = set()
     with tempfile.TemporaryDirectory(prefix="circus-effects-") as tmp:
@@ -357,12 +357,12 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
             if blocked := [d for d in effect.after if d in failed]:
                 outcome.skipped[name] = f"dependency failed: {', '.join(blocked)}"
                 failed.add(name)
-                states[name] = "skipped"
+                states[name] = ("skipped", "An earlier dependency did not succeed.")
                 write_status(settings, commit, states)
                 continue
             if unchanged(effect, settings.changed_dir):
                 outcome.skipped[name] = "when.changed: inputs unchanged"
-                states[name] = "skipped"
+                states[name] = ("skipped", "Inputs are unchanged since the last successful run.")
                 write_status(settings, commit, states)
                 continue
             if settings.dry_run:
@@ -374,23 +374,32 @@ def process(event: dict[str, Any], settings: Settings) -> Outcome:
                     json.dumps(effect.changed, sort_keys=True),
                 )
                 outcome.ran.append(name)
-                states[name] = "dry_run"
+                states[name] = ("dry_run", "The effect was selected in a dry run.")
                 write_status(settings, commit, states)
                 continue
-            states[name] = "running"
+            states[name] = ("running", "The effects runner started processing this effect.")
             write_status(settings, commit, states)
             post_status(settings, commit, name, "pending", "running")
-            with EffectLock(settings.lock_dir, effect.lock):
-                ok = run_one(settings, effect, flake_ref, commit, checkout)
-            if ok:
+            try:
+                with EffectLock(settings.lock_dir, effect.lock):
+                    returncode = run_one(settings, effect, flake_ref, commit, checkout)
+            except subprocess.TimeoutExpired:
+                returncode = None
+            if returncode == 0:
                 record_success(effect, settings.changed_dir)
                 outcome.ran.append(name)
-                states[name] = "success"
+                states[name] = ("success", "The effects runner exited successfully.")
                 post_status(settings, commit, name, "success", "effect succeeded")
             else:
                 failed.add(name)
                 outcome.failed.append(name)
-                states[name] = "failed"
+                if returncode is None:
+                    message = "The effect exceeded its six-hour execution timeout."
+                elif returncode < 0:
+                    message = f"The effects runner was terminated by signal {-returncode}."
+                else:
+                    message = f"The effects runner exited with status {returncode}."
+                states[name] = ("failed", message)
                 post_status(settings, commit, name, "failure", "effect failed")
             write_status(settings, commit, states)
     for name, why in outcome.skipped.items():

@@ -167,7 +167,8 @@ class DryRunTest(unittest.TestCase):
             "esac\n"
         )
         nbo.chmod(0o755)
-        s = settings(d, nbo=str(nbo), dry_run=True)
+        status_dir = d / "status"
+        s = settings(d, nbo=str(nbo), dry_run=True, status_dir=status_dir)
         orig = ce.branch_head
         ce.branch_head = lambda _repo, _branch: "a" * 40  # type: ignore[assignment]
         try:
@@ -177,6 +178,14 @@ class DryRunTest(unittest.TestCase):
         self.assertEqual(out.ran, ["publish.a", "publish.b"])
         self.assertEqual(out.failed, [])
         self.assertFalse(any(s.changed_dir.glob("*")) if s.changed_dir.exists() else False)
+        snapshot = json.loads((status_dir / f"{'a' * 40}.json").read_text())
+        self.assertEqual(
+            snapshot["effects"],
+            [
+                {"name": name, "state": "dry_run", "message": "The effect was selected in a dry run."}
+                for name in ("publish.a", "publish.b")
+            ],
+        )
 
 
 if __name__ == "__main__":
