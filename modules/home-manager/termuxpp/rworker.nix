@@ -19,6 +19,22 @@ let
     sshControlMaster = false;
   };
 
+  # A bare `rworker up|exec|setup nix` pushes the S3 cache only when it finds
+  # the cache's AWS profile; default to the one the system upgrades use.
+  rworkerCommand =
+    if cfg.awsCredentialsFile == null then
+      rworker
+    else
+      pkgs.symlinkJoin {
+        name = "${rworker.name}-cache-credentials";
+        paths = [ rworker ];
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/bin/rworker \
+            --set-default RWORKER_AWS_CREDENTIALS_FILE ${lib.escapeShellArg cfg.awsCredentialsFile}
+        '';
+      };
+
   rworker-nix = pkgs.writeShellApplication {
     name = "rworker-nix";
     runtimeInputs = [
@@ -112,7 +128,7 @@ in
 
   config = lib.mkIf cfg.enable {
     home.packages = [
-      rworker
+      rworkerCommand
       rworker-nix
     ];
 
