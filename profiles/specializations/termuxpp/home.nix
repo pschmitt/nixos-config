@@ -204,10 +204,17 @@ in
   fullNix.adbShell.allowedSsidsFile = config.sops.secrets."wifi/home-ssids".path;
 
   sops = {
-    secrets."wifi/home-ssids" = { };
-    secrets."nix/github_token".sopsFile = config.host.sopsDefaultFile;
+    secrets = {
+      "wifi/home-ssids" = { };
+      "nix/github_token".sopsFile = config.host.sopsDefaultFile;
+      "glab/git.wiit.one/token".sopsFile = config.host.sopsDefaultFile;
+    };
+    # Also pushed to rworkers (rworker setup nix), which then fetch private
+    # flake inputs themselves.
     templates."nix-access-tokens".content = ''
-      access-tokens = github.com=${config.sops.placeholder."nix/github_token"}
+      access-tokens = github.com=${config.sops.placeholder."nix/github_token"} git.wiit.one=PAT:${
+        config.sops.placeholder."glab/git.wiit.one/token"
+      }
     '';
   };
   nix = {
