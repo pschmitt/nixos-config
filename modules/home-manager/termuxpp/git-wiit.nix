@@ -3,6 +3,7 @@
 # SOPS (the same one glab uses on the desktop).
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -29,6 +30,9 @@ let
   '';
 in
 {
+  # The work identity (name, email, SSH signing) lives in the private repo.
+  imports = [ (inputs.nixos-config-private.outPath + "/hm/git-work.nix") ];
+
   programs.git.settings = {
     credential."https://${forge}".helper = "${helper}";
     # Remotes written as ssh (work.yaml, copied URLs) use the token as well.
