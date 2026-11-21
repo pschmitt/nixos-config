@@ -57,6 +57,32 @@ let
     "^([^.]+\\.)+("
     + lib.concatStringsSep "|" (map (d: lib.replaceStrings [ "." ] [ "\\." ] d) config.domains.mesh)
     + ")$";
+  circusOidcClientSecretHash = config.sops.placeholder."authelia/oidc-circus-dashboard-secret-hash";
+  circusOidcClient =
+    lib.concatStringsSep "\n" [
+      "      - client_id: 'circus-dashboard'"
+      "        client_name: 'Circus'"
+      "        client_secret: '${circusOidcClientSecretHash}'"
+      "        public: false"
+      "        authorization_policy: 'two_factor'"
+      "        require_pkce: true"
+      "        pkce_challenge_method: 'S256'"
+      "        redirect_uris:"
+      "          - 'https://build.${config.domains.main}/api/v1/auth/oidc/authelia/callback'"
+      "        scopes:"
+      "          - 'openid'"
+      "          - 'profile'"
+      "          - 'email'"
+      "          - 'groups'"
+      "        response_types:"
+      "          - 'code'"
+      "        grant_types:"
+      "          - 'authorization_code'"
+      "        access_token_signed_response_alg: 'none'"
+      "        userinfo_signed_response_alg: 'none'"
+      "        token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)"
+    ]
+    + "\n";
   autheliaSettings = {
     server.address = "tcp://:${toString autheliaPort}/";
     theme = "auto";
@@ -383,7 +409,8 @@ in
                       - 'authorization_code'
                     id_token_signed_response_alg: 'RS256'
                     token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
-          '';
+          ''
+          + lib.optionalString (builtins.hasAttr "authelia/oidc-circus-dashboard-secret-hash" config.sops.secrets) circusOidcClient;
           owner = autheliaUser;
           group = autheliaGroup;
           mode = "0400";
