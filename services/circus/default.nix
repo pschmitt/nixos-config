@@ -62,8 +62,11 @@ let
     in
     {
       "/".return = "404";
-      "= /simple" = get "/simple";
-      "~ \"^/simple/project/[0-9a-f-]{36}$\"" = get "";
+      "= /dash" = get "/dash";
+      "~ \"^/dash/project/[0-9a-f-]{36}$\"" = get "";
+      "= /simple".return = "302 /dash$is_args$args";
+      "~ \"^/simple/project/(?<legacy_project_id>[0-9a-f-]{36})$\"".return =
+        "302 /dash/project/$legacy_project_id$is_args$args";
       "= /login" = dashboardLocation tailnetOnly "GET POST" "/login";
       "^~ /_topcoat/" = get "";
       "^~ /static/" = get "";
@@ -519,19 +522,35 @@ in
             resolver.addresses =
               if config.networking.nameservers != [ ] then config.networking.nameservers else [ "127.0.0.53" ];
           };
-          locations = dashboardLocations false // {
-            # Topcoat opens its WebSocket on the origin root.
-            "= /" =
-              let
-                live = dashboardLocation false "GET" "/_build-live";
-              in
-              live
-              // {
-                extraConfig = live.extraConfig + ''
-                  if ($http_upgrade != "websocket") { return 302 /simple; }
-                '';
-              };
-          };
+          locations =
+            dashboardLocations false
+            // {
+              # Topcoat opens its WebSocket on the origin root.
+              "= /" =
+                let
+                  live = dashboardLocation false "GET" "/_build-live";
+                in
+                live
+                // {
+                  extraConfig = live.extraConfig + ''
+                    if ($http_upgrade != "websocket") { return 302 /dash; }
+                  '';
+                };
+            }
+            // lib.optionalAttrs ((config.services.circus.settings.oauth.oidc or { }) ? authelia) {
+              "= /api/v1/auth/oidc/authelia" = dashboardLocation false "GET" "";
+              "= /api/v1/auth/oidc/authelia/callback" =
+                let
+                  callback = dashboardLocation false "GET" "";
+                in
+                callback
+                // {
+                  extraConfig = callback.extraConfig + "access_log off;\n";
+                };
+              # Keep existing-account linking behind Authelia during migration.
+              "= /account" = dashboardLocation false "GET" "";
+              "= /account/link/authelia" = dashboardLocation false "GET POST" "";
+            };
         };
 
         # Binary cache for agents: tailnet clients only, no SSO (Nix cannot
