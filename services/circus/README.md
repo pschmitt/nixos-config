@@ -123,6 +123,40 @@ Each needs its secret first; a missing SOPS key fails activation.
   - Circus only gives them builds of `main`, never pull requests (OIDC
     subject pinned to `refs/heads/main`).
 
+## Effects (`services.circus.effects`)
+
+Circus has no effects, so `circus-effects` (`./effects`) runs the flake's push
+effects (`herculesCI.onPush.*.outputs.effects`: ISO publishing, rworker images
+to Glance) after a green Circus build, with nixbot's effect runner
+(`nbo effects run`: the same bwrap sandbox and `secrets.json` as nixbot).
+
+- Trigger: Circus' instance webhook (`[notifications] webhook_url`, our fork's
+  `evaluation_finished` event) on `http://127.0.0.1:3010/hook`, HMAC-signed
+  with `circus/effects-webhook-hmac`. Build events are off for that webhook.
+- Gate: status `success`, no pull request, not superseded, project
+  `nixos-config`, jobset and branch `main`, and the commit must still be the
+  head of `main` (`git ls-remote`) when it runs.
+- Order and state: `after` dependencies, one `flock` per `lock`, and
+  `when.changed` compared with the effect's last real success (state in
+  `/var/lib/circus-effects`). Events are queued on disk and deduplicated by
+  evaluation id.
+- `dryRun = true` (default) only logs `dry-run <commit>: would run <effect>`
+  (`journalctl -u circus-effects`), without secrets or statuses.
+
+Switch-over (nixbot and circus-effects must never both publish):
+
+1. Compare a few dry runs with nixbot's `nixbot/effect …` check runs for the
+   same commits.
+2. In one change: `services.circus.effects.dryRun = false;` on rofl-15, and
+   stop nixbot's publish effects (`herculesCI.onPush.publish` in
+   `flake.nix`, or nixbot's per-repo effects for this repository).
+3. Watch the first real run: `circus-effects/<effect>` commit statuses and the
+   journal.
+
+The effects' inputs (ISOs, images) must be fetchable by rofl-15's daemon: with
+S3 upload on they live in Circus' cache, so real runs need it as a substituter
+there (to do before switching over).
+
 ## Disable or remove
 
 Disable: remove `../../services/circus` from `hosts/rofl-15/default.nix` and

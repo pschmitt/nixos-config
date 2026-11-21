@@ -32,6 +32,9 @@
       agentBinaryUrl = "https://github.com/pschmitt/circus/releases/download/v0.14.0-pschmitt.1/circus-agent-aarch64-linux";
       agentBinarySha256 = "e83a29b64b3f52d0f4401169ba70d08d0214155c39b6f10a145eab405f6cf0fa";
     };
+    # Effects after green main builds (circus-effects), dry-run until it
+    # takes over publishing from nixbot.
+    effects.enable = true;
   };
 
   # Pinned per host: bumping it changes stateful service defaults.

@@ -75,6 +75,7 @@ in
   imports = [
     inputs.circus.nixosModules.circus
     ./agent.nix
+    ./effects
   ];
 
   options.services.circus = {
