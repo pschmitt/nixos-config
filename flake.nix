@@ -541,12 +541,6 @@
       };
     };
 
-    wezterm = {
-      url = "git+https://github.com/wez/wezterm.git?dir=nix&submodules=1";
-      # https://github.com/NixOS/nixpkgs/issues/348832
-      # inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
       inputs = {

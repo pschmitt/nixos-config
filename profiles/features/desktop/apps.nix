@@ -19,7 +19,7 @@
     foot
     pkgs.master.kitty
     inputs.ghostty.packages.${pkgs.stdenv.hostPlatform.system}.default
-    inputs.wezterm.packages.${pkgs.stdenv.hostPlatform.system}.default
+    wezterm
 
     # files and docs
     evince
