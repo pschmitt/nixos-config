@@ -84,6 +84,29 @@ jobs:
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
+      # NetBird reports "connected" before the route to rofl-15 is usable;
+      # an agent dialing too early fails with "Network unreachable" and an
+      # ephemeral session does not retry.
+      - name: Wait for the queue-runner
+        env:
+          RUNNER_URL: ${{ inputs.runner_url }}
+        run: |
+          set -euo pipefail
+          hostport="${RUNNER_URL#*://}"
+          host="${hostport%:*}"
+          port="${hostport##*:}"
+          for _ in $(seq 1 90)
+          do
+            if timeout 2 bash -c "exec 3<>/dev/tcp/${host}/${port}" 2>/dev/null
+            then
+              echo "reached ${host}:${port}"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::${host}:${port} unreachable over NetBird"
+          exit 1
+
       - name: Request OIDC token
         env:
           AUDIENCE: ${{ inputs.oidc_audience }}
