@@ -153,9 +153,9 @@ Switch-over (nixbot and circus-effects must never both publish):
 3. Watch the first real run: `circus-effects/<effect>` commit statuses and the
    journal.
 
-The effects' inputs (ISOs, images) must be fetchable by rofl-15's daemon: with
-S3 upload on they live in Circus' cache, so real runs need it as a substituter
-there (to do before switching over).
+The effects' inputs (ISOs, images) are fetched by rofl-15's Nix daemon through
+the local Circus HTTP cache. The effects module registers that substituter
+and trusts the configured Circus signing key.
 
 ## Disable or remove
 

@@ -80,6 +80,14 @@ in
   };
 
   config = lib.mkIf (circusCfg.enable && cfg.enable) {
+    # Publish from the same signed outputs the Circus builders uploaded.
+    nix.settings = {
+      extra-substituters = [
+        "http://127.0.0.1:${toString circusCfg.settings.server.port}/nix-cache/"
+      ];
+      extra-trusted-public-keys = [ circusCfg.settings.signing.public_key ];
+    };
+
     sops.secrets = {
       # HMAC key shared by Circus (signs) and circus-effects (verifies).
       "circus/effects-webhook-hmac" = config.sops.mkHostSecret { };
