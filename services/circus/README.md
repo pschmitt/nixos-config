@@ -47,7 +47,7 @@ nvim module failed with EACCES. The unit also runs with `ProtectHome`.
 
 | Unit | Limit |
 | --- | --- |
-| `circus-evaluator` | 2 workers, 10 GiB each, one evaluation at a time; `MemoryHigh` 12G, `MemoryMax` 16G, `CPUQuota` 400% |
+| `circus-evaluator` | One 16 GiB worker, one evaluation at a time; `MemoryHigh` 20G, `MemoryMax` 24G, `CPUQuota` 800% |
 | `circus-queue-runner` | `MemoryMax` 4G, `CPUQuota` 200% (verifies and signs agent outputs) |
 | `circus-server` | `MemoryMax` 2G |
 | `circus-agent` (each) | 4 builds, 4 cores each; the queue-runner skips a builder above 60% PSI |
@@ -156,6 +156,11 @@ Switch-over (nixbot and circus-effects must never both publish):
 The effects' inputs (ISOs, images) are fetched by rofl-15's Nix daemon through
 the local Circus HTTP cache. The effects module registers that substituter
 and trusts the configured Circus signing key.
+
+The LAN mirror polls Git for the current `main` commit and resolves each
+configured host's successful output through Circus over NetBird. It fetches
+the signed closure through Nix and keeps its previous GC root while a new
+build is pending or a fetch fails.
 
 ## Disable or remove
 

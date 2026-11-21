@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
-"""Keep the current main outputs of selected targets in this host's store.
+"""Keep successful Circus outputs from main rooted for Harmonia LAN clients."""
 
-niks3 stores each pin as the object `pins/<name>` (holding its store path) in
-the cache bucket; nixbot pins every attribute's latest default-branch output.
-Realising them here (through the configured substituters, i.e. the S3 cache
-first) and rooting them lets the local Harmonia serve them to LAN clients.
-"""
-
+import json
 import os
 import re
 import subprocess
 import sys
 from pathlib import Path
-
-import boto3
-from botocore.config import Config
-from botocore.exceptions import BotoCoreError, ClientError
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote, urlencode
+from urllib.request import urlopen
 
 ROOTS = Path(os.environ.get("NIX_LAN_MIRROR_ROOTS", "/nix/var/nix/gcroots/lan-mirror"))
 NIX_STORE = os.environ.get("NIX_STORE_BIN", "nix-store")
@@ -25,27 +19,32 @@ UNITS = {"KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4}
 STORE_PATH = re.compile(r"/nix/store/[a-z0-9]{32}-[^/\s]+")
 
 
-def s3_client():
-    session = boto3.Session(profile_name=os.environ.get("NIX_LAN_MIRROR_S3_PROFILE") or None)
-    return session.client(
-        "s3",
-        endpoint_url=os.environ["NIX_LAN_MIRROR_S3_ENDPOINT"],
-        region_name=os.environ.get("NIX_LAN_MIRROR_S3_REGION", "default"),
-        config=Config(s3={"addressing_style": "path"}, connect_timeout=30, read_timeout=30),
-    )
+def main_commit(repository):
+    output = subprocess.run(
+        ["git", "ls-remote", "--exit-code", repository, "refs/heads/main"],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    ).stdout
+    commit = output.split("\t", 1)[0]
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("Unexpected main commit from git ls-remote")
+    return commit
 
 
-def pinned_path(s3, bucket, pin):
-    """The pin's store path, or None if the pin does not exist."""
+def build_path(jobset, target, commit):
+    """The successful job output for this main commit, if available."""
+    url = f"{jobset.rstrip('/')}/{quote(target, safe='')}/latest?{urlencode({'commit': commit})}"
     try:
-        response = s3.get_object(Bucket=bucket, Key=f"pins/{pin}")
-    except ClientError as error:
-        if error.response["Error"]["Code"] in ("NoSuchKey", "404"):
+        with urlopen(url, timeout=30) as response:
+            path = json.load(response)
+    except HTTPError as error:
+        if error.code == 404:
             return None
         raise
-    path = response["Body"].read().decode().strip()
-    if not STORE_PATH.fullmatch(path):
-        raise ValueError(f"Unexpected store path in pin {pin}: {path!r}")
+    if not isinstance(path, str) or not STORE_PATH.fullmatch(path):
+        raise ValueError(f"Unexpected store path for {target}")
     return path
 
 
@@ -67,19 +66,19 @@ def available():
 
 
 def main():
-    bucket, prefix, *targets = sys.argv[1:]
-    s3 = s3_client()
+    jobset, repository, *targets = sys.argv[1:]
+    commit = main_commit(repository)
     wanted = {}
     failed = []
     for target in targets:
         try:
-            path = pinned_path(s3, bucket, prefix + target)
-        except (BotoCoreError, ClientError, ValueError) as error:
+            path = build_path(jobset, target, commit)
+        except (URLError, TimeoutError, ValueError) as error:
             print(f"Could not look up {target}: {error}", flush=True)
             failed.append(target)
             continue
         if path is None:
-            print("Not pinned:", prefix + target, flush=True)
+            print(f"No successful Circus build for {target} at {commit[:12]}", flush=True)
             continue
         wanted[target] = path
 
@@ -116,7 +115,7 @@ def main():
         print(f"Mirrored {name}: {path}", flush=True)
 
     # Release outputs of targets that are no longer configured; a target
-    # that is not pinned (or that failed) keeps its previous output.
+    # without a successful build (or that failed) keeps its previous output.
     for root in ROOTS.iterdir():
         if not root.name.startswith(".incoming-") and root.name not in targets:
             root.unlink()

@@ -248,11 +248,11 @@ in
             auto_allowed_uris = true;
             require_locked_flake = true;
             max_concurrent_evals = 1;
-            eval_workers = 2;
+            eval_workers = 1;
             # circusJobs (about 245 attributes, 26 hosts) on a shared host.
             nix_timeout = 60 * 60;
-            # Per evaluator process; the desktop hosts need about 7.2 GiB.
-            memory_limit_mb = 10240;
+            # Some desktop hosts exhaust a 10 GiB evaluator worker.
+            memory_limit_mb = 16384;
             # aarch64 only once the GitHub Actions agents exist.
             systems = [ "x86_64-linux" ] ++ lib.optional cfg.githubActionsAgents.enable "aarch64-linux";
             # Also count paths niks3 (s3://nix-cache-brkn-lol in nix.conf)
@@ -303,6 +303,7 @@ in
               name = "gha-aarch64-linux";
               allowed_build_repositories = [ "pschmitt/nixos-config" ];
               systems = [ "aarch64-linux" ];
+              supported_features = [ "big-parallel" ];
               max_jobs = 2;
               max_inflight = 4;
               github_actions = {
@@ -443,6 +444,14 @@ in
                 deny all;
               '';
             };
+            "~ ^/job/nixos-config/main/hosts\\.[a-z0-9-]+/latest$" = {
+              proxyPass = "http://127.0.0.1:${toString serverPort}";
+              extraConfig = ''
+                ${lib.concatMapStrings (range: "allow ${range};\n") tailnetRanges}
+                deny all;
+                if ($arg_commit !~ "^[0-9a-f]{40}$") { return 400; }
+              '';
+            };
           }
           // lib.optionalAttrs cfg.rworkerPool.enable {
             # The pool autoscaler's demand check (API key required).
@@ -535,11 +544,8 @@ in
             # (profiles/base/nix/secrets.nix, group nix-access-tokens).
             SupplementaryGroups = [ "nix-access-tokens" ];
             LoadCredential = lib.optional (gitlabNixConf != null) "nix-gitlab:${gitlabNixConf}";
-            # Next to nixbot's remote evaluation (up to 2 x 2 x 8 GiB) and its
-            # 16 build slots on this 62 GiB / 32 core host. Two workers of up
-            # to 10 GiB (memory_limit_mb) must fit below MemoryHigh: at 12G /
-            # 16G / 4 CPUs / weight 50 the hosts never finished evaluating
-            # within the 30 minute timeout while builds kept the host busy.
+            # Leave room for the evaluator's coordinator and the 16 GiB
+            # worker while nixbot and Circus agents share this host.
             MemoryHigh = "20G";
             MemoryMax = "24G";
             CPUQuota = "800%";

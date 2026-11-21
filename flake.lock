@@ -222,11 +222,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795218948,
-        "narHash": "sha256-DWwZUuUvdg0apoQOR4mb4J5m27JFEL10DaQdA5Cmw1U=",
+        "lastModified": 1795249105,
+        "narHash": "sha256-FJalZENi9izkBR2SIwW5NAEj78P/aOETcV7AILXq4ZQ=",
         "owner": "pschmitt",
         "repo": "circus",
-        "rev": "59db4583695ce548814af09f8459e90a4b8260f1",
+        "rev": "07e799cd112b0970b3662503fb2822b3f76f910d",
         "type": "github"
       },
       "original": {
