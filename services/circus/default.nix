@@ -248,6 +248,8 @@ in
             require_locked_flake = true;
             max_concurrent_evals = 1;
             eval_workers = 2;
+            # circusJobs (about 245 attributes, 26 hosts) on a shared host.
+            nix_timeout = 60 * 60;
             # Per evaluator process; the desktop hosts need about 7.2 GiB.
             memory_limit_mb = 10240;
             # aarch64 only once the GitHub Actions agents exist.
@@ -533,11 +535,14 @@ in
             SupplementaryGroups = [ "nix-access-tokens" ];
             LoadCredential = lib.optional (gitlabNixConf != null) "nix-gitlab:${gitlabNixConf}";
             # Next to nixbot's remote evaluation (up to 2 x 2 x 8 GiB) and its
-            # 16 build slots on this 62 GiB / 32 core host.
-            MemoryHigh = "12G";
-            MemoryMax = "16G";
-            CPUQuota = "400%";
-            CPUWeight = 50;
+            # 16 build slots on this 62 GiB / 32 core host. Two workers of up
+            # to 10 GiB (memory_limit_mb) must fit below MemoryHigh: at 12G /
+            # 16G / 4 CPUs / weight 50 the hosts never finished evaluating
+            # within the 30 minute timeout while builds kept the host busy.
+            MemoryHigh = "20G";
+            MemoryMax = "24G";
+            CPUQuota = "800%";
+            CPUWeight = 100;
             IOWeight = 50;
           };
         };
