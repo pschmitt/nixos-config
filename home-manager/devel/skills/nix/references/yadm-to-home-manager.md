@@ -36,6 +36,14 @@ the current directory). Moving one tool's config to Home Manager:
    no `-f`). On other hosts run `yadm pull` **before** they switch: a host
    that switches first has the tracked files replaced by links, and the
    `yadm-pull` timer (`--autostash`) then leaves a stash conflict behind.
+   **Exception: files the deploy itself needs** (ssh `ProxyCommand` or
+   `Match exec` helpers, anything an upgrade or `rworker` connection runs):
+   pulling their removal before the host switched breaks the upgrade
+   (2026-11-20: TermuxPP `nixpp upgrade --rworker` failed on missing
+   `~/.config/ssh/bin/*`). Leave them in yadm until every host switched, or
+   restore them untracked (`yadm show REV:path > path`) before the upgrade;
+   nixpp's `--backup` then moves them to `*.nixpp.bak`, which can be deleted
+   when identical.
 6. **First switch.** Home Manager backs up differing files as `*.hm-backup`,
    but stops on a yadm alternate symlink ("would be clobbered") and skips
    identical copies without linking them. Fix as in the `deploy` skill's
