@@ -28,6 +28,22 @@ in
     services.udev.packages = [ oci-consistent-device-naming ];
     system.kexec-installer.name = "nixos-kexec-installer-oci-udev";
     imports = [ nixos-images.nixosModules.noninteractive ];
+    nixpkgs.overlays = [
+      (_final: prev: {
+        # tzdata 2026b's now.ck rejects duplicate zones after November 2026.
+        # https://lists.icann.org/hyperkitty/list/tz%40iana.org/thread/TC43XSKMCTE2TIO25LFTUECZZDGZ2YCE/
+        # Use the 2026b release timestamp and keep the test enabled. Remove
+        # after nixos-images pins a tzdata with a reproducible now.ck.
+        # Observed 2026-11-21 at nixpkgs 89570f24e97e on static aarch64.
+        tzdata =
+          if prev.stdenv.hostPlatform.isStatic && prev.tzdata.version == "2026b" then
+            prev.tzdata.overrideAttrs (old: {
+              makeFlags = old.makeFlags ++ [ "CHECK_NOW_TIMESTAMP=1776924459" ];
+            })
+          else
+            prev.tzdata;
+      })
+    ];
   }
   nixos-images.nixosModules.kexec-installer
 ]).config.system.build.kexecInstallerTarball
