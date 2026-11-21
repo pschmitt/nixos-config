@@ -91,8 +91,12 @@ in
         else
           echo "circus-join: no private cache in the user-data, substituting from public caches only" >&2
         fi
-        # The worker's OpenStack name, unique in the pool, as agent name.
-        printf 'CIRCUS_AGENT_NAME=%s\n' "$(hostname)" > ${joinDir}/env
+        # The worker's OpenStack name, unique in the pool, as agent name
+        # (Circus refuses a second agent under a name in use). From the
+        # metadata rworker-netbird-up wrote; `hostname` is not on this
+        # unit's PATH, and an empty name must fail here, not in the agent.
+        name=$(jq -er '.name | strings | select(length > 0)' /run/rworker/metadata.json)
+        printf 'CIRCUS_AGENT_NAME=%s\n' "$name" > ${joinDir}/env
       '';
     };
 
