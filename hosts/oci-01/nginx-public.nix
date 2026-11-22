@@ -317,6 +317,10 @@ in
         cert = "oci-01-mail";
         backend = "http://127.0.0.1:8080";
         extraConfig = ''
+          # Stalwart sends its own CORS headers on JMAP discovery preflights.
+          proxy_hide_header Access-Control-Allow-Origin;
+          proxy_hide_header Access-Control-Allow-Headers;
+          proxy_hide_header Access-Control-Allow-Methods;
           add_header Access-Control-Allow-Origin $bulwark_cors_origin always;
           add_header Access-Control-Allow-Headers $bulwark_cors_headers always;
           add_header Access-Control-Allow-Methods "GET, HEAD, POST, OPTIONS, PROPFIND, REPORT, PUT, MKCOL, MOVE, COPY, DELETE, PROPPATCH" always;
