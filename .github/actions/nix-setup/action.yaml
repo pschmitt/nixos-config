@@ -45,6 +45,8 @@ runs:
         echo "conf=extra-substituters = $S3_STORE" >> "$GITHUB_OUTPUT"
     - uses: DeterminateSystems/nix-installer-action@main
       with:
+        # Use upstream Nix and the caches configured by the caller.
+        determinate: "false"
         extra-conf: |
           ${{ inputs.nix-conf }}
           ${{ steps.s3.outputs.conf }}
