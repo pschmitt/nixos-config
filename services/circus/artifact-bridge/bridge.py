@@ -28,10 +28,12 @@ def request(url, token, payload=None):
     req = urllib.request.Request(
         url,
         data=data,
-        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "Content-Type": "application/json"},
         method="GET" if data is None else "POST",
     )
     with urllib.request.urlopen(req, timeout=30) as response:
+        if response.status == 204:
+            return None
         return json.load(response)
 
 
@@ -103,19 +105,27 @@ def github_status(repository, revision, token_file, state, description, *, conte
     )
 
 
-def trusted_pull_request(pr, repository):
+def author_ids(path):
+    values = json.loads(Path(path).read_text())
+    if not isinstance(values, list) or not values or any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in values):
+        raise ValueError("invalid trusted PR author list")
+    return set(values)
+
+
+def trusted_pull_request(pr, repository, allowed_authors):
     """Only run trusted same-repository PR code with cache access."""
-    owner = repository.split("/", 1)[0]
     number = pr.get("number")
+    author = (pr.get("user") or {}).get("id")
     head = pr.get("head") or {}
     source = head.get("repo") or {}
     return all([
         pr.get("state") == "open",
         pr.get("draft") is False,
-        (pr.get("user") or {}).get("login") == owner,
+        isinstance(author, int) and not isinstance(author, bool) and author in allowed_authors,
         (pr.get("base") or {}).get("ref") == "main",
         source.get("full_name") == repository,
         isinstance(number, int) and not isinstance(number, bool) and number > 0,
+        isinstance(head.get("ref"), str) and bool(head["ref"]) and len(head["ref"]) <= 255,
         isinstance(head.get("sha"), str) and SHA.fullmatch(head["sha"]) is not None,
     ])
 
@@ -125,14 +135,14 @@ def pull_request(repository, number, token_file):
     return request(f"https://api.github.com/repos/{repository}/pulls/{number}", token)
 
 
-def source_is_current(repository, revision, pr_number, token_file):
+def source_is_current(repository, revision, pr_number, token_file, author_file=None):
     if pr_number is None:
         return branch_head(repository) == revision
     pr = pull_request(repository, pr_number, token_file)
-    return trusted_pull_request(pr, repository) and pr["number"] == pr_number and pr["head"]["sha"] == revision
+    return trusted_pull_request(pr, repository, author_ids(author_file)) and pr["number"] == pr_number and pr["head"]["sha"] == revision
 
 
-def publish_outputs(paths, repository, revision, pr_number=None, token_file=None):
+def publish_outputs(paths, repository, revision, pr_number=None, token_file=None, author_file=None):
     """Runs inside nix shell, which keeps all outputs rooted during upload."""
     info = subprocess.Popen(["nix", "--extra-experimental-features", "nix-command", "path-info", "--recursive", *paths.values()], stdout=subprocess.PIPE)
     assert info.stdout is not None
@@ -140,7 +150,7 @@ def publish_outputs(paths, repository, revision, pr_number=None, token_file=None
     info.stdout.close()
     if info.wait() != 0 or push.returncode != 0:
         raise RuntimeError("Niks3 closure upload failed")
-    if not source_is_current(repository, revision, pr_number, token_file):
+    if not source_is_current(repository, revision, pr_number, token_file, author_file):
         raise RuntimeError("source advanced during artifact upload")
     for name, path in sorted(paths.items()):
         safe_name = re.sub(r"[^A-Za-z0-9_-]", "-", name)[:60]
@@ -150,7 +160,7 @@ def publish_outputs(paths, repository, revision, pr_number=None, token_file=None
         subprocess.run(["niks3", "push", "--pin", f"circus-{project_name}{scope}-{safe_name}-{suffix}", path], check=True)
 
 
-def copy_outputs(paths, repository, revision, secret_file, runtime_dir, pr_number=None, token_file=None):
+def copy_outputs(paths, repository, revision, secret_file, runtime_dir, pr_number=None, token_file=None, author_file=None):
     project_name = repository.split("/", 1)[1]
     scope = "-pr" if pr_number is not None else ""
     entry = json.loads(Path(secret_file).read_text())[f"niks3-{project_name}{scope}-publisher"]
@@ -169,8 +179,71 @@ def copy_outputs(paths, repository, revision, secret_file, runtime_dir, pr_numbe
             "nix", "--extra-experimental-features", "nix-command flakes", "shell",
             "--option", "max-jobs", "0", "--option", "builders", "", "--option", "fallback", "false",
             *sorted(set(paths.values())), "--command", sys.executable, __file__, "--publish",
-            repository, revision, json.dumps(paths), str(pr_number or 0), token_file or "",
+            repository, revision, json.dumps(paths), str(pr_number or 0), token_file or "", str(author_file or ""),
         ], check=True, env=env)
+
+
+def dispatch_pr_consumers(args, revision, pr_number):
+    """Sequence PR consumers without occupying a GitHub runner while waiting."""
+
+    def marker_for(workflow):
+        return args.state_dir / f"pr-{pr_number}-{revision}-{workflow}.dispatched"
+
+    state_file = args.state_dir / f"pr-{pr_number}-{revision}.checks-state"
+    if state_file.exists() and state_file.read_text().strip() == "success":
+        return
+    token = Path(args.github_token_file).read_text().strip()
+    statuses = request(f"https://api.github.com/repos/{args.repository}/commits/{revision}/status", token)
+    if not any(item.get("context") == "circus/pr-artifacts" and item.get("state") == "success"
+               for item in statuses.get("statuses", [])):
+        return
+    pr = pull_request(args.repository, pr_number, args.github_token_file)
+    if not trusted_pull_request(pr, args.repository, author_ids(args.pr_author_ids_file)) or pr["number"] != pr_number or pr["head"]["sha"] != revision:
+        return
+
+    def report(state, description):
+        if not state_file.exists() or state_file.read_text().strip() != state:
+            github_status(args.repository, revision, args.github_token_file, state, description, context="circus/pr-checks")
+            state_file.write_text(state + "\n")
+
+    def dispatch(workflow):
+        inputs = {"circus_pr_number": str(pr_number), "circus_pr_sha": revision}
+        if workflow == "e2e.yaml":
+            inputs["lane"] = "smoke"
+        request(
+            f"https://api.github.com/repos/{args.repository}/actions/workflows/{workflow}/dispatches",
+            token, {"ref": "main", "inputs": inputs},
+        )
+        marker_for(workflow).touch()
+
+    def result(workflow, title):
+        runs = request(
+            f"https://api.github.com/repos/{args.repository}/actions/workflows/{workflow}/runs?event=workflow_dispatch&branch=main&per_page=100",
+            token,
+        ).get("workflow_runs", [])
+        matching = next((run for run in runs if all([
+            run.get("event") == "workflow_dispatch",
+            run.get("head_branch") == "main",
+            run.get("display_title") == f"{title} {revision}",
+        ])), None)
+        if not matching or matching.get("status") != "completed":
+            return "pending"
+        return "success" if matching.get("conclusion") == "success" else "failure"
+
+    if not marker_for("build.yaml").exists():
+        report("pending", "Waiting for PR artifact checks")
+        dispatch("build.yaml")
+        return
+    build_result = result("build.yaml", "Circus PR artifacts")
+    if build_result != "success":
+        report(build_result, "PR artifact build checks " + build_result)
+        return
+    if not marker_for("e2e.yaml").exists():
+        report("pending", "Waiting for PR end-to-end checks")
+        dispatch("e2e.yaml")
+        return
+    e2e_result = result("e2e.yaml", "Circus PR E2E")
+    report(e2e_result, "PR end-to-end checks " + e2e_result)
 
 
 def reconcile_source(args, get, revision, pr_number=None):
@@ -178,6 +251,8 @@ def reconcile_source(args, get, revision, pr_number=None):
     context = "circus/pr-artifacts" if pr_number is not None else "circus/artifacts"
     receipt = args.state_dir / f"{prefix}{revision}.json"
     if receipt.exists():
+        if pr_number is not None:
+            dispatch_pr_consumers(args, revision, pr_number)
         return
     pending = args.state_dir / f"{prefix}{revision}.pending"
     failed = args.state_dir / f"{prefix}{revision}.failed"
@@ -193,13 +268,16 @@ def reconcile_source(args, get, revision, pr_number=None):
         return
     if paths is None:
         return
-    copy_outputs(paths, args.repository, revision, args.secrets_file, args.runtime_dir, pr_number, args.github_token_file)
-    if not source_is_current(args.repository, revision, pr_number, args.github_token_file):
+    author_file = args.pr_author_ids_file if pr_number is not None else None
+    copy_outputs(paths, args.repository, revision, args.secrets_file, args.runtime_dir, pr_number, args.github_token_file, author_file)
+    if not source_is_current(args.repository, revision, pr_number, args.github_token_file, author_file):
         return
     github_status(args.repository, revision, args.github_token_file, "success", "Circus artifacts are in Niks3", context=context)
     receipt.write_text(json.dumps({"revision": revision, "outputs": len(paths)}) + "\n")
     pending.unlink(missing_ok=True)
     failed.unlink(missing_ok=True)
+    if pr_number is not None:
+        dispatch_pr_consumers(args, revision, pr_number)
 
 
 def reconcile(args):
@@ -213,13 +291,14 @@ def reconcile(args):
     if args.repository != "pschmitt/stricknani":
         return
     token = Path(args.github_token_file).read_text().strip()
+    allowed_authors = author_ids(args.pr_author_ids_file)
     page = 1
     while True:
         prs = request(f"https://api.github.com/repos/{args.repository}/pulls?state=open&per_page=100&page={page}", token)
         if not isinstance(prs, list):
             raise ValueError("GitHub PR listing was not a list")
         for pr in prs:
-            if trusted_pull_request(pr, args.repository):
+            if trusted_pull_request(pr, args.repository, allowed_authors):
                 try:
                     reconcile_source(args, get, pr["head"]["sha"], pr["number"])
                 except Exception:
@@ -230,9 +309,9 @@ def reconcile(args):
 
 
 def main():
-    if len(sys.argv) == 7 and sys.argv[1] == "--publish":
+    if len(sys.argv) == 8 and sys.argv[1] == "--publish":
         number = int(sys.argv[5])
-        publish_outputs(json.loads(sys.argv[4]), sys.argv[2], sys.argv[3], number or None, sys.argv[6])
+        publish_outputs(json.loads(sys.argv[4]), sys.argv[2], sys.argv[3], number or None, sys.argv[6], sys.argv[7])
         return
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repository", default="pschmitt/stricknani")
@@ -242,9 +321,12 @@ def main():
     parser.add_argument("--secrets-file", required=True)
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--runtime-dir", type=Path, required=True)
+    parser.add_argument("--pr-author-ids-file", type=Path)
     args = parser.parse_args()
     if args.repository not in {"pschmitt/stricknani", "pschmitt/monarch"}:
         raise ValueError("the bridge is restricted to configured repositories")
+    if args.repository == "pschmitt/stricknani" and args.pr_author_ids_file is None:
+        raise ValueError("the Stricknani bridge requires the trusted PR author list")
     args.state_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(level=logging.INFO)
     while True:

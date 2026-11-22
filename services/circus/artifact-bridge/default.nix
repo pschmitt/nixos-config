@@ -32,10 +32,19 @@ in
           circus.enable && circus.effects.enable && circus.githubApp.enable && circus.rworkerPool.enable;
         message = "The artifact bridge requires Circus, its effects, GitHub App, and read-only API key.";
       }
+      {
+        assertion =
+          !(builtins.elem "stricknani" projects)
+          || circus.githubActionsAgents.pullRequestAuthorIdsFile != null;
+        message = "The Stricknani artifact bridge requires the trusted PR author list.";
+      }
     ];
 
     sops.secrets."circus/effects-secrets".restartUnits = lib.mkAfter (
       map (name: "circus-${name}-artifact-bridge.service") projects
+    );
+    sops.secrets."circus/pr-author-ids".restartUnits = lib.mkIf (builtins.elem "stricknani" projects) (
+      lib.mkAfter [ "circus-stricknani-artifact-bridge.service" ]
     );
 
     users.users = lib.genAttrs (map (name: "circus-${name}-bridge") projects) (name: {
@@ -72,24 +81,33 @@ in
             LoadCredential = [
               "api:${secret "autoscaler-api-key"}"
               "secrets:${secret "effects-secrets"}"
-            ];
-            ExecStart = lib.escapeShellArgs [
-              (lib.getExe bridge)
-              "--repository"
-              "pschmitt/${name}"
-              "--api"
-              "http://127.0.0.1:${toString circus.settings.server.port}"
-              "--api-token-file"
-              "%d/api"
-              "--github-token-file"
-              "/run/circus-github-token/token"
-              "--secrets-file"
-              "%d/secrets"
-              "--state-dir"
-              "/var/lib/circus-${name}-bridge"
-              "--runtime-dir"
-              "/run/circus-${name}-bridge"
-            ];
+            ]
+            ++ lib.optional (
+              name == "stricknani"
+            ) "pr-authors:${toString circus.githubActionsAgents.pullRequestAuthorIdsFile}";
+            ExecStart = lib.escapeShellArgs (
+              [
+                (lib.getExe bridge)
+                "--repository"
+                "pschmitt/${name}"
+                "--api"
+                "http://127.0.0.1:${toString circus.settings.server.port}"
+                "--api-token-file"
+                "%d/api"
+                "--github-token-file"
+                "/run/circus-github-token/token"
+                "--secrets-file"
+                "%d/secrets"
+                "--state-dir"
+                "/var/lib/circus-${name}-bridge"
+                "--runtime-dir"
+                "/run/circus-${name}-bridge"
+              ]
+              ++ lib.optionals (name == "stricknani") [
+                "--pr-author-ids-file"
+                "%d/pr-authors"
+              ]
+            );
             Restart = "always";
             RestartSec = 10;
             NoNewPrivileges = true;
