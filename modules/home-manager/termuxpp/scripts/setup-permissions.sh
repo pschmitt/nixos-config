@@ -424,10 +424,25 @@ main() {
   then
     shift
     local current=${*: -1} candidate
-    for candidate in list grant --no-shizuku --json --help
-    do
-      [[ $candidate == "$current"* ]] && printf '%s\n' "$candidate"
-    done
+    if [[ ${1:-} == grant && $# -gt 1 && $current != -* ]]
+    then
+      {
+        printf '%s\n' processes
+        printf '%s\n' "${SPECIAL_ACCESS[@]}" | cut -d ' ' -f 1
+        if [[ -r $STATE_FILE ]]
+        then
+          jq -r '(.runtime // {}) | keys[] | split(".") | last' "$STATE_FILE" 2>/dev/null || true
+        fi
+      } | LC_ALL=C sort -fu | while read -r candidate
+      do
+        [[ ${candidate^^} != "${current^^}"* ]] || printf '%s\n' "${candidate^^}"
+      done
+    else
+      for candidate in list grant --no-shizuku --json --help
+      do
+        [[ $candidate != "$current"* ]] || printf '%s\n' "$candidate"
+      done
+    fi
     return 0
   fi
   local command=status use_shizuku=1 json=0 names=() argument
@@ -515,7 +530,28 @@ main() {
     return
   fi
 
-  local requested_name
+  local requested_name entry_name entry_state entry_detail known
+  for requested_name in "${names[@]}"
+  do
+    known=false
+    if [[ $via == app && ${requested_name,,} == notification-access ]]
+    then
+      known=true
+    fi
+    while read -r entry_name _ _ entry_detail
+    do
+      if [[ ${requested_name^^} == "${entry_name^^}" || ${requested_name^^} == "${entry_detail^^}" ]]
+      then
+        known=true
+        break
+      fi
+    done <<<"$state"
+    if [[ $known == false ]]
+    then
+      printf 'tpp permissions grant: unknown permission %s. See tpp permissions list.\n' "$requested_name" >&2
+      return 2
+    fi
+  done
   if [[ $via == app ]] && ! grep -q '^notification-access ' <<<"$state"
   then
     for requested_name in "${names[@]}"
@@ -534,11 +570,16 @@ main() {
   if [[ -z $todo ]]
   then
     printf '%s\n' "$(paint 'Nothing to grant.' 32)"
+    if (("${#names[@]}"))
+    then
+      print_status "$state" || true
+      return 0
+    fi
     print_status "$state"
     return
   fi
 
-  local name entry_state kind detail failed=0
+  local name kind detail failed=0
   if [[ $via == shizuku ]]
   then
     grant_shizuku "$todo" || failed=1
