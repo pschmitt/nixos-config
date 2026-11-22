@@ -323,7 +323,7 @@ def main():
     parser.add_argument("--runtime-dir", type=Path, required=True)
     parser.add_argument("--pr-author-ids-file", type=Path)
     args = parser.parse_args()
-    if args.repository not in {"pschmitt/stricknani", "pschmitt/monarch"}:
+    if args.repository not in {"pschmitt/stricknani", "pschmitt/monarch", "pschmitt/circus"}:
         raise ValueError("the bridge is restricted to configured repositories")
     if args.repository == "pschmitt/stricknani" and args.pr_author_ids_file is None:
         raise ValueError("the Stricknani bridge requires the trusted PR author list")

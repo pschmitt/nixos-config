@@ -8,6 +8,7 @@
 let
   circus = config.services.circus;
   projects = lib.filter (name: circus.${"${name}ArtifactBridge"}.enable) [
+    "circus"
     "monarch"
     "stricknani"
   ];
@@ -20,7 +21,7 @@ let
 in
 {
   options.services.circus =
-    lib.genAttrs [ "monarchArtifactBridge" "stricknaniArtifactBridge" ]
+    lib.genAttrs [ "circusArtifactBridge" "monarchArtifactBridge" "stricknaniArtifactBridge" ]
       (name: {
         enable = lib.mkEnableOption "${name} Circus artifact publication to Niks3";
       });

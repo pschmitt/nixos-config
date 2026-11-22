@@ -93,6 +93,10 @@ class ProjectOutputsTest(unittest.TestCase):
         outputs = bridge.project_outputs(FakeApi("monarch"), REVISION, "monarch")
         self.assertEqual(outputs["main-arm-packages.default-out"], PATH_ARM)
 
+    def test_selects_circus_outputs_from_circus_jobsets(self):
+        outputs = bridge.project_outputs(FakeApi("circus"), REVISION, "circus")
+        self.assertEqual(outputs["main-arm-packages.default-out"], PATH_ARM)
+
     def test_pr_never_uses_a_main_or_different_pr_evaluation(self):
         self.assertIsNone(bridge.project_outputs(FakeApi(), REVISION, "stricknani", 17))
         outputs = bridge.project_outputs(FakeApi(), REVISION, "stricknani", 42)
