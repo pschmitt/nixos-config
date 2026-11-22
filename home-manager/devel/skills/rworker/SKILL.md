@@ -1,11 +1,11 @@
 ---
 name: rworker
-description: Create a short-lived, encrypted build VM (ad-hoc worker) on the WIIT OpenStack for heavy compiles - Rust, Android/Gradle, large Nix builds - instead of loading the local machine or the shared build nodes, and delete it afterwards. Use when a build or test is too heavy or too long for this host, or when the user asks for a worker, a build VM, "rworker" or "a rofl worker".
+description: Use a short-lived OpenStack build VM or a GitHub-hosted rworker for builds and tests. Covers native ARM64 builds on GitHub Actions, interactive SSH, and offloading heavy Rust, Android/Gradle, and Nix work from the local host.
 ---
 
 # rworker
 
-Ad-hoc workers are disposable VMs (16 vCPU / 32 GiB / 150 GiB by default)
+OpenStack ad-hoc workers are disposable VMs (16 vCPU / 32 GiB / 150 GiB by default)
 booted from the nixbot worker image. Everything except the boot partition
 is encrypted with a key that exists only in the worker's RAM; a reboot or
 `down` destroys the data. A worker expires on its own after its TTL
@@ -14,9 +14,17 @@ still in use at expiry (SSH sessions, builds, load) is kept until it has
 been idle for 1 h, never past its maximum lifetime. At
 most 10 exist at a time, sharing a quota with nixbot's own build pool.
 
-Workers are reached over NetBird or Tailscale (both joined; the client uses whichever answers). You log in as
+OpenStack workers are reached over NetBird or Tailscale (both joined; the client uses whichever answers). You log in as
 `agent` with your own SSH key (handed over at creation); the worker's host
 key is pinned on creation, never trusted on first use.
+
+## GitHub-hosted runners
+
+Use `gh-aarch64` for native ARM64 builds of the project associated with the
+configured workflow repository. Use `gh-x86_64` or `gh` for native x86-64.
+Both support interactive SSH. GitHub leases default to 30 minutes including
+queue time. See [GitHub Actions workers](references/github-actions.md) for
+working-tree sync, artifact fetch, KVM, and cache differences.
 
 ## Commands
 
