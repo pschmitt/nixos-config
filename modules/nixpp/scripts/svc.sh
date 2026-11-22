@@ -351,8 +351,9 @@ main() {
     local loaded_apk
     loaded_apk=${NIXPP_SVC_APK_LIBRARY-$(apk_library)}
     selected=$(active_generation) || return 1
-    exec 8>"$runtime/supervisor.lock"
-    if ! flock -n 8
+    # The nixpp launcher holds the generation lease on fd 8.
+    exec 7>"$runtime/supervisor.lock"
+    if ! flock -n 7
     then
       die "a guest service supervisor is already running"
       return 76
@@ -409,7 +410,7 @@ main() {
     done
     exec 9>&-
 
-    runsvdir -P "$services_dir" 8>&- &
+    runsvdir -P "$services_dir" 7>&- &
     runsvdir_pid=$!
     while IFS= read -r service
     do
