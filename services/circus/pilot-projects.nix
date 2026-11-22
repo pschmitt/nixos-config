@@ -26,9 +26,11 @@ let
             builtins.elem repository [
               "anika-blue"
               "browser-daemon"
+              "luks-ssh-unlock"
               "monarch"
               "rbw"
               "rworker"
+              "tagesschau"
             ]
           then
             [ "aarch64-linux" ]

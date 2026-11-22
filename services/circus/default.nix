@@ -411,10 +411,12 @@ in
                   allowed_build_repositories = [
                     "pschmitt/anika-blue"
                     "pschmitt/browser-daemon"
+                    "pschmitt/luks-ssh-unlock"
                     "pschmitt/monarch"
                     "pschmitt/nixos-config"
                     "pschmitt/rbw"
                     "pschmitt/rworker"
+                    "pschmitt/tagesschau"
                   ];
                   systems = [ "aarch64-linux" ];
                   supported_features = [ "big-parallel" ];
