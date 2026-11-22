@@ -1,4 +1,4 @@
-# Public repositories migrated from nixbot.
+# Public Circus projects.
 let
   project = repository: branch: expression: {
     name = builtins.replaceStrings [ "." ] [ "-" ] repository;
@@ -26,6 +26,7 @@ let
             builtins.elem repository [
               "anika-blue"
               "browser-daemon"
+              "circus"
               "luks-ssh-unlock"
               "monarch"
               "rbw"
@@ -70,6 +71,7 @@ map (repo: project repo "main" "packages.x86_64-linux") [
   "anika-blue"
   "browser-daemon"
   "bruvtab"
+  "circus"
   "jellysync"
   "luks-ssh-unlock"
   "monarch"

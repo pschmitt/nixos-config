@@ -181,7 +181,6 @@ in
         "nixos-test"
         "benchmark"
         "big-parallel"
-        "kvm"
       ];
       # The pool flavor (s1.2xlarge, 32 vCPUs): 4 builds of 8 cores.
       max_jobs = 4;

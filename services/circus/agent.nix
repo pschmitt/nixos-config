@@ -46,12 +46,10 @@ in
         # TLS with the queue-runner host's tailnet ACME certificate.
         runner_url = "circus+tls://circus.${cfg.runnerHost}.${config.domains.netbird}:8443";
         systems = [ "x86_64-linux" ];
-        # What these hosts advertise to nixbot as remote builders.
         supported_features = [
           "nixos-test"
           "benchmark"
           "big-parallel"
-          "kvm"
         ];
         max_jobs = cfg.maxJobs;
         inherit (cfg) cores;

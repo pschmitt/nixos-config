@@ -416,6 +416,7 @@ in
                   allowed_build_repositories = [
                     "pschmitt/anika-blue"
                     "pschmitt/browser-daemon"
+                    "pschmitt/circus"
                     "pschmitt/luks-ssh-unlock"
                     "pschmitt/monarch"
                     "pschmitt/nixos-config"
@@ -462,6 +463,7 @@ in
                   name = "gha-x86_64-kvm";
                   allowed_build_repositories = [
                     "pschmitt/anika-blue"
+                    "pschmitt/circus"
                     "pschmitt/monarch"
                     "pschmitt/nixos-config"
                   ];

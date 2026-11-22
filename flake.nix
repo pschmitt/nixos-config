@@ -685,7 +685,33 @@
           ) self.nixosConfigurations
         );
         packages = lib.genAttrs systems (system: lib.filterAttrs (buildable system) (ciPackages system));
-        checks = lib.genAttrs systems (system: self.checks.${system});
+        checks = lib.genAttrs systems (
+          system:
+          self.checks.${system}
+          // lib.optionalAttrs (system == "x86_64-linux") {
+            # Check the device from inside the Nix sandbox on the KVM pool.
+            kvm-smoke =
+              let
+                pkgs = nixpkgs.legacyPackages.${system};
+              in
+              pkgs.runCommand "circus-kvm-smoke"
+                {
+                  nativeBuildInputs = [ pkgs.python3 ];
+                  requiredSystemFeatures = [ "kvm" ];
+                }
+                ''
+                  python3 - <<'PYTHON'
+                  import fcntl
+                  import os
+
+                  with open("/dev/kvm", "r+b", buffering=0) as kvm:
+                      vm = fcntl.ioctl(kvm, 0xAE01, 0)  # KVM_CREATE_VM
+                      os.close(vm)
+                  PYTHON
+                  touch "$out"
+                '';
+          }
+        );
         images =
           lib.genAttrs [
             "iso"
