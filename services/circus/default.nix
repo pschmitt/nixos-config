@@ -513,6 +513,9 @@ in
 
           cache_upload = lib.mkIf cfg.s3Upload.enable {
             enabled = true;
+            # Artifact consumers must not see a successful build whose output
+            # never reached the shared cache.
+            fail_build_on_upload_error = true;
             # niks3's bucket, under its own prefix: Circus never writes the
             # bucket root niks3 serves, and both garbage collectors only
             # delete keys from their own database, never by listing.
