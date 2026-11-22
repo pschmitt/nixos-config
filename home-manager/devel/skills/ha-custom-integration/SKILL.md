@@ -60,6 +60,18 @@ GitHub **release**, not just a tag; verify repository metadata, manifest,
 for the owner/contributor submission to `hacs/default`. Do not claim listing
 before acceptance.
 
+## Entity icons and CI
+
+- Give entities meaningful Material Design Icons in the integration's
+  `icons.json`. Match each platform and key to the entity's translation key.
+  Add state icons where they help distinguish states, and verify HA serves
+  the icons after installing the integration.
+- Run Hassfest and Ruff through
+  `pschmitt/ci-workflows/.github/workflows/home-assistant.yaml@main`. Keep push,
+  pull request, schedule and manual triggers in the caller. Scope `lint-path`
+  to the integration when the repository contains other Python code. Preserve
+  repository-specific tests and publishing workflows.
+
 ## Before announcing a change
 
 - For a new integration, verify the icon exists, the repository README links to
