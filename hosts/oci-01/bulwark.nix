@@ -57,7 +57,7 @@ in
       stalwartAdminAccess = "off";
       branding.appName = "Bulwark Mail";
     };
+    policies.defaults.interfaceLayout = "mountain-view";
     updateCheck.enabled = false;
   };
-
 }
