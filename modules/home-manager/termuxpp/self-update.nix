@@ -17,5 +17,12 @@ let
   };
 in
 {
+  home.file.".local/libexec/tpp/plugins/app.actions".text = ''
+    update
+    update check
+    update status
+    update cancel
+    restart
+  '';
   home.file.".local/libexec/tpp/plugins/app".source = "${app}/bin/app";
 }

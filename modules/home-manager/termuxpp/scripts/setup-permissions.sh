@@ -9,7 +9,7 @@ NOTIFICATION_LISTENER="$PACKAGE/$PACKAGE.api.apis.NotificationListAPI\$Notificat
 
 usage() {
   cat <<EOF_USAGE
-$(paint 'Usage:' '1;36') tpp permissions [list | grant [NAME...]] [--no-shizuku] [--json]
+$(paint 'Usage:' '1;36') tpp permissions [list | grant NAME... | grant --all] [--no-shizuku] [--json]
 
 Show and grant the Android permissions TermuxPP requests: every runtime
 permission (location, notifications, camera, ...) and the special access
@@ -19,10 +19,11 @@ the nixpp controller.
 
 $(paint 'Commands:' '1;36')
   list          Show what is granted and what is missing (default)
-  grant [NAME]  Grant everything missing, or only NAME (for example
+  grant NAME... Grant only the requested permissions (for example
                 ACCESS_BACKGROUND_LOCATION, POST_NOTIFICATIONS, overlay,
                 storage, install, alarms, usage, settings, battery,
                 notification-access, processes)
+  grant --all   Grant every missing permission
 
 With --json, grant progress goes to stderr and the result goes to stdout.
 grant first asks Shizuku for permission (Shizuku shows its dialog). Once
@@ -438,14 +439,14 @@ main() {
         [[ ${candidate^^} != "${current^^}"* ]] || printf '%s\n' "${candidate^^}"
       done
     else
-      for candidate in list grant --no-shizuku --json --help
+      for candidate in list grant --all --no-shizuku --json --help
       do
         [[ $candidate != "$current"* ]] || printf '%s\n' "$candidate"
       done
     fi
     return 0
   fi
-  local command=status use_shizuku=1 json=0 names=() argument
+  local command=status use_shizuku=1 json=0 all=0 names=() argument
   local -a original=()
   for argument in "$@"
   do
@@ -460,6 +461,7 @@ main() {
         ;;
       --no-shizuku) use_shizuku=0 ;;
       --json) json=1 ;;
+      --all) all=1 ;;
       list|status) command=status ;;
       grant) command=grant ;;
       -*)
@@ -469,9 +471,14 @@ main() {
       *) names+=("$argument") ;;
     esac
   done
-  if [[ $command == status && ${#names[@]} -gt 0 ]]
+  if [[ $command == status ]] && ((all || ${#names[@]} > 0))
   then
     usage >&2
+    return 2
+  fi
+  if [[ $command == grant ]] && { ((all && ${#names[@]} > 0)) || ((!all && ${#names[@]} == 0)); }
+  then
+    printf '%s\n' 'Specify permission names, or use tpp permissions grant --all to grant every missing permission.' >&2
     return 2
   fi
 

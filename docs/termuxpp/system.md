@@ -147,7 +147,7 @@ the guest user and are supervised with runit.
 TermuxPP app writes the connected network to `network.json` in the runtime
 directory (`/run/nixpp-runtime/network.json` in the guest) on every change and
 at least once a minute. Android reveals the name in the background only with
-location access "Allow all the time"; `tpp permissions grant` sets it.
+location access "Allow all the time"; `tpp permissions grant ACCESS_BACKGROUND_LOCATION` sets it.
 The guest supervisor starts the service on an allowed network and stops it
 elsewhere. With no Wi-Fi, a withheld name or state older than five minutes it
 stays down, and `svc list` shows that it is waiting for an allowed network.

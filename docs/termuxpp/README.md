@@ -285,8 +285,8 @@ every runtime permission TermuxPP requests and the special access Android
 grants on separate pages: overlay, all-files, install apps, exact alarms,
 usage access, system settings, unrestricted battery, and `processes`, the
 child process limit ("Disable child process restrictions") that otherwise
-kills the nixpp controller. `tpp permissions grant [NAME...]`
-grants what is missing. It asks Shizuku first: when Shizuku runs and TermuxPP
+kills the nixpp controller. `tpp permissions grant NAME...` grants only those permissions. Use
+`tpp permissions grant --all` to grant every missing permission. It asks Shizuku first: when Shizuku runs and TermuxPP
 is not yet authorized, Shizuku shows its dialog; once allowed, `rish` grants
 everything else without any confirmation. When Shizuku is missing, not
 running or denied, the script says so and Android shows its permission

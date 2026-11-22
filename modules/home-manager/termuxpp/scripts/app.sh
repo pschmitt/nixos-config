@@ -12,7 +12,7 @@ usage() {
     '' \
     "${bold}Commands:${reset}" \
     '  update   Update or check the TermuxPP app' \
-    '  restart  Restart TermuxPP, ending all terminal sessions'
+    '  restart --yes  Restart TermuxPP, ending all terminal sessions'
 }
 
 main() {
@@ -31,6 +31,14 @@ main() {
         shift
         exec "$TPP_APP_UPDATE" __complete "$@"
       fi
+      if (($# == 2)) && [[ $1 == restart ]]
+      then
+        for option in --yes --help
+        do
+          [[ $option != "$2"* ]] || printf '%s\n' "$option"
+        done
+        return 0
+      fi
       if (($# > 1))
       then
         return 0
@@ -46,16 +54,14 @@ main() {
       exec "$TPP_APP_UPDATE" "$@"
       ;;
     restart)
-      if (($# > 0))
+      if [[ ${1:-} == --help || ${1:-} == -h ]]
       then
-        case "$1" in
-          -h|--help)
-            usage
-            printf '%s\n' '' 'Restart TermuxPP and end all terminal sessions.'
-            return 0
-            ;;
-        esac
-        printf 'tpp app restart: unexpected argument: %s\n' "$1" >&2
+        printf '%s\n' 'Usage: tpp app restart --yes' 'Restart TermuxPP and end all terminal sessions.'
+        return 0
+      fi
+      if (($# != 1)) || [[ $1 != --yes ]]
+      then
+        printf '%s\n' 'tpp app restart ends all terminal sessions. To proceed, run tpp app restart --yes.' >&2
         return 2
       fi
       printf '%s\n' 'Restarting TermuxPP; all terminal sessions will end.' >&2

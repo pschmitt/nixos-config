@@ -13,5 +13,9 @@ let
   };
 in
 {
+  home.file.".local/libexec/tpp/plugins/permissions.actions".text = ''
+    list
+    grant
+  '';
   home.file.".local/libexec/tpp/plugins/permissions".source = "${permissions}/bin/permissions";
 }
