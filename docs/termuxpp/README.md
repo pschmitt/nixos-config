@@ -280,12 +280,12 @@ APK and caches its matching assets automatically.
 
 ### Permissions
 
-`termuxpp-setup-permissions` (or `termuxpp-setup-permissions status`) lists
+`tpp permissions` (or `tpp permissions status`) lists
 every runtime permission TermuxPP requests and the special access Android
 grants on separate pages: overlay, all-files, install apps, exact alarms,
 usage access, system settings, unrestricted battery, and `processes`, the
 child process limit ("Disable child process restrictions") that otherwise
-kills the nixpp controller. `termuxpp-setup-permissions grant [NAME...]`
+kills the nixpp controller. `tpp permissions grant [NAME...]`
 grants what is missing. It asks Shizuku first: when Shizuku runs and TermuxPP
 is not yet authorized, Shizuku shows its dialog; once allowed, `rish` grants
 everything else without any confirmation. When Shizuku is missing, not
@@ -298,9 +298,9 @@ profile does not show up twice.
 
 ### Updating the app
 
-`termuxpp-self-update` updates the TermuxPP app with the same updater as
+`tpp update` updates the TermuxPP app with the same updater as
 Settings > About: same release source, checksum and signature checks.
-`termuxpp-self-update check` only checks (exit status 10 when an update is
+`tpp update check` only checks (exit status 10 when an update is
 available), `status` shows the last state and `cancel` stops a running
 check or download. With Shizuku the install needs no confirmation; without
 it, Android asks. Installing replaces the app and ends its processes, so the

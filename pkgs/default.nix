@@ -124,7 +124,7 @@ in
   stui = pkgs.callPackage ./stui { };
   syncthingtui = pkgs.callPackage ./syncthingtui { };
   teams-live = inputs.teams-live.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  inherit (inputs.termuxpp.lib.adbShell.packagesFor pkgs) termuxpp-adb-shell;
+  inherit (inputs.termuxpp.lib.adbShell.packagesFor pkgs) tpp-adb-shell;
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   todoist-cli = pkgs.callPackage ./todoist-cli { };

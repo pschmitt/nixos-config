@@ -8,7 +8,7 @@ PERMISSION_EXTRA=$PACKAGE.api.permission_extra
 
 usage() {
   cat <<EOF_USAGE
-Usage: $(basename "$0") [status | grant [NAME...]] [--no-shizuku]
+Usage: tpp permissions [status | grant [NAME...]] [--no-shizuku] [--json]
 
 Show and grant the Android permissions TermuxPP requests: every runtime
 permission (location, notifications, camera, ...) and the special access
@@ -23,6 +23,7 @@ Commands:
                 storage, install, alarms, usage, settings, battery,
                 processes)
 
+With --json, grant progress goes to stderr and the result goes to stdout.
 grant first asks Shizuku for permission (Shizuku shows its dialog). Once
 TermuxPP may use Shizuku, rish grants the rest without any confirmation.
 Without Shizuku, or with --no-shizuku, Android asks: grant opens the dialogs
@@ -225,7 +226,7 @@ SHIZUKU_RECEIVER=$PACKAGE/com.termux.app.update.ShizukuCommandReceiver
 app_shizuku() {
   local since
   since=$(date +%s)
-  termux-am broadcast --user "${TERMUX__USER_ID:-0}" -n "$SHIZUKU_RECEIVER" \
+  tpp-am broadcast --user "${TERMUX__USER_ID:-0}" -n "$SHIZUKU_RECEIVER" \
     --es command "$1" >/dev/null 2>&1 || return 0
   local _
   for _ in $(seq 1 20)
@@ -303,12 +304,12 @@ collect_app() {
   done
 }
 
-# The guest's termux-am starts activities with TermuxPP's identity, so it may
+# The guest's tpp-am starts activities with TermuxPP's identity, so it may
 # open the app's own non-exported permission activity.
 app_am() {
   local subcommand=$1
   shift
-  termux-am "$subcommand" --user "${TERMUX__USER_ID:-0}" "$@" >/dev/null
+  tpp-am "$subcommand" --user "${TERMUX__USER_ID:-0}" "$@" >/dev/null
 }
 
 wait_for_user() {
@@ -393,7 +394,22 @@ missing_entries() {
 }
 
 main() {
-  local command=status use_shizuku=1 names=() argument
+  if [[ ${1:-} == __complete ]]
+  then
+    shift
+    local current=${*: -1} candidate
+    for candidate in status grant --no-shizuku --json --help
+    do
+      [[ $candidate == "$current"* ]] && printf '%s\n' "$candidate"
+    done
+    return 0
+  fi
+  local command=status use_shizuku=1 json=0 names=() argument
+  local -a original=()
+  for argument in "$@"
+  do
+    [[ $argument == --json ]] || original+=("$argument")
+  done
   for argument in "$@"
   do
     case $argument in
@@ -402,6 +418,7 @@ main() {
         return 0
         ;;
       --no-shizuku) use_shizuku=0 ;;
+      --json) json=1 ;;
       status|grant) command=$argument ;;
       -*)
         usage >&2
@@ -414,6 +431,16 @@ main() {
   then
     usage >&2
     return 2
+  fi
+
+  if ((json)) && [[ $command != status ]]
+  then
+    local result=0 jq_color=-M
+    (main "${original[@]}") >&2 || result=$?
+    ((COLOR)) && jq_color=-C
+    jq "$jq_color" -n --arg command "$command" --argjson exitCode "$result" \
+      '{command: $command, exitCode: $exitCode}'
+    return "$result"
   fi
 
   local via=app
@@ -433,6 +460,18 @@ main() {
   then
     local shizuku_state
     shizuku_state=$(app_shizuku refresh)
+    if ((json))
+    then
+      local jq_color=-M
+      ((COLOR)) && jq_color=-C
+      jq "$jq_color" -Rn --arg shizuku "${shizuku_state:-unknown}" --arg via "$via" '
+        {shizuku: $shizuku, source: $via,
+         permissions: [inputs | select(length > 0) | split(" ") |
+           {name: .[0], state: .[1], kind: .[2], detail: .[3]}]}
+      ' <<<"$state"
+      ! grep -q ' missing ' <<<"$state"
+      return
+    fi
     printf '%s %s\n' "$(paint Shizuku: 1)" "$(paint "$(tr '[:upper:]_' '[:lower:] ' <<<"${shizuku_state:-unknown (update the app)}")" \
       "$([[ $shizuku_state == READY ]] && echo 32 || echo 33)")"
     [[ $via == app ]] && printf 'As reported by the TermuxPP app (Shizuku unavailable):\n'

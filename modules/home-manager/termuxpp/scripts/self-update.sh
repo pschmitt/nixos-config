@@ -7,7 +7,7 @@ RECEIVER=$PACKAGE/com.termux.app.update.UpdateCommandReceiver
 
 usage() {
   cat <<EOF_USAGE
-Usage: $(basename "$0") [update | check | status | cancel] [--timeout SECONDS]
+Usage: tpp update [update | check | status | cancel] [--timeout SECONDS] [--json]
 
 Update the TermuxPP app itself, with the same updater as Settings > About.
 
@@ -17,9 +17,10 @@ Commands:
   status   Show the last known updater state
   cancel   Cancel a running check or download
 
+With --json, action progress goes to stderr and the result goes to stdout.
 With Shizuku the install needs no confirmation; without it, Android asks.
 Installing replaces the app, which ends its processes: this shell may close
-before the update finishes. Run "$(basename "$0") status" afterwards.
+before the update finishes. Run "tpp update status" afterwards.
 EOF_USAGE
 }
 
@@ -45,12 +46,21 @@ show_status() {
     (if .offer then "offer:     \(.releaseTag // .offer)" else empty end),
     (if .failure then "failure:   \(.failure)\(if .detail then ": \(.detail)" else "" end)"
      else empty end),
-    "updated:   \(.updated | strftime("%Y-%m-%d %H:%M:%S"))"' <<<"$status"
+    "updated:   \(.updated | strftime("%Y-%m-%d %H:%M:%S"))"' <<<"$status" |
+    while IFS= read -r line
+    do
+      if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-} != dumb ]]
+      then
+        printf '\033[1;34m%s\033[0m%s\n' "${line%%:*}:" "${line#*:}"
+      else
+        printf '%s\n' "$line"
+      fi
+    done
 }
 
 send() {
-  termux-am broadcast --user "${TERMUX__USER_ID:-0}" -n "$RECEIVER" \
-    --es command "$1" >/dev/null || die "cannot reach the TermuxPP app (termux-am failed)"
+  tpp-am broadcast --user "${TERMUX__USER_ID:-0}" -n "$RECEIVER" \
+    --es command "$1" >/dev/null || die "cannot reach the TermuxPP app (tpp-am failed)"
 }
 
 progress() {
@@ -157,12 +167,28 @@ follow() {
 }
 
 main() {
-  local command=update timeout=900
+  if [[ ${1:-} == __complete ]]
+  then
+    shift
+    local current=${*: -1} candidate
+    for candidate in update check status cancel --timeout --json --help
+    do
+      [[ $candidate == "$current"* ]] && printf '%s\n' "$candidate"
+    done
+    return 0
+  fi
+  local command=update timeout=900 json=0 argument
+  local -a original=()
+  for argument in "$@"
+  do
+    [[ $argument == --json ]] || original+=("$argument")
+  done
 
   while (($# > 0))
   do
     case $1 in
       update|check|status|cancel) command=$1 ;;
+      --json) json=1 ;;
       --timeout)
         [[ ${2:-} =~ ^[0-9]+$ ]] || die "--timeout needs a number of seconds"
         timeout=$2
@@ -179,6 +205,27 @@ main() {
     esac
     shift
   done
+
+  if ((json))
+  then
+    if [[ $command != status ]]
+    then
+      local result=0 jq_color=-M
+      (main "${original[@]}") >&2 || result=$?
+      [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-} != dumb ]] && jq_color=-C
+      jq "$jq_color" -n --arg command "$command" --argjson exitCode "$result" \
+        '{command: $command, exitCode: $exitCode}'
+      return "$result"
+    fi
+    [[ -r $STATUS_FILE ]] || die "no update status yet in $STATUS_FILE (is the app running?)"
+    if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-} != dumb ]]
+    then
+      jq -C . "$STATUS_FILE"
+    else
+      jq -M . "$STATUS_FILE"
+    fi
+    return
+  fi
 
   case $command in
     status)

@@ -1,14 +1,14 @@
 { pkgs, ... }:
+let
+  update = pkgs.writeShellApplication {
+    name = "update";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+    ];
+    text = builtins.readFile ./scripts/self-update.sh;
+  };
+in
 {
-  home.packages = [
-    (pkgs.writeShellApplication {
-      name = "termuxpp-self-update";
-      # termux-am comes from the guest profile.
-      runtimeInputs = [
-        pkgs.coreutils
-        pkgs.jq
-      ];
-      text = builtins.readFile ./scripts/self-update.sh;
-    })
-  ];
+  home.file.".local/libexec/tpp/plugins/update".source = "${update}/bin/update";
 }

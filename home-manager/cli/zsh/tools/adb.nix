@@ -4,6 +4,6 @@
   # and jq.
   home.packages = [
     pkgs.android-tools
-    pkgs.termuxpp-adb-shell
+    pkgs.tpp-adb-shell
   ];
 }

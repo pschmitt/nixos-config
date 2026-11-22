@@ -7,7 +7,7 @@ description: Use when upgrading, inspecting, rolling back or debugging the Nix g
 
 `nixpp` manages the declarative Nix guest system of a TermuxPP phone. The guest
 system is `termuxppConfigurations.<host>.system` in nixos-config; its source
-and the `nixpp` code live in the termuxpp repository (`nix/nixpp`), consumed by
+and the `nixpp` code live in the termuxpp repository (`pkgs/nixpp`), consumed by
 nixos-config through its `termuxpp` flake input. Background and the full command
 reference: nixos-config `docs/termuxpp/system.md` and `docs/termuxpp/README.md`.
 App builds and the fork itself are the `termuxpp` skill.
@@ -21,7 +21,7 @@ App builds and the fork itself are the `termuxpp` skill.
   `brkn-infra` android reference). Run non-interactive commands with
   `ssh -o BatchMode=yes HOST 'nixpp status'`.
 - Without SSH (another network, sshd gated by Wi-Fi), use
-  `termuxpp-adb-shell --serial SERIAL -- COMMAND` over ADB. Connect a Wi-Fi ADB
+  `tpp-adb-shell --serial SERIAL -- COMMAND` over ADB. Connect a Wi-Fi ADB
   device first with `zsh -lc 'zhj adb::connect HOST'`.
 
 ## Inspect
