@@ -28,7 +28,7 @@ for archived `exec` output after the worker ends.
 The agent enables KVM when the build user can create a VM through `/dev/kvm`.
 Check the `KVM` line from `up`. The live x86-64 trial had KVM and the ARM64
 trial had no usable KVM device. `rworker profiles` shows GitHub's published
-CPU and RAM allocations under the `github-actions` tag, plus disk size and
-free space measured at the latest startup. GitHub runners start with Nix.
+CPU and RAM allocations under the `github-actions` tag, plus the last observed total
+disk size. GitHub runners start with Nix.
 Use an OpenStack worker when a build requires the worker-image niks3
 shortcuts or private cache credentials.
