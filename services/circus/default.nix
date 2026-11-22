@@ -301,6 +301,8 @@ in
           server = {
             host = "127.0.0.1";
             port = serverPort;
+            snapshot_repositories = [ repositoryUrl ];
+            max_body_size = 16 * 1024 * 1024;
             # nginx terminates TLS (publicHost).
             force_secure_cookies = true;
             allowed_origins = [

@@ -1,19 +1,18 @@
 ---
 name: circus-build
-description: Queue, prioritize, and monitor ad-hoc Circus builds of pushed NixOS configurations, especially aarch64 phone configurations on GitHub ARM runners.
+description: Queue, prioritize, and monitor Circus builds of local or pushed NixOS configurations, especially aarch64 phone configurations on GitHub ARM runners.
 ---
 
 # Circus builds
 
 Use the `nixos-config` project's `main` jobset for phone configurations.
-It evaluates `circusJobs`, whose `hosts.<host>` jobs build the NixOS system
-closures. Resolve the requested phone host names from the configuration or
-the private brkn-infra skill. Default to the current remote `main` SHA.
-For a requested revision, verify it is reachable from remote `main` before
-using the trusted jobset. Circus fetches the revision from Git, so use a
-pushed commit with the desired private input pinned in its lock file.
+The phone guest closure is `termuxppConfigurations.<host>.system`.
+Standard NixOS host closures use `nixosConfigurations.<host>.config.system.build.toplevel`. Resolve the requested phone host names from the configuration or
+the private brkn-infra skill. For uncommitted changes, submit the local public checkout. For a requested
+pushed revision, verify it is reachable from remote `main` before using the
+trusted jobset.
 
-## Find or queue the builds
+## API access
 
 Find the API access details in `services/circus/README.md` in the NixOS
 repository. If the public endpoint redirects to Authelia, use an SSH
@@ -40,9 +39,32 @@ The API paths below are relative to `/api/v1`.
    If a job is absent after evaluation completes, check the evaluation
    detail and job history for an error or a reused build for that revision.
 
+## Submit a local checkout
+
+Use a Circus client and server that support snapshot submission. The client
+package in the Circus flake is `circus-cli` and its executable is `circusctl`.
+Find the same `main` jobset ID as above and run:
+
+```bash
+circusctl --json evaluations submit --jobset-id "$jobset_id" \
+  --checkout "$checkout" --termuxpp --hosts "$comma_separated_hosts"
+```
+
+Omit `--termuxpp` for standard NixOS host closures. Snapshot phone jobs are
+named `termuxpp-system-<host>`.
+
+This snapshots tracked and non-ignored untracked files with their working-tree
+contents. Inspect new files for private material before submission. The
+snapshot uses the checkout's lock file and supports changes to the public tree.
+Use the rworker skill for an uncommitted private checkout override.
+The server queues just the selected hosts and their prerequisites. Snapshot
+builds start with a 10-point priority increase by default. Pass
+`--normal-priority` to skip it. Track the returned evaluation ID and do not
+bump these builds a second time.
+
 ## Priority and builder
 
-By default, bump each requested pending host build and its pending
+For a pushed revision, bump each requested pending host build and its pending
 prerequisite builds once. Skip the bump when the user asks for normal
 priority. Walk `GET /builds/<build-id>/dependencies` and deduplicate IDs
 across the requested hosts. Recheck state before running
