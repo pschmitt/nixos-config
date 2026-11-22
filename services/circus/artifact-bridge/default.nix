@@ -54,14 +54,22 @@ in
     sops.secrets."circus/effects-secrets".restartUnits = lib.mkAfter (
       map (name: "circus-${name}-artifact-bridge.service") projects
     );
-    sops.secrets."circus/pr-author-ids".restartUnits = lib.mkAfter (
-      map (name: "circus-${name}-artifact-bridge.service") (
-        lib.filter (name: builtins.elem name projects) [
+    sops.secrets."circus/pr-author-ids".restartUnits =
+      lib.mkIf
+        (lib.any (name: builtins.elem name projects) [
           "declaroid"
           "stricknani"
-        ]
-      )
-    );
+        ])
+        (
+          lib.mkAfter (
+            map (name: "circus-${name}-artifact-bridge.service") (
+              lib.filter (name: builtins.elem name projects) [
+                "declaroid"
+                "stricknani"
+              ]
+            )
+          )
+        );
 
     users.users = lib.genAttrs (map (name: "circus-${name}-bridge") projects) (name: {
       isSystemUser = true;
