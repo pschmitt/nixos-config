@@ -43,7 +43,6 @@ in
     httpasswdPkg
     inotify-tools
     sqlite
-    tmux-xpanes
     websocat
 
     inputs.ruamel-fmt.packages.${pkgs.stdenv.hostPlatform.system}.ruamel-fmt
