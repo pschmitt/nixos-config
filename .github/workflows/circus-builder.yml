@@ -1,8 +1,5 @@
-# Ephemeral aarch64 build agent for Circus CI (services/circus/README.md).
-# Started only by the Circus queue-runner on rofl-15 (workflow_dispatch from
-# its gha-aarch64-linux pool, off unless services.circus.githubActionsAgents
-# is enabled). The agent authenticates with this run's GitHub OIDC token;
-# Circus only gives it builds of trusted refs of this repository.
+# Ephemeral Circus agents for trusted ARM and x86_64 KVM builds.
+# The queue-runner dispatches this workflow and the agent joins via GitHub OIDC.
 name: Circus Builder
 
 on:
@@ -15,7 +12,7 @@ on:
         required: true
         type: string
       agent_binary_url:
-        description: Pinned circus-agent binary matching the queue-runner
+        description: Pinned circus-agent binary URL or x86_64 flake package matching the queue-runner
         required: true
         type: string
       systems:
@@ -53,7 +50,7 @@ on:
         required: true
         type: string
       agent_binary_url:
-        description: Pinned circus-agent binary matching the queue-runner
+        description: Pinned circus-agent binary URL or x86_64 flake package matching the queue-runner
         required: true
         type: string
       systems:
@@ -108,7 +105,7 @@ env:
 
 jobs:
   build-agent:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ inputs.systems == 'x86_64-linux' && 'ubuntu-24.04' || 'ubuntu-24.04-arm' }}
     timeout-minutes: 360
     steps:
       - name: Checkout
@@ -116,10 +113,28 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Enable and verify KVM
+        if: inputs.systems == 'x86_64-linux'
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+          python3 - <<'PYTHON'
+          import fcntl
+          import os
+
+          with open("/dev/kvm", "r+b", buffering=0) as kvm:
+              vm = fcntl.ioctl(kvm, 0xAE01, 0)  # KVM_CREATE_VM
+              os.close(vm)
+          PYTHON
+
       - name: Set up Nix
         uses: ./.github/actions/nix-setup
         with:
-          nix-conf: ${{ env.nix-conf }}
+          nix-conf: |
+            ${{ env.nix-conf }}
+            ${{ inputs.systems == 'x86_64-linux' && 'extra-system-features = kvm nixos-test' || '' }}
+            ${{ inputs.systems == 'x86_64-linux' && 'extra-sandbox-paths = /dev/kvm' || '' }}
           s3-store: ${{ env.NIKS3_S3_STORE }}
           s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
@@ -154,6 +169,28 @@ jobs:
           echo "::error::${host}:${port} unreachable over NetBird"
           exit 1
 
+      - name: Install x86_64 circus-agent
+        if: inputs.systems == 'x86_64-linux'
+        env:
+          AGENT_FLAKE_REF: ${{ inputs.agent_binary_url }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$AGENT_FLAKE_REF" =~ ^github:pschmitt/circus/[0-9a-f]{40}#circus-agent$ ]]
+          then
+            echo "::error::expected a commit-pinned Circus agent flake package"
+            exit 1
+          fi
+          # Use the same nixpkgs revision as the installed agents so this can
+          # substitute the package from the shared Nix cache.
+          nixpkgs_ref="$(jq -er '
+            .nodes.root.inputs.nixpkgs as $input
+            | .nodes[$input].locked
+            | "github:\(.owner)/\(.repo)/\(.rev)"
+          ' flake.lock)"
+          nix build --no-write-lock-file --override-input nixpkgs "$nixpkgs_ref" \
+            --out-link "$RUNNER_TEMP/circus-agent-package" "$AGENT_FLAKE_REF"
+          ln -s "$RUNNER_TEMP/circus-agent-package/bin/circus-agent" "$RUNNER_TEMP/circus-agent"
+
       - name: Request OIDC token
         env:
           AUDIENCE: ${{ inputs.oidc_audience }}
@@ -168,7 +205,8 @@ jobs:
           echo "::add-mask::$token"
           printf 'CIRCUS_AGENT_TOKEN=%s\n' "$token" >>"$GITHUB_ENV"
 
-      - name: Download circus-agent
+      - name: Download ARM circus-agent
+        if: inputs.systems != 'x86_64-linux'
         env:
           AGENT_BINARY_URL: ${{ inputs.agent_binary_url }}
         # The queue-runner pins the binary with a "#sha256=<hex>" fragment

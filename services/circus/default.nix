@@ -182,6 +182,7 @@ in
         ephemeral aarch64 circus-agents on GitHub Actions arm runners
         (.github/workflows/circus-builder.yml), joining over NetBird
       '';
+      kvm.enable = lib.mkEnableOption "ephemeral x86_64 GitHub Actions agents for KVM jobs";
       pullRequestAuthorIdsFile = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
@@ -217,6 +218,10 @@ in
       {
         assertion = !cfg.githubActionsAgents.enable || cfg.githubActionsAgents.agentBinaryUrl != "";
         message = "services.circus.githubActionsAgents.agentBinaryUrl must be set.";
+      }
+      {
+        assertion = !cfg.githubActionsAgents.kvm.enable || cfg.githubActionsAgents.enable;
+        message = "services.circus.githubActionsAgents.kvm requires githubActionsAgents.enable.";
       }
       {
         assertion = cfg.githubActionsAgents.pullRequestAuthorIdsFile == null || cfg.s3Upload.enable;
@@ -417,6 +422,7 @@ in
                     "pschmitt/rbw"
                     "pschmitt/rworker"
                     "pschmitt/tagesschau"
+                    "pschmitt/termuxpp"
                   ];
                   systems = [ "aarch64-linux" ];
                   supported_features = [ "big-parallel" ];
@@ -446,6 +452,29 @@ in
                     grace_secs = 120;
                     status_file = qemuOverflowStatusPath;
                     status_ttl_secs = 90;
+                  };
+                }
+              )
+              ++ lib.optional cfg.githubActionsAgents.kvm.enable (
+                mainPool
+                // {
+                  name = "gha-x86_64-kvm";
+                  allowed_build_repositories = [
+                    "pschmitt/anika-blue"
+                    "pschmitt/monarch"
+                    "pschmitt/nixos-config"
+                  ];
+                  systems = [ "x86_64-linux" ];
+                  supported_features = [
+                    "big-parallel"
+                    "kvm"
+                    "nixos-test"
+                  ];
+                  mandatory_features = [ "kvm" ];
+                  max_jobs = 1;
+                  max_inflight = 2;
+                  github_actions = mainPool.github_actions // {
+                    agent_binary_url = "github:pschmitt/circus/${inputs.circus.rev}#circus-agent";
                   };
                 }
               )

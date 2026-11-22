@@ -130,6 +130,12 @@ Each needs its secret first; a missing SOPS key fails activation.
     identity build current same-repository PR heads from GitHub accounts listed
     in `pullRequestAuthorIdsFile`. The PR workflow uploads outputs through
     Circus's per-build S3 URLs.
+- `services.circus.githubActionsAgents.kvm.enable`: x86_64 agents on GitHub's
+  `ubuntu-24.04` runners for trusted builds that require the `kvm` system
+  feature. The workflow opens a KVM VM before joining Circus and exposes
+  `/dev/kvm` to the Nix sandbox. Each runner takes one build, with at most two
+  runners in flight. The workflow installs the x86_64 agent from the pinned
+  Circus flake package.
 
 ## Effects (`services.circus.effects`)
 

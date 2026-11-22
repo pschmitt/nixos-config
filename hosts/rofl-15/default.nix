@@ -34,6 +34,7 @@
     # ephemeral agents started via workflow_dispatch with the App's token.
     githubActionsAgents = {
       enable = true;
+      kvm.enable = true;
       pullRequestAuthorIdsFile = config.sops.secrets."circus/pr-author-ids".path;
       # Static agent from our fork (release-agent-aarch64.yml), matching the
       # pinned circus input.
