@@ -180,6 +180,8 @@ def changed_files(base, event):
 
 def scope(classify_only):
     """The build matrix, or "true"/"false" for --classify-only."""
+    if os.environ.get("CI_TERMUXPP_PIN_ONLY") == "1":
+        return "true" if classify_only else empty_matrix()
     if os.environ.get("CI_TERMUXPP_ONLY") == "1":
         if classify_only:
             return "true"

@@ -1,7 +1,10 @@
 name: Nix build
 
 on:
-  # Circus handles automatic builds. Keep this workflow for manual recovery.
+  # Phone upgrades still read Niks3 pins; only refresh stale guest pins on main.
+  push:
+    branches: [main]
+  # Keep the full matrix for manual recovery.
   workflow_dispatch:
     inputs:
       termuxpp-only:
@@ -23,6 +26,7 @@ concurrency:
 
 env:
   CI_TERMUXPP_ONLY: ${{ inputs.termuxpp-only && '1' || '0' }}
+  CI_TERMUXPP_PIN_ONLY: ${{ github.event_name == 'push' && '1' || '0' }}
   # Builds are pushed to niks3 (S3); the S3 store is also a substituter.
   NIKS3_SERVER_URL: ${{ vars.NIKS3_SERVER_URL }}
   NIKS3_S3_STORE: ${{ secrets.NIKS3_S3_STORE }}
