@@ -78,7 +78,7 @@ Each needs its secret first; a missing SOPS key fails activation.
   with `githubApp.enable`, else with `circus/github-status-token`.
 - `services.circus.githubApp.enable`: the GitHub App `circus-pschmitt`
   (statuses write; contents and metadata read; pull requests read/write;
-  installed on `pschmitt/nixos-config` and the four public pilot repositories).
+  installed on `pschmitt/nixos-config` and the configured public repositories).
   `circus-github-token.timer` mints an installation
   token every 45 minutes (the installation is looked up via
   `GET /repos/<githubApp.repository>/installation`) into
@@ -113,7 +113,7 @@ Each needs its secret first; a missing SOPS key fails activation.
   queue-runner rechecks native agents first when it reserves a job.
 - `services.circus.githubActionsAgents.enable` with `agentBinaryUrl` and
   `agentBinarySha256`: aarch64 agents on GitHub's arm runners for the
-  aarch64 hosts and packages of `circusJobs` (nixbot builds x86_64 only).
+  aarch64 hosts and packages of `circusJobs`.
   - Dispatch: the queue-runner starts `.github/workflows/circus-builder.yml`
     via `workflow_dispatch` with the App's installation token (the App has
     Actions: write; the token file is read in place, `runtimeFiles`).
@@ -145,10 +145,8 @@ from replacing a newer artifact.
   records completed effects per commit in `/var/lib/circus-effects`.
 - `dryRun = true` logs the effects that would run and tracks them separately
   from live publishing.
-- Cutover requires a dry run with cached artifacts, then stopping nixbot before
-  enabling live Circus effects. Keep `herculesCI.onPush.publish` so Circus can
-  discover the effects. Check the first live run in the journal and in the
-  `circus-effects/<effect>` commit statuses.
+- The publisher discovers effects through `herculesCI.onPush.publish`. Check
+  results in the journal and in the `circus-effects/<effect>` commit statuses.
 
 The effects' inputs (ISOs, images) are fetched by rofl-15's Nix daemon through
 the local Circus HTTP cache. The effects module registers that substituter

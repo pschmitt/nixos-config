@@ -69,7 +69,7 @@ class ScopeTests(unittest.TestCase):
                 else "/nix/store/system.drv"
             )
 
-        # x86_64 hosts are nixbot's: not evaluated or built on GitHub.
+        # Circus handles x86_64 hosts. GitHub Actions handles this ARM matrix.
         result, calls = self.run_scope(["hosts/fnuc/default.nix"], command)
         self.assertEqual(json.loads(result)["hosts"], {"aarch64": []})
         self.assertEqual(calls.call_count, 2)

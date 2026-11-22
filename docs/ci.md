@@ -2,24 +2,14 @@
 
 ## Builds
 
-nixbot is the self-hosted CI for x86_64. It builds the attribute named in
-[`nixbot.toml`](../nixbot.toml), which `herculesCI` in
-[`flake.nix`](../flake.nix) defines: host systems, the ISO image and the
-supported custom packages.
+Circus evaluates [`circusJobs`](../flake.nix) for x86_64 and aarch64,
+including host systems, images, packages and flake checks. It dispatches native
+ARM jobs to ephemeral GitHub Actions builders and reports results to GitHub.
+The publishing runner publishes built ISO and worker images from the cache.
 
-GitHub's ARM runners build the aarch64 outputs in
-[`nix-build.yaml`](../.github/workflows/nix-build.yaml).
-
-Both upload their results to the binary cache. See
-[services/harmonia/README.md](../services/harmonia/README.md) for how the cache
-delivers them.
-
-## Circus rollout
-
-Circus evaluates `circusJobs` for x86_64 and aarch64. It sends ARM jobs to
-ephemeral GitHub Actions builders and reports commit statuses to GitHub.
-The publishing runner observes successful builds in dry-run mode while
-nixbot still publishes the artifacts.
+The [GitHub Nix build workflow](../.github/workflows/nix-build.yaml) also runs
+its CI matrix. See [the binary cache documentation](../services/harmonia/README.md)
+for how hosts download build results.
 
 The LAN cache mirror looks up successful Circus host outputs for the current
 `main` commit and pulls their signed closures. It keeps the existing local

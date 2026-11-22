@@ -671,11 +671,11 @@
             )
           );
         in
-        # Keep packages whose check fails to evaluate: nixbot then
+        # Keep packages whose check fails to evaluate: Circus then
         # reports them as failed evaluations instead of silently
         # dropping them from the build.
         !result.success || result.value;
-      # CI job sets (nixbot's herculesCI below, Circus' circusJobs): every host
+      # Circus jobs: every host
       # system and ISO image of the given systems, supported custom packages and
       # the flake checks.
       ciJobs = systems: {
@@ -842,30 +842,13 @@
         }
       );
 
-      # Jobs for nixbot (self-hosted CI on rofl-14, see nixbot.toml): every
-      # x86_64 host system and ISO image, supported custom packages and the
-      # flake checks. Not in `checks` itself, which `nix flake check` builds
-      # locally. Proprietary sources are seeded on rofl-14
-      # (services/nix-proprietary-sources.nix).
-      herculesCI =
-        let
-          # aarch64-linux builds natively on GitHub's arm runners
-          # (.github/workflows/nix-build.yaml, and Circus' circusJobs); the
-          # build nodes could only emulate it.
-          ciSystems = [ "x86_64-linux" ];
-        in
-        {
-          inherit ciSystems;
-          # nixbot.toml selects default.outputs as the build job set. Keep
-          # effect derivations outside it; nixbot discovers all onPush effects.
-          onPush.default.outputs = ciJobs ciSystems;
-          onPush.publish.outputs.effects = inputs.nixos-config-private.lib.ciEffects { flake = self; };
-          onEvent = inputs.nixos-config-private.lib.ciEventEffects { };
-        };
+      # The Circus publisher discovers these effects through nbo.
+      herculesCI.onPush.publish.outputs.effects = inputs.nixos-config-private.lib.ciEffects {
+        flake = self;
+      };
 
-      # Jobs for Circus (services/circus): the shared CI job set
-      # plus the aarch64-linux hosts and packages, which ephemeral agents on
-      # GitHub's arm runners build natively.
+      # Circus builds both architectures and dispatches native ARM jobs to
+      # ephemeral agents on GitHub Actions.
       circusJobs = ciJobs [
         "x86_64-linux"
         "aarch64-linux"

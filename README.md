@@ -9,7 +9,6 @@
 <h1 align="center">pschmitt's nixos book of horrors</h1>
 
 <p align="center">
-  <a href="https://nixbot.brkn.lol/repos/github/pschmitt/nixos-config"><img src="https://nixbot.brkn.lol/repos/github/pschmitt/nixos-config/badge.svg?branch=main" alt="nixbot"></a>
 </p>
 
 <p align="center">
@@ -39,7 +38,7 @@ repository, so the hosts only evaluate with access to that flake input.
   [Packages](docs/packages.md).
 - **Provisioning** with disko, nixos-anywhere, ISO images and Raspberry Pi SD
   images. See [Hosts](docs/hosts.md).
-- **Self-hosted CI**: nixbot for x86_64, GitHub ARM runners for aarch64, and a
+- **Self-hosted CI**: Circus for x86_64 and aarch64, with native GitHub ARM runners, and a
   binary cache for the results. See [CI](docs/ci.md).
 
 ## Install
@@ -78,7 +77,7 @@ Continue with [Deployment](docs/deploy.md) to roll out a change, or with
 | [Hosts](docs/hosts.md) | Adding, installing and removing a host |
 | [Packages](docs/packages.md) | Updating the custom packages |
 | [TermuxPP](docs/termuxpp/README.md) | Managing the Android Nix guest |
-| [CI](docs/ci.md) | nixbot, GitHub workflows and the binary cache |
+| [CI](docs/ci.md) | Circus, GitHub workflows and the binary cache |
 | [home-manager/README.md](home-manager/README.md) | Home Manager layout and module conventions |
 | [services/harmonia/README.md](services/harmonia/README.md) | CI cache delivery and the LAN mirror |
 | [services/http-static/README.md](services/http-static/README.md) | Blob archive listing |

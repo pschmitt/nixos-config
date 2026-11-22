@@ -13,7 +13,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path, PurePosixPath
 
-# nixbot builds and evaluates every x86_64-linux target; GitHub Actions only
+# Circus builds and evaluates x86_64-linux targets. GitHub Actions only
 # builds aarch64-linux, natively on arm runners.
 GITHUB_SYSTEM = "aarch64-linux"
 

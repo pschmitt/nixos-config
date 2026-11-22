@@ -1,5 +1,0 @@
-# nixbot (self-hosted CI on rofl-14) builds this attribute instead of
-# `checks`; see `herculesCI` in flake.nix.
-
-# Publishing effects live in onPush.publish, outside the build attribute.
-attribute = "herculesCI.onPush.default.outputs"

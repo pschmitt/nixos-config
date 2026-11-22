@@ -536,7 +536,7 @@ in
                       ];
                     }
                   ]
-                  ++ import ./pilot-projects.nix
+                  ++ import ./projects.nix
                 );
             api_keys = [
               {
