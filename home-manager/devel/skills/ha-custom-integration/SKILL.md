@@ -11,12 +11,13 @@ that repository's `AGENTS.md`; for the public README, load `readme`. Never put
 instance URLs, tokens, real account data or private infrastructure in the
 integration repository or its screenshots.
 
-## Create the repository
+## Choose the repository
 
-1. Choose a stable, unique integration `domain`. Create one public repository
-   for that integration, with a GitHub description, relevant topics and issues
-   enabled. Keep the source at `custom_components/<domain>/`; the directory and
-   `manifest.json` domain must agree.
+1. Choose a stable, unique integration `domain`. When the integration lives in
+   an existing project, keep it in that repository and use its GitHub owner and
+   name for all links. For a standalone integration, create a public repository
+   with a description, relevant topics and issues enabled. Keep the source at
+   `custom_components/<domain>/`; the directory and manifest domain must agree.
 2. Include a valid `manifest.json` with `domain`, `name`, `version`,
    `documentation`, `issue_tracker` and `codeowners`; include a root `hacs.json`
    with `name`. Point documentation and issue links at the repository that will
@@ -60,6 +61,14 @@ for the owner/contributor submission to `hacs/default`. Do not claim listing
 before acceptance.
 
 ## Before announcing a change
+
+- For a new integration, verify the icon exists, the repository README links to
+  the setup guide and shows the install badge, and the guide covers the required
+  server configuration. Run these checks for integrations in existing projects
+  too.
+- Validate credentials during the config flow. On startup, start the network
+  connection in a background task and let entities handle the initial
+  unavailable state. Check that Home Assistant reaches `RUNNING` after a restart.
 
 - Validate the integration on the supported HA version and run its existing
   tests and formatting/lint checks. Bound network I/O and avoid blocking HA
