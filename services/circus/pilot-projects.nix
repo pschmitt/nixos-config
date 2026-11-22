@@ -12,13 +12,29 @@ let
         only_build_latest = true;
       }
     ]
-    ++ builtins.map (system: {
-      name = "${branch}-arm";
-      inherit branch;
-      nix_expression = "hydraJobs.${system}";
-      systems = [ system ];
-      only_build_latest = true;
-    }) (if repository == "monarch" then [ "aarch64-linux" ] else [ ]);
+    ++
+      builtins.map
+        (system: {
+          name = "${branch}-arm";
+          inherit branch;
+          nix_expression = "hydraJobs.${system}";
+          systems = [ system ];
+          only_build_latest = true;
+        })
+        (
+          if
+            builtins.elem repository [
+              "anika-blue"
+              "browser-daemon"
+              "monarch"
+              "rbw"
+              "rworker"
+            ]
+          then
+            [ "aarch64-linux" ]
+          else
+            [ ]
+        );
   };
 in
 map (repo: project repo "main" "packages.x86_64-linux") [

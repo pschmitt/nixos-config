@@ -409,8 +409,12 @@ in
                 mainPool = {
                   name = "gha-aarch64-linux";
                   allowed_build_repositories = [
+                    "pschmitt/anika-blue"
+                    "pschmitt/browser-daemon"
                     "pschmitt/monarch"
                     "pschmitt/nixos-config"
+                    "pschmitt/rbw"
+                    "pschmitt/rworker"
                   ];
                   systems = [ "aarch64-linux" ];
                   supported_features = [ "big-parallel" ];
