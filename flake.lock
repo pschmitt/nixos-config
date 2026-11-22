@@ -2618,11 +2618,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795372943,
-        "narHash": "sha256-CC9y+XMjSfEOdi/1cwjfVy5lqN1Py3rF2TWdgEzlRy0=",
+        "lastModified": 1795374212,
+        "narHash": "sha256-xvb7wqKx4Lgo5lzromOlSFllHrON4DyIZ2pQ6JUQTRY=",
         "owner": "pschmitt",
         "repo": "rworker",
-        "rev": "e6a9c099beab756dd66a258370d03184577e9c53",
+        "rev": "58b7350ad322b4a68abd95ddfbdcf6c5667bfce1",
         "type": "github"
       },
       "original": {
