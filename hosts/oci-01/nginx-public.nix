@@ -7,6 +7,7 @@
 let
   mainDomain = config.domains.main;
   mailHost = "mail.${mainDomain}";
+  bulwarkHost = "bulwark.pschmitt.dev";
   healthchecksHost = "hc.${mainDomain}";
   # The Nabu Casa remote-UI hostname is a per-instance secret (its UUID
   # subdomain grants direct access to this HA instance), so it's injected at
@@ -189,6 +190,16 @@ in
   };
 
   services.nginx = {
+    appendHttpConfig = ''
+      map $http_origin $bulwark_cors_origin {
+        default "";
+        "https://${bulwarkHost}" $http_origin;
+      }
+      map $bulwark_cors_origin $bulwark_cors_headers {
+        "" "";
+        default $http_access_control_request_headers;
+      }
+    '';
     proxyResolveWhileRunning = true;
     resolver = {
       addresses = [ "127.0.0.53" ];
@@ -305,12 +316,27 @@ in
       "stalwart.${mainDomain}" = publicProxy {
         cert = "oci-01-mail";
         backend = "http://127.0.0.1:8080";
+        extraConfig = ''
+          add_header Access-Control-Allow-Origin $bulwark_cors_origin always;
+          add_header Access-Control-Allow-Headers $bulwark_cors_headers always;
+          add_header Access-Control-Allow-Methods "GET, HEAD, POST, OPTIONS, PROPFIND, REPORT, PUT, MKCOL, MOVE, COPY, DELETE, PROPPATCH" always;
+          add_header Vary Origin always;
+        '';
         aliases = [
           "autoconfig.${mainDomain}"
           "autodiscover.${mainDomain}"
           "autoconfig.pschmitt.dev"
           "autodiscover.pschmitt.dev"
         ];
+      };
+
+      "${bulwarkHost}" = publicProxy {
+        cert = "oci-01-pschmitt-dev";
+        backend = "http://127.0.0.1:${toString config.services.bulwark.port}";
+        extraConfig = ''
+          proxy_buffering off;
+          client_max_body_size 25M;
+        '';
       };
 
       # oci-01 is already a Tailscale + Netbird peer, and the HA VM joins
