@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
         with:
           # PAT so nix can fetch/re-lock the private nixos-config-private input
           extra-conf: |

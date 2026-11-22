@@ -51,7 +51,7 @@ jobs:
         #   witness-carnage: true
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
         with:
           extra-conf: ${{ env.nix-conf }}
 

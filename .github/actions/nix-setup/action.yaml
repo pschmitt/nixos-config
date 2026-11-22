@@ -43,10 +43,9 @@ runs:
         done
         sudo chown -R "$(id -u):$(id -g)" "$HOME/.aws"
         echo "conf=extra-substituters = $S3_STORE" >> "$GITHUB_OUTPUT"
-    - uses: DeterminateSystems/nix-installer-action@main
+    - uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
       with:
         # Use upstream Nix and the caches configured by the caller.
-        determinate: "false"
         extra-conf: |
           ${{ inputs.nix-conf }}
           ${{ steps.s3.outputs.conf }}

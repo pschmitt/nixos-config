@@ -93,7 +93,7 @@ jobs:
 
       - name: Install Nix
         if: steps.pr.outputs.stale != 'true'
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
         with:
           extra-conf: ${{ env.nix-conf }}
 

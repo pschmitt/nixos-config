@@ -30,7 +30,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
 
       - name: Collect package matrix
         id: packages
@@ -89,7 +89,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
 
       - name: Capture current version for ${{ matrix.package }}
         id: version_before
@@ -259,7 +259,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+        uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
 
       - name: Capture current version for ${{ matrix.package }}
         id: version_before
