@@ -46,6 +46,7 @@
       enable = true;
       dryRun = false;
     };
+    stricknaniArtifactBridge.enable = true;
   };
 
   # Pinned per host: bumping it changes stateful service defaults.

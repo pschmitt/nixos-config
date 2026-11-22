@@ -122,6 +122,7 @@ in
   imports = [
     inputs.circus.nixosModules.circus
     ./agent.nix
+    ./artifact-bridge
     ./effects
   ];
 
