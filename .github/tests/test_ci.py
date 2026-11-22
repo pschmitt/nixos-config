@@ -45,18 +45,6 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(json.loads(result), scope.empty_matrix())
         calls.assert_not_called()
 
-    def test_pin_only_preflight_and_matrix(self):
-        with patch.dict(os.environ, {"CI_TERMUXPP_PIN_ONLY": "1"}):
-            result, calls = self.run_scope(["flake.lock"], classify=True)
-            self.assertEqual(result, "true")
-            calls.assert_not_called()
-            with patch.object(
-                scope, "add_stale_termuxpp", side_effect=lambda matrix: matrix
-            ):
-                result, calls = self.run_scope(["flake.lock"])
-            self.assertEqual(json.loads(result), scope.empty_matrix())
-            calls.assert_not_called()
-
     def test_preflight_never_evaluates(self):
         for files, expected in [
             ([], "false"),

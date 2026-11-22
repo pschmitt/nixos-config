@@ -13,8 +13,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path, PurePosixPath
 
-# Circus builds and evaluates x86_64-linux targets. GitHub Actions only
-# builds aarch64-linux, natively on arm runners.
+# The manual recovery workflow builds aarch64-linux natively on ARM runners.
 GITHUB_SYSTEM = "aarch64-linux"
 
 
@@ -180,8 +179,6 @@ def changed_files(base, event):
 
 def scope(classify_only):
     """The build matrix, or "true"/"false" for --classify-only."""
-    if os.environ.get("CI_TERMUXPP_PIN_ONLY") == "1":
-        return "true" if classify_only else empty_matrix()
     if os.environ.get("CI_TERMUXPP_ONLY") == "1":
         if classify_only:
             return "true"

@@ -7,8 +7,9 @@ including host systems, images, packages and flake checks. It dispatches native
 ARM jobs to ephemeral GitHub Actions builders and reports results to GitHub.
 The publishing runner publishes built ISO and worker images from the cache.
 
-The [GitHub Nix build workflow](../.github/workflows/nix-build.yaml) refreshes
-stale phone upgrade pins on main and remains available for manual recovery.
+Circus effects publish phone system closures and update their upgrade pins.
+The [GitHub Nix build workflow](../.github/workflows/nix-build.yaml) remains
+available for manual recovery.
 See [the binary cache documentation](../services/harmonia/README.md) for how
 hosts download build results.
 
@@ -21,7 +22,7 @@ configuration](../services/circus/README.md) for details.
 
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
-| [`nix-build`](../.github/workflows/nix-build.yaml) | Push to main, manual | Refresh stale phone pins; full matrix for recovery |
+| [`nix-build`](../.github/workflows/nix-build.yaml) | Manual | Full build matrix for recovery |
 | [`lint`](../.github/workflows/lint.yaml) | Push, pull request | Lint the repository |
 | [`flake-lock`](../.github/workflows/flake-lock.yaml) | Daily | Update `flake.lock` |
 | [`nix-update`](../.github/workflows/nix-update.yaml) | Daily | Open a pull request with package updates |
