@@ -1,5 +1,4 @@
-# Public repositories migrated from nixbot. Native ARM runner access remains
-# scoped to nixos-config.
+# Public repositories migrated from nixbot.
 let
   project = repository: branch: expression: {
     name = builtins.replaceStrings [ "." ] [ "-" ] repository;
@@ -12,7 +11,14 @@ let
         systems = [ "x86_64-linux" ];
         only_build_latest = true;
       }
-    ];
+    ]
+    ++ builtins.map (system: {
+      name = "${branch}-arm";
+      inherit branch;
+      nix_expression = "hydraJobs.${system}";
+      systems = [ system ];
+      only_build_latest = true;
+    }) (if repository == "monarch" then [ "aarch64-linux" ] else [ ]);
   };
 in
 map (repo: project repo "main" "packages.x86_64-linux") [

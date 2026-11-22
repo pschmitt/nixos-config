@@ -408,7 +408,10 @@ in
               let
                 mainPool = {
                   name = "gha-aarch64-linux";
-                  allowed_build_repositories = [ "pschmitt/nixos-config" ];
+                  allowed_build_repositories = [
+                    "pschmitt/monarch"
+                    "pschmitt/nixos-config"
+                  ];
                   systems = [ "aarch64-linux" ];
                   supported_features = [ "big-parallel" ];
                   max_jobs = 2;
