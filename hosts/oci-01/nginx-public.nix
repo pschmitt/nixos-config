@@ -7,7 +7,7 @@
 let
   mainDomain = config.domains.main;
   mailHost = "mail.${mainDomain}";
-  bulwarkHost = "bulwark.pschmitt.dev";
+  mailAlias = "mail.pschmitt.dev";
   healthchecksHost = "hc.${mainDomain}";
   # The Nabu Casa remote-UI hostname is a per-instance secret (its UUID
   # subdomain grants direct access to this HA instance), so it's injected at
@@ -123,7 +123,7 @@ let
   ];
   mailHosts = [
     mailHost
-    "mail.pschmitt.dev"
+    mailAlias
     "stalwart.${mainDomain}"
     "autoconfig.${mainDomain}"
     "autodiscover.${mainDomain}"
@@ -193,7 +193,8 @@ in
     appendHttpConfig = ''
       map $http_origin $bulwark_cors_origin {
         default "";
-        "https://${bulwarkHost}" $http_origin;
+        "https://${mailHost}" $http_origin;
+        "https://${mailAlias}" $http_origin;
       }
       map $bulwark_cors_origin $bulwark_cors_headers {
         "" "";
@@ -300,12 +301,14 @@ in
         forceSSL = true;
       };
 
-      "${mailHost}" = {
-        serverAliases = [ "mail.pschmitt.dev" ];
-        listen = lib.mkForce publicListen;
-        useACMEHost = "oci-01-mail";
-        forceSSL = true;
-        locations."/".return = "303 https://${bulwarkHost}/";
+      "${mailHost}" = publicProxy {
+        cert = "oci-01-mail";
+        aliases = [ mailAlias ];
+        backend = "http://127.0.0.1:${toString config.services.bulwark.port}";
+        extraConfig = ''
+          proxy_buffering off;
+          client_max_body_size 25M;
+        '';
       };
 
       "autoconfig.schmitt.co" = {
@@ -333,15 +336,6 @@ in
           "autoconfig.pschmitt.dev"
           "autodiscover.pschmitt.dev"
         ];
-      };
-
-      "${bulwarkHost}" = publicProxy {
-        cert = "oci-01-pschmitt-dev";
-        backend = "http://127.0.0.1:${toString config.services.bulwark.port}";
-        extraConfig = ''
-          proxy_buffering off;
-          client_max_body_size 25M;
-        '';
       };
 
       # oci-01 is already a Tailscale + Netbird peer, and the HA VM joins
