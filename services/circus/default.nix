@@ -436,7 +436,7 @@ in
                     agent_name = "circus-qemu";
                     system = "aarch64-linux";
                     supported_features = [ ];
-                    allowed_build_repositories = [ "pschmitt/nixos-config" ];
+                    inherit (mainPool) allowed_build_repositories;
                     grace_secs = 120;
                     status_file = qemuOverflowStatusPath;
                     status_ttl_secs = 90;
