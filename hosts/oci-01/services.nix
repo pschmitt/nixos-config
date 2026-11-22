@@ -1,7 +1,6 @@
 {
   imports = [
     ../../services/healthchecks.nix
-    ../../services/roundcube.nix
     ../../services/stalwart.nix
     ../../services/turris-ssh-tunnel.nix
 

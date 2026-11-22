@@ -305,6 +305,7 @@ in
         listen = lib.mkForce publicListen;
         useACMEHost = "oci-01-mail";
         forceSSL = true;
+        locations."/".return = "303 https://${bulwarkHost}/";
       };
 
       "autoconfig.schmitt.co" = {
