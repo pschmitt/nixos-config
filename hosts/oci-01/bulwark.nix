@@ -60,5 +60,4 @@ in
     updateCheck.enabled = false;
   };
 
-  systemd.services.bulwark.environment.NO_THIRD_PARTY_TRAFFIC = "true";
 }
