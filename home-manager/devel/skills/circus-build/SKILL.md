@@ -1,0 +1,64 @@
+---
+name: circus-build
+description: Queue, prioritize, and monitor ad-hoc Circus builds of pushed NixOS configurations, especially aarch64 phone configurations on GitHub ARM runners.
+---
+
+# Circus builds
+
+Use the `nixos-config` project's `main` jobset for phone configurations.
+It evaluates `circusJobs`, whose `hosts.<host>` jobs build the NixOS system
+closures. Resolve the requested phone host names from the configuration or
+the private brkn-infra skill. Default to the current remote `main` SHA.
+For a requested revision, verify it is reachable from remote `main` before
+using the trusted jobset. Circus fetches the revision from Git, so use a
+pushed commit with the desired private input pinned in its lock file.
+
+## Find or queue the builds
+
+Find the API access details in `services/circus/README.md` in the NixOS
+repository. If the public endpoint redirects to Authelia, use an SSH
+local forward to the Circus server's loopback listener. If already on the
+server, use loopback directly. Follow secret-hygiene and rbw when retrieving
+the API key. Pass it through `CIRCUS_API_KEY` for `circusctl`, or feed the
+Bearer header to curl on stdin with `--header @-`. Keep tracing off and
+scope credentials and any SSH forward to this task.
+
+The API paths below are relative to `/api/v1`.
+
+1. Find the project and jobset IDs with `GET /projects` and
+   `GET /projects/<project-id>/jobsets`. Check existing evaluations with
+   `GET /evaluations?jobset_id=<jobset-id>`. Reuse an evaluation for the
+   exact SHA with the requested jobs already queued, running, or successful,
+   or one that is still evaluating that SHA. Follow pagination where needed.
+2. If a fresh evaluation is needed, use
+   `circusctl --json evaluations trigger --jobset-id <jobset-id> --commit-hash <sha>`.
+   The API equivalent is `POST /evaluations/trigger` with JSON fields
+   `jobset_id` and `commit_hash`. Save the returned evaluation ID. A manual
+   trigger evaluates the whole jobset and can queue other uncached jobs.
+3. Check `GET /evaluations/<evaluation-id>` and find the requested builds with
+   `GET /builds?evaluation_id=<evaluation-id>&system=aarch64-linux&job_name=hosts.<host>`.
+   If a job is absent after evaluation completes, check the evaluation
+   detail and job history for an error or a reused build for that revision.
+
+## Priority and builder
+
+By default, bump each requested pending host build and its pending
+prerequisite builds once. Skip the bump when the user asks for normal
+priority. Walk `GET /builds/<build-id>/dependencies` and deduplicate IDs
+across the requested hosts. Recheck state before running
+`circusctl builds bump <build-id>` or `POST /builds/<build-id>/bump`.
+A bump adds 10 priority points. Higher-priority ready work is considered
+first, subject to matching capacity. Running work continues, and a build
+that starts during the bump can be left alone.
+
+The queue-runner can dispatch eligible `aarch64-linux` jobs from the
+trusted jobset to the GitHub ARM pool. Let Circus dispatch the workflow.
+Priority affects queue order. Builder selection follows pool eligibility,
+capacity and fallback policy, so check the assigned builder before
+reporting where it ran.
+
+Return the commit, evaluation and build links, priority changes, and
+current status for each requested host. If asked to wait, track the selected
+builds to their terminal states and report the output store paths or the
+specific failed prerequisite. Keep the operation build-only unless the
+user also requests deployment.
