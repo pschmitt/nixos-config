@@ -76,7 +76,7 @@ in
         --hostname "$name" \
         --accept-dns=false \
         --accept-routes=false \
-        --ssh=false
+        --ssh=false ${lib.escapeShellArgs config.services.tailscale.extraUpFlags}
       then
         echo "rworker: joined Tailscale as $name" >&2
       else

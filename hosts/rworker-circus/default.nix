@@ -47,6 +47,10 @@ in
     inputs.circus.nixosModules.circus-agent
   ];
 
+  # Both overlays use 100.64.0.0/10. Let the NixOS firewall handle input
+  # so Tailscale's source-address check does not drop NetBird replies.
+  services.tailscale.extraUpFlags = [ "--netfilter-mode=off" ];
+
   # The metadata service hands out the user-data, including the reusable
   # join token, to anything on the VM that asks, fixed-output builds
   # included. Only root (the bootstrap units) may reach it.
