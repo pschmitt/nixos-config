@@ -123,16 +123,16 @@
     ];
   };
 
-  # Opt-in S3 cache for ad-hoc workers (`rworker up --nix-cache`, `rworker
-  # nix-cache NAME`). The client pushes its s3:// substituters, their public
-  # keys and the read-only AWS profile into /run/rworker-nix over SSH. The
-  # include below is ignored while the file is missing, so a worker without
-  # the flag is unchanged and never holds the credentials.
-  nix.extraOptions = "!include /run/rworker-nix/nix.conf";
+  # The runtime Nix configuration may contain access tokens. Loading it from
+  # the global config makes Nix discard the whole config for service users that
+  # cannot read it. Give it only to the daemon and authorized worker users.
   systemd = {
     services = {
       # The daemon does the substituting, so it needs the credentials.
-      nix-daemon.environment.AWS_SHARED_CREDENTIALS_FILE = "/run/rworker-nix/aws-credentials";
+      nix-daemon.environment = {
+        AWS_SHARED_CREDENTIALS_FILE = "/run/rworker-nix/aws-credentials";
+        NIX_USER_CONF_FILES = "/run/rworker-nix/nix.conf";
+      };
       # nix-daemon reads its configuration only at start. agent has no sudo,
       # so a path unit (root) restarts the daemon when the client replaces
       # nix.conf. The client pushes the credentials first, nix.conf last.
@@ -195,6 +195,12 @@
         "/var/tmp" = "var-tmp";
       };
   systemd.tmpfiles.rules = [
+    "d /home/agent/.config 0700 agent users -"
+    "d /home/agent/.config/nix 0700 agent users -"
+    "L /home/agent/.config/nix/nix.conf - - - - /run/rworker-nix/nix.conf"
+    "d /root/.config 0700 root root -"
+    "d /root/.config/nix 0700 root root -"
+    "L /root/.config/nix/nix.conf - - - - /run/rworker-nix/nix.conf"
     "d /nix/.rw-store/home 0755 root root -"
     "d /nix/.rw-store/tmp 1777 root root -"
     "d /nix/.rw-store/var-tmp 1777 root root -"
