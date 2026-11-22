@@ -2766,11 +2766,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795361587,
-        "narHash": "sha256-Xr8q6ZBu6fFgmNoTrHNU1uR9gWeWfmfDg6YJ2uR16qU=",
+        "lastModified": 1795362308,
+        "narHash": "sha256-NFHXSTewW6DxzRR2UScEZvVQ0biaYziHB4UScImQ2sQ=",
         "owner": "pschmitt",
         "repo": "stricknani",
-        "rev": "5ac853588b5910873415bcc0c20533cae3def8f0",
+        "rev": "1fb9cb8f55b6ed84804263567eaabeae395442e5",
         "type": "github"
       },
       "original": {
