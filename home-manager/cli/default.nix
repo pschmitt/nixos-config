@@ -4,14 +4,13 @@
     ./core.nix
     ./nvim
     ./ssh-tools.nix
+    ./workstation-tools.nix
   ];
 
   home.packages = [
     pkgs.atuin
     pkgs.direnv
-    pkgs.emoji-fzf
     pkgs.fzf
-    pkgs.linkding-cli
 
     # Image background removal tools.
     pkgs.backgroundremover

@@ -74,7 +74,7 @@ in
     ../../../home-manager/cli/tmux
     ../../../home-manager/cli/zsh/config/runtime.nix
     ../../../home-manager/cli/zsh/plugins
-    ../../../home-manager/cli/zsh/tools/jq.nix
+    ../../../home-manager/cli/workstation-tools.nix
     ../../../home-manager/cli/zsh/tools/termux/home-assistant-cli.nix
     ../../../home-manager/gui/home-assistant-secrets.nix
   ];
