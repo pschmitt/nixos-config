@@ -35,7 +35,9 @@ The API paths below are relative to `/api/v1`.
    `jobset_id` and `commit_hash`. Save the returned evaluation ID. A manual
    trigger evaluates the whole jobset and can queue other uncached jobs.
 3. Check `GET /evaluations/<evaluation-id>` and find the requested builds with
-   `GET /builds?evaluation_id=<evaluation-id>&system=aarch64-linux&job_name=hosts.<host>`.
+   `GET /builds?evaluation_id=<evaluation-id>&system=aarch64-linux&job_name=<job>`.
+   Use `hosts.<host>` for NixOS or `packages.aarch64-linux.termuxpp-system-<host>`
+   for a pushed phone guest.
    If a job is absent after evaluation completes, check the evaluation
    detail and job history for an error or a reused build for that revision.
 
@@ -47,11 +49,21 @@ Find the same `main` jobset ID as above and run:
 
 ```bash
 circusctl --json evaluations submit --jobset-id "$jobset_id" \
-  --checkout "$checkout" --termuxpp --hosts "$comma_separated_hosts"
+  --checkout "$checkout" --termuxpp --hosts "$comma_separated_hosts" \
+  --pool gha-aarch64-linux
 ```
 
 Omit `--termuxpp` for standard NixOS host closures. Snapshot phone jobs are
 named `termuxpp-system-<host>`.
+
+Use `--pool gha-aarch64-linux` to prefer native GitHub ARM workers, or
+`--agent <machine-id>` to prefer an individual agent. Find agent machine IDs
+via `GET /admin/builders/sessions/connected`. Circus falls back to another
+compatible worker when the preference is unavailable. A cold pool gets up
+to two minutes to supply a worker. Prerequisites can use other systems.
+
+Pass `--front` when asked to put the snapshot ahead of ordinary pending
+evaluations and eligible builds. Active work continues.
 
 This snapshots tracked and non-ignored untracked files with their working-tree
 contents. Inspect new files for private material before submission. The
