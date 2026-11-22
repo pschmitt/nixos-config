@@ -8,7 +8,7 @@ PERMISSION_EXTRA=$PACKAGE.api.permission_extra
 
 usage() {
   cat <<EOF_USAGE
-Usage: tpp permissions [status | grant [NAME...]] [--no-shizuku] [--json]
+$(paint 'Usage:' '1;36') tpp permissions [status | grant [NAME...]] [--no-shizuku] [--json]
 
 Show and grant the Android permissions TermuxPP requests: every runtime
 permission (location, notifications, camera, ...) and the special access
@@ -16,7 +16,7 @@ Android grants on separate pages (overlay, storage, install, alarms,
 usage, settings, battery) plus Android's child process limit, which kills
 the nixpp controller.
 
-Commands:
+$(paint 'Commands:' '1;36')
   status        Show what is granted and what is missing (default)
   grant [NAME]  Grant everything missing, or only NAME (for example
                 ACCESS_BACKGROUND_LOCATION, POST_NOTIFICATIONS, overlay,
@@ -33,7 +33,7 @@ EOF_USAGE
 }
 
 # Colour only on a terminal, and never with NO_COLOR.
-if [[ -t 1 && -z ${NO_COLOR:-} && ${TERM:-} != dumb ]]
+if [[ -z ${NO_COLOR:-} ]] && { [[ ${CLICOLOR_FORCE:-0} != 0 ]] || [[ -t 1 && ${TERM:-} != dumb ]]; }
 then
   COLOR=1
 else

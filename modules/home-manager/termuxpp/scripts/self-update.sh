@@ -6,12 +6,18 @@ STATUS_FILE=$RUNTIME_DIR/update-status.json
 RECEIVER=$PACKAGE/com.termux.app.update.UpdateCommandReceiver
 
 usage() {
+  local bold='' reset=''
+  if [[ -z ${NO_COLOR:-} ]] && { [[ ${CLICOLOR_FORCE:-0} != 0 ]] || [[ -t 1 && ${TERM:-} != dumb ]]; }
+  then
+    bold=$'\033[1;36m'
+    reset=$'\033[0m'
+  fi
   cat <<EOF_USAGE
-Usage: tpp update [update | check | status | cancel] [--timeout SECONDS] [--json]
+${bold}Usage:${reset} tpp app update [update | check | status | cancel] [--timeout SECONDS] [--json]
 
 Update the TermuxPP app itself, with the same updater as Settings > About.
 
-Commands:
+${bold}Commands:${reset}
   update   Check for a newer build and install it (default)
   check    Only check; exits 0 when up to date, 10 when an update is available
   status   Show the last known updater state
@@ -20,7 +26,7 @@ Commands:
 With --json, action progress goes to stderr and the result goes to stdout.
 With Shizuku the install needs no confirmation; without it, Android asks.
 Installing replaces the app, which ends its processes: this shell may close
-before the update finishes. Run "tpp update status" afterwards.
+before the update finishes. Run "tpp app update status" afterwards.
 EOF_USAGE
 }
 
