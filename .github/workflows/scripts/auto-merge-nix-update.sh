@@ -37,25 +37,14 @@ check_and_merge() {
       def check_buckets($workflow; $name):
         [.[] | select(.workflow == $workflow and .name == $name) | .bucket];
 
-      def package_buckets($system):
-        [.[] | select(
-          .workflow == "Nix build"
-          and (
-            .name == ("build " + $package + " (" + $system + ")")
-            or .name == ("build-nonfree " + $package + " (" + $system + ")")
-          )
-        ) | .bucket];
-
-      # Circus reports x86_64 package builds as commit statuses.
-      # GitHub Actions runs the aarch64 package matrix.
+      # Circus reports package builds for both systems as commit statuses.
       [
-        check_buckets("Nix build"; "setup-matrix"),
         check_buckets("Lint"; "nix / nixfmt"),
         check_buckets("Lint"; "nix / statix"),
         check_buckets("Lint"; "nix / deadnix"),
         check_buckets("NixOS systemPackages diff"; "pr-systempackages-diff"),
         check_buckets(""; "circus/packages.x86_64-linux." + $package),
-        package_buckets("aarch64-linux")
+        check_buckets(""; "circus/packages.aarch64-linux." + $package)
       ] as $required
       | if any($required[]; any(.[]; . == "fail" or . == "cancel")) then
           "fail"

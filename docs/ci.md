@@ -7,8 +7,8 @@ including host systems, images, packages and flake checks. It dispatches native
 ARM jobs to ephemeral GitHub Actions builders and reports results to GitHub.
 The publishing runner publishes built ISO and worker images from the cache.
 
-The [GitHub Nix build workflow](../.github/workflows/nix-build.yaml) also runs
-its CI matrix. See [the binary cache documentation](../services/harmonia/README.md)
+The [GitHub Nix build workflow](../.github/workflows/nix-build.yaml) remains
+available for manual recovery. See [the binary cache documentation](../services/harmonia/README.md)
 for how hosts download build results.
 
 The LAN cache mirror looks up successful Circus host outputs for the current
@@ -20,7 +20,7 @@ configuration](../services/circus/README.md) for details.
 
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
-| [`nix-build`](../.github/workflows/nix-build.yaml) | Push, pull request, weekly | Build and upload the outputs |
+| [`nix-build`](../.github/workflows/nix-build.yaml) | Manual | Build and upload the outputs for recovery |
 | [`lint`](../.github/workflows/lint.yaml) | Push, pull request | Lint the repository |
 | [`flake-lock`](../.github/workflows/flake-lock.yaml) | Daily | Update `flake.lock` |
 | [`nix-update`](../.github/workflows/nix-update.yaml) | Daily | Open a pull request with package updates |

@@ -1,17 +1,7 @@
 name: Nix build
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
-  schedule:
-    - cron: "17 1 * * 6" # Weekly full validation, including reverse dependencies
+  # Circus handles automatic builds. Keep this workflow for manual recovery.
   workflow_dispatch:
     inputs:
       termuxpp-only:

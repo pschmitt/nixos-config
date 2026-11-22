@@ -26,70 +26,26 @@ The Android workflows and actions were migrated from [`pschmitt/android-app-ci`]
 
 The shared repository does not currently document or provide a PyPI publishing workflow. PyPA's current [`gh-action-pypi-publish` guidance](https://github.com/pypa/gh-action-pypi-publish#non-goals) says Trusted Publishing is unsupported inside reusable workflows, and invoking the action from a composite action is unsupported and untested. Keep that publish action in a dedicated top-level caller job with scoped `id-token: write` permission, separate from build and test jobs. Recheck upstream guidance before implementation because support can change.
 
-## Nix builds: nixbot for x86_64, GitHub for aarch64
+## Nix builds: Circus
 
-For a repository with a flake, x86_64-linux packages and checks build on the
-self-hosted nixbot; aarch64-linux builds natively on GitHub's arm runners
-through `nix-aarch64.yaml`, which pushes to the niks3 cache with a GitHub OIDC
-token. Do not build aarch64 on nixbot (it would emulate) or x86_64 Nix outputs
-in GitHub Actions, except checks that need `/dev/kvm` (NixOS VM tests), which
-only the GitHub runners have. Copy rbw, browser-daemon or monarch.
+Circus runs the package and check jobsets for onboarded repositories. Its ARM
+pool dispatches native GitHub runners for allowed repositories; the x86 pool
+runs the x86 outputs. Inspect `services/circus/` for the current jobsets,
+trust policy and pools.
+Expose `hydraJobs` for both Linux systems, excluding outputs that cannot run
+on a given architecture and VM tests that require KVM. Keep KVM tests in a
+GitHub job where needed. Add the ARM jobset and repository to the native and
+QEMU overflow pool allowlists together: Circus validates that those lists
+match. Deploy the Circus host, verify the services and the project's ARM
+evaluation and builds, then remove duplicate GitHub Actions jobs.
 
-To onboard a repository:
-
-1. Flake: expose `hydraJobs.x86_64-linux.{packages,checks}` and remove KVM
-   checks there, e.g.
-   `checks = builtins.removeAttrs (self.checks.${system} or { }) [ "nixos" ];`.
-2. Repository root: `nixbot.toml` containing `attribute = "hydraJobs"`, and a
-   committed `flake.lock`: nixbot evaluates in pure mode and cannot create one.
-   To build an existing output without changing the flake, use a dotted path
-   such as `attribute = "packages.x86_64-linux"`, or
-   `"devShells.x86_64-linux"` for a flake without packages. The default
-   attribute is `checks`.
-3. Caller job, in a workflow triggered on pushes to main and pull requests:
-   ```yaml
-   nix-aarch64:
-     permissions:
-       contents: read
-       id-token: write
-     uses: pschmitt/ci-workflows/.github/workflows/nix-aarch64.yaml@main
-     with:
-       exclude-checks: '["nixos"]'
-       pin-prefix: gh-<repo>-main
-     secrets:
-       s3_store: ${{ secrets.NIKS3_S3_STORE }}
-       s3_access_key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
-       s3_secret_key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
-   ```
-4. GitHub settings, per repository: variable `NIKS3_SERVER_URL`, and secrets
-   `NIKS3_S3_STORE` (the substituter URL from the private `nix-cache` profile)
-   and `NIKS3_S3_ACCESS_KEY`/`NIKS3_S3_SECRET_KEY` (the read-only key,
-   `niks3/client-*` in the private shared SOPS file). Pipe values from `sops -d`
-   straight into `gh secret set` under `set -o pipefail` and refuse empty
-   values; a failed decrypt otherwise stores an empty secret.
-5. Private NixOS config: add the repository to `githubRepos` in
-   `services/niks3.nix` with `pins = "gh-<repo>-main-*"` (add `subject` when
-   `gh api repos/OWNER/REPO/actions/oidc/customization/sub` reports
-   `use_immutable_subject: true`), and to `repoAllowlist` in
-   `services/nixbot.nix`. Deploy the niks3 and nixbot hosts (see the private
-   `brkn-infra` skill) after `bump my privates`.
-6. Enable the project. The allowlist only registers it, disabled, and nothing
-   builds until then. `POST /api/repos/github/OWNER/REPO/enable` on nixbot needs
-   an admin login and an `Origin` header; it also registers the webhook. Use
-   `browser_fetch` from a signed-in session (`browser-login` skill) and fill the
-   TOTP code, since GitHub's default sign-in prompts the user's phone. Evaluations
-   run one at a time, so expect a queue after enabling many repositories.
-7. README: put the nixbot badge first in the badge row.
-
-These builds use the repository's own `flake.lock`. A consumer that sets
-`inputs.<repo>.inputs.nixpkgs.follows` or applies the repository's overlay
-builds different store paths, so they never hit. When such a consumer needs
-the hit (rbw for the nixos-config phones, which otherwise compile it under
-emulation), add a main-only job that builds the consumed package with
-`--override-input nixpkgs` set to the consumer's current pin, read from its
-`flake.lock`, and pins it in niks3 (rbw's `nix-aarch64-nixos-config` job).
-Check the match first: `nix eval --raw` the package's `outPath` with that
-override and compare it with the path on the consumer.
+Preserve jobs that supply release artifacts or build with a consumer's Nixpkgs
+pin until Circus provides the same output and cache contract. In particular,
+rbw and rworker have separate main-only consumer-pin builds for nixos-config;
+their own flake outputs do not substitute for those builds. GitHub image or
+release producers may also require artifacts within the same workflow run.
+Use full 40-character commit hashes when manually triggering evaluations.
+The Circus build skill covers API access, dispatch and monitoring.
 
 ## Docker images
 
@@ -98,7 +54,7 @@ by `nix-checks.yaml` with a caller-owned `needs` dependency. Both accept a
 native `runner`, `system`, `pin-prefix` and optional Niks3 read credentials;
 the producer also caches dependency artifacts. Checks publish their successful
 outputs too. Use these lanes when E2E, release or image jobs need artifacts;
-keep existing nixbot coverage and platform-specific tests. Prefer Nix cache
+keep Circus coverage and platform-specific tests. Prefer Nix cache
 hits to long path-filter lists for these lanes. ARM checks without KVM use
 `full-flake-check: false` and preserve any `exclude-checks` entries.
 
