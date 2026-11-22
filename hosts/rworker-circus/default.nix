@@ -20,6 +20,26 @@ let
   cacheDir = "/run/rworker-nix";
   # The queue-runner's host (services.circus.agent.runnerHost elsewhere).
   runnerHost = "rofl-15";
+  agentLog = "/var/log/rworker-circus/agent.log";
+  registerAgentLog = pkgs.writeShellApplication {
+    name = "register-circus-agent-log";
+    runtimeInputs = [
+      pkgs.bash
+      pkgs.coreutils
+    ];
+    text = ''
+      export RWORKER_JOBS_SCRIPT=${inputs.rworker}/src/jobs.sh
+      ${builtins.readFile ./scripts/register-agent-log.sh}
+    '';
+  };
+  followAgentLog = pkgs.writeShellApplication {
+    name = "follow-circus-agent-log";
+    runtimeInputs = [ config.systemd.package ];
+    text = ''
+      exec journalctl --unit=circus-agent.service --boot --follow --lines=200 --no-pager \
+        --output=short-iso --cursor-file="$LOGS_DIRECTORY/cursor" >> ${agentLog}
+    '';
+  };
 in
 {
   imports = [
@@ -98,6 +118,27 @@ in
         name=$(jq -er '.name | strings | select(length > 0)' /run/rworker/metadata.json)
         printf 'CIRCUS_AGENT_NAME=%s\n' "$name" > ${joinDir}/env
       '';
+    };
+
+    rworker-circus-agent-log = {
+      description = "Expose the Circus agent journal through rworker logs";
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        User = "agent";
+        Group = "users";
+        SupplementaryGroups = [ "systemd-journal" ];
+        LogsDirectory = "rworker-circus";
+        LogsDirectoryMode = "0750";
+        UMask = "0027";
+        ExecStartPre = [
+          "${pkgs.coreutils}/bin/touch ${agentLog}"
+          (lib.getExe registerAgentLog)
+          "+${pkgs.util-linux}/bin/runuser -u ${config.mainUser.username} -- ${lib.getExe registerAgentLog}"
+        ];
+        ExecStart = lib.getExe followAgentLog;
+        Restart = "on-failure";
+        RestartSec = 5;
+      };
     };
 
     circus-agent = {
