@@ -178,7 +178,6 @@ def copy_outputs(paths, repository, revision, secret_file, runtime_dir, pr_numbe
         subprocess.run([
             "nix", "--extra-experimental-features", "nix-command flakes", "shell",
             "--option", "max-jobs", "0", "--option", "builders", "", "--option", "fallback", "false",
-            "--option", "narinfo-cache-negative-ttl", "0",
             *sorted(set(paths.values())), "--command", sys.executable, __file__, "--publish",
             repository, revision, json.dumps(paths), str(pr_number or 0), token_file or "", str(author_file or ""),
         ], check=True, env=env)

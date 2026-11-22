@@ -34,6 +34,10 @@ in
       });
 
   config = lib.mkIf (projects != [ ]) {
+    # The daemon performs substitutions for the unprivileged publisher.
+    # An output may appear in Circus after an earlier lookup missed it.
+    nix.settings.narinfo-cache-negative-ttl = 0;
+
     assertions = [
       {
         assertion =

@@ -382,7 +382,7 @@ class PublishTest(unittest.TestCase):
                 self.assertIn("max-jobs", command)
                 self.assertEqual(command[command.index("max-jobs") + 1], "0")
                 self.assertEqual(command[command.index("fallback") + 1], "false")
-                self.assertEqual(command[command.index("narinfo-cache-negative-ttl") + 1], "0")
+                self.assertNotIn("narinfo-cache-negative-ttl", command)
                 self.assertEqual(Path(env["NIKS3_AUTH_TOKEN_FILE"]).read_text(), "not-a-real-token")
 
             with patch.object(bridge.subprocess, "run", side_effect=run):
