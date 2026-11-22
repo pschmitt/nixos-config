@@ -56,11 +56,11 @@ circusctl --json evaluations submit --jobset-id "$jobset_id" \
 Omit `--termuxpp` for standard NixOS host closures. Snapshot phone jobs are
 named `termuxpp-system-<host>`.
 
-Use `--pool gha-aarch64-linux` to prefer native GitHub ARM workers, or
-`--agent <machine-id>` to prefer an individual agent. Find agent machine IDs
-via `GET /admin/builders/sessions/connected`. Circus falls back to another
-compatible worker when the preference is unavailable. A cold pool gets up
-to two minutes to supply a worker. Prerequisites can use other systems.
+Use `--pool gha-aarch64-linux` to require a native GitHub ARM worker from
+that pool. Use `--agent <machine-id>` to require one worker. Find agent
+machine IDs via `GET /admin/builders/sessions/connected`. Add `--fallback`
+with `--agent` only when another compatible worker is acceptable.
+Prerequisites can use other systems.
 
 Pass `--front` when asked to put the snapshot ahead of ordinary pending
 evaluations and eligible builds. Active work continues.
