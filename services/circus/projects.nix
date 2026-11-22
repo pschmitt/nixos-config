@@ -17,7 +17,7 @@ let
         (system: {
           name = "${branch}-arm";
           inherit branch;
-          nix_expression = "hydraJobs.${system}";
+          nix_expression = if repository == "termuxpp" then "packages.${system}" else "hydraJobs.${system}";
           systems = [ system ];
           only_build_latest = true;
         })
@@ -31,6 +31,7 @@ let
               "rbw"
               "rworker"
               "tagesschau"
+              "termuxpp"
             ]
           then
             [ "aarch64-linux" ]
