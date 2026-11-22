@@ -63,6 +63,7 @@ let
     {
       "/".return = "404";
       "= /dash" = get "/dash";
+      "= /builds".return = "302 https://${publicHost}/builds";
       "~ \"^/dash/project/[0-9a-f-]{36}$\"" = get "";
       "= /simple".return = "302 /dash$is_args$args";
       "~ \"^/simple/project/(?<legacy_project_id>[0-9a-f-]{36})$\"".return =
