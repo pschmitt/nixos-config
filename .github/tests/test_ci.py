@@ -50,7 +50,9 @@ class ScopeTests(unittest.TestCase):
             result, calls = self.run_scope(["flake.lock"], classify=True)
             self.assertEqual(result, "true")
             calls.assert_not_called()
-            with patch.object(scope, "add_stale_termuxpp", side_effect=lambda matrix: matrix):
+            with patch.object(
+                scope, "add_stale_termuxpp", side_effect=lambda matrix: matrix
+            ):
                 result, calls = self.run_scope(["flake.lock"])
             self.assertEqual(json.loads(result), scope.empty_matrix())
             calls.assert_not_called()
