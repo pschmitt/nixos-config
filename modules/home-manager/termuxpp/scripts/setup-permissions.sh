@@ -469,8 +469,11 @@ main() {
          permissions: [inputs | select(length > 0) | split(" ") |
            {name: .[0], state: .[1], kind: .[2], detail: .[3]}]}
       ' <<<"$state"
-      ! grep -q ' missing ' <<<"$state"
-      return
+      if grep -q ' missing ' <<<"$state"
+      then
+        return 1
+      fi
+      return 0
     fi
     printf '%s %s\n' "$(paint Shizuku: 1)" "$(paint "$(tr '[:upper:]_' '[:lower:] ' <<<"${shizuku_state:-unknown (update the app)}")" \
       "$([[ $shizuku_state == READY ]] && echo 32 || echo 33)")"
