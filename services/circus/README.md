@@ -31,9 +31,10 @@ agent.
 | `127.0.0.1:3000` | circus-server | local |
 
 Sign in to [the build dashboard](https://build.brkn.lol/dash) through Authelia
-OIDC. For `circusctl` and API access, the admin API key is in the "API Token"
-field of the rbw entry `circus.brkn.lol`. Dashboard sessions use secure cookies
-over TLS.
+OIDC. On homelab servers and workstations, `circusctl` opens an SSH tunnel to
+the local API and reads the "API Token" field from the `circus.brkn.lol` rbw
+entry. Use `CIRCUS_URL` and `CIRCUS_API_KEY` or the equivalent CLI flags for
+another server. Dashboard sessions use secure cookies over TLS.
 
 ## Evaluation
 
