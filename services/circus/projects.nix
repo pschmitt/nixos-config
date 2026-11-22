@@ -17,7 +17,7 @@ let
         (system: {
           name = "${branch}-arm";
           inherit branch;
-          nix_expression = if repository == "termuxpp" then "packages.${system}" else "hydraJobs.${system}";
+          nix_expression = "hydraJobs.${system}";
           systems = [ system ];
           only_build_latest = true;
         })
@@ -30,6 +30,7 @@ let
               "monarch"
               "rbw"
               "rworker"
+              "stricknani"
               "tagesschau"
               "termuxpp"
             ]
@@ -61,7 +62,6 @@ map (repo: project repo "main" "packages.x86_64-linux") [
   "shelly-ble-rpc"
   "slack-react"
   "tdc"
-  "termuxpp"
   "tmux-slay"
   "tsvtool"
   "vodafone-station-cli"
@@ -79,6 +79,7 @@ map (repo: project repo "main" "packages.x86_64-linux") [
   "stricknani"
   "tagesschau"
   "teams-live"
+  "termuxpp"
 ]
 ++ map (repo: project repo "main" "checks.x86_64-linux") [
   "augh"

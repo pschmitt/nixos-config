@@ -421,6 +421,7 @@ in
                     "pschmitt/nixos-config"
                     "pschmitt/rbw"
                     "pschmitt/rworker"
+                    "pschmitt/stricknani"
                     "pschmitt/tagesschau"
                     "pschmitt/termuxpp"
                   ];
