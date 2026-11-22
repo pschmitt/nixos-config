@@ -81,7 +81,9 @@ in
 
     sops.secrets = {
       # The effects' secrets.json, same shape as nixbot's per-repo file.
-      "circus/effects-secrets" = config.sops.mkHostSecret { };
+      "circus/effects-secrets" = config.sops.mkHostSecret {
+        restartUnits = [ "circus-effects.service" ];
+      };
     };
 
     users = {
