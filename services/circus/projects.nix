@@ -72,6 +72,7 @@ map (repo: project repo "main" "packages.x86_64-linux") [
   "browser-daemon"
   "bruvtab"
   "circus"
+  "declaroid"
   "jellysync"
   "luks-ssh-unlock"
   "monarch"
@@ -85,7 +86,6 @@ map (repo: project repo "main" "packages.x86_64-linux") [
 ]
 ++ map (repo: project repo "main" "checks.x86_64-linux") [
   "augh"
-  "declaroid"
   "jollyfin"
   "nyetbox"
   "syncwich"

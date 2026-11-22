@@ -9,6 +9,7 @@ let
   circus = config.services.circus;
   projects = lib.filter (name: circus.${"${name}ArtifactBridge"}.enable) [
     "circus"
+    "declaroid"
     "monarch"
     "stricknani"
   ];
@@ -21,7 +22,13 @@ let
 in
 {
   options.services.circus =
-    lib.genAttrs [ "circusArtifactBridge" "monarchArtifactBridge" "stricknaniArtifactBridge" ]
+    lib.genAttrs
+      [
+        "circusArtifactBridge"
+        "declaroidArtifactBridge"
+        "monarchArtifactBridge"
+        "stricknaniArtifactBridge"
+      ]
       (name: {
         enable = lib.mkEnableOption "${name} Circus artifact publication to Niks3";
       });
@@ -35,7 +42,10 @@ in
       }
       {
         assertion =
-          !(builtins.elem "stricknani" projects)
+          !(lib.any (name: builtins.elem name projects) [
+            "declaroid"
+            "stricknani"
+          ])
           || circus.githubActionsAgents.pullRequestAuthorIdsFile != null;
         message = "The Stricknani artifact bridge requires the trusted PR author list.";
       }
@@ -44,8 +54,13 @@ in
     sops.secrets."circus/effects-secrets".restartUnits = lib.mkAfter (
       map (name: "circus-${name}-artifact-bridge.service") projects
     );
-    sops.secrets."circus/pr-author-ids".restartUnits = lib.mkIf (builtins.elem "stricknani" projects) (
-      lib.mkAfter [ "circus-stricknani-artifact-bridge.service" ]
+    sops.secrets."circus/pr-author-ids".restartUnits = lib.mkAfter (
+      map (name: "circus-${name}-artifact-bridge.service") (
+        lib.filter (name: builtins.elem name projects) [
+          "declaroid"
+          "stricknani"
+        ]
+      )
     );
 
     users.users = lib.genAttrs (map (name: "circus-${name}-bridge") projects) (name: {
@@ -83,9 +98,10 @@ in
               "api:${secret "autoscaler-api-key"}"
               "secrets:${secret "effects-secrets"}"
             ]
-            ++ lib.optional (
-              name == "stricknani"
-            ) "pr-authors:${toString circus.githubActionsAgents.pullRequestAuthorIdsFile}";
+            ++ lib.optional (builtins.elem name [
+              "declaroid"
+              "stricknani"
+            ]) "pr-authors:${toString circus.githubActionsAgents.pullRequestAuthorIdsFile}";
             ExecStart = lib.escapeShellArgs (
               [
                 (lib.getExe bridge)
@@ -104,9 +120,19 @@ in
                 "--runtime-dir"
                 "/run/circus-${name}-bridge"
               ]
-              ++ lib.optionals (name == "stricknani") [
-                "--pr-author-ids-file"
-                "%d/pr-authors"
+              ++
+                lib.optionals
+                  (builtins.elem name [
+                    "declaroid"
+                    "stricknani"
+                  ])
+                  [
+                    "--pr-author-ids-file"
+                    "%d/pr-authors"
+                  ]
+              ++ lib.optionals (name == "declaroid") [
+                "--jobset"
+                "main"
               ]
             );
             Restart = "always";

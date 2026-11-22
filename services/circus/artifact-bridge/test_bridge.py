@@ -97,6 +97,13 @@ class ProjectOutputsTest(unittest.TestCase):
         outputs = bridge.project_outputs(FakeApi("circus"), REVISION, "circus")
         self.assertEqual(outputs["main-arm-packages.default-out"], PATH_ARM)
 
+    def test_selects_only_configured_declaroid_jobset(self):
+        api = FakeApi("declaroid")
+        api.arm_status = "pending"
+        self.assertEqual(bridge.project_outputs(api, REVISION, "declaroid", None, ["main"]), {
+            "main-packages.default-out": PATH_X86,
+        })
+
     def test_pr_never_uses_a_main_or_different_pr_evaluation(self):
         self.assertIsNone(bridge.project_outputs(FakeApi(), REVISION, "stricknani", 17))
         outputs = bridge.project_outputs(FakeApi(), REVISION, "stricknani", 42)
@@ -184,7 +191,7 @@ class ReconcileTest(unittest.TestCase):
                  patch.object(bridge, "source_is_current", return_value=True), \
                  patch.object(bridge, "dispatch_pr_consumers") as dispatch:
                 bridge.reconcile_source(args, None, REVISION, 17)
-            outputs.assert_called_once_with(None, REVISION, "stricknani", 17)
+            outputs.assert_called_once_with(None, REVISION, "stricknani", 17, ("main", "main-arm"))
             self.assertEqual(copy.call_args.args[5], 17)
             self.assertEqual([call.kwargs["context"] for call in status.call_args_list],
                              ["circus/pr-artifacts", "circus/pr-artifacts"])
@@ -267,6 +274,22 @@ class PublishTest(unittest.TestCase):
                  patch.object(bridge, "request", return_value={"statuses": []}):
                 bridge.dispatch_pr_consumers(args, REVISION, 17)
             pr.assert_not_called()
+
+    def test_declaroid_dispatches_e2e_directly_and_reports_result(self):
+        with tempfile.TemporaryDirectory() as directory:
+            token = Path(directory) / "token"
+            token.write_text("not-a-real-token")
+            args = SimpleNamespace(repository="pschmitt/declaroid", pr_author_ids_file="unused",
+                                   github_token_file=token, state_dir=Path(directory))
+            pr = TRUSTED_PR | {"head": TRUSTED_PR["head"] | {"repo": {"full_name": args.repository}}}
+            with patch.object(bridge, "pull_request", return_value=pr), \
+                 patch.object(bridge, "author_ids", return_value={123}), \
+                 patch.object(bridge, "github_status") as status, \
+                 patch.object(bridge, "request", side_effect=[READY_STATUS, None, READY_STATUS, READY_E2E]) as request:
+                bridge.dispatch_pr_consumers(args, REVISION, 17)
+                bridge.dispatch_pr_consumers(args, REVISION, 17)
+            self.assertTrue(request.call_args_list[1].args[0].endswith("/e2e.yml/dispatches"))
+            self.assertEqual([call.args[3] for call in status.call_args_list], ["pending", "success"])
 
     def test_e2e_waits_for_matching_successful_build_without_runner(self):
         with tempfile.TemporaryDirectory() as directory:

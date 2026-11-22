@@ -51,12 +51,12 @@ def items(get, path, **params):
             return
 
 
-def project_outputs(get, revision, project_name="stricknani", pr_number=None):
-    """Return successful package outputs from both jobsets, or None while pending."""
+def project_outputs(get, revision, project_name="stricknani", pr_number=None, jobset_names=("main", "main-arm")):
+    """Return successful package outputs from the requested jobsets, or None while pending."""
     project = next(p for p in items(get, "projects") if p["name"] == project_name)
     jobsets = {j["name"]: j for j in items(get, f"projects/{project['id']}/jobsets")}
     outputs = {}
-    for jobset in ("main", "main-arm"):
+    for jobset in jobset_names:
         if jobset not in jobsets:
             raise ValueError(f"missing Circus jobset {jobset}")
         evaluations = items(get, "evaluations", jobset_id=jobsets[jobset]["id"])
@@ -231,6 +231,15 @@ def dispatch_pr_consumers(args, revision, pr_number):
         return "success" if matching.get("conclusion") == "success" else "failure"
 
     if not marker_for("build.yaml").exists():
+        if args.repository == "pschmitt/declaroid":
+            workflow = "e2e.yml"
+            if not marker_for(workflow).exists():
+                report("pending", "Waiting for PR end-to-end checks")
+                dispatch(workflow)
+                return
+            e2e_result = result(workflow, "Circus PR E2E")
+            report(e2e_result, "PR end-to-end checks " + e2e_result)
+            return
         report("pending", "Waiting for PR artifact checks")
         dispatch("build.yaml")
         return
@@ -260,7 +269,7 @@ def reconcile_source(args, get, revision, pr_number=None):
         github_status(args.repository, revision, args.github_token_file, "pending", "Waiting for Circus artifacts", context=context)
         pending.touch()
     try:
-        paths = project_outputs(get, revision, args.repository.split("/", 1)[1], pr_number)
+        paths = project_outputs(get, revision, args.repository.split("/", 1)[1], pr_number, getattr(args, "jobsets", ("main", "main-arm")))
     except BuildFailed as error:
         if not failed.exists():
             github_status(args.repository, revision, args.github_token_file, "failure", str(error), context=context)
@@ -322,11 +331,13 @@ def main():
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--runtime-dir", type=Path, required=True)
     parser.add_argument("--pr-author-ids-file", type=Path)
+    parser.add_argument("--jobset", dest="jobsets", action="append")
     args = parser.parse_args()
-    if args.repository not in {"pschmitt/stricknani", "pschmitt/monarch", "pschmitt/circus"}:
+    args.jobsets = args.jobsets or ["main", "main-arm"]
+    if args.repository not in {"pschmitt/stricknani", "pschmitt/monarch", "pschmitt/circus", "pschmitt/declaroid"}:
         raise ValueError("the bridge is restricted to configured repositories")
-    if args.repository == "pschmitt/stricknani" and args.pr_author_ids_file is None:
-        raise ValueError("the Stricknani bridge requires the trusted PR author list")
+    if args.repository in {"pschmitt/stricknani", "pschmitt/declaroid"} and args.pr_author_ids_file is None:
+        raise ValueError("the PR bridge requires the trusted PR author list")
     args.state_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(level=logging.INFO)
     while True:

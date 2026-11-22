@@ -49,6 +49,7 @@
     stricknaniArtifactBridge.enable = true;
     monarchArtifactBridge.enable = true;
     circusArtifactBridge.enable = true;
+    declaroidArtifactBridge.enable = true;
   };
 
   # Pinned per host: bumping it changes stateful service defaults.
