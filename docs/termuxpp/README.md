@@ -280,7 +280,7 @@ APK and caches its matching assets automatically.
 
 ### Permissions
 
-`tpp permissions` (or `tpp permissions status`) lists
+`tpp permissions` (or `tpp permissions list`) lists
 every runtime permission TermuxPP requests and the special access Android
 grants on separate pages: overlay, all-files, install apps, exact alarms,
 usage access, system settings, unrestricted battery, and `processes`, the
@@ -290,11 +290,16 @@ grants what is missing. It asks Shizuku first: when Shizuku runs and TermuxPP
 is not yet authorized, Shizuku shows its dialog; once allowed, `rish` grants
 everything else without any confirmation. When Shizuku is missing, not
 running or denied, the script says so and Android shows its permission
-prompts and then each settings page in turn instead. `status` shows the
+prompts and then each settings page in turn instead. `list` shows the
 Shizuku state first and reads what the app reports in
 `/run/nixpp-runtime/permissions.json` (a `shizuku` field, and the grants)
 when `rish` is unavailable. Only the app's own Android user counts, so a work
 profile does not show up twice.
+
+Use `tpp permissions grant notification-access` to enable the notification
+listener. Shizuku can grant access directly. Without it, TermuxPP opens the
+Android notification access settings. The human-readable list sorts by
+permission name and shows the corresponding Android identifier.
 
 ### Updating the app
 

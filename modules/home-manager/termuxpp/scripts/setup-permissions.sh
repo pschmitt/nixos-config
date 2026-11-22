@@ -5,29 +5,30 @@ RUNTIME_DIR=${NIXPP_RUNTIME:-/run/nixpp-runtime}
 STATE_FILE=$RUNTIME_DIR/permissions.json
 PERMISSION_ACTIVITY=$PACKAGE/$PACKAGE.api.activities.TermuxApiPermissionActivity
 PERMISSION_EXTRA=$PACKAGE.api.permission_extra
+NOTIFICATION_LISTENER="$PACKAGE/$PACKAGE.api.apis.NotificationListAPI\$NotificationService"
 
 usage() {
   cat <<EOF_USAGE
-$(paint 'Usage:' '1;36') tpp permissions [status | grant [NAME...]] [--no-shizuku] [--json]
+$(paint 'Usage:' '1;36') tpp permissions [list | grant [NAME...]] [--no-shizuku] [--json]
 
 Show and grant the Android permissions TermuxPP requests: every runtime
 permission (location, notifications, camera, ...) and the special access
 Android grants on separate pages (overlay, storage, install, alarms,
-usage, settings, battery) plus Android's child process limit, which kills
+usage, settings, battery, notification access) plus Android's child process limit, which kills
 the nixpp controller.
 
 $(paint 'Commands:' '1;36')
-  status        Show what is granted and what is missing (default)
+  list          Show what is granted and what is missing (default)
   grant [NAME]  Grant everything missing, or only NAME (for example
                 ACCESS_BACKGROUND_LOCATION, POST_NOTIFICATIONS, overlay,
                 storage, install, alarms, usage, settings, battery,
-                processes)
+                notification-access, processes)
 
 With --json, grant progress goes to stderr and the result goes to stdout.
 grant first asks Shizuku for permission (Shizuku shows its dialog). Once
 TermuxPP may use Shizuku, rish grants the rest without any confirmation.
 Without Shizuku, or with --no-shizuku, Android asks: grant opens the dialogs
-and then each special access page in turn, and status reads what the
+and then each special access page in turn, and list reads what the
 TermuxPP app reports.
 EOF_USAGE
 }
@@ -64,6 +65,7 @@ SPECIAL_ACCESS=(
   "alarms android.permission.SCHEDULE_EXACT_ALARM SCHEDULE_EXACT_ALARM android.settings.REQUEST_SCHEDULE_EXACT_ALARM Alarms_and_reminders"
   "usage android.permission.PACKAGE_USAGE_STATS GET_USAGE_STATS android.settings.USAGE_ACCESS_SETTINGS Usage_access"
   "settings android.permission.WRITE_SETTINGS WRITE_SETTINGS android.settings.action.MANAGE_WRITE_SETTINGS Modify_system_settings"
+  "notification-access - - android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS Notification_access"
   "battery android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS - android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS Unrestricted_battery"
 )
 
@@ -128,6 +130,7 @@ collect_shizuku() {
   # One rish call for everything: each start costs a PTY and a JVM.
   query="echo @@package; dumpsys package $PACKAGE; echo @@idle; dumpsys deviceidle whitelist"
   query+="; for op in ${ops[*]}; do echo \"@@op \$op\"; appops get --user $user $PACKAGE \$op | head -n 1; done"
+  query+="; echo @@listeners; settings --user $user get secure enabled_notification_listeners"
   query+="; echo @@sdk; getprop ro.build.version.sdk; echo @@phantom; settings get global $PHANTOM_SETTING"
   dump=$(shizuku "$query") || die "cannot read the package state through Shizuku"
   section() {
@@ -154,9 +157,20 @@ collect_shizuku() {
   for entry in "${SPECIAL_ACCESS[@]}"
   do
     read -r name permission appop action label <<<"$entry"
-    grep -qxF "$permission" <<<"$requested" || continue
+    [[ $name == notification-access ]] || grep -qxF "$permission" <<<"$requested" || continue
     state=missing
-    if [[ $appop == - ]]
+    if [[ $name == notification-access ]]
+    then
+      local listener
+      while read -r listener
+      do
+        if [[ $listener == "$PACKAGE/."* ]]
+        then
+          listener="$PACKAGE/$PACKAGE.${listener#*/.}"
+        fi
+        [[ $listener != "$NOTIFICATION_LISTENER" ]] || state=granted
+      done < <(section listeners | tr ':' '\n')
+    elif [[ $appop == - ]]
     then
       grep -q ",$PACKAGE," <<<"$whitelist" && state=granted
     else
@@ -179,6 +193,10 @@ grant_command() {
   if [[ $kind == runtime ]]
   then
     printf 'pm grant --user %s %s %s' "$user" "$PACKAGE" "$detail"
+  elif [[ $name == notification-access ]]
+  then
+    # Quote the component for the Android shell, including the nested-class dollar sign.
+    printf "cmd notification allow_listener '%s' %s" "$NOTIFICATION_LISTENER" "$user"
   elif [[ $name == processes ]]
   then
     printf 'settings put global %s false' "$PHANTOM_SETTING"
@@ -337,7 +355,7 @@ ask_special() {
     return
   fi
   action=$(special_field "$name" 3)
-  if [[ $name == usage ]]
+  if [[ $name == usage || $name == notification-access ]]
   then
     app_am start -a "$action"
   else
@@ -349,17 +367,25 @@ ask_special() {
 # --- Commands ----------------------------------------------------------------
 
 print_status() {
-  local name state kind detail missing=0 shown suffix
+  local name state kind detail missing=0 shown identifier
+  printf '%s\n' "$(paint "$(printf '  %-38s %-7s  %s' Permission Status 'Android identifier')" '1;36')"
   while read -r name state kind detail
   do
     [[ -n $name ]] || continue
     [[ $state == missing ]] && missing=$((missing + 1))
     shown=$(paint "$state" "$([[ $state == granted ]] && echo 32 || echo 31)")
-    suffix=''
-    [[ $kind == runtime ]] || suffix=" $(paint "(${detail//_/ })" 2)"
+    identifier=$detail
+    if [[ $kind == special ]]
+    then
+      case $name in
+        notification-access) identifier=$NOTIFICATION_LISTENER ;;
+        processes) identifier="global:$PHANTOM_SETTING" ;;
+        *) identifier=$(special_field "$name" 1) ;;
+      esac
+    fi
     # Pad by the visible width: escape codes take none.
-    printf '  %-38s %s%*s%s\n' "$name" "$shown" $((7 - ${#state})) '' "$suffix"
-  done <<<"$1"
+    printf '  %-38s %s%*s  %s\n' "${name^^}" "$shown" $((7 - ${#state})) '' "$(paint "$identifier" 2)"
+  done < <(LC_ALL=C sort -f -k1,1 <<<"$1")
   if ((missing == 0))
   then
     paint 'nothing missing' '1;32'
@@ -398,7 +424,7 @@ main() {
   then
     shift
     local current=${*: -1} candidate
-    for candidate in status grant --no-shizuku --json --help
+    for candidate in list grant --no-shizuku --json --help
     do
       [[ $candidate == "$current"* ]] && printf '%s\n' "$candidate"
     done
@@ -419,7 +445,8 @@ main() {
         ;;
       --no-shizuku) use_shizuku=0 ;;
       --json) json=1 ;;
-      status|grant) command=$argument ;;
+      list|status) command=status ;;
+      grant) command=grant ;;
       -*)
         usage >&2
         return 2
@@ -441,6 +468,11 @@ main() {
     jq "$jq_color" -n --arg command "$command" --argjson exitCode "$result" \
       '{command: $command, exitCode: $exitCode}'
     return "$result"
+  fi
+
+  if [[ $command == status && $json == 0 ]]
+  then
+    printf '%s\n' "$(paint 'Checking Android permissions…' 36)" >&2
   fi
 
   local via=app
@@ -466,8 +498,8 @@ main() {
       ((COLOR)) && jq_color=-C
       jq "$jq_color" -Rn --arg shizuku "${shizuku_state:-unknown}" --arg via "$via" '
         {shizuku: $shizuku, source: $via,
-         permissions: [inputs | select(length > 0) | split(" ") |
-           {name: .[0], state: .[1], kind: .[2], detail: .[3]}]}
+         permissions: ([inputs | select(length > 0) | split(" ") |
+           {name: .[0], state: .[1], kind: .[2], detail: .[3]}] | sort_by(.name | ascii_downcase))}
       ' <<<"$state"
       if grep -q ' missing ' <<<"$state"
       then
@@ -477,9 +509,24 @@ main() {
     fi
     printf '%s %s\n' "$(paint Shizuku: 1)" "$(paint "$(tr '[:upper:]_' '[:lower:] ' <<<"${shizuku_state:-unknown (update the app)}")" \
       "$([[ $shizuku_state == READY ]] && echo 32 || echo 33)")"
+    printf '\n%s\n' "$(paint 'Permissions' '1;36')"
     [[ $via == app ]] && printf 'As reported by the TermuxPP app (Shizuku unavailable):\n'
     print_status "$state"
     return
+  fi
+
+  local requested_name
+  if [[ $via == app ]] && ! grep -q '^notification-access ' <<<"$state"
+  then
+    for requested_name in "${names[@]}"
+    do
+      if [[ ${requested_name,,} == notification-access ]]
+      then
+        printf '%s\n' 'This app build cannot report listener access. Opening Android notification access settings.' >&2
+        ask_special notification-access
+        break
+      fi
+    done
   fi
 
   local todo
@@ -520,7 +567,13 @@ main() {
   fi
 
   state=$(collect_"$via") || return 1
-  print_status "$state" || failed=1
+  if ((${#names[@]}))
+  then
+    print_status "$state" || true
+    [[ -z $(missing_entries "$state" "${names[@]}") ]] || failed=1
+  else
+    print_status "$state" || failed=1
+  fi
   return "$failed"
 }
 
