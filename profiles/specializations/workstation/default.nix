@@ -66,6 +66,7 @@ in
     ];
     home.packages = [
       hyprRdp
+      inputs.circus.packages.${pkgs.stdenv.hostPlatform.system}.circus-cli
       # VNC consoles in the terminal (openstack::console --tui).
       pkgs.desktui
       pkgs.console-tui
