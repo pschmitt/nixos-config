@@ -494,10 +494,26 @@ def artifact_cached(cache_url: str, path: str) -> bool:
     ).returncode == 0
 
 
+def retry_phone_effects(states: dict[str, tuple[str, str]], retry_at: dict[str, float], now: float) -> bool:
+    """Retry failed phone publication without repeatedly uploading on every poll."""
+    changed = False
+    for name, (state, _) in states.items():
+        if not name.startswith("publish.termuxpp-") or state != "failed":
+            retry_at.pop(name, None)
+            continue
+        deadline = retry_at.setdefault(name, now + 300)
+        if now >= deadline:
+            states[name] = ("pending", "Retrying phone pin publication.")
+            retry_at.pop(name, None)
+            changed = True
+    return changed
+
+
 def watch_artifacts(settings: Settings) -> None:
     """Reconcile the current branch and resume individual effects after restarts."""
     assert settings.cache_url is not None
     previous = None
+    retry_at: dict[str, float] = {}
     while True:
         try:
             commit = branch_head(settings.repository, settings.branch)
@@ -519,6 +535,9 @@ def watch_artifacts(settings: Settings) -> None:
                                 states[name] = tuple(state)
                     write_status(settings, commit, states)
                     previous = commit
+                    retry_at.clear()
+                if retry_phone_effects(states, retry_at, time.monotonic()):
+                    write_status(settings, commit, states)
                 cached = {
                     path: artifact_cached(settings.cache_url, path)
                     for path in {artifacts[name] for name in effects if states[name][0] in {"pending", "running"}}

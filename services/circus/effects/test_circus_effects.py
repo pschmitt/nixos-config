@@ -34,6 +34,15 @@ class ArtifactJobsTest(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 ce.load_artifacts("github:example/config/rev", {name: ce.Effect(name)})
 
+    def test_phone_publication_retries_after_a_delay(self) -> None:
+        states = {"publish.termuxpp-phone": ("failed", "upload failed"), "publish.standard": ("failed", "failed")}
+        retry_at = {}
+        self.assertFalse(ce.retry_phone_effects(states, retry_at, 100))
+        self.assertFalse(ce.retry_phone_effects(states, retry_at, 399))
+        self.assertTrue(ce.retry_phone_effects(states, retry_at, 400))
+        self.assertEqual(states["publish.termuxpp-phone"][0], "pending")
+        self.assertEqual(states["publish.standard"][0], "failed")
+
 
 def settings(tmp: Path, **kw: object) -> ce.Settings:
     base = {
