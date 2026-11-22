@@ -18,14 +18,15 @@ PATH_ARM = "/nix/store/" + "2" * 32 + "-arm-output"
 
 
 class FakeApi:
-    def __init__(self):
+    def __init__(self, project="stricknani"):
+        self.project = project
         self.arm_status = "succeeded"
         self.arm_outputs = {"out": PATH_ARM}
         self.arm_error = None
 
     def __call__(self, path, **params):
         if path == "projects":
-            return {"items": [{"id": "project", "name": "stricknani"}], "total": 1}
+            return {"items": [{"id": "project", "name": self.project}], "total": 1}
         if path == "projects/project/jobsets":
             return [{"id": "x", "name": "main"}, {"id": "a", "name": "main-arm"}]
         if path == "evaluations":
@@ -70,6 +71,10 @@ class ProjectOutputsTest(unittest.TestCase):
 
     def test_old_or_pull_request_revision_is_not_published(self):
         self.assertIsNone(bridge.project_outputs(FakeApi(), "b" * 40))
+
+    def test_selects_monarch_outputs_from_monarch_jobsets(self):
+        outputs = bridge.project_outputs(FakeApi("monarch"), REVISION, "monarch")
+        self.assertEqual(outputs["main-arm-packages.default-out"], PATH_ARM)
 
 
 class ReconcileTest(unittest.TestCase):
@@ -152,6 +157,16 @@ class PublishTest(unittest.TestCase):
 
             with patch.object(bridge.subprocess, "run", side_effect=run):
                 bridge.copy_outputs({"main-default": PATH_X86}, "pschmitt/stricknani", REVISION, secret, directory)
+
+    def test_rejects_a_credential_scoped_to_another_project(self):
+        with tempfile.TemporaryDirectory() as directory:
+            secret = Path(directory) / "secrets.json"
+            secret.write_text(json.dumps({"niks3-monarch-publisher": {
+                "condition": {"and": ["isDefaultBranch", {"isOwner": "pschmitt"}, {"isRepo": "stricknani"}]},
+                "data": {"token": "not-a-real-token", "server_url": "https://example.invalid"},
+            }}))
+            with self.assertRaisesRegex(ValueError, "not scoped"):
+                bridge.copy_outputs({"main-default": PATH_X86}, "pschmitt/monarch", REVISION, secret, directory)
 
 
 if __name__ == "__main__":

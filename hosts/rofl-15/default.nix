@@ -47,6 +47,7 @@
       dryRun = false;
     };
     stricknaniArtifactBridge.enable = true;
+    monarchArtifactBridge.enable = true;
   };
 
   # Pinned per host: bumping it changes stateful service defaults.

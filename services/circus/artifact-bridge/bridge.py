@@ -49,9 +49,9 @@ def items(get, path, **params):
             return
 
 
-def project_outputs(get, revision):
+def project_outputs(get, revision, project_name="stricknani"):
     """Return successful package outputs from both jobsets, or None while pending."""
-    project = next(p for p in items(get, "projects") if p["name"] == "stricknani")
+    project = next(p for p in items(get, "projects") if p["name"] == project_name)
     jobsets = {j["name"]: j for j in items(get, f"projects/{project['id']}/jobsets")}
     outputs = {}
     for jobset in ("main", "main-arm"):
@@ -116,14 +116,16 @@ def publish_outputs(paths, repository, revision):
     for name, path in sorted(paths.items()):
         safe_name = re.sub(r"[^A-Za-z0-9_-]", "-", name)[:60]
         suffix = hashlib.sha256(name.encode()).hexdigest()[:12]
-        subprocess.run(["niks3", "push", "--pin", f"circus-stricknani-{safe_name}-{suffix}", path], check=True)
+        project_name = repository.split("/", 1)[1]
+        subprocess.run(["niks3", "push", "--pin", f"circus-{project_name}-{safe_name}-{suffix}", path], check=True)
 
 
 def copy_outputs(paths, repository, revision, secret_file, runtime_dir):
-    entry = json.loads(Path(secret_file).read_text())["niks3-stricknani-publisher"]
-    expected = {"and": ["isDefaultBranch", {"isOwner": "pschmitt"}, {"isRepo": "stricknani"}]}
+    project_name = repository.split("/", 1)[1]
+    entry = json.loads(Path(secret_file).read_text())[f"niks3-{project_name}-publisher"]
+    expected = {"and": ["isDefaultBranch", {"isOwner": "pschmitt"}, {"isRepo": project_name}]}
     if entry.get("condition") != expected:
-        raise ValueError("bridge credential is not scoped to Stricknani main")
+        raise ValueError("bridge credential is not scoped to the project main branch")
     secret = entry["data"]
     with tempfile.NamedTemporaryFile(mode="w", dir=runtime_dir, prefix="niks3-", delete=True) as token:
         os.fchmod(token.fileno(), 0o600)
@@ -155,7 +157,7 @@ def reconcile(args):
         return request(url + "?" + urllib.parse.urlencode(params), api_token)
 
     try:
-        paths = project_outputs(get, revision)
+        paths = project_outputs(get, revision, args.repository.split("/", 1)[1])
     except BuildFailed as error:
         if not failed.exists():
             github_status(args.repository, revision, args.github_token_file, "failure", str(error))
@@ -185,8 +187,8 @@ def main():
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--runtime-dir", type=Path, required=True)
     args = parser.parse_args()
-    if args.repository != "pschmitt/stricknani":
-        raise ValueError("the bridge is restricted to pschmitt/stricknani")
+    if args.repository not in {"pschmitt/stricknani", "pschmitt/monarch"}:
+        raise ValueError("the bridge is restricted to configured repositories")
     args.state_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(level=logging.INFO)
     while True:
