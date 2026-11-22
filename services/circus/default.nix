@@ -489,7 +489,7 @@ in
                     mainPool
                     // {
                       name = "gha-pr-aarch64-linux";
-                      max_inflight = 1;
+                      max_inflight = 4;
                       poll_interval_secs = 15;
                       pull_request_author_ids_file = cfg.githubActionsAgents.pullRequestAuthorIdsFile;
                       github_actions = mainPool.github_actions // {
