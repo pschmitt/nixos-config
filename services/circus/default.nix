@@ -302,6 +302,11 @@ in
             host = "127.0.0.1";
             port = serverPort;
             snapshot_repositories = [ repositoryUrl ];
+            snapshot_pools = map (pool: pool.name) (
+              lib.filter (
+                pool: (pool.pull_request_author_ids or [ ]) == [ ] && !(pool ? pull_request_author_ids_file)
+              ) cfg.settings.queue_runner.ephemeral_pools
+            );
             max_body_size = 16 * 1024 * 1024;
             # nginx terminates TLS (publicHost).
             force_secure_cookies = true;
@@ -345,6 +350,13 @@ in
             memory_limit_mb = 24576;
             # aarch64 only once the GitHub Actions agents exist.
             systems = [ "x86_64-linux" ] ++ lib.optional cfg.githubActionsAgents.enable "aarch64-linux";
+            # Match the caches that the GitHub worker can substitute from.
+            snapshot_substituters = [
+              "https://cache.nixos.org/"
+              "https://nix-community.cachix.org"
+              "https://${tailnetHost}/nix-cache/"
+            ]
+            ++ lib.filter (lib.hasPrefix "s3://") config.nix.settings.extra-substituters;
             # Also count paths niks3 (s3://nix-cache-brkn-lol in nix.conf)
             # already has as substitutable, signing the lookups with the
             # Circus S3 key (same project); the key id comes from the env.
