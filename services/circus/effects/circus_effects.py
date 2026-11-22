@@ -450,11 +450,20 @@ ARTIFACT_JOBS = {
 
 
 def load_artifacts(flake_ref: str, effects: dict[str, Effect]) -> dict[str, str]:
-    jobs = {name: ARTIFACT_JOBS[name] for name in effects}
+    def job_expression(name: str) -> str:
+        if name in ARTIFACT_JOBS:
+            return f"builtins.getAttr {json.dumps(ARTIFACT_JOBS[name])} jobs.images"
+        prefix = "publish.termuxpp-"
+        if name.startswith(prefix) and re.fullmatch(r"[a-z0-9][a-z0-9-]*", name[len(prefix):]):
+            package = f"termuxpp-system-{name[len(prefix):]}"
+            return f"builtins.getAttr {json.dumps(package)} jobs.packages.aarch64-linux"
+        raise ValueError(f"unknown publishing effect: {name}")
+
+    jobs = {name: job_expression(name) for name in effects}
     result = subprocess.run(
         [
-            "nix", "eval", "--json", f"{flake_ref}#circusJobs.images",
-            "--apply", f"images: {{ {' '.join(f'{json.dumps(name)} = toString images.{job};' for name, job in jobs.items())} }}",
+            "nix", "eval", "--json", f"{flake_ref}#circusJobs",
+            "--apply", f"jobs: {{ {' '.join(f'{json.dumps(name)} = toString ({job});' for name, job in jobs.items())} }}",
         ],
         check=True,
         capture_output=True,

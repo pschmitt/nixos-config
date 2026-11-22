@@ -9,9 +9,30 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import circus_effects as ce
+
+
+class ArtifactJobsTest(unittest.TestCase):
+    def test_images_and_phone_systems_resolve_to_their_own_outputs(self) -> None:
+        effects = {
+            "publish.standard": ce.Effect("publish.standard"),
+            "publish.termuxpp-phone": ce.Effect("publish.termuxpp-phone"),
+        }
+        result = {name: f"/nix/store/{'a' * 32}-output" for name in effects}
+        with patch.object(ce.subprocess, "run", return_value=SimpleNamespace(stdout=json.dumps(result))) as run:
+            self.assertEqual(ce.load_artifacts("github:example/config/rev", effects), result)
+        command = run.call_args.args[0]
+        self.assertEqual(command[3], "github:example/config/rev#circusJobs")
+        self.assertIn('builtins.getAttr "iso" jobs.images', command[-1])
+        self.assertIn('builtins.getAttr "termuxpp-system-phone" jobs.packages.aarch64-linux', command[-1])
+
+    def test_unknown_or_invalid_effect_is_rejected(self) -> None:
+        for name in ("publish.unknown", "publish.termuxpp-../bad"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                ce.load_artifacts("github:example/config/rev", {name: ce.Effect(name)})
 
 
 def settings(tmp: Path, **kw: object) -> ce.Settings:
