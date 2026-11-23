@@ -121,6 +121,7 @@ in
         gzip
         jc
         less
+        ncurses
         nix
         netcat-openbsd
         openssh
