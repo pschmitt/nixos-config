@@ -7,22 +7,16 @@ source "${SCRIPT_DIR}/lib.sh"
 
 lockscreen_noctalia() {
   command -v noctalia >/dev/null 2>&1 || return 1
-  { pgrep -x noctalia || pgrep -x .noctalia-wrapp; } >/dev/null 2>&1 || return 1
+  # `noctalia msg` fails fast when the shell is not running, so no pgrep gate
   [[ "$(noctalia msg status 2>/dev/null | jq -re '.locked // false')" == "true" ]]
 }
 
 lockscreen_app() {
+  # One /proc scan for all candidates instead of one pgrep each
   local app
-  for app in hyprlock swaylock gtklock
-  do
-    if pgrep -x "$app" >/dev/null 2>&1
-    then
-      echo "$app"
-      return 0
-    fi
-  done
-
-  return 1
+  app="$(pgrep -xl 'hyprlock|swaylock|gtklock' 2>/dev/null | awk 'NR == 1 { print $2 }')"
+  [[ -n "$app" ]] || return 1
+  echo "$app"
 }
 
 lockscreen_state_kde_plasma() {

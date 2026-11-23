@@ -152,3 +152,29 @@ hyprctl_wrapper() {
 
   command hyprctl "$@"
 }
+
+# `bruvtab list` costs ~250 ms of CPU and several 15s sensors (pp,
+# online-meeting) need it, so share one result for a few seconds. A race
+# between two sensors only costs one extra call.
+bruvtab_list_cached() {
+  local ttl="${BRUVTAB_LIST_CACHE_TTL:-10}"
+  local cache="${XDG_RUNTIME_DIR:-/tmp}/go-hass-agent-bruvtab-list"
+  local mtime
+
+  if mtime="$(stat -c %Y "$cache" 2>/dev/null)" && (( EPOCHSECONDS - mtime < ttl ))
+  then
+    cat "$cache"
+    return 0
+  fi
+
+  command -v bruvtab >/dev/null 2>&1 || return 1
+
+  local tmp="${cache}.$$"
+  if ! bruvtab list > "$tmp" 2>/dev/null
+  then
+    rm -f "$tmp"
+    return 1
+  fi
+  mv -f "$tmp" "$cache"
+  cat "$cache"
+}

@@ -3,6 +3,10 @@
 # and, when possible, exposes the provider/URL as attributes. Mirrors the old
 # hacompanion online-meeting.sh helper.
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib.sh"
+
 emit_sensor() {
   local state="$1"
   local provider="$2"
@@ -41,7 +45,7 @@ emit_sensor() {
 # Browser Zoom tab (zoom.us/wc) -> canonical join URL, else native client.
 zoom_meeting_url() {
   local burl mid
-  burl="$(bruvtab list 2>/dev/null | awk -F'\t' 'index(tolower($3), "zoom.us/wc") > 0 { print $3; exit }')"
+  burl="$(bruvtab_list_cached | awk -F'\t' 'index(tolower($3), "zoom.us/wc") > 0 { print $3; exit }')"
   if [[ -n "$burl" ]]
   then
     mid="$(sed -rn 's#.*/([0-9]+)/.*#\1#p' <<< "$burl")"
@@ -61,7 +65,7 @@ zoom_meeting_url() {
 
 jitsi_meeting_url() {
   local u
-  u="$(bruvtab list 2>/dev/null | awk -F'\t' 'index(tolower($3), "meet.jit.si/") > 0 { print $3; exit }')"
+  u="$(bruvtab_list_cached | awk -F'\t' 'index(tolower($3), "meet.jit.si/") > 0 { print $3; exit }')"
   [[ -n "$u" ]] || return 1
   echo "$u"
 }

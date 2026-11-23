@@ -99,29 +99,21 @@ get_bruvtab_playing_json() {
 }
 
 get_active_player() {
-  local all_players
-  all_players="$(playerctl --list-all 2>/dev/null)" || return 1
+  # One playerctl call instead of --list-all twice plus a status per player.
+  local listing
+  listing="$(playerctl --all-players --format '{{playerInstance}}'$'\t''{{status}}' status 2>/dev/null)" \
+    || return 1
+  [[ -n "$listing" ]] || return 1
 
   # Prefer local players: first playing one, then any
   local player
-  player="$(
-    playerctl --list-all 2>/dev/null | while IFS= read -r p; do
-      local s
-      s="$(playerctl --player "$p" status 2>/dev/null)" || continue
-      if [[ "$s" == "Playing" ]]; then
-        echo "$p"
-        return 0
-      fi
-    done
-  )"
-
-  if [[ -n "$player" ]]; then
-    echo "$player"
-    return 0
+  player="$(awk -F'\t' '$2 == "Playing" { print $1; exit }' <<< "$listing")"
+  if [[ -z "$player" ]]
+  then
+    player="$(awk -F'\t' 'NR == 1 { print $1 }' <<< "$listing")"
   fi
 
-  # Fall back to first available player
-  head -1 <<< "$all_players"
+  [[ -n "$player" ]] && echo "$player"
 }
 
 extract_youtube_id() {
@@ -180,14 +172,20 @@ main() {
   if [[ -n "${player:-}" ]]; then
     playername="$(awk -F. '{print $1; exit}' <<< "$player")"
 
-    play_state="$(playerctl --player "$player" status 2>/dev/null | tr '[:upper:]' '[:lower:]')" \
-      || play_state="unavailable"
-
-    title="$(playerctl --player "$player" metadata title 2>/dev/null || true)"
-    album="$(playerctl --player "$player" metadata album 2>/dev/null || true)"
-    artist="$(playerctl --player "$player" metadata artist 2>/dev/null || true)"
-    art_url="$(playerctl --player "$player" metadata mpris:artUrl 2>/dev/null || true)"
-    track_url="$(playerctl --player "$player" metadata xesam:url 2>/dev/null || true)"
+    # One call for status and all metadata. \x1f (unit separator) is not IFS
+    # whitespace, so empty fields do not collapse.
+    local sep=$'\x1f'
+    local meta
+    if meta="$(playerctl --player "$player" metadata --format \
+      "{{lc(status)}}${sep}{{title}}${sep}{{album}}${sep}{{artist}}${sep}{{mpris:artUrl}}${sep}{{xesam:url}}" \
+      2>/dev/null)"
+    then
+      IFS="$sep" read -r play_state title album artist art_url track_url <<< "$meta"
+    else
+      play_state="$(playerctl --player "$player" status 2>/dev/null | tr '[:upper:]' '[:lower:]')" \
+        || play_state="unavailable"
+    fi
+    [[ -n "$play_state" ]] || play_state="unavailable"
   else
     local fallback_json=""
     fallback_json="$(get_bruvtab_playing_json 2>/dev/null)" || true
@@ -195,13 +193,21 @@ main() {
       fallback_json="$(get_mpris_player_json 2>/dev/null)" || true
     fi
     if [[ -n "$fallback_json" ]]; then
-      playername="$(jq -r '.player // empty' <<< "$fallback_json")"
-      play_state="$(jq -r '.play_state // "unavailable"' <<< "$fallback_json")"
-      title="$(jq -r '.title // empty' <<< "$fallback_json")"
-      album="$(jq -r '.album // empty' <<< "$fallback_json")"
-      artist="$(jq -r '.artist // empty' <<< "$fallback_json")"
-      art_url="$(jq -r '.art_url // empty' <<< "$fallback_json")"
-      track_url="$(jq -r '.track_url // empty' <<< "$fallback_json")"
+      IFS=$'\x1f' read -r playername play_state title album artist art_url track_url < <(
+        jq -r '
+          [
+            .player // "",
+            .play_state // "unavailable",
+            .title // "",
+            .album // "",
+            .artist // "",
+            .art_url // "",
+            .track_url // ""
+          ]
+          | map(tostring | gsub("[\n\u001f]"; " "))
+          | join("\u001f")
+        ' <<< "$fallback_json"
+      )
     fi
   fi
 
