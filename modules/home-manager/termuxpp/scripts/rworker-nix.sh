@@ -2,6 +2,7 @@
 
 WORKER_NAME=""
 WORKER_INFO=""
+WORKER_SSH_DIR=""
 LEASE_NONCE=""
 LEASE_STARTED=""
 UPLOAD_MODE="auto"
@@ -27,7 +28,8 @@ installables there and copies the outputs back.
 Options:
   --ttl DURATION    worker lifetime backstop (default: 1h)
   --topic TEXT      what the worker is for
-  --profile NAME    rworker profile
+  --profile NAME    rworker profile (default: prefer the target architecture
+                    for local evaluation, controller default for remote-build)
   --flavor NAME     OpenStack flavor
   --disk GIB        root disk size
   --system SYSTEM   platform to build for (default: aarch64-linux); the
@@ -244,11 +246,13 @@ on_exit() {
   then
     rc=1
   fi
+  [[ -z "$WORKER_SSH_DIR" ]] || rm -rf -- "$WORKER_SSH_DIR"
   exit "$rc"
 }
 
 lease_worker() {
   local ttl="$1" topic="$2" profile="$3" flavor="$4" disk="$5" nix_cache="${6:-}" nix_auth="${7:-}"
+  local arch="${8:-}" name rc
   local -a args=(--json --ttl "$ttl" --topic "$topic" --no-niks3-token)
   [[ -n "$nix_cache" ]] || args+=(--no-nix-cache)
   # The access-tokens let the worker fetch private flake inputs itself.
@@ -258,12 +262,21 @@ lease_worker() {
   else
     args+=(--no-nix-auth)
   fi
-  local name
   [[ -z "$profile" ]] || args+=(--profile "$profile")
   [[ -z "$flavor" ]] || args+=(--flavor "$flavor")
   [[ -z "$disk" ]] || args+=(--disk "$disk")
   LEASE_STARTED=1
-  WORKER_INFO=$(rworker up "${args[@]}") || return 1
+  if [[ -n "$arch" && -z "$profile$flavor$disk" ]]
+  then
+    WORKER_INFO=$(rworker up "${args[@]}" --arch "$arch" --queue-timeout 120) || {
+      rc=$?
+      [[ "$rc" == 75 ]] || return "$rc"
+      note "No native $arch worker available. Trying the controller default."
+      WORKER_INFO=$(rworker up "${args[@]}") || return
+    }
+  else
+    WORKER_INFO=$(rworker up "${args[@]}") || return
+  fi
   name=$(jq -er .name <<< "$WORKER_INFO") || return 1
   if ! valid_word "$name"
   then
@@ -325,12 +338,11 @@ probe_worker() {
 # Prints the `rworker builder` line for TARGET once it matches the host key,
 # address and platform the controller reported for the worker.
 build_builder_line() {
-  local name="$1" target="$2" worker_system="$3" info="$4"
-  local line host_key decoded addr ip known_ip=""
+  local name="$1" target="$2" worker_system="$3" info="$4" line="$5"
+  local host_key decoded addr ip known_ip=""
   local -a f
-  line=$(rworker builder "$name") || return 1
   read -r -a f <<< "$line"
-  if (( ${#f[@]} != 8 )) || [[ "${f[0]}" != ssh-ng://agent@* ]]
+  if (( ${#f[@]} != 8 ))
   then
     warn "unexpected builder entry"
     return 1
@@ -343,14 +355,23 @@ build_builder_line() {
     warn "builder host key does not match the key pinned from the controller's answer"
     return 1
   fi
-  addr="${f[0]#ssh-ng://agent@}"
-  while IFS= read -r ip
-  do
-    [[ "$ip" != "$addr" ]] || known_ip=1
-  done < <(jq -r '[.ip, .ips.netbird, .ips.tailscale] | map(select(. != null and . != "")) | .[]' <<< "$info")
+  if [[ $(jq -r .provider <<< "$info") == github ]]
+  then
+    if [[ "${f[0]}" == "ssh-ng://rworker-build@$name?remote-program=/home/rworker-build/.local/bin/rworker-nix-daemon" ]]
+    then
+      known_ip=1
+    fi
+  elif [[ "${f[0]}" == ssh-ng://agent@* ]]
+  then
+    addr="${f[0]#ssh-ng://agent@}"
+    while IFS= read -r ip
+    do
+      [[ "$ip" != "$addr" ]] || known_ip=1
+    done < <(jq -r '[.ip, .ips.netbird, .ips.tailscale] | map(select(. != null and . != "")) | .[]' <<< "$info")
+  fi
   if [[ -z "$known_ip" ]]
   then
-    warn "builder address '$addr' is not an address of worker $name"
+    warn "builder address '${addr:-${f[0]}}' is not an address of worker $name"
     return 1
   fi
   if [[ ",${f[1]}," != *",${worker_system},"* ]]
@@ -360,6 +381,14 @@ build_builder_line() {
   fi
   f[1]="$target"
   printf '%s\n' "${f[*]}"
+}
+
+setup_worker_ssh() {
+  local config="$1"
+  WORKER_SSH_DIR=$(mktemp -d /tmp/rworker-nix-ssh.XXXXXXXX) || return 1
+  printf '%s\n' "$config" 'Host *' '  Include ~/.ssh/config /etc/ssh/ssh_config' \
+    > "$WORKER_SSH_DIR/config" || return 1
+  export NIX_SSHOPTS="-F $WORKER_SSH_DIR/config $NIX_SSHOPTS"
 }
 
 validate_lease_args() {
@@ -571,6 +600,7 @@ remote_build() {
 main() {
   local ttl="" topic="" profile="" flavor="" disk="" target="" down_name="" upload=""
   local controller key subcommand worker_system line value rc=0 aws_credentials nix_cache nix_auth
+  local arch="" builder_info builder_ssh provider
   local -a nix_args=()
 
   read_config
@@ -697,13 +727,26 @@ main() {
   then
     nix_auth=1
   fi
+  [[ "$subcommand" == remote-build ]] || arch="${target%-linux}"
   lease_worker "$ttl" "full-nix rworker-nix ${topic:-$subcommand} $LEASE_NONCE" \
-    "$profile" "$flavor" "$disk" "$nix_cache" "$nix_auth" || return 1
+    "$profile" "$flavor" "$disk" "$nix_cache" "$nix_auth" "$arch" || return
+  provider=$(jq -r .provider <<< "$WORKER_INFO") || return
+  if [[ "$provider" == github && "$subcommand" == remote-build ]]
+  then
+    warn "GitHub worker profiles support local Nix evaluation only"
+    return 2
+  fi
   worker_system=$(probe_worker "$WORKER_NAME" "$target") || return 1
-  line=$(build_builder_line "$WORKER_NAME" "$target" "$worker_system" "$WORKER_INFO") \
-    || return 1
+  builder_info=$(rworker builder "$WORKER_NAME" --json) || return 1
+  line=$(jq -er '.builder | strings' <<< "$builder_info") || return 1
+  line=$(build_builder_line "$WORKER_NAME" "$target" "$worker_system" "$WORKER_INFO" "$line") || return 1
 
   export NIX_SSHOPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes${NIX_SSHOPTS:+ $NIX_SSHOPTS}"
+  if [[ "$provider" == github ]]
+  then
+    builder_ssh=$(jq -er '.ssh_config | strings | select(length > 0)' <<< "$builder_info") || return 1
+    setup_worker_ssh "$builder_ssh" || return 1
+  fi
   if [[ "$subcommand" == remote-build ]]
   then
     remote_build "$WORKER_NAME" "$(worker_store_url "$line")" || rc=$?

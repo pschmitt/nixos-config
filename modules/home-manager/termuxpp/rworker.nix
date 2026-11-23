@@ -109,7 +109,12 @@ in
     profile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
-      description = "rworker profile to lease; null uses the controller's default.";
+      description = ''
+        rworker profile to lease. With null, local evaluation prefers the
+        target architecture and uses the controller default when the native
+        pool is unavailable. Remote evaluation uses the controller default
+        for private flake and cache access.
+      '';
     };
 
     awsCredentialsFile = lib.mkOption {

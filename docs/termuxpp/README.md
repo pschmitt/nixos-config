@@ -87,6 +87,14 @@ termination signals. They do not rewrite the normal machines file. A lost networ
 connection or an uncatchable kill can prevent cleanup; the worker TTL remains the
 backstop, and `rworker-nix --down NAME` retries explicit cleanup.
 
+For local evaluation, the wrapper tries native workers for its configured
+Nix target system. On ARM64 that includes the `gh-aarch64` runner, which
+builds in a lease-owned Nix store. When no native profile is configured or
+the native workers stay queued for two minutes and cancellation succeeds,
+the wrapper tries the controller default. The fallback must provide the
+target platform through Nix's `extra-platforms` and an enabled binfmt
+handler. Supply `--profile` to choose a worker explicitly.
+
 Configure a trusted controller SSH alias privately in
 `~/.config/rworker-nix/local.conf` (`controller=rworker-controller`), or pass it
 in the environment. The managed `config` supplies defaults; `local.conf`
@@ -97,7 +105,8 @@ RWORKER_NIX_CONTROLLER=rworker-controller rworker-nix --ttl 1h build '.#package'
 RWORKER_NIX_CONTROLLER=rworker-controller rworker-nix shell nixpkgs#hello -c hello
 ```
 
-`rworker-nix remote-build` evaluates on the worker as well. The worker fetches
+`rworker-nix remote-build` uses the controller default so private flake and
+cache access can be configured. The worker evaluates the flake and fetches
 the flake and its inputs itself: `rworker setup nix` (run by `rworker up`)
 gives it this host's Nix `access-tokens`, so private GitHub and GitLab inputs
 work. Only what the worker cannot fetch (a local path flake, `git+file`,

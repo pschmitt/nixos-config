@@ -35,6 +35,16 @@ action="${1:-}"
 shift
 case "$action" in
   up)
+    if [[ "$*" == *' --arch '* ]]
+    then
+      case "$FAKE_SCENARIO" in
+        hosted)
+          printf '{"name":"ghci-12345678","ip":"ghci-12345678","provider":"github","host_key":"%s"}\n' "$hostkey"
+          exit 0
+          ;;
+        ok) exit 75 ;;
+      esac
+    fi
     while [[ $# -gt 0 ]]
     do
       if [[ "$1" == --topic ]]
@@ -51,6 +61,14 @@ case "$action" in
     ;;
   builder)
     key=$(printf '%s\n' "$hostkey" | base64 -w0)
+    if [[ "$FAKE_SCENARIO" == hosted ]]
+    then
+      jq -n --arg key "$key" '{
+        builder: ("ssh-ng://rworker-build@ghci-12345678?remote-program=/home/rworker-build/.local/bin/rworker-nix-daemon aarch64-linux /home/u/.ssh/id_ed25519 1 1 - - " + $key),
+        ssh_config: "Host ghci-12345678\n  ProxyCommand ssh -q -W 127.0.0.1:12345 ctl\n"
+      }'
+      exit 0
+    fi
     ip=100.64.0.7
     [[ "$FAKE_SCENARIO" != builder-wrong-ip ]] || ip=10.9.9.9
     [[ "$FAKE_SCENARIO" != builder-no-newline ]] || key=$(printf '%s' "$hostkey" | base64 -w0)
@@ -58,7 +76,8 @@ case "$action" in
     [[ "$FAKE_SCENARIO" != builder-wrong-key ]] || key=$(printf 'ssh-ed25519 AAAAevil\n' | base64 -w0)
     sys=x86_64-linux
     [[ "$FAKE_SCENARIO" != native ]] || sys=aarch64-linux
-    printf 'ssh-ng://agent@%s %s /home/u/.ssh/id_ed25519 16 1 nixos-test,benchmark,big-parallel,kvm - %s' "$ip" "$sys" "$key"
+    jq -n --arg line "ssh-ng://agent@$ip $sys /home/u/.ssh/id_ed25519 16 1 nixos-test,benchmark,big-parallel,kvm - $key" \
+      '{builder: $line}'
     ;;
   ssh)
     printf 'rworker-ssh-command %s\n' "$2" >> "$FAKE_TRACE"
@@ -82,7 +101,7 @@ case "$action" in
       no-binfmt)
         printf 'system=x86_64-linux\nextra=aarch64-linux\nbinfmt=\n'
         ;;
-      native)
+      native|hosted)
         printf 'system=aarch64-linux\nextra=\nbinfmt=\n'
         ;;
       *)
@@ -264,6 +283,8 @@ test_success_emulated() {
   run_scenario ok --system aarch64-linux build '.#hello' --print-out-paths
   expect_rc "$n" 0 \
     && expect_trace "$n" 'rworker up --json --ttl 1h --topic full-nix rworker-nix build rwn-' \
+    && expect_trace "$n" '--arch aarch64 --queue-timeout 120' \
+    && expect_err "$n" 'No native aarch64 worker available. Trying the controller default.' \
     && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://agent@100.64.0.7 aarch64-linux ' \
     && expect_trace "$n" '--option builders-use-substitutes true .#hello --print-out-paths' \
     && expect_trace "$n" 'NIX_SSHOPTS=-o StrictHostKeyChecking=yes' \
@@ -280,6 +301,7 @@ test_default_system_and_options() {
   expect_rc "$n" 0 \
     && expect_trace "$n" 'rworker up --json --ttl 30m --topic full-nix rworker-nix eza rwn-' \
     && expect_trace "$n" '--profile standard --disk 80' \
+    && expect_no_trace "$n" '--arch' \
     && expect_trace "$n" 'nix shell --max-jobs 0 --builders ssh-ng://agent@100.64.0.7 aarch64-linux ' \
     && pass "$n"
 }
@@ -297,6 +319,18 @@ test_native_worker() {
   run_scenario native build '.#x'
   expect_rc "$n" 0 \
     && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://agent@100.64.0.7 aarch64-linux ' \
+    && pass "$n"
+}
+
+test_hosted_native_worker() {
+  local n=hosted-worker
+  run_scenario hosted build '.#x'
+  expect_rc "$n" 0 \
+    && expect_trace "$n" '--arch aarch64 --queue-timeout 120' \
+    && expect_trace "$n" 'NIX_SSHOPTS=-F /tmp/rworker-nix-ssh.' \
+    && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://rworker-build@ghci-12345678?remote-program=' \
+    && expect_trace "$n" 'rworker down ghci-12345678' \
+    && expect_no_trace "$n" 'rworker ls' \
     && pass "$n"
 }
 
@@ -393,6 +427,11 @@ test_up_fails_finds_leaked_worker() {
 test_up_fails_nothing_to_clean() {
   local n=up-fails
   run_scenario up-fails build '.#x'
+  if [[ "$ERR" == *'Trying the controller default.'* ]]
+  then
+    fail "$n" "retried after a provisioning error"
+    return 1
+  fi
   expect_rc "$n" 1 \
     && expect_no_trace "$n" 'rworker down' \
     && pass "$n"
