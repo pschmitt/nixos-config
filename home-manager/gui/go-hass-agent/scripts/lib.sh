@@ -153,6 +153,23 @@ hyprctl_wrapper() {
   command hyprctl "$@"
 }
 
+# Whether browser-daemon's local tab API has a browser connected: it answers
+# from memory in about a millisecond, bruvtab costs ~250 ms of CPU per call.
+browser_daemon_tabs_ready() {
+  command -v browser-daemon >/dev/null 2>&1 || return 1
+  [[ -n "$(browser-daemon tabs clients 2>/dev/null)" ]]
+}
+
+# The browsers' tabs as `id<TAB>title<TAB>url` lines: from the local tab API,
+# else (no browser connected to it yet) from bruvtab.
+browser_tab_list() {
+  if browser_daemon_tabs_ready && browser-daemon tabs list 2>/dev/null
+  then
+    return 0
+  fi
+  bruvtab_list_cached
+}
+
 # `bruvtab list` costs ~250 ms of CPU and several 15s sensors (pp,
 # online-meeting) need it, so share one result for longer than their 15s
 # interval, or the two would never hit each other's cache. A race

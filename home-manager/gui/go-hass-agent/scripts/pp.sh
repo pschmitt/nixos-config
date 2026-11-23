@@ -33,7 +33,7 @@ main() {
   local state=false
   local icon="mdi:incognito-off"
 
-  if bruvtab_list_cached | grep -qi 'porn'
+  if browser_tab_list | grep -qi 'porn'
   then
     state=true
     icon="mdi:incognito"

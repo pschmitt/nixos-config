@@ -11,10 +11,12 @@
 }:
 let
   bruvtab = inputs.bruvtab.packages.${stdenv.hostPlatform.system}.default;
+  browser-daemon = inputs.browser-daemon.packages.${stdenv.hostPlatform.system}.default;
 in
 writeShellApplication {
   name = "ms-teams";
   runtimeInputs = [
+    browser-daemon
     bruvtab
     jq
     gnugrep

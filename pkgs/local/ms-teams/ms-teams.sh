@@ -1,6 +1,7 @@
 # ms-teams — Nix-native replacement for the zhj ms-teams:: helpers used in
 # this repo: meeting lookup (url/title) from the meetings JSON, and an
-# in-a-meeting check backed by bruvtab (browser tab listing).
+# in-a-meeting check backed by the browsers' tab list (browser-daemon's local
+# tab API, else bruvtab).
 #
 # Only the subcommands referenced by the repo are ported (in-a-meeting, url,
 # title, data). join-meeting / close-tabs are left in the zsh helpers.
@@ -71,8 +72,18 @@ meeting_data() {
   jq -e '.[0]' <<< "$res"
 }
 
+# The tabs as `id<TAB>title<TAB>url` lines. browser-daemon answers from
+# memory once a browser is connected to its local tab API; bruvtab otherwise.
+tab_list() {
+  if [[ -n "$(browser-daemon tabs clients 2>/dev/null)" ]] && browser-daemon tabs list 2>/dev/null
+  then
+    return 0
+  fi
+  bruvtab list 2>/dev/null
+}
+
 in_a_meeting() {
-  if bruvtab list 2>/dev/null | grep -qE '(teams\.microsoft\.com/v2|teams\.cloud\.microsoft)'
+  if tab_list | grep -qE '(teams\.microsoft\.com/v2|teams\.cloud\.microsoft)'
   then
     echo "Currently attending a meeting" >&2
   else

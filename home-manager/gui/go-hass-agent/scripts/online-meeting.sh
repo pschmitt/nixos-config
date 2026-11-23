@@ -45,7 +45,7 @@ emit_sensor() {
 # Browser Zoom tab (zoom.us/wc) -> canonical join URL, else native client.
 zoom_meeting_url() {
   local burl mid
-  burl="$(bruvtab_list_cached | awk -F'\t' 'index(tolower($3), "zoom.us/wc") > 0 { print $3; exit }')"
+  burl="$(browser_tab_list | awk -F'\t' 'index(tolower($3), "zoom.us/wc") > 0 { print $3; exit }')"
   if [[ -n "$burl" ]]
   then
     mid="$(sed -rn 's#.*/([0-9]+)/.*#\1#p' <<< "$burl")"
@@ -65,7 +65,7 @@ zoom_meeting_url() {
 
 jitsi_meeting_url() {
   local u
-  u="$(bruvtab_list_cached | awk -F'\t' 'index(tolower($3), "meet.jit.si/") > 0 { print $3; exit }')"
+  u="$(browser_tab_list | awk -F'\t' 'index(tolower($3), "meet.jit.si/") > 0 { print $3; exit }')"
   [[ -n "$u" ]] || return 1
   echo "$u"
 }

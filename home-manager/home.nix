@@ -12,6 +12,9 @@
   imports = lib.concatLists [
     [
       ./base.nix
+      # services.browser-daemon-local (the local tab API's server); only
+      # declares options until a host enables it (browser node hosts do).
+      inputs.browser-daemon.homeManagerModules.default
       ./sops.nix
       ./ssh.nix
       inputs.nixos-config-private.homeManagerModules.sshClient

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Emits a Go Hass Agent binary sensor with media player state and metadata via playerctl.
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib.sh"
+
 get_mpris_player_json() {
   python3 <<'PY'
 import json
@@ -77,9 +81,16 @@ print(json.dumps(selected))
 PY
 }
 
+# A tab playing sound (also WebAudio, which has no MPRIS player): from the
+# local tab API, else from bruvtab. Both list objects with .title and .url.
 get_bruvtab_playing_json() {
   local bruvtab_json
-  bruvtab_json="$(bruvtab tabs --playing -j 2>/dev/null)" || return 1
+  if browser_daemon_tabs_ready
+  then
+    bruvtab_json="$(browser-daemon tabs --json list --audible 2>/dev/null)" || return 1
+  else
+    bruvtab_json="$(bruvtab tabs --playing -j 2>/dev/null)" || return 1
+  fi
 
   jq -cer '
     if length == 0 then

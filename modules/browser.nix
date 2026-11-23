@@ -37,6 +37,44 @@ in
         default = null;
         description = "Trusted daemon origin that supplies the automatic daemon origin list.";
       };
+      signals = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Send the paired daemon (and so Home Assistant) small facts derived
+          from all tabs: a tab playing sound, a meeting open, signalRules
+          matches. Not the tabs themselves.
+        '';
+      };
+      signalRules = lib.mkOption {
+        type = lib.types.listOf (
+          lib.types.submodule {
+            options = {
+              name = lib.mkOption {
+                type = lib.types.strMatching "[a-z][a-z0-9_]{0,31}";
+                description = "The signal's name (its Home Assistant entity).";
+              };
+              url = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Regex a tab's URL must match (case-insensitive).";
+              };
+              title = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Regex a tab's title must match (case-insensitive).";
+              };
+              match = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                description = "Regex the title or the URL must match (case-insensitive).";
+              };
+            };
+          }
+        );
+        default = [ ];
+        description = "Own signals: on while a tab matches; only the name and a count leave the browser.";
+      };
     };
 
     systemPackages = lib.mkOption {
@@ -356,7 +394,9 @@ in
         default = [
           bruvtabPkg
           rbwNativeHost
-        ];
+        ]
+        # The node extension's local tab API host.
+        ++ lib.optional config.dotfiles.desktop.browser.node.enable nodePackages.browser-native-host;
         description = "Chromium native messaging host packages.";
       };
 

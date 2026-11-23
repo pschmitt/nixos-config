@@ -15,6 +15,14 @@ in
   config = lib.mkMerge [
     {
       dotfiles.desktop.browser.enable = lib.mkDefault true;
+      # The same tabs the go-hass-agent pp sensor looks for (pp.sh), as a
+      # pushed Home Assistant signal of the node extension.
+      dotfiles.desktop.browser.node.signalRules = lib.mkDefault [
+        {
+          name = "pp";
+          match = "porn";
+        }
+      ];
     }
     (lib.mkIf cfg.enable {
       # NOTE see also home-manager/gui/browser.nix
@@ -36,41 +44,61 @@ in
             };
           };
     })
-    (lib.mkIf (cfg.enable && cfg.node.enable) {
-      assertions = [
-        {
-          assertion = cfg.node.allowlistMode != "auto" || cfg.node.discoveryOrigin != null;
-          message = "dotfiles.desktop.browser.node.discoveryOrigin is required when allowlistMode is auto.";
-        }
-      ];
-      environment.etc."chromium/policies/managed/browser-daemon-node.json".text = builtins.toJSON {
-        "3rdparty".extensions.${chromiumId} = {
-          allowedDaemonOriginsMode = cfg.node.allowlistMode;
-          # Named without asking when it pairs.
-          defaultName = "${config.networking.hostName}-chromium";
-        }
-        // lib.optionalAttrs (cfg.node.discoveryOrigin != null) {
-          daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
+    (lib.mkIf (cfg.enable && cfg.node.enable) (
+      let
+        # The node extension's signals (docs/local-api.md in browser-daemon).
+        signalPolicy = {
+          inherit (cfg.node) signals;
+          signalRules = map (lib.filterAttrs (_: v: v != null)) cfg.node.signalRules;
         };
-      };
+      in
+      {
+        assertions = [
+          {
+            assertion = cfg.node.allowlistMode != "auto" || cfg.node.discoveryOrigin != null;
+            message = "dotfiles.desktop.browser.node.discoveryOrigin is required when allowlistMode is auto.";
+          }
+        ];
+        environment.etc."chromium/policies/managed/browser-daemon-node.json".text = builtins.toJSON {
+          "3rdparty".extensions.${chromiumId} = {
+            allowedDaemonOriginsMode = cfg.node.allowlistMode;
+            # Named without asking when it pairs.
+            defaultName = "${config.networking.hostName}-chromium";
+            # Push the tabs to the local tab API (browser-daemon tabs). Chromium
+            # also needs the popup switch once, for the nativeMessaging grant.
+            localApi = true;
+          }
+          // signalPolicy
+          // lib.optionalAttrs (cfg.node.discoveryOrigin != null) {
+            daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
+          };
+        };
 
-      home-manager.users.${config.mainUser.username}.home.file.".mozilla/managed-storage/browser-daemon-node@pschmitt.dev.json" =
-        {
-          force = true;
-          text = builtins.toJSON {
-            name = "browser-daemon-node@pschmitt.dev";
-            description = "Allowed browser daemon origins";
-            type = "storage";
-            data = {
-              allowedDaemonOriginsMode = cfg.node.allowlistMode;
-              defaultName = "${config.networking.hostName}-firefox";
-            }
-            // lib.optionalAttrs (cfg.node.discoveryOrigin != null) {
-              daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
+        home-manager.users.${config.mainUser.username} = {
+          # The local tab API's server: browser-daemon tabs, the go-hass-agent
+          # sensors and scripts read the node extension's tabs from it.
+          services.browser-daemon-local.enable = true;
+
+          home.file.".mozilla/managed-storage/browser-daemon-node@pschmitt.dev.json" = {
+            force = true;
+            text = builtins.toJSON {
+              name = "browser-daemon-node@pschmitt.dev";
+              description = "Allowed browser daemon origins";
+              type = "storage";
+              data = {
+                allowedDaemonOriginsMode = cfg.node.allowlistMode;
+                defaultName = "${config.networking.hostName}-firefox";
+                localApi = true;
+              }
+              // signalPolicy
+              // lib.optionalAttrs (cfg.node.discoveryOrigin != null) {
+                daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
+              };
             };
           };
         };
-    })
+      }
+    ))
   ];
 }
 
