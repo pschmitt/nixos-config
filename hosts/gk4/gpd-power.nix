@@ -67,10 +67,10 @@ in
         apuSlowLimit = 12000;
       };
       balanced = {
-        stapmLimit = 20000;
-        fastLimit = 20000;
-        slowLimit = 20000;
-        apuSlowLimit = 20000;
+        stapmLimit = 14000;
+        fastLimit = 14000;
+        slowLimit = 14000;
+        apuSlowLimit = 14000;
       };
       performance = {
         stapmLimit = 24000;
