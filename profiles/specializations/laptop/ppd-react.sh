@@ -75,9 +75,11 @@ apply_tdp_profile() {
   limits_variable="TDP_PROFILE_${profile_key}"
   limits="${!limits_variable:-}"
 
-  if [[ "$power_state" == battery && -n "${TDP_BATTERY_LIMIT:-}" ]]
+  if [[ "$profile" == power-saver ]] &&
+    [[ "$power_state" == battery ]] &&
+    [[ -n "${TDP_BATTERY_POWER_SAVER_LIMIT:-}" ]]
   then
-    limits="$TDP_BATTERY_LIMIT $TDP_BATTERY_LIMIT $TDP_BATTERY_LIMIT $TDP_BATTERY_LIMIT"
+    limits="$TDP_BATTERY_POWER_SAVER_LIMIT $TDP_BATTERY_POWER_SAVER_LIMIT $TDP_BATTERY_POWER_SAVER_LIMIT $TDP_BATTERY_POWER_SAVER_LIMIT"
   elif [[ -z "$limits" ]]
   then
     log_warn "no TDP settings configured for power profile $profile"
