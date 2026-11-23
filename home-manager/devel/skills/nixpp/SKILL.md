@@ -46,10 +46,19 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
      that nixos-config CI built and pinned for the host in the signed cache;
      no evaluation or build on the phone. Only works once CI has published
      the pushed commit; `nixpp upgrade --dry-run` shows whether it has.
+   - **Uncached ARM Rust builds:** If the guest closure needs to compile an
+     `aarch64-linux` Rust package, including a newly pinned dependency such as
+     `rworker`, use the `circus-build` skill to find or queue the exact
+     revision's guest system build on a native ARM64 worker. Verify the
+     assigned builder, then upgrade from the signed cache. An x86 builder can
+     advertise `aarch64-linux` through emulation, and Rust builds there have
+     repeatedly added tens of minutes to phone deployments.
    - **Without waiting for CI:** `nixpp upgrade --remote-eval` evaluates and
      builds the configured flake on the first reachable configured builder and
      switches; `nixpp upgrade --rworker --remote-eval` does the same on a
-     disposable rworker. Both imply `--build`. Nix caches what
+     disposable rworker. Use this path for cached closures or quick builds.
+     Both imply `--build`, and neither flag guarantees a native ARM builder.
+     Nix caches what
      `github:…/main` resolves to for about an hour; pass
      `--flake github:pschmitt/nixos-config/<sha>` for an exact commit.
    - **Built elsewhere (an rworker, by hand):** push the closure with
