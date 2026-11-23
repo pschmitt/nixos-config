@@ -121,12 +121,12 @@ rworker down "$w"
   so. `setup` is where more preparation (gradle, ssh, ...) will go.
 - Every worker gets its own short-lived niks3 push token (`niks3 push` on the
   worker, with the closure on `--stdin`; `--no-niks3-token` or MCP `up(niks3_token=false)` opts out,
-  `niks3-token NAME` reissues): see [host-closures](references/host-closures.md).
+  `setup niks3-token NAME` (MCP `setup_niks3_token`) reissues): see [host-closures](references/host-closures.md).
 
 MCP: the `rworker` MCP server offers the same as tools (`profiles` lists the
 available configurations; `up` accepts `profile`
 and has `nix_cache` on by default), `ls`, `extend`, `down`, `prune`, `exec`, `start`/`jobs`/`logs` for
-registered jobs, `register` for existing log files, `sync`, `nix_cache`, `builder`). Prefer it when it is
+registered jobs, `setup_register_log_file` for existing log files, `sync`, `nix_cache`, `builder`). Prefer it when it is
 loaded; the CLI is the fallback. A running MCP server only gains new tools
 after its client restarts.
 
@@ -203,8 +203,8 @@ after its client restarts.
   polling interval in seconds. Each unnamed job gets a unique ID. MCP `exec`
   returns the ID even on timeout;
   the job continues. If a job must be launched separately, register its existing
-  absolute log file with `rworker register "$w" JOB --log /path/to/log` (or MCP
-  `register`) immediately. Logs and metadata disappear with the worker.
+  absolute log file with `rworker setup register-log-file "$w" JOB --log /path/to/log` (or MCP
+  `setup_register_log_file`) immediately. Logs and metadata disappear with the worker.
 
 ## Secrets and private inputs
 

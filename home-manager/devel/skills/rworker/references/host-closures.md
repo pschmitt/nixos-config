@@ -48,7 +48,7 @@ rworker ssh "$w" 'nix path-info -r ~/<host>-system | niks3 push --stdin > ~/push
 The token is an OIDC JWT that the control host signs when the worker is
 created. It expires with the worker, `extend` replaces it with one for the new
 lifetime, and it may only write pins named `rworker-*` (plain pushes need no
-pin). `rworker niks3-token NAME` (MCP `niks3_token`) reissues it, for example
+pin). `rworker setup niks3-token NAME` (MCP `setup_niks3_token`) reissues it, for example
 for a worker created with `--no-niks3-token` (MCP `up(niks3_token=false)`),
 which is also the default for the browser-daemon profile. Workers from an image
 that predates the feature have no `niks3` command and no token directory: use
