@@ -251,7 +251,10 @@ compgen -G "$work/state/retired.*/services/free" >/dev/null || fail "the old tre
 setsid bash "$svc_script" supervise >>"$work/supervise.log" 2>&1 &
 supervisor_pid=$!
 expect restricted running "the new tree starts while the old logger drains"
-kill -0 "$retiring_pid" && kill -0 "$writer" || fail "the old tree did not preserve its writer"
+if ! kill -0 "$retiring_pid" || ! kill -0 "$writer"
+then
+  fail "the old tree did not preserve its writer"
+fi
 kill "$writer"
 for ((attempt = 0; attempt < 50; attempt++))
 do
