@@ -1,0 +1,16 @@
+--- a/server-client.c
++++ b/server-client.c
+@@ -907,4 +906,0 @@
+-			if (c->tty.mouse_drag_status) {
+-				x = c->tty.mouse_drag_x;
+-				y = c->tty.mouse_drag_y;
+-			}
+@@ -1027,0 +1024,2 @@
++	} else if (type == KEYC_TYPE_MOUSEDRAG && c->tty.mouse_drag_status) {
++		loc = c->tty.mouse_drag_location;
+@@ -1207,0 +1206 @@
++				c->tty.mouse_drag_location = loc;
+--- a/tmux.h
++++ b/tmux.h
+@@ -1834,0 +1835 @@
++	enum key_code_mouse_location mouse_drag_location;

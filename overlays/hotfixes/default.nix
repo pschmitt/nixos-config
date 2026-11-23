@@ -8,6 +8,7 @@ let
     (import ./onnxruntime.nix { inherit prev; })
     (import ./squeekboard.nix { inherit prev; })
     (import ./stalwart.nix { inherit final prev; })
+    (import ./tmux.nix { inherit prev; })
   ];
 
   # Apply targeted workarounds to each Python package set.
