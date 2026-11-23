@@ -58,6 +58,12 @@ let
     assert c.nix.settings.max-jobs == 0;
     assert c.nix.settings.builders-use-substitutes;
     assert c.nix.registry.nixpkgs.to.type == "path";
+    assert
+      c.nix.registry.termuxPkgs.to == {
+        type = "github";
+        owner = "pschmitt";
+        repo = "termuxpp";
+      };
     assert c.nix.nixPath == [ "nixpkgs=${c.nix.registry.nixpkgs.to.path}" ];
     assert builtins.any (p: (p.pname or "") == "iputils") c.home.packages;
     assert c.home.sessionVariables.NIX_CONF_DIR == "/home/pschmitt/.config/nix";

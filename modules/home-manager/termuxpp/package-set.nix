@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 let
   lockedSource = {
     type = "path";
@@ -46,27 +51,32 @@ let
     ''} "$out/flake.nix"
     cp ${lock} "$out/flake.lock"
   '';
-  target = {
-    type = "path";
-    path = toString source;
+  targets = {
+    nixpkgs = {
+      type = "path";
+      path = toString source;
+    };
+    termuxPkgs = {
+      type = "github";
+      owner = "pschmitt";
+      repo = "termuxpp";
+    };
   };
   registry = (pkgs.formats.json { }).generate "full-nix-registry.json" {
     version = 2;
-    flakes = [
-      {
-        from = {
-          type = "indirect";
-          id = "nixpkgs";
-        };
-        to = target;
-        exact = true;
-      }
-    ];
+    flakes = lib.mapAttrsToList (id: target: {
+      from = {
+        type = "indirect";
+        inherit id;
+      };
+      to = target;
+      exact = true;
+    }) targets;
   };
 in
 {
   nix = {
-    registry.nixpkgs.to = target;
+    registry = lib.mapAttrs (_: target: { to = target; }) targets;
     settings.flake-registry = "file://${registry}";
     nixPath = [ "nixpkgs=${source}" ];
   };
