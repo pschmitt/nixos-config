@@ -154,10 +154,11 @@ hyprctl_wrapper() {
 }
 
 # `bruvtab list` costs ~250 ms of CPU and several 15s sensors (pp,
-# online-meeting) need it, so share one result for a few seconds. A race
+# online-meeting) need it, so share one result for longer than their 15s
+# interval, or the two would never hit each other's cache. A race
 # between two sensors only costs one extra call.
 bruvtab_list_cached() {
-  local ttl="${BRUVTAB_LIST_CACHE_TTL:-10}"
+  local ttl="${BRUVTAB_LIST_CACHE_TTL:-20}"
   local cache="${XDG_RUNTIME_DIR:-/tmp}/go-hass-agent-bruvtab-list"
   local mtime
 
