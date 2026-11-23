@@ -63,13 +63,51 @@ fetch_runs() {
 
   project=":fullpath"
   [[ -n "$repo" ]] && project="$(jq -rn --arg r "$repo" '$r | @uri')"
-  glab api "projects/${project}/pipelines?sha=${sha}&per_page=100" | jq '
+  local pipelines
+  pipelines="$(glab api "projects/${project}/pipelines?sha=${sha}&per_page=100")" || return 1
+  if [[ "$(jq 'length' <<< "$pipelines")" -eq 0 ]]
+  then
+    pipelines="$(gitlab_merge_request_pipelines "$project" "$sha")" || return 1
+  fi
+  jq '
     map({
       name: "pipeline \(.ref)",
       status: (if (.status | IN("success", "failed", "canceled", "skipped", "manual")) then "completed" else .status end),
       conclusion: .status,
       databaseId: .id
-    })'
+    })' <<< "$pipelines"
+}
+
+# A push to a branch with an open merge request may start no pipeline for the
+# commit itself: with merged results pipelines or merge trains, GitLab runs the
+# pipeline on a merge commit. Print the pipelines of the open merge requests of
+# $2 (sha) whose commit is $2 or a merge commit with $2 as a parent.
+gitlab_merge_request_pipelines() {
+  local project="$1" sha="$2" iid pipeline pipeline_sha
+  local -a found=()
+
+  # A commit that GitLab does not know yet (404) has no merge request either.
+  for iid in $({ glab api "projects/${project}/repository/commits/${sha}/merge_requests" 2> /dev/null || echo '[]'; } |
+    jq -r --arg sha "$sha" '(if type == "array" then .[] else empty end) | select(.state == "opened" and .sha == $sha) | .iid')
+  do
+    while read -r pipeline
+    do
+      pipeline_sha="$(jq -r '.sha' <<< "$pipeline")"
+      if [[ "$pipeline_sha" == "$sha" ]] ||
+        glab api "projects/${project}/repository/commits/${pipeline_sha}" |
+          jq -e --arg sha "$sha" '.parent_ids | index($sha)' > /dev/null
+      then
+        found+=("$pipeline")
+      fi
+    done < <(glab api "projects/${project}/merge_requests/${iid}/pipelines?per_page=5" | jq -c '.[]')
+  done
+
+  if [[ "${#found[@]}" -eq 0 ]]
+  then
+    echo '[]'
+    return 0
+  fi
+  printf '%s\n' "${found[@]}" | jq -s '.'
 }
 
 # Drop a cancelled run when the same workflow has another run on this commit: it

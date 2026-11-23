@@ -27,6 +27,7 @@ Start **one** watch per pushed commit, in the background, then carry on with ind
 - `--follow` switches to the newest remote head of the branch when you push again, so one watch covers a series of pushes.
 - The forge comes from the `origin` URL (GitHub for github.com, GitLab otherwise, e.g. git.wiit.one); override with `--forge github|gitlab`. Run it inside a checkout of the repository: `--repo` does not set the forge, so outside a checkout pass `--forge` too.
 - Pass a commit, `--repo OWNER/REPO`, `--timeout SECONDS` (default 1800) or `--grace SECONDS` (wait for runs to appear, default 120) when needed.
+- GitLab merged results pipelines and merge trains run on a merge commit, not on the pushed commit, once the branch has an open merge request. Pass the pushed commit anyway: when it has no pipeline of its own, the watcher takes the pipelines of its open merge request whose merge commit has it as a parent.
 - When passing a commit explicitly, use the full SHA from `git rev-parse HEAD`, not a shortened hash; the watcher passes it to `gh run list --commit`, where an abbreviation may appear to have no runs.
 
 Do not pipe the watcher (`| tail`, `| cut`): the task then reports the pipe's exit code, so a failed run looks like exit 0. Redirect to a file if you must keep the output.
