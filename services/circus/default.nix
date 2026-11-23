@@ -871,7 +871,12 @@ in
         // lib.genAttrs notifyingUnits (_: {
           wants = [ "circus-github-token.service" ];
           # Read on every status by pschmitt/circus, so rotations apply live.
-          environment.CIRCUS_NOTIFICATIONS__GITHUB_TOKEN_FILE = githubTokenFile;
+          environment = {
+            CIRCUS_NOTIFICATIONS__GITHUB_TOKEN_FILE = githubTokenFile;
+          }
+          // lib.optionalAttrs (cfg.githubActionsAgents.pullRequestAuthorIdsFile != null) {
+            CIRCUS_PR_COMMENT_AUTHOR_IDS_FILE = cfg.githubActionsAgents.pullRequestAuthorIdsFile;
+          };
           serviceConfig.SupplementaryGroups = [ githubTokenGroup ];
         })
       ))
