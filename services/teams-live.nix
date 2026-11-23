@@ -46,6 +46,8 @@ in
     "teams-live/credentials" = hostSecret;
     "teams-live/gitlab-token" = hostSecret;
     "teams-live/gitlab-personal-token" = hostSecret;
+    "teams-live/personal-teams-mri" = hostSecret;
+    "teams-live/personal-gitlab-username" = hostSecret;
     "teams-live/gitlab-url" = hostSecret;
     "teams-live/gitlab-group" = hostSecret;
     "teams-live/gitlab-webhook-secret" = hostSecret;
@@ -100,6 +102,13 @@ in
           group = secretValue "teams-live/gitlab-group";
           token_file = secrets."teams-live/gitlab-token".path;
           fallback_token_files = [ secrets."teams-live/gitlab-personal-token".path ];
+          user_token_mappings = [
+            {
+              teams_mri = secretValue "teams-live/personal-teams-mri";
+              gitlab_username = secretValue "teams-live/personal-gitlab-username";
+              token_index = 1;
+            }
+          ];
           history_max_age_minutes = 15;
           webhook = {
             enable = true;
