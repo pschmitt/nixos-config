@@ -567,9 +567,11 @@ in
           command = lib.getExe (
             pkgs.writeShellApplication {
               name = "ha-mcp-proxy";
+              # The URL contains a secret; the proxy logs it at lower levels.
               text = ''
                 exec ${mcpProxy}/bin/mcp-proxy \
                   --transport streamablehttp \
+                  --log-level CRITICAL \
                   --verify-ssl "''${SSL_CERT_FILE:-${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt}"
               '';
             }
