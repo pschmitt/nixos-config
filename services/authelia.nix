@@ -188,6 +188,7 @@ in
         "authelia/oidc-wallos-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-trek-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-stricknani-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-silo-secret-hash" = secretsAttrs autheliaUser;
       };
       templates = {
         "authelia/duo.yml" = {
@@ -227,6 +228,27 @@ in
             identity_providers:
               oidc:
                 clients:
+                  - client_id: 'silo'
+                    client_name: 'Silo'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-silo-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      - 'https://silo.${config.domains.main}/api/v2/auth/oauth/6/callback'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'email'
+                      - 'groups'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    access_token_signed_response_alg: 'none'
+                    userinfo_signed_response_alg: 'none'
+                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
                   - client_id: 'audiobookshelf'
                     client_name: 'Audiobookshelf'
                     client_secret: '${config.sops.placeholder."authelia/oidc-audiobookshelf-secret-hash"}'
