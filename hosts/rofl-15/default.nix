@@ -16,6 +16,7 @@
 
   # Circus CI (services/circus/README.md).
   services.circus = {
+    consumerBuildRepositories = [ "pschmitt/rbw" ];
     # Agents reach the queue-runner on rofl-15.
     agent.runnerHost = "rofl-15";
     # Agents upload outputs straight to niks3's bucket (under circus/), so

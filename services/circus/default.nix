@@ -123,6 +123,7 @@ in
     inputs.circus.nixosModules.circus
     ./agent.nix
     ./artifact-bridge
+    ./consumer-builds
     ./effects
   ];
 
@@ -307,7 +308,10 @@ in
           server = {
             host = "127.0.0.1";
             port = serverPort;
-            snapshot_repositories = [ repositoryUrl ];
+            snapshot_repositories = [
+              repositoryUrl
+            ]
+            ++ map (repo: "https://github.com/${repo}") cfg.consumerBuildRepositories;
             snapshot_pools = map (pool: pool.name) (
               lib.filter (
                 pool: (pool.pull_request_author_ids or [ ]) == [ ] && !(pool ? pull_request_author_ids_file)
