@@ -29,6 +29,7 @@ App builds and the fork itself are the `termuxpp` skill.
 ```sh
 nixpp status            # active and previous generation (JSON with --json)
 nixpp generations       # all retained generations
+nixpp df                # closure sizes, exclusive sizes and deduplicated total
 nixpp doctor            # native controller, store, builders, signed cache pin
 nixpp diff              # closure diff previous -> current
 cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
@@ -61,6 +62,8 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
      Nix caches what
      `github:…/main` resolves to for about an hour; pass
      `--flake github:pschmitt/nixos-config/<sha>` for an exact commit.
+     For native ARM builds after a nixpp source change, see
+     [Build the Android runtime prerequisite](#build-the-android-runtime-prerequisite).
    - **Built elsewhere (an rworker, by hand):** push the closure with
      `niks3 push` (worker tokens cannot move the `gh-main-*` pins), then on the
      phone copy it with `nix --refresh copy --from <cache store>`, using the
@@ -82,6 +85,37 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
 The nightly job (`termuxpp-nightly-update`) already runs the published-system
 upgrade on Wi-Fi while charging; `termuxpp-nightly-update --check` shows its
 readiness without activating anything.
+
+### Build the Android runtime prerequisite
+
+The guest system includes an Android/AArch64 `nixpp-runtime-termux` built
+with the x86_64 Android NDK. A nixpp source change can invalidate this
+runtime and its bootstrap seed. If the published guest system is still
+pending, build and cache this prerequisite on an x86_64 rworker before
+starting the native ARM guest builds. An ARM-only worker cannot build it.
+A platform mismatch on `nixpp-runtime-termux`, the bootstrap seed or its
+`manifest.json` derivation is a sign that the prerequisite is missing.
+
+Use the exact **nixos-config** commit that pins the TermuxPP change. Its
+locked inputs select the same TermuxPP source and Nixpkgs as the phone build.
+Run this on the x86_64 worker:
+
+```bash
+set -o pipefail
+nix build --no-link --print-out-paths --max-jobs 4 --cores 4 -L --expr '
+  let f = builtins.getFlake "github:pschmitt/nixos-config/<sha>";
+  in (f.inputs.termuxpp.lib.nixpp.packagesFor
+    f.inputs.nixpkgs.legacyPackages.x86_64-linux).nixpp-runtime-termux
+' > "$HOME/nixpp-native.path" &&
+  nix path-info --recursive "$(cat "$HOME/nixpp-native.path")" |
+    niks3 push --stdin
+```
+
+After the upload succeeds, run
+`nixpp upgrade --rworker --flake 'github:pschmitt/nixos-config/<sha>'`
+on the claimed phones and verify that the worker profile is `gh-aarch64`.
+If a previous attempt looked up the runtime before it was published, set
+the Nix option `narinfo-cache-negative-ttl = 0` in `NIX_CONFIG` for the retry.
 
 ## Recover
 
