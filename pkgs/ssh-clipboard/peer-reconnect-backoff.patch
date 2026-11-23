@@ -1,0 +1,13 @@
+diff --git a/src/daemon/runtime.rs b/src/daemon/runtime.rs
+index f174b91..7b85c49 100644
+--- a/src/daemon/runtime.rs
++++ b/src/daemon/runtime.rs
+@@ -189,7 +189,7 @@ async fn dial_loop(daemon: Arc<Daemon>, peer: PeerConfig, mut shutdown: watch::R
+         }
+         tokio::select! {
+             () = tokio::time::sleep(backoff) => {
+-                backoff = (backoff * 2).min(Duration::from_secs(10));
++                backoff = (backoff * 2).min(Duration::from_secs(60));
+             }
+             changed = shutdown.changed() => {
+                 if changed.is_err() || *shutdown.borrow() { return; }

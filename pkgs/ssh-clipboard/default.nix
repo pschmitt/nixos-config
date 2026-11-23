@@ -35,6 +35,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # Treat an empty Wayland clipboard as empty instead of logging a capture
     # failure on every poll
     ./empty-wayland-clipboard.patch
+    # Cap the reconnect backoff for an unreachable peer at 60s instead of
+    # 10s: a powered-off peer otherwise costs an SSH handshake every ~20s
+    ./peer-reconnect-backoff.patch
   ];
 
   checkFlags = [
