@@ -48,7 +48,7 @@ rworker ssh "$w" 'cd rbw && nix develop -c cargo build --release'
 rworker down "$w"
 ```
 
-`RWORKER_KEY` must name the **public** SSH key file (`.pub`), never the private key: `up` sends its contents to the worker-control command. `builder` strips `.pub` to find the private key; `ssh` and `sync` need it in the SSH agent or configuration.
+`RWORKER_KEY` must name the **public** SSH key file (`.pub`), never the private key: `up` sends its contents to the worker-control command. `setup nix-builder` strips `.pub` to find the private key; `ssh` and `sync` need it in the SSH agent or configuration.
 
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints a summary;
   `--profile browser-daemon` is the image for browser-daemon's ephemeral
@@ -107,7 +107,9 @@ rworker down "$w"
   `-- 'cd x && make'` (or `-- "$CMD"`), and quote nested shells inside it.
   Print each step's result (`; echo STEP_DONE`) and keep stderr: with
   `set -e` and `>/dev/null`, a failure leaves no output at all.
-- `builder NAME` prints a Nix `--builders` line for the worker.
+- `setup nix-builder NAME` prints a Nix `--builders` line for the worker;
+  without NAME, one for the on-demand builder gateway, which leases a worker
+  on first use (`--profile`, `--arch aarch64`, `--pool`; MCP `setup_nix_builder`).
 - `setup nix NAME [--no-cache] [--no-auth] [--auth-host HOST]... [--dry-run]`
   (MCP `setup_nix`) gets the worker ready to use your host's Nix, in two
   parts, both on by default: **cache**, so it substitutes from the private
@@ -122,7 +124,7 @@ rworker down "$w"
   worker's nix-daemon restarts on its own. It puts credentials on the worker,
   which anyone with a shell there can read; the worker is private and
   temporary, so the host's own profile is acceptable. Re-run it after a key
-  or token is rotated. `nix-cache NAME` (MCP `nix_cache`) is the cache part
+  or token is rotated. `setup nix-cache NAME` (MCP `setup_nix(auth=false)`) is the cache part
   alone. Workers created before the feature get nothing and the command says
   so. `setup` is where more preparation (gradle, ssh, ...) will go.
 - Every worker gets its own short-lived niks3 push token (`niks3 push` on the
@@ -132,7 +134,7 @@ rworker down "$w"
 MCP: the `rworker` MCP server offers the same as tools (`profiles` lists the
 available configurations; `up` accepts `profile`
 and has `nix_cache` on by default), `ls`, `extend`, `down`, `prune`, `exec`, `start`/`jobs`/`logs` for
-registered jobs, `setup_register_log_file` for existing log files, `sync`, `nix_cache`, `builder`). Prefer it when it is
+registered jobs, `setup_register_log_file` for existing log files, `sync`, `setup_nix`, `setup_nix_builder`). Prefer it when it is
 loaded; the CLI is the fallback. A running MCP server only gains new tools
 after its client restarts.
 
@@ -163,7 +165,7 @@ after its client restarts.
 - **Nix evaluation:** Remote builders and `--eval-store` do not move evaluation.
   Sync the tree and run Nix on the worker for expensive evaluations. Follow
   the repository's workload policy for deciding when to offload.
-- **Nix builds:** `nix build --max-jobs 0 --builders "$(rworker builder "$w")"
+- **Nix builds:** `nix build --max-jobs 0 --builders "$(rworker setup nix-builder "$w")"
   .#pkg` builds on the worker and copies the result back. The worker
   substitutes from cache.nixos.org and nixbot's store itself, and from the
   private S3 cache unless it was created with `--no-nix-cache`. Add
@@ -186,7 +188,7 @@ after its client restarts.
   `niks3 push PATH` uploads nothing when PATH itself is already cached, even
   if its references are not ([host-closures](references/host-closures.md)). Only for what niks3 cannot do may you put the S3 credentials of the
   agent's own host on a worker without asking: the AWS profile the host's
-  `s3://` substituter names, as `nix-cache` transfers it or as a mode-0600
+  `s3://` substituter names, as `setup nix-cache` transfers it or as a mode-0600
   file (see **Secrets and private inputs**), never the whole credentials file,
   never in arguments or the Nix store, and `down` the worker when done. If
   that profile cannot write, build on the target or ask before a large
