@@ -855,11 +855,8 @@ in
         # service.luau before hitting ImageMagick.
         plugin_settings = {
           "pschmitt/lan-mouse".start_command = "zsh -lc 'zhj lan-mouse::start'";
-          # Polling intervals trade latency for idle wakeups on battery:
-          # each tick spawns subprocesses (lan-mouse cli, pactl, pw-link,
-          # nmcli, pw-cli), so keep them slow.
-          "pschmitt/lan-mouse".poll_interval = 10;
-          "pschmitt/mic-state".poll_interval_ms = 2000;
+          # lan-mouse and mic-state are event-driven with slow safety-net
+          # polls by default. screencast still polls pw-cli, so keep it slow.
           "pschmitt/screencast".poll_interval = 5;
           # duo-status is not placed in any bar but its service still polls.
           "pschmitt/duo-status".poll_interval = 60;
