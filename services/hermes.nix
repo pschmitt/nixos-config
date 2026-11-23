@@ -237,6 +237,10 @@ in
         sopsFile = config.sops.defaultSopsFile;
         mode = "0400";
       };
+      "home-assistant/mcp-url" = {
+        sopsFile = config.sops.defaultSopsFile;
+        mode = "0400";
+      };
       "hermes/home-assistant/llat" = config.sops.mkHostSecret {
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
@@ -329,6 +333,7 @@ in
         content = ''
           MCP_N8N_API_KEY=${config.sops.placeholder."n8n/mcp/token"}
           MCP_HOME_ASSISTANT_API_KEY=${config.sops.placeholder."home-assistant/token"}
+          MCP_HOME_ASSISTANT_URL=${config.sops.placeholder."home-assistant/mcp-url"}
           HERMES_AGENT_HELP_GUIDANCE=For GitHub interactions, prefer the gh-brkn-lol account by default: use the github-gh-brkn-lol MCP server or gh-brkn-lol command. Use the github-pschmitt MCP server or gh-pschmitt command only when the pschmitt account is specifically needed; verify identity before account-sensitive actions and do not switch credentials without explicit instruction. For host Nix changes, initialize the checkout with hermes-nixos-init if ${hermesNixFlakeDir} is missing, edit that checkout, run nixos-rebuild dry-build --flake ${hermesNixFlakeDir}#rofl-10, then run hermes-nixos-apply to request the privileged switch.
           HASS_URL=https://ha.${config.domains.main}
           HASS_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}
@@ -471,7 +476,7 @@ in
             timeout = 90;
           };
           home-assistant = {
-            url = "https://ha.${config.domains.main}/api/mcp";
+            url = "\${MCP_HOME_ASSISTANT_URL}";
             headers.Authorization = "Bearer \${MCP_HOME_ASSISTANT_API_KEY}";
             connect_timeout = 30;
             timeout = 90;

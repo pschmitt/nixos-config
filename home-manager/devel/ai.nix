@@ -549,6 +549,10 @@ in
           mode = "0600";
           sopsFile = config.host.sopsFile;
         };
+        "home-assistant/mcp-url" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
       };
     };
 
@@ -559,9 +563,21 @@ in
           url = "https://n8n.${domainName}/mcp-server/http";
           tokenFile = config.sops.secrets."n8n/mcp/token".path;
         };
-        home-assistant = mcpHttpProxy {
-          url = "https://ha.${domainName}/api/mcp";
-          tokenFile = config.sops.secrets."home-assistant/token".path;
+        home-assistant = {
+          command = lib.getExe (
+            pkgs.writeShellApplication {
+              name = "ha-mcp-proxy";
+              text = ''
+                exec ${mcpProxy}/bin/mcp-proxy \
+                  --transport streamablehttp \
+                  --verify-ssl "''${SSL_CERT_FILE:-${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt}"
+              '';
+            }
+          );
+          env = {
+            SSE_URL.file = config.sops.secrets."home-assistant/mcp-url".path;
+            API_ACCESS_TOKEN.file = config.sops.secrets."home-assistant/token".path;
+          };
         };
         bichon = {
           command = lib.getExe pkgs.bichon-mcp;
