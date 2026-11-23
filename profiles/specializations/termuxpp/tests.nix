@@ -57,6 +57,8 @@ let
       home.pkgs.rsync.patches;
     assert c.nix.settings.max-jobs == 0;
     assert c.nix.settings.builders-use-substitutes;
+    assert builtins.elem c.nix.package c.home.packages;
+    assert c.nix.package == home.pkgs.nix || !(builtins.elem home.pkgs.nix c.home.packages);
     assert c.nix.registry.nixpkgs.to.type == "path";
     assert
       c.nix.registry.termuxPkgs.to == {

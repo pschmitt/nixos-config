@@ -99,6 +99,7 @@ in
       NIX_CONF_DIR = "${config.xdg.configHome}/nix";
     };
     packages = [
+      config.nix.package
       termuxpp.termuxpp-rish
       termuxpp.termuxpp-storage
     ]
@@ -122,7 +123,6 @@ in
         jc
         less
         ncurses
-        nix
         netcat-openbsd
         openssh
         procps
