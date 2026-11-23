@@ -61,10 +61,10 @@ in
     command = "${ryzenadjTdp}/bin/ryzenadj-tdp";
     profiles = {
       power-saver = {
-        stapmLimit = 15000;
-        fastLimit = 15000;
-        slowLimit = 15000;
-        apuSlowLimit = 15000;
+        stapmLimit = 12000;
+        fastLimit = 12000;
+        slowLimit = 12000;
+        apuSlowLimit = 12000;
       };
       balanced = {
         stapmLimit = 20000;
