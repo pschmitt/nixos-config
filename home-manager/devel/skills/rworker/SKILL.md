@@ -26,6 +26,12 @@ Both support interactive SSH. GitHub leases default to 30 minutes including
 queue time. See [GitHub Actions workers](references/github-actions.md) for
 working-tree sync, artifact fetch, KVM, and cache differences.
 
+For a CI lease with mesh access allowed by the controller, use
+`rworker setup netbird NAME` or `rworker setup tailscale NAME` (MCP
+`setup_netbird` or `setup_tailscale`) to activate a provider after startup
+or to re-enroll it. The command returns a SOCKS address on the worker.
+This is supported on GitHub Actions and the GitLab prebuilt lease image.
+
 ## Commands
 
 A worker NAME may be abbreviated to a unique prefix or substring (`rworker logs -f 3e19`);
