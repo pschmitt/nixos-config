@@ -26,6 +26,7 @@ let
             builtins.elem repository [
               "anika-blue"
               "browser-daemon"
+              "bruvtab"
               "circus"
               "luks-ssh-unlock"
               "monarch"
@@ -33,6 +34,7 @@ let
               "rworker"
               "stricknani"
               "tagesschau"
+              "teams-live"
               "termuxpp"
             ]
           then

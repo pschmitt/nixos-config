@@ -127,6 +127,8 @@ def wrapper_flake(lock, system, packages):
     }
     for name, node in sorted(nodes["root"]["inputs"].items()):
         spec = nodes[node]["original"]
+        if not nodes[node].get("flake", True):
+            spec = {**spec, "flake": False}
         if name == "producer":
             spec = {**spec, "inputs": overrides}
         lines.append(f"  inputs.{nix_value(name)} = {nix_value(spec)};")

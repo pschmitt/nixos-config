@@ -421,6 +421,7 @@ in
                   allowed_build_repositories = [
                     "pschmitt/anika-blue"
                     "pschmitt/browser-daemon"
+                    "pschmitt/bruvtab"
                     "pschmitt/circus"
                     "pschmitt/luks-ssh-unlock"
                     "pschmitt/monarch"
@@ -429,6 +430,7 @@ in
                     "pschmitt/rworker"
                     "pschmitt/stricknani"
                     "pschmitt/tagesschau"
+                    "pschmitt/teams-live"
                     "pschmitt/termuxpp"
                   ];
                   systems = [ "aarch64-linux" ];

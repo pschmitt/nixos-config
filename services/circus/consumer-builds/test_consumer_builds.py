@@ -4,7 +4,7 @@ import tarfile
 import unittest
 from unittest.mock import patch
 
-from consumer_builds import archive_snapshot, canonical, plans, ready_outputs, wrapper_lock
+from consumer_builds import archive_snapshot, canonical, plans, ready_outputs, wrapper_flake, wrapper_lock
 
 
 class ConsumerBuildTests(unittest.TestCase):
@@ -54,6 +54,13 @@ class ConsumerBuildTests(unittest.TestCase):
         self.assertEqual(nixpkgs["locked"], self.consumer["nodes"]["nixpkgs"]["locked"])
         self.assertEqual(hm["inputs"]["nixpkgs"], aliases["consumer-nixpkgs"])
         self.assertNotIn("__final", nodes["producer"]["locked"])
+
+    def test_source_only_input_is_declared_as_non_flake(self):
+        self.consumer["nodes"]["hm"]["flake"] = False
+        self.consumer["nodes"]["hm"].pop("inputs")
+        lock = wrapper_lock(self.producer, self.consumer, "demo", ["nixpkgs", "home-manager"])
+        flake = wrapper_flake(lock, "aarch64-linux", ["demo"]).decode()
+        self.assertIn('"consumer-home-manager" = { "flake" = false;', flake)
 
     def test_unrelated_consumer_changes_do_not_reschedule(self):
         def fingerprint(lock, consumer_sha):
