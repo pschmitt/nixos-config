@@ -7,6 +7,12 @@
 {
   networking.useDHCP = lib.mkDefault true;
 
+  # The fleet's luks-ssh-unlock watchers log in as root every ~15s (initrd
+  # probe plus rootfs healthcheck). Without linger every login starts root's
+  # systemd user manager and stops it again before the next one, which on a
+  # laptop is a steady drain; keep one manager running instead.
+  users.users.root.linger = true;
+
   # NOTE Below will *NOT* work!
   # sops.secrets = {
   #   "ssh/initrd_host_keys/ed25519/privkey" = {
