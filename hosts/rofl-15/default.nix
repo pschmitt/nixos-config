@@ -17,15 +17,18 @@
   # Circus CI (services/circus/README.md).
   services.circus = {
     consumerBuildRepositories = [
+      "pschmitt/anika-blue"
       "pschmitt/browser-daemon"
       "pschmitt/bruvtab"
       "pschmitt/circus"
+      "pschmitt/jellysync"
       "pschmitt/luks-ssh-unlock"
       "pschmitt/monarch"
       "pschmitt/rbw"
       "pschmitt/rworker"
       "pschmitt/tagesschau"
       "pschmitt/teams-live"
+      "pschmitt/termuxpp"
     ];
     # Agents reach the queue-runner on rofl-15.
     agent.runnerHost = "rofl-15";

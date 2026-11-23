@@ -28,6 +28,7 @@ let
               "browser-daemon"
               "bruvtab"
               "circus"
+              "jellysync"
               "luks-ssh-unlock"
               "monarch"
               "rbw"

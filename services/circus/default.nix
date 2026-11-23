@@ -416,12 +416,16 @@ in
             };
             ephemeral_pools =
               let
+                consumerOnlyArmRepositories = [
+                  "pschmitt/bruvtab"
+                  "pschmitt/jellysync"
+                  "pschmitt/teams-live"
+                ];
                 mainPool = {
                   name = "gha-aarch64-linux";
                   allowed_build_repositories = [
                     "pschmitt/anika-blue"
                     "pschmitt/browser-daemon"
-                    "pschmitt/bruvtab"
                     "pschmitt/circus"
                     "pschmitt/luks-ssh-unlock"
                     "pschmitt/monarch"
@@ -430,9 +434,9 @@ in
                     "pschmitt/rworker"
                     "pschmitt/stricknani"
                     "pschmitt/tagesschau"
-                    "pschmitt/teams-live"
                     "pschmitt/termuxpp"
-                  ];
+                  ]
+                  ++ consumerOnlyArmRepositories;
                   systems = [ "aarch64-linux" ];
                   supported_features = [ "big-parallel" ];
                   max_jobs = 2;
@@ -495,6 +499,9 @@ in
                     mainPool
                     // {
                       name = "gha-pr-aarch64-linux";
+                      allowed_build_repositories = lib.filter (
+                        repo: !(builtins.elem repo consumerOnlyArmRepositories)
+                      ) mainPool.allowed_build_repositories;
                       max_inflight = 4;
                       poll_interval_secs = 15;
                       pull_request_author_ids_file = cfg.githubActionsAgents.pullRequestAuthorIdsFile;
