@@ -14,7 +14,7 @@ MCP server for live control and read `references/hermes.md` for the file-edit fa
 
 ## Repository
 
-The HA config repo is mounted at `/mnt/ha` (SSHFS). Read `AGENTS.md` there for all access details, working conventions, and Lovelace editing procedures.
+The HA config repo is mounted at `/mnt/ha` (SSHFS). Read `AGENTS.md` there and the linked topic guides for access details, working conventions, and Lovelace editing procedures.
 
 ## Lovelace / Dashboard Editing
 
@@ -23,8 +23,8 @@ Dashboards in storage mode live at `/mnt/ha/.storage/lovelace.<url-slug>` (under
 **Writing the file on disk does NOT update HA's in-memory cache.** After any manual `.storage/` edit, push it live with `just push-dashboard <url-slug>` (run in `/mnt/ha`).
 
 - **Mi-casa** (`lovelace.mi_casa`) is generated — edit `dashboards/casa/build.py` and run `just build-casa`, never edit the storage file directly.
-- **Other dashboards** — parse with `json`, mutate, write back, then `just push-dashboard <url-slug>`. See `/mnt/ha/AGENTS.md` § *Lovelace / Dashboard Editing*.
-- For raw API or `hass-cli` access use the dedicated AI Agent user: rbw entry `Home Assistant (AI Agent)`, field `Long-Lived Access Token` (see the `rbw` skill for using it without printing it; details in `/mnt/ha/AGENTS.md` § *AI Agent user*). Don't use `zhj hass::secrets-gu5a`, which is the user's personal token.
+- **Other dashboards** — parse with `json`, mutate, write back, then `just push-dashboard <url-slug>`. See `/mnt/ha/docs/dashboards.md`.
+- For raw API or `hass-cli` access use the dedicated AI Agent user: rbw entry `Home Assistant (AI Agent)`, field `Long-Lived Access Token` (see the `rbw` skill for using it without printing it; details in `/mnt/ha/docs/operations.md`). Don't use `zhj hass::secrets-gu5a`, which is the user's personal token.
 
 ## Never print credential stores
 
@@ -53,4 +53,4 @@ For "I see a repair/warning for X", read `references/repairs.md` (how to list re
 
 ## MCP
 
-When an MCP client is available, prefer the configured `home-assistant` MCP server for live entity state, tool-driven inspection, and control. The `zhj hass-cli` and raw API fallbacks are for local Codex/shell workflows only.
+When an MCP client is available, prefer the configured `home-assistant` MCP server (ha-mcp) for live entity state, tool-driven inspection, and control. Its connection URL is a secret; do not print it or log it. The `zhj hass-cli` and raw API fallbacks are for local Codex/shell workflows only.
