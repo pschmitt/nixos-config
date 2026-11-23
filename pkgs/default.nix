@@ -79,6 +79,29 @@ in
   bichon-mcp = pkgs.callPackage ./bichon-mcp { };
   tasker-mcp = inputs.tasker-mcp.packages.${pkgs.stdenv.hostPlatform.system}.default;
   browser-daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  # Personal tools pinned as flake inputs, also available through the additions overlay.
+  bunq = inputs.bunq-sh.packages.${pkgs.stdenv.hostPlatform.system}.bunq;
+  bruvtab = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  # Its Android build tools currently support x86_64-linux, but not aarch64-linux.
+  declaroid = inputs.declaroid.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  jcalapi = inputs.jcalapi.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  jellysync = inputs.jellysync.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  ldifj = inputs.ldifj.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  luks-mount = inputs.luks-mount.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  myl = inputs.myl.packages.${pkgs.stdenv.hostPlatform.system}.myl;
+  myl-discovery = inputs.myl-discovery.packages.${pkgs.stdenv.hostPlatform.system}.myl-discovery;
+  nbx = inputs.nbx.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  obs-cli = inputs.obs-cli.packages.${pkgs.stdenv.hostPlatform.system}.obs-cli;
+  printlabel = inputs.printlabel.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  ruamel-fmt = inputs.ruamel-fmt.packages.${pkgs.stdenv.hostPlatform.system}.ruamel-fmt;
+  sendmyl = inputs.sendmyl.packages.${pkgs.stdenv.hostPlatform.system}.sendmyl;
+  shelly-ble-rpc = inputs.shelly-ble-rpc.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  slack-react = inputs.slack-react.packages.${pkgs.stdenv.hostPlatform.system}.slack-react;
+  tdc = inputs.tdc.packages.${pkgs.stdenv.hostPlatform.system}.tdc;
+  tmux-slay = inputs.tmux-slay.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  tsvtool = inputs.tsvtool.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  vodafone-station-cli =
+    inputs.vodafone-station-cli.packages.${pkgs.stdenv.hostPlatform.system}.vodafone-station-cli;
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   desktui = pkgs.callPackage ./desktui { };
   inherit emoji-fzf;
