@@ -855,7 +855,14 @@ in
         # service.luau before hitting ImageMagick.
         plugin_settings = {
           "pschmitt/lan-mouse".start_command = "zsh -lc 'zhj lan-mouse::start'";
-          "pschmitt/lan-mouse".poll_interval = 1;
+          # Polling intervals trade latency for idle wakeups on battery:
+          # each tick spawns subprocesses (lan-mouse cli, pactl, pw-link,
+          # nmcli, pw-cli), so keep them slow.
+          "pschmitt/lan-mouse".poll_interval = 10;
+          "pschmitt/mic-state".poll_interval_ms = 2000;
+          "pschmitt/screencast".poll_interval = 5;
+          # duo-status is not placed in any bar but its service still polls.
+          "pschmitt/duo-status".poll_interval = 60;
           "pschmitt/ha-ai-usage" = {
             # Both paths resolve to sops-nix runtime files, never to values in
             # the Nix store. The plugin reads them immediately before each
