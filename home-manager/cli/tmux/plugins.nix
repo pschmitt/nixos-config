@@ -140,15 +140,4 @@ in
     name = "tmux-sensible";
     plugin = pkgs.tmuxPlugins.sensible;
   }
-  {
-    name = "tmux-drag";
-    plugin = pinned {
-      owner = "kilofox";
-      repo = "tmux-drag";
-      rev = "7853d519c26612748f2ed9673d3c13bafb923712";
-      hash = "sha256-AR1RVujj1Q5Ixx6It9a7dbOvwrS5LkVgbsxYsbRSwv8=";
-      date = "2026-09-22";
-      rtpFilePath = "tmux_drag.tmux";
-    };
-  }
 ]
