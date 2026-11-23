@@ -107,7 +107,7 @@ main() {
 
       attrs as $attrs
       | {
-          schedule: "@every 5s",
+          schedule: "@every 15s",
           sensors: [
             (
               {

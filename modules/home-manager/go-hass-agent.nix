@@ -247,7 +247,7 @@ in
       sops.templates."go-hass-agent.env" = {
         mode = "0400";
         content = ''
-          GOHASSAGENT_LOGLEVEL=debug
+          GOHASSAGENT_LOGLEVEL=info
           HASS_SERVER=${builtins.getAttr "home-assistant/server" config.sops.placeholder}
           HASS_TOKEN=${builtins.getAttr cfg.tokenSecret config.sops.placeholder}
           MQTT_SERVER=${builtins.getAttr "home-assistant/mqtt/host" config.sops.placeholder}

@@ -123,7 +123,7 @@ emit_sensor() {
     --argjson attrs "$attrs_json" \
     '
       {
-        schedule: "@every 5s",
+        schedule: "@every 15s",
         sensors: [
           (
             {
