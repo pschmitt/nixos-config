@@ -59,6 +59,7 @@ apply_tdp_profile() {
   local power_state="$2"
   local profile_key
   local limits_variable
+  local battery_limits_variable
   local limits
   local stapm_limit
   local fast_limit
@@ -75,12 +76,13 @@ apply_tdp_profile() {
   limits_variable="TDP_PROFILE_${profile_key}"
   limits="${!limits_variable:-}"
 
-  if [[ "$profile" == power-saver ]] &&
-    [[ "$power_state" == battery ]] &&
-    [[ -n "${TDP_BATTERY_POWER_SAVER_LIMIT:-}" ]]
+  if [[ "$power_state" == battery ]]
   then
-    limits="$TDP_BATTERY_POWER_SAVER_LIMIT $TDP_BATTERY_POWER_SAVER_LIMIT $TDP_BATTERY_POWER_SAVER_LIMIT $TDP_BATTERY_POWER_SAVER_LIMIT"
-  elif [[ -z "$limits" ]]
+    battery_limits_variable="TDP_BATTERY_PROFILE_${profile_key}"
+    limits="${!battery_limits_variable:-$limits}"
+  fi
+
+  if [[ -z "$limits" ]]
   then
     log_warn "no TDP settings configured for power profile $profile"
     return 0
@@ -105,14 +107,22 @@ apply_tdp_profile() {
 
 apply_display_brightness() {
   local power_state="$1"
+  local profile="$2"
+  local brightness_percentage=30
   local brightness_info
   local current_percentage
 
   case "$power_state" in
     battery)
-      if ! brightnessctl set 30% >/dev/null
+      if [[ "$profile" == power-saver ]] &&
+        [[ -n "${BATTERY_POWER_SAVER_BRIGHTNESS_PERCENT:-}" ]]
       then
-        log_warn "failed to set display brightness to 30% on battery"
+        brightness_percentage="$BATTERY_POWER_SAVER_BRIGHTNESS_PERCENT"
+      fi
+
+      if ! brightnessctl set "${brightness_percentage}%" >/dev/null
+      then
+        log_warn "failed to set display brightness to ${brightness_percentage}% on battery"
       fi
     ;;
     connected)
@@ -603,6 +613,7 @@ apply_profile() {
   local profile_changed="${3:-}"
 
   apply_tdp_profile "$profile" "$power_state"
+  apply_display_brightness "$power_state" "$profile"
 
   case "$profile" in
     power-saver)
@@ -687,11 +698,12 @@ main() {
     last_profile=""
   fi
   last_power_state="$(external_power_state)"
-  apply_display_brightness "$last_power_state"
 
   if [[ -n "$last_profile" ]]
   then
     apply_profile "$last_profile" "$last_power_state"
+  else
+    apply_display_brightness "$last_power_state" ""
   fi
 
   local msg profile current_power_state wait_status profile_changed power_changed
@@ -738,7 +750,7 @@ main() {
     if [[ "$current_power_state" != "$last_power_state" ]]
     then
       power_changed=1
-      apply_display_brightness "$current_power_state"
+      apply_display_brightness "$current_power_state" "$last_profile"
       apply_tdp_profile "$last_profile" "$current_power_state"
     fi
 

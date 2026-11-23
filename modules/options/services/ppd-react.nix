@@ -1,4 +1,26 @@
 { lib, ... }:
+let
+  tdpProfile = lib.types.submodule {
+    options = {
+      stapmLimit = lib.mkOption {
+        type = lib.types.ints.between 1000 1000000;
+        description = "STAPM limit in milliwatts.";
+      };
+      fastLimit = lib.mkOption {
+        type = lib.types.ints.between 1000 1000000;
+        description = "Fast PPT limit in milliwatts.";
+      };
+      slowLimit = lib.mkOption {
+        type = lib.types.ints.between 1000 1000000;
+        description = "Slow PPT limit in milliwatts.";
+      };
+      apuSlowLimit = lib.mkOption {
+        type = lib.types.ints.between 1000 1000000;
+        description = "APU slow PPT limit in milliwatts.";
+      };
+    };
+  };
+in
 {
   options.services.ppd-react = {
     enable = lib.mkEnableOption "power-profiles-daemon integration service" // {
@@ -41,6 +63,12 @@
       description = "User-level systemd units to resume, if previously active, when leaving power-saver.";
     };
 
+    batteryPowerSaverBrightnessPercent = lib.mkOption {
+      type = lib.types.nullOr (lib.types.ints.between 0 100);
+      default = null;
+      description = "Display brightness percentage while on battery in power-saver.";
+    };
+
     tdp = {
       enable = lib.mkEnableOption "TDP changes in response to power profiles";
 
@@ -51,37 +79,17 @@
       };
 
       profiles = lib.mkOption {
-        type = lib.types.attrsOf (
-          lib.types.submodule {
-            options = {
-              stapmLimit = lib.mkOption {
-                type = lib.types.ints.between 1000 1000000;
-                description = "STAPM limit in milliwatts.";
-              };
-              fastLimit = lib.mkOption {
-                type = lib.types.ints.between 1000 1000000;
-                description = "Fast PPT limit in milliwatts.";
-              };
-              slowLimit = lib.mkOption {
-                type = lib.types.ints.between 1000 1000000;
-                description = "Slow PPT limit in milliwatts.";
-              };
-              apuSlowLimit = lib.mkOption {
-                type = lib.types.ints.between 1000 1000000;
-                description = "APU slow PPT limit in milliwatts.";
-              };
-            };
-          }
-        );
+        type = lib.types.attrsOf tdpProfile;
         default = { };
         description = "TDP limits keyed by power-profiles-daemon profile name.";
       };
 
-      batteryPowerSaverLimit = lib.mkOption {
-        type = lib.types.nullOr (lib.types.ints.between 1000 1000000);
-        default = null;
-        description = "Override power-saver TDP limits with this value in milliwatts while on battery.";
+      batteryProfiles = lib.mkOption {
+        type = lib.types.attrsOf tdpProfile;
+        default = { };
+        description = "TDP limits keyed by power-profiles-daemon profile name while on battery.";
       };
+
     };
   };
 }

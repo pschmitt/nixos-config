@@ -9,6 +9,8 @@ let
 
   profileVariable =
     profile: "TDP_PROFILE_${lib.toUpper (lib.replaceStrings [ "-" ] [ "_" ] profile)}";
+  batteryProfileVariable =
+    profile: "TDP_BATTERY_PROFILE_${lib.toUpper (lib.replaceStrings [ "-" ] [ "_" ] profile)}";
 
   profileLimits =
     profile:
@@ -38,11 +40,14 @@ let
         cfg.tdp.enable && cfg.tdp.command != null
       ) "TDP_COMMAND=${lib.escapeShellArg (toString cfg.tdp.command)}"
       ++ lib.optional (
-        cfg.tdp.enable && cfg.tdp.batteryPowerSaverLimit != null
-      ) "TDP_BATTERY_POWER_SAVER_LIMIT=${toString cfg.tdp.batteryPowerSaverLimit}"
+        cfg.batteryPowerSaverBrightnessPercent != null
+      ) "BATTERY_POWER_SAVER_BRIGHTNESS_PERCENT=${toString cfg.batteryPowerSaverBrightnessPercent}"
       ++ lib.mapAttrsToList (
         name: profile: "${profileVariable name}=${lib.escapeShellArg (profileLimits profile)}"
       ) cfg.tdp.profiles
+      ++ lib.mapAttrsToList (
+        name: profile: "${batteryProfileVariable name}=${lib.escapeShellArg (profileLimits profile)}"
+      ) cfg.tdp.batteryProfiles
     )
     + "\n"
   );

@@ -79,8 +79,22 @@ in
         apuSlowLimit = 28000;
       };
     };
-    batteryPowerSaverLimit = 10000;
+    batteryProfiles = {
+      power-saver = {
+        stapmLimit = 8000;
+        fastLimit = 8000;
+        slowLimit = 8000;
+        apuSlowLimit = 8000;
+      };
+      balanced = {
+        stapmLimit = 10000;
+        fastLimit = 10000;
+        slowLimit = 10000;
+        apuSlowLimit = 10000;
+      };
+    };
   };
+  services.ppd-react.batteryPowerSaverBrightnessPercent = 15;
 
   security.polkit.extraConfig = ''
     polkit.addRule(function (action, subject) {
