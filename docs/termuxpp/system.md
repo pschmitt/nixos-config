@@ -259,11 +259,14 @@ app. For the first rollout to an existing installation, replace both the prefix
 and staged runtime nixpp binaries, refresh the launch scripts with a native
 nixpp login, and restart the legacy controller once.
 
-When activation publishes a new generation, the service supervisor stops the
-old services and starts them using the selected generation. Explicitly stopped
-services stay stopped. Ordinary terminal sessions continue in the generation
-they entered. Keep a separate terminal open for recovery before testing
-SSH service handoff.
+Home Manager validates the candidate SSH configuration and host keys before
+activation. When activation publishes a new generation, the supervisor stops
+the old listeners and starts the new services. A retiring supervisor keeps its
+own control files and logs while old SSH sessions drain. Active service
+commands address the replacement, and established sessions stay in their
+original generation. Retired service logs are under
+`/run/nixpp-runtime/service-state/retired.*/logs`. Explicitly stopped
+services stay stopped. Keep a separate terminal open when testing handoff.
 
 ## Secrets (sops-nix)
 

@@ -9,8 +9,14 @@ set -euo pipefail
 svc_script=$(cd "$(dirname "$0")" && pwd)/svc.sh
 work=$(mktemp -d)
 supervisor_pid=
+retiring_pid=
 
 cleanup() {
+  if [[ -n $retiring_pid ]]
+  then
+    kill -TERM -- "-$retiring_pid" 2>/dev/null || true
+    wait "$retiring_pid" 2>/dev/null || true
+  fi
   if [[ -n $supervisor_pid ]]
   then
     kill -TERM -- "-$supervisor_pid" 2>/dev/null || true
@@ -215,4 +221,45 @@ expect restricted down "the restriction applies to services started on boot"
 network home
 expect restricted running "and restarts them when back"
 
-printf 'ok: svc Wi-Fi gating, settings, show and owner retirement\n'
+# A child that inherits the service log pipe can outlive the main process,
+# just as an established SSH session outlives its listener.
+svc stop free
+printf '#!/bin/sh\nsleep 30 &\nprintf "%%s\\n" "$!" > "%s"\nexec sleep 1000\n' "$work/log-writer" >"$work/state/services/free/run"
+svc start free
+for ((attempt = 0; attempt < 50; attempt++))
+do
+  [[ -s $work/log-writer ]] && break
+  sleep 0.1
+done
+[[ -s $work/log-writer ]] || fail "the surviving log writer did not start"
+IFS= read -r writer <"$work/log-writer"
+
+next_generation=$(readlink -f "$real_jq")
+next_generation=${next_generation%/bin/jq}
+next_name=${next_generation#/nix/store/}
+mkdir -p "$work/runtime/system-candidates/$next_name"
+printf '%s\n' "$next_generation" >"$work/runtime/system-candidates/$next_name/generation"
+printf '%s\n' "$next_name" >"$work/runtime/current-system"
+export NIXPP_SVC_CURRENT_SYSTEM=$next_generation
+retiring_pid=$supervisor_pid
+for ((attempt = 0; attempt < 100; attempt++))
+do
+  compgen -G "$work/state/retired.*/services/free" >/dev/null && break
+  sleep 0.1
+done
+compgen -G "$work/state/retired.*/services/free" >/dev/null || fail "the old tree was not isolated"
+setsid bash "$svc_script" supervise >>"$work/supervise.log" 2>&1 &
+supervisor_pid=$!
+expect restricted running "the new tree starts while the old logger drains"
+kill -0 "$retiring_pid" && kill -0 "$writer" || fail "the old tree did not preserve its writer"
+kill "$writer"
+for ((attempt = 0; attempt < 50; attempt++))
+do
+  kill -0 "$retiring_pid" 2>/dev/null || break
+  sleep 0.1
+done
+kill -0 "$retiring_pid" 2>/dev/null && fail "the drained supervisor did not exit"
+wait "$retiring_pid" || [[ $? == 75 ]] || fail "unexpected retirement status"
+retiring_pid=
+
+printf 'ok: svc Wi-Fi gating, settings, show, owner retirement and log-draining handoff\n'

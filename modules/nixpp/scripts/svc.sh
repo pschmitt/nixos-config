@@ -296,8 +296,14 @@ main() {
   start_service() {
     local name=$1
     local directory=$services_dir/$name
+    active_generation >/dev/null || return 1
     copy_service "$name" || return 1
     wait_for_supervisor "$name" || return 1
+    if [[ $(sv status "$directory") == *"want exit"* ]]
+    then
+      die "the supervisor for $name is retiring"
+      return 1
+    fi
     sv -w 10 up "$directory" >/dev/null
   }
 
@@ -312,24 +318,51 @@ main() {
   shutdown_supervisors() {
     local runsvdir_pid=$1
     local directory
-    local attempt
+    local retired=
+    exec 9>"$lock_file"
+    flock 9 || return 1
     for directory in "$services_dir"/*
     do
       [[ -d $directory ]] || continue
-      sv -w 15 down "$directory" >/dev/null 2>&1 || true
+      while supervisor_present "$directory" && ! sv -w 15 down "$directory" >/dev/null
+      do
+        sleep 1
+      done
     done
     kill -TERM "$runsvdir_pid" 2>/dev/null || true
     wait "$runsvdir_pid" 2>/dev/null || true
     for directory in "$services_dir"/*
     do
       [[ -d $directory ]] || continue
-      sv exit "$directory" >/dev/null 2>&1 || true
-      for ((attempt = 0; attempt < 50; attempt++))
-      do
-        supervisor_present "$directory" || break
-        sleep 0.1
-      done
+      sv -w 0 exit "$directory" >/dev/null 2>&1 || true
     done
+    for directory in "$services_dir"/*
+    do
+      if [[ -d $directory ]] && supervisor_present "$directory"
+      then
+        # A session can hold the old log pipe open after its listener exits.
+        # Keep its control FIFOs and log directory away from the new tree.
+        retired=$(mktemp -d "$runtime/retired.XXXXXXXX") || return 1
+        mv -- "$logs_dir" "$retired/logs" || return 1
+        mv -- "$services_dir" "$retired/services" || return 1
+        mkdir -p "$services_dir" "$logs_dir" || return 1
+        break
+      fi
+    done
+    exec 9>&-
+    exec 7>&-
+    if [[ -n $retired ]]
+    then
+      for directory in "$retired/services"/*
+      do
+        [[ -d $directory ]] || continue
+        while supervisor_present "$directory"
+        do
+          sleep 1
+        done
+      done
+      rm -rf -- "${retired:?}/services"
+    fi
   }
 
   apk_library() {
@@ -741,6 +774,14 @@ main() {
       fi
       exec 9>"$lock_file"
       flock 9
+      active_generation >/dev/null || return 1
+      local supervised_generation
+      if ! IFS= read -r supervised_generation < "$runtime/system-generation" ||
+        [[ $supervised_generation != "$generation" ]]
+      then
+        die "the service supervisor is changing generations"
+        return 1
+      fi
       case $command in
         start)
           rm -f -- "$desired_dir/$service_name.stopped"

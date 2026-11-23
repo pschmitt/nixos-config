@@ -22,6 +22,10 @@ in
       packages = [ check-runtime ];
       activation = {
         androidPreflight = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
+          if [[ -f /etc/ssh/sshd_config ]]
+          then
+            run ${pkgs.openssh}/bin/sshd -t -f /etc/ssh/sshd_config
+          fi
           run ${check-runtime}/bin/full-nix-check-runtime --isolated --generation "$newGenPath" --thorough
         '';
 
