@@ -60,9 +60,8 @@ let
     assert c.nix.registry.nixpkgs.to.type == "path";
     assert
       c.nix.registry.termuxPkgs.to == {
-        type = "github";
-        owner = "pschmitt";
-        repo = "termuxpp";
+        type = "path";
+        path = toString inputs.termuxpp.outPath;
       };
     assert c.nix.nixPath == [ "nixpkgs=${c.nix.registry.nixpkgs.to.path}" ];
     assert builtins.any (p: (p.pname or "") == "iputils") c.home.packages;

@@ -57,9 +57,8 @@ let
       path = toString source;
     };
     termuxPkgs = {
-      type = "github";
-      owner = "pschmitt";
-      repo = "termuxpp";
+      type = "path";
+      path = toString inputs.termuxpp.outPath;
     };
   };
   registry = (pkgs.formats.json { }).generate "full-nix-registry.json" {
