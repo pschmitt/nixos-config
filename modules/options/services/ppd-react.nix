@@ -76,6 +76,12 @@
         default = { };
         description = "TDP limits keyed by power-profiles-daemon profile name.";
       };
+
+      batteryLimit = lib.mkOption {
+        type = lib.types.nullOr (lib.types.ints.between 1000 1000000);
+        default = null;
+        description = "Override all TDP limits with this value in milliwatts while on battery.";
+      };
     };
   };
 }

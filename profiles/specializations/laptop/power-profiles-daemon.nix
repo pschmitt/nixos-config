@@ -37,6 +37,9 @@ let
       ++ lib.optional (
         cfg.tdp.enable && cfg.tdp.command != null
       ) "TDP_COMMAND=${lib.escapeShellArg (toString cfg.tdp.command)}"
+      ++ lib.optional (
+        cfg.tdp.enable && cfg.tdp.batteryLimit != null
+      ) "TDP_BATTERY_LIMIT=${toString cfg.tdp.batteryLimit}"
       ++ lib.mapAttrsToList (
         name: profile: "${profileVariable name}=${lib.escapeShellArg (profileLimits profile)}"
       ) cfg.tdp.profiles

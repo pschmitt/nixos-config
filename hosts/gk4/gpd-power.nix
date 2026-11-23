@@ -79,6 +79,7 @@ in
         apuSlowLimit = 28000;
       };
     };
+    batteryLimit = 10000;
   };
 
   security.polkit.extraConfig = ''

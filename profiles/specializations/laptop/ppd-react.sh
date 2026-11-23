@@ -56,6 +56,7 @@ should_notify() {
 
 apply_tdp_profile() {
   local profile="$1"
+  local power_state="$2"
   local profile_key
   local limits_variable
   local limits
@@ -73,7 +74,11 @@ apply_tdp_profile() {
   profile_key="${profile_key//-/_}"
   limits_variable="TDP_PROFILE_${profile_key}"
   limits="${!limits_variable:-}"
-  if [[ -z "$limits" ]]
+
+  if [[ "$power_state" == battery && -n "${TDP_BATTERY_LIMIT:-}" ]]
+  then
+    limits="$TDP_BATTERY_LIMIT $TDP_BATTERY_LIMIT $TDP_BATTERY_LIMIT $TDP_BATTERY_LIMIT"
+  elif [[ -z "$limits" ]]
   then
     log_warn "no TDP settings configured for power profile $profile"
     return 0
@@ -595,7 +600,7 @@ apply_profile() {
   local power_state="$2"
   local profile_changed="${3:-}"
 
-  apply_tdp_profile "$profile"
+  apply_tdp_profile "$profile" "$power_state"
 
   case "$profile" in
     power-saver)
@@ -732,6 +737,7 @@ main() {
     then
       power_changed=1
       apply_display_brightness "$current_power_state"
+      apply_tdp_profile "$last_profile" "$current_power_state"
     fi
 
     if [[ -n "$power_changed" && "$ONLY_STOP_UNITS_ON_BATTERY" && "$last_profile" == power-saver ]]
