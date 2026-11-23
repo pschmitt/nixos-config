@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.services.circus;
+  githubTokenUnit = "circus-github-token.service";
   scheduler = pkgs.writers.writePython3Bin "circus-consumer-builds" {
     flakeIgnore = [ "E501" ];
   } (builtins.readFile ./consumer_builds.py);
@@ -23,8 +24,9 @@ in
       after = [
         "network-online.target"
         "circus-server.service"
-      ];
-      wants = [ "network-online.target" ];
+      ]
+      ++ lib.optional cfg.githubApp.enable githubTokenUnit;
+      wants = [ "network-online.target" ] ++ lib.optional cfg.githubApp.enable githubTokenUnit;
       path = [
         config.nix.package
         pkgs.gitMinimal
@@ -35,7 +37,10 @@ in
         DynamicUser = true;
         CacheDirectory = "circus-consumer-builds";
         StateDirectory = "circus-consumer-builds";
-        LoadCredential = [ "api:${config.sops.secrets."circus/admin-api-key".path}" ];
+        LoadCredential = [
+          "api:${config.sops.secrets."circus/admin-api-key".path}"
+        ]
+        ++ lib.optional cfg.githubApp.enable "github:/run/circus-github-token/token";
         ExecStart = lib.escapeShellArgs (
           [
             (lib.getExe scheduler)
@@ -45,6 +50,14 @@ in
             "%d/api"
             "--state-dir"
             "/var/lib/circus-consumer-builds"
+          ]
+          ++ lib.optionals cfg.githubApp.enable [
+            "--github-token-file"
+            "%d/github"
+            "--cache-url"
+            cfg.settings.cache.cache_url
+            "--cache-key"
+            cfg.settings.signing.public_key
           ]
           ++ lib.concatMap (repository: [
             "--repository"

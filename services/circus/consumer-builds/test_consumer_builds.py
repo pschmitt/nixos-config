@@ -4,7 +4,7 @@ import tarfile
 import unittest
 from unittest.mock import patch
 
-from consumer_builds import archive_snapshot, canonical, plans, wrapper_lock
+from consumer_builds import archive_snapshot, canonical, plans, ready_outputs, wrapper_lock
 
 
 class ConsumerBuildTests(unittest.TestCase):
@@ -67,6 +67,25 @@ class ConsumerBuildTests(unittest.TestCase):
         self.assertEqual(fingerprint(updated, "2" * 40), expected)
         updated["nodes"]["nixpkgs"]["locked"]["narHash"] = "sha256-def"
         self.assertNotEqual(fingerprint(updated, "3" * 40), expected)
+
+    def test_publish_waits_for_the_requested_packages(self):
+        path = f"/nix/store/{'0' * 32}-demo"
+        build = {
+            "job_name": "demo",
+            "status": "queued",
+            "system": "aarch64-linux",
+            "outputs": {"out": path},
+        }
+        with patch("consumer_builds.api", return_value={"status": "completed"}):
+            with patch("consumer_builds.page_items", return_value=[build]):
+                self.assertIsNone(ready_outputs("api", "token", "evaluation", "aarch64-linux", ["demo"]))
+                build["status"] = "succeeded"
+                self.assertEqual(
+                    ready_outputs("api", "token", "evaluation", "aarch64-linux", ["demo"]),
+                    {"demo.out": path},
+                )
+                with self.assertRaisesRegex(ValueError, "different packages"):
+                    ready_outputs("api", "token", "evaluation", "aarch64-linux", ["other"])
 
     def test_snapshot_archive_is_deterministic(self):
         files = {"flake.nix": b"{}", "flake.lock": canonical({"version": 7})}

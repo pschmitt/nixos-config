@@ -1,0 +1,99 @@
+name: Publish Circus consumer cache
+run-name: Circus consumer cache ${{ inputs.evaluation }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      evaluation:
+        required: true
+        type: string
+      cache_url:
+        required: true
+        type: string
+      cache_key:
+        required: true
+        type: string
+      pin_group:
+        required: true
+        type: string
+      outputs:
+        description: JSON mapping package outputs to Circus store paths
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: circus-consumer-cache-${{ inputs.pin_group }}
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NIKS3_SERVER_URL: ${{ vars.NIKS3_SERVER_URL }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: pschmitt/ci-workflows
+          ref: main
+          path: .ci-workflows
+          persist-credentials: false
+
+      - name: Validate cache and store paths
+        id: cache
+        env:
+          CACHE_URL: ${{ inputs.cache_url }}
+          CACHE_KEY: ${{ inputs.cache_key }}
+          OUTPUTS: ${{ inputs.outputs }}
+          PIN_GROUP: ${{ inputs.pin_group }}
+        run: |
+          set -euo pipefail
+          [[ "$CACHE_URL" =~ ^https://[a-zA-Z0-9.-]+/nix-cache/$ ]]
+          [[ "$CACHE_KEY" =~ ^[a-zA-Z0-9.-]+:[a-zA-Z0-9+/]+=*$ ]]
+          [[ "$PIN_GROUP" =~ ^[a-f0-9]{24}$ ]]
+          jq -er 'to_entries | sort_by(.key)
+            | select(length > 0 and length <= 64)
+            | .[].value | select(test("^/nix/store/[a-z0-9]{32}-[A-Za-z0-9._+?=-]+$"))' \
+            <<< "$OUTPUTS" > "$RUNNER_TEMP/circus-paths"
+          [[ "$(wc -l < "$RUNNER_TEMP/circus-paths")" -eq "$(jq 'length' <<< "$OUTPUTS")" ]]
+          printf 'url=%s\nkey=%s\n' "$CACHE_URL" "$CACHE_KEY" >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/actions/nix-setup
+        with:
+          nix-conf: |
+            extra-substituters = https://nix-community.cachix.org https://cache.numtide.com ${{ steps.cache.outputs.url }}
+            extra-trusted-public-keys = nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g= ${{ steps.cache.outputs.key }}
+          s3-store: ${{ secrets.NIKS3_S3_STORE }}
+          s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
+          s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
+      - uses: Alemiz112/netbird-connect@master
+        with:
+          setup-key: ${{ secrets.NB_SETUP_KEY }}
+
+      - name: Substitute and pin the closure
+        env:
+          CACHE_URL: ${{ steps.cache.outputs.url }}
+          PIN_GROUP: ${{ inputs.pin_group }}
+          NIKS3_CLI: github:Mic92/niks3/a79dc58832332ebd953974e71160ab69e2371d62#niks3
+        run: |
+          set -euo pipefail
+          : "${NIKS3_SERVER_URL:?Missing Niks3 server URL}"
+          curl --fail --silent --show-error --retry 8 --retry-all-errors \
+            --max-time 10 "${CACHE_URL}nix-cache-info" > /dev/null
+          mapfile -t paths < "$RUNNER_TEMP/circus-paths"
+          cli="$(nix build --no-link --print-out-paths "$NIKS3_CLI")/bin/niks3"
+          nix build --no-link --max-jobs 0 --option builders "" "${paths[@]}"
+          auth=(--server-url "$NIKS3_SERVER_URL"
+            --auth-token-script "python3 $GITHUB_WORKSPACE/.ci-workflows/scripts/niks3-oidc-token.py")
+          nix path-info --recursive "${paths[@]}" | "$cli" push "${auth[@]}" --stdin
+          for index in "${!paths[@]}"
+          do
+            "$cli" push "${auth[@]}" --pin "gh-main-circus-consumer-$PIN_GROUP-$index" "${paths[index]}"
+          done
