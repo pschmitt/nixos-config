@@ -128,6 +128,23 @@ on the claimed phones and verify that the worker profile is `gh-aarch64`.
 If a previous attempt looked up the runtime before it was published, set
 the Nix option `narinfo-cache-negative-ttl = 0` in `NIX_CONFIG` for the retry.
 
+## Build the phone artifacts
+
+Build on rworkers, never on the workstation or a phone, and push every result
+with `nix path-info -r PATH | niks3 push --stdin`. The procedures live in the
+docs; follow them instead of improvising:
+
+- Guest systems (p11, zf10) and the x86_64 `nixpp-runtime-termux`
+  prerequisite: nixos-config `docs/termuxpp/system.md`, "Build on a native
+  aarch64 rworker" (systems on a `gh-aarch64` lease, prerequisite on an x86_64
+  worker first after a TermuxPP or nixpkgs bump).
+- Bootstrap zip and debug APK: termuxpp `docs/en/aarch64-bootstrap.md` (runtime,
+  seed and `rbw-termux` from the termuxpp flake; `--nixpp-setup-config` from
+  nixos-config's `termuxpp-setup-conf`; Gradle in the Android dev shell on an
+  OpenStack worker with `--disk 250`). Check that the APK embeds the new zip
+  (`libtermux-bootstrap.so` contains its bytes). Such APKs and zips carry the
+  private setup config: keep them 0600 and local.
+
 ## Enroll a phone from scratch
 
 `nixpp setup` replaces yadm-init's `--nixpp` path (yadm-init now hands over to
