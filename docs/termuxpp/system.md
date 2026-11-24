@@ -160,11 +160,11 @@ stopped by hand stay off) and `allowedSsids`. Start on boot and the Wi-Fi
 restriction are independent. `svc show SERVICE` (or `svc --json show`) lists
 the state, PID, uptime, listening ports, command and where each setting
 comes from; `svc --json list` reports the same for every service. The ADB
-shell listener belongs to the app and uses `fullNix.adbShell.allowedSsids`
+shell listener belongs to the app and uses `nixpp.adbShell.allowedSsids`
 instead.
 
 Wi-Fi names identify places, so keep them in SOPS: `allowedSsidsFile` (and
-`fullNix.adbShell.allowedSsidsFile`) read one name per line from a secret at
+`nixpp.adbShell.allowedSsidsFile`) read one name per line from a secret at
 run time instead, so the names never reach the Nix store. An unreadable file
 allows no network for a service; the ADB property is then left unchanged. A
 host sets the system-layer option in `hosts/<host>/system.nix` and the Home
@@ -293,7 +293,7 @@ candidate environment, after the journal is persisted and before the matching Ho
 Manager `activate`, for switch, rollback and recover. A non-zero exit fails the
 activation, so no Home Manager mutation happens after a failed system secret
 install. It uses `$XDG_RUNTIME_DIR` when set and falls back to
-`fullNix.sops.runtimeDir` (`/run`). It is idempotent
+`nixpp.sops.runtimeDir` (`/run`). It is idempotent
 and re-runnable for recovery.
 
 **Separate namespaces.** The system layer uses `/run/secrets`

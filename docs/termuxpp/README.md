@@ -117,7 +117,7 @@ it); the default is `--upload-inputs auto`.
 The public key defaults to `~/.ssh/id_ed25519.pub`; override it with
 `RWORKER_NIX_KEY`. The matching private key and pinned controller host key must
 already be available. No cloud credentials are needed on the phone. The optional
-Home Manager module exposes `fullNix.rworker` defaults; environment variables
+Home Manager module exposes `nixpp.rworker` defaults; environment variables
 supply private runtime values without putting them in the Nix store.
 
 The phone-packaged controller client disables SSH multiplexing because Android's
@@ -378,16 +378,14 @@ The managed profile installs a native Tasker launcher at
 Tasker action to run it in the background and wait up to 3,600 seconds. The job
 runs on Wi-Fi while the phone is charging, and needs 512 MiB of free space.
 
-The job builds the current `main` on a disposable rworker and switches to it
-(`nixpp upgrade --rworker --remote-eval`; the worker is leased and released by
-nixpp, and the step has a 45 minute limit), so it no longer waits for CI to
-publish a signed cache pin. It then runs `nixpp gc --keep-generations 3` and
-fast-forwards yadm. It syncs Atuin when signed in,
+The job activates the signed cache pin with `nixpp upgrade --from-cache`,
+runs `nixpp gc --keep-generations 3`, and fast-forwards yadm. The cache check
+also recognises older generations that GC has pruned. It syncs Atuin when signed in,
 then syncs and updates each
 configured mani workspace. Git runs without prompting. The latest two runs
 are logged under `~/.local/state/termuxpp-nightly/` in the guest. To check the
-readiness (the rworker controller must answer) without activating anything,
-run `termuxpp-nightly-update --check`.
+current cache and readiness without activating anything, run
+`termuxpp-nightly-update --check`.
 
 Use `nixpp gc --keep-generations 3 --dry-run` to preview cleanup. GC preserves
 the active and rollback generations and any generation used by a running
@@ -497,7 +495,7 @@ sops = {
 
 Home Manager generations live in `$XDG_RUNTIME_DIR/secrets.d`. The launcher
 sets `XDG_RUNTIME_DIR` to `/run/user/<uid>`. Override the fallback for an unset
-variable with `fullNix.sops.runtimeDir`. Cleanup is upstream's and nothing more: a secret that is
+variable with `nixpp.sops.runtimeDir`. Cleanup is upstream's and nothing more: a secret that is
 dropped from a still-configured set disappears with the pruned generation, but a
 custom `path` symlink of it dangles, and removing every secret runs nothing, so the
 previously installed data stays until removed by hand. The declarative system layer

@@ -21,7 +21,7 @@ activation, so the network names never enter the Nix store.
 
 | File | Managed by |
 | --- | --- |
-| `termuxpp.properties` | `fullNix.properties` and `fullNix.adbShell` (`modules/home-manager/termuxpp/properties.nix`) |
+| `termuxpp.properties` | `nixpp.properties` and `nixpp.adbShell` (`modules/home-manager/termuxpp/properties.nix`) |
 | `colors.properties`, `font.ttf` | `modules/home-manager/termuxpp/appearance.nix` |
 | `bin/termux-file-editor` | opens shared files in the guest's nvim |
 | `bin/termux-url-opener` | handles shared URLs |

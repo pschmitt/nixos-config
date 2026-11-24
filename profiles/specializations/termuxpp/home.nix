@@ -81,7 +81,7 @@ in
 
   dotfiles.sshClient.disableMultiplexing = true;
 
-  fullNix = {
+  nixpp = {
     rworker.enable = true;
     androidBridge.enable = true;
     lifecycle.enable = true;
@@ -158,7 +158,7 @@ in
   };
   # The TermuxPP app's termuxpp.properties (formerly in yadm). The whole file
   # is written on activation; the app's properties editor does not persist.
-  fullNix.properties = {
+  nixpp.properties = {
     extra-keys = lib.concatStrings [
       "[ ['ESC', {key: '/', popup: BACKSLASH}, {key: -, popup: _}, 'HOME', "
       "{key: UP, popup: PGUP}, 'END', 'PGUP', '|'], "
@@ -205,7 +205,7 @@ in
   '';
   # The ADB shell listener runs only on the home Wi-Fi networks; their names
   # stay in SOPS (each phone's own list).
-  fullNix.adbShell.allowedSsidsFile = config.sops.secrets."wifi/home-ssids".path;
+  nixpp.adbShell.allowedSsidsFile = config.sops.secrets."wifi/home-ssids".path;
 
   sops = {
     secrets = {

@@ -6,7 +6,7 @@
   ...
 }:
 let
-  cfg = config.fullNix.rworker;
+  cfg = config.nixpp.rworker;
 
   # crane takes build tools such as rsync from the package set it is made
   # for; the guest's patched rsync would make the compiled client differ from
@@ -58,7 +58,12 @@ let
   );
 in
 {
-  options.fullNix.rworker = {
+  # The option namespace used to be fullNix; nixos-config-private still sets it.
+  imports = [
+    (lib.mkRenamedOptionModule [ "fullNix" "rworker" "controller" ] [ "nixpp" "rworker" "controller" ])
+  ];
+
+  options.nixpp.rworker = {
     enable = lib.mkEnableOption ''
       the optional `rworker-nix` command: it leases a disposable rworker, runs
       one `nix build|shell|develop` with `--max-jobs 0 --builders` against it
@@ -120,8 +125,8 @@ in
     awsCredentialsFile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default =
-        if config.fullNix.upgradeCache != null then config.fullNix.upgradeCache.credentials_file else null;
-      defaultText = lib.literalExpression "config.fullNix.upgradeCache.credentials_file";
+        if config.nixpp.upgradeCache != null then config.nixpp.upgradeCache.credentials_file else null;
+      defaultText = lib.literalExpression "config.nixpp.upgradeCache.credentials_file";
       description = ''
         Read-only AWS credentials of the private `s3://` substituter. With
         them, `rworker-nix remote-build` (nixpp `--remote-eval`) lets the

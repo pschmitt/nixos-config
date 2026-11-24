@@ -63,7 +63,7 @@ let
               home = "/home/guest";
             };
             system.stateVersion = "1";
-            fullNix.sops.runtimeDir = "${root}/run-fallback";
+            nixpp.sops.runtimeDir = "${root}/run-fallback";
             sops = {
               defaultSecretsMountPoint = "%r/termuxpp-system/secrets.d";
               defaultSymlinkPath = "%r/termuxpp-system/sops-nix/secrets";
@@ -163,14 +163,14 @@ let
 
   assertions =
     assert
-      homeFull.config.home.activation.sops-nix.data == "run ${homeFull.config.fullNix.sops.activation}\n";
+      homeFull.config.home.activation.sops-nix.data == "run ${homeFull.config.nixpp.sops.activation}\n";
     assert !(lib.hasInfix "systemctl" homeFull.config.home.activation.sops-nix.data);
     assert !homeFull.config.xdg.configFile."systemd/user/sops-nix.service".enable;
     assert builtins.elem "linkGeneration" homeFull.config.home.activation.sops-nix.after;
     assert builtins.elem "androidAcceptance" homeFull.config.home.activation.sops-nix.before;
     # Without secrets upstream installs nothing: no entry, no hook.
     assert !(homeNone.config.home.activation ? sops-nix);
-    assert homeNone.config.fullNix.sops.activation == null;
+    assert homeNone.config.nixpp.sops.activation == null;
     assert systemNone.config.system.build.secretsActivation == null;
     assert
       systemFull.config.sops.secrets.system_token.path
@@ -193,7 +193,7 @@ let
     assert builtins.all (item: item) guestChecks;
     true;
 
-  hmActivate = homeFull.config.fullNix.sops.activation;
+  hmActivate = homeFull.config.nixpp.sops.activation;
   jq = "${pkgs.jq}/bin/jq";
   sysFull = "${systemFull.config.system.build.secretsActivation}/bin/activate-secrets";
   sysFewer = "${systemFewer.config.system.build.secretsActivation}/bin/activate-secrets";

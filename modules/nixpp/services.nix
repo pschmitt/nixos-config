@@ -131,7 +131,7 @@ in
           }
           {
             assertion = name != "adb-shell";
-            message = "adb-shell belongs to the TermuxPP app; restrict it with fullNix.adbShell.allowedSsids";
+            message = "adb-shell belongs to the TermuxPP app; restrict it with nixpp.adbShell.allowedSsids";
           }
           {
             assertion = lib.all (ssid: ssid != "" && !(lib.hasInfix "," ssid)) service.allowedSsids;

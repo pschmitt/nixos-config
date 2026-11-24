@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.fullNix;
+  cfg = config.nixpp;
   path = "${config.xdg.configHome}/termuxpp/termuxpp.properties";
   settings = pkgs.writeText "termuxpp-properties.json" (builtins.toJSON cfg.properties);
   # Write the whole file: the settings from Nix, plus the ADB shell allow-list
@@ -72,7 +72,7 @@ let
       "--none";
 in
 {
-  options.fullNix.properties = lib.mkOption {
+  options.nixpp.properties = lib.mkOption {
     type =
       with lib.types;
       attrsOf (oneOf [
@@ -87,7 +87,7 @@ in
     };
     description = ''
       The TermuxPP app's termuxpp.properties. The whole file is written on
-      activation from these settings and `fullNix.adbShell`; edits made in the
+      activation from these settings and `nixpp.adbShell`; edits made in the
       file or in the app's properties editor are overwritten. Nothing is
       written while this is empty and no ADB shell allow-list is set.
     '';

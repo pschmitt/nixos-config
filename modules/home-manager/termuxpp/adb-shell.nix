@@ -4,10 +4,10 @@
   ...
 }:
 let
-  cfg = config.fullNix.adbShell;
+  cfg = config.nixpp.adbShell;
 in
 {
-  options.fullNix.adbShell.allowedSsidsFile = lib.mkOption {
+  options.nixpp.adbShell.allowedSsidsFile = lib.mkOption {
     type = lib.types.nullOr lib.types.str;
     default = null;
     example = "/run/user/secrets/wifi/home-ssids";
@@ -18,7 +18,7 @@ in
     '';
   };
 
-  options.fullNix.adbShell.allowedSsids = lib.mkOption {
+  options.nixpp.adbShell.allowedSsids = lib.mkOption {
     type = lib.types.listOf lib.types.str;
     default = [ ];
     example = [ "home-lan" ];
@@ -34,7 +34,7 @@ in
     assertions = [
       {
         assertion = cfg.allowedSsids == [ ] || cfg.allowedSsidsFile == null;
-        message = "fullNix.adbShell: set allowedSsids or allowedSsidsFile, not both";
+        message = "nixpp.adbShell: set allowedSsids or allowedSsidsFile, not both";
       }
     ];
   };

@@ -14,7 +14,7 @@
   ...
 }:
 let
-  cfg = config.fullNix.sops;
+  cfg = config.nixpp.sops;
   inherit (config) sops;
   hasSecrets = sops.secrets != { };
   script = import ../../nixpp/sops-activation.nix { inherit lib pkgs; };
@@ -27,7 +27,7 @@ in
 {
   imports = [ inputs.sops-nix.homeManagerModules.sops ];
 
-  options.fullNix.sops = {
+  options.nixpp.sops = {
     runtimeDir = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
@@ -46,7 +46,7 @@ in
   };
 
   config = lib.mkMerge [
-    { fullNix.sops.activation = if hasSecrets then activation else null; }
+    { nixpp.sops.activation = if hasSecrets then activation else null; }
     (lib.mkIf hasSecrets {
       # No systemd in the guest: do not ship upstream's unit files.
       xdg.configFile = {

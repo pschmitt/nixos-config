@@ -17,7 +17,7 @@ let
     final.symlinkJoin {
       name = "${package.pname or package.name}-full-nix";
       paths = [ package ];
-      passthru.fullNixSignalStackPrograms = programs;
+      passthru.nixppSignalStackPrograms = programs;
       passthru.version = final.lib.getVersion package;
       nativeBuildInputs = [ final.makeWrapper ];
       postBuild = final.lib.concatMapStringsSep "\n" (program: ''

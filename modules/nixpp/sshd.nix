@@ -12,8 +12,7 @@ let
     "ssh/host_keys/rsa/privkey"
   ];
   hostKey =
-    name:
-    lib.replaceStrings [ "%r" ] [ config.fullNix.sops.runtimeDir ] config.sops.secrets.${name}.path;
+    name: lib.replaceStrings [ "%r" ] [ config.nixpp.sops.runtimeDir ] config.sops.secrets.${name}.path;
 in
 {
   sops = {

@@ -54,7 +54,7 @@ builtins.mapAttrs (
                 {
                   flake = "github:pschmitt/nixos-config/main";
                   host = hostname;
-                  cache = home.config.fullNix.upgradeCache;
+                  cache = home.config.nixpp.upgradeCache;
                 }
                 // inputs.nixpkgs.lib.optionalAttrs (config.system.homeManagerBackupExtension != null) {
                   homeManagerBackupExtension = config.system.homeManagerBackupExtension;

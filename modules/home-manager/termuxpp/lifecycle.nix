@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.fullNix.lifecycle;
+  cfg = config.nixpp.lifecycle;
   check-runtime = pkgs.writeShellApplication {
     name = "full-nix-check-runtime";
     runtimeInputs = [ pkgs.python3 ];
@@ -15,7 +15,7 @@ let
   };
 in
 {
-  options.fullNix.lifecycle.enable = lib.mkEnableOption "Android acceptance checks during standard Home Manager activation";
+  options.nixpp.lifecycle.enable = lib.mkEnableOption "Android acceptance checks during standard Home Manager activation";
 
   config = lib.mkIf cfg.enable {
     home = {

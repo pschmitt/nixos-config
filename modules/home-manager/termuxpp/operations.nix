@@ -6,12 +6,12 @@
   ...
 }:
 {
-  options.fullNix.rooted = lib.mkEnableOption "using native Android su for network queries on a rooted device";
+  options.nixpp.rooted = lib.mkEnableOption "using native Android su for network queries on a rooted device";
 
   config = {
     home.packages = [
       ((inputs.termuxpp.lib.nixpp.packagesFor pkgs).termuxpp-ip.override {
-        inherit (config.fullNix) rooted;
+        inherit (config.nixpp) rooted;
       })
     ]
     ++ builtins.attrValues {

@@ -6,7 +6,7 @@
   ...
 }:
 let
-  cfg = config.fullNix.androidBridge;
+  cfg = config.nixpp.androidBridge;
 
   api = (inputs.termuxpp.lib.nixpp.packagesFor pkgs).termuxpp-api.override {
     notificationTimeouts = config.programs.notify-send.android.timeout;
@@ -25,7 +25,7 @@ let
   };
 in
 {
-  options.fullNix.androidBridge = {
+  options.nixpp.androidBridge = {
     enable = lib.mkEnableOption ''
       the TermuxPP Android API commands (`termux-*`, `xdg-open`, `notify-send`)
       and `android-bridge`, which reach Android through the app's am socket'';
@@ -33,7 +33,7 @@ in
 
   imports = [
     (lib.mkRemovedOptionModule [
-      "fullNix"
+      "nixpp"
       "androidBridge"
       "socket"
     ] "The native bridge broker is gone; android-bridge uses Termux:API through the app.")

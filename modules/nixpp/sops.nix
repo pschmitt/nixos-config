@@ -72,7 +72,7 @@ in
       };
     };
 
-    fullNix.sops.runtimeDir = mkOption {
+    nixpp.sops.runtimeDir = mkOption {
       type = types.str;
       default = "/run";
       description = ''
@@ -101,7 +101,7 @@ in
         pkgs.writeShellScriptBin "activate-secrets" (script {
           installer = config.systemd.user.services.sops-nix.Service.ExecStart;
           inherit (sops) environment;
-          inherit (config.fullNix.sops) runtimeDir;
+          inherit (config.nixpp.sops) runtimeDir;
         });
   };
 }

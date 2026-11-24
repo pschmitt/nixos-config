@@ -22,37 +22,37 @@ let
       home.pkgs.ansible
     ];
     assert builtins.elem home.pkgs.jc c.home.packages;
-    assert c.fullNix.androidBridge.enable;
-    assert c.fullNix.lifecycle.enable;
+    assert c.nixpp.androidBridge.enable;
+    assert c.nixpp.lifecycle.enable;
     assert builtins.elem "writeBoundary" c.home.activation.androidPreflight.before;
     assert builtins.elem "linkGeneration" c.home.activation.androidAcceptance.after;
     assert builtins.elem "onFilesChange" c.home.activation.androidAcceptance.after;
     assert builtins.elem "installPackages" c.home.activation.androidAcceptance.after;
     assert c.programs.home-manager.enable;
     assert builtins.match "file:///nix/store/.*" c.nix.settings.flake-registry != null;
-    assert c.fullNix.rworker.enable;
-    assert c.fullNix.rworker.controller != null;
-    assert c.fullNix.rworker.awsCredentialsFile == c.fullNix.upgradeCache.credentials_file;
-    assert c.fullNix.rworker.system == "aarch64-linux";
+    assert c.nixpp.rworker.enable;
+    assert c.nixpp.rworker.controller != null;
+    assert c.nixpp.rworker.awsCredentialsFile == c.nixpp.upgradeCache.credentials_file;
+    assert c.nixpp.rworker.system == "aarch64-linux";
     assert c.programs.eza.package.name == "eza-full-nix";
     assert builtins.elem c.programs.eza.package c.home.packages;
     assert c.programs.eza.package == home.pkgs.eza;
-    assert home.pkgs.bat.fullNixSignalStackPrograms == [ "bat" ];
-    assert home.pkgs.fd.fullNixSignalStackPrograms == [ "fd" ];
-    assert home.pkgs.rworker.fullNixSignalStackPrograms == [ "rworker" ];
+    assert home.pkgs.bat.nixppSignalStackPrograms == [ "bat" ];
+    assert home.pkgs.fd.nixppSignalStackPrograms == [ "fd" ];
+    assert home.pkgs.rworker.nixppSignalStackPrograms == [ "rworker" ];
     assert
-      (home.pkgs.rworker.override { sshControlMaster = false; }).fullNixSignalStackPrograms == [
+      (home.pkgs.rworker.override { sshControlMaster = false; }).nixppSignalStackPrograms == [
         "rworker"
       ];
-    assert home.pkgs.ripgrep.fullNixSignalStackPrograms == [ "rg" ];
+    assert home.pkgs.ripgrep.nixppSignalStackPrograms == [ "rg" ];
     assert
-      home.pkgs.rbw.fullNixSignalStackPrograms == [
+      home.pkgs.rbw.nixppSignalStackPrograms == [
         "rbw"
         "rbw-agent"
       ];
-    assert home.pkgs.openstack-rs.fullNixSignalStackPrograms == [ "osc" ];
-    assert home.pkgs.vivid.fullNixSignalStackPrograms == [ "vivid" ];
-    assert home.pkgs.zoxide.fullNixSignalStackPrograms == [ "zoxide" ];
+    assert home.pkgs.openstack-rs.nixppSignalStackPrograms == [ "osc" ];
+    assert home.pkgs.vivid.nixppSignalStackPrograms == [ "vivid" ];
+    assert home.pkgs.zoxide.nixppSignalStackPrograms == [ "zoxide" ];
     assert builtins.elem ../../../overlays/termuxpp/rsync-search-only-ancestors.patch
       home.pkgs.rsync.patches;
     assert c.nix.settings.max-jobs == 0;
