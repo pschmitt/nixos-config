@@ -111,7 +111,8 @@ in
           webhook = {
             enable = true;
             port = webhookPort;
-            url = "https://${webhookHost}/webhook/gitlab";
+            path = "/gitlab/webhook";
+            url = "https://${webhookHost}/gitlab/webhook";
             secret_file = secrets."teams-live/gitlab-webhook-secret".path;
             auto_setup = true;
           }
@@ -124,18 +125,19 @@ in
         }
         // lib.optionalAttrs cfg.approval.enable {
           # The page and its token endpoints are served on the first webhook
-          # host name, at /approve (see the nginx location below).
+          # host name, at /gitlab/approve (see the nginx location below).
           approve = {
             enable = true;
             host = "127.0.0.1";
             inherit (cfg.approval) port;
-            base_url = "https://${webhookHost}/approve";
+            base_url = "https://${webhookHost}/gitlab/approve";
             link_ttl_seconds = cfg.approval.linkTtlSeconds;
             # Where an approving address is (offline, nothing is sent anywhere): shown in the MR comment.
             geoip_database = "${pkgs.dbip-city-lite}/share/dbip/dbip-city-lite.mmdb";
             # "Sign in with GitLab" before a confirmation: the page learns who confirms.
             oauth = {
               auto_setup = true;
+              state_file = "${cfg.dataDir}/state/gitlab-oauth-gitlab.json";
             };
           };
         };
@@ -246,8 +248,13 @@ in
       locations = {
         # Everything else is not served (nginx would show its welcome page).
         "/".return = "404";
-        "^~ /webhook/" = {
+        "= /gitlab/webhook" = {
           proxyPass = backend;
+          recommendedProxySettings = true;
+        };
+        # Keep accepting deliveries from the previous hook until its replacement is verified.
+        "= /webhook/gitlab" = {
+          proxyPass = "${backend}/gitlab/webhook";
           recommendedProxySettings = true;
         };
         "= /healthz" = {
@@ -259,10 +266,18 @@ in
         # The link token is the only credential: keep it out of nginx logs,
         # including the request line that error messages quote. The service
         # sets its own cache and CSP headers and checks Origin itself, so
-        # nothing is rewritten, buffered or cached here. `= /approve` is
-        # proxied too (no 301), the page then reads the fragment itself.
-        "= /approve" = approveLocation;
-        "^~ /approve/" = approveLocation;
+        # nothing is rewritten, buffered or cached here.
+        "= /gitlab/approve" = approveLocation;
+        "^~ /gitlab/approve/" = approveLocation;
+        # Existing Teams cards keep working, including their URL fragments.
+        "= /approve" = {
+          return = "308 /gitlab$request_uri";
+          extraConfig = "access_log off; error_log /dev/null crit;";
+        };
+        "^~ /approve/" = {
+          return = "308 /gitlab$request_uri";
+          extraConfig = "access_log off; error_log /dev/null crit;";
+        };
       };
     });
 
