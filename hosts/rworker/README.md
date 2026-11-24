@@ -72,7 +72,8 @@ only in the kernel's device-mapper table. Check it on a worker with
 
 - `rworker-netbird-up` reads the instance name (and sets it as the
   hostname) and a one-off NetBird setup key (`{"netbird_setup_key": "..."}` in the user-data) from the
-  OpenStack metadata service and registers with NetBird.
+  OpenStack metadata service and registers with NetBird. Without a key it skips
+  the join: the worker is then reachable over Tailscale only.
 - `rworker-tailscale-up` registers with Tailscale next to it, with a one-off,
   ephemeral auth key tagged `tag:rworker` (`{"tailscale_auth_key": "..."}` in
   the user-data). It does not depend on the NetBird unit: when one overlay or

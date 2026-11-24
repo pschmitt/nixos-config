@@ -2,7 +2,8 @@
 # puts into the OpenStack user-data ({"netbird_setup_key": "...",
 # "agent_authorized_keys": ["ssh-ed25519 ..."]}; the keys are optional). The key is ephemeral,
 # single use and short-lived, so the copy left in the metadata service is
-# worthless once the worker has registered.
+# worthless once the worker has registered. Without a key (NetBird's API was
+# down at creation) the unit only prepares the worker and skips the join.
 {
   config,
   inputs,
@@ -116,7 +117,14 @@ in
       chmod 0644 /run/ssh-authorized-keys/agent
 
       key=$RUNTIME_DIRECTORY/setup-key
-      jq -er '.netbird_setup_key' "$user_data" > "$key"
+      # The controller enrolls the worker with Tailscale alone when it
+      # cannot get a NetBird key.
+      if ! jq -er '.netbird_setup_key // empty' "$user_data" > "$key"
+      then
+        echo "rworker: no netbird_setup_key in the user-data, skipping NetBird" >&2
+        rm -f "$user_data" "$key"
+        exit 0
+      fi
       rm -f "$user_data"
       ${lib.getExe wrapper} up --setup-key-file "$key" --hostname "$name"
       rm -f "$key"
