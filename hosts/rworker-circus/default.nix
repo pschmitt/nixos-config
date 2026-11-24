@@ -72,8 +72,10 @@ in
     circus-join = {
       description = "Fetch the Circus agent join token from the user-data";
       wantedBy = [ "multi-user.target" ];
+      # After it for /run/rworker/metadata.json. A failed NetBird join must
+      # not keep the agent from starting: Tailscale may work.
       after = [ "rworker-netbird-up.service" ];
-      requires = [ "rworker-netbird-up.service" ];
+      wants = [ "rworker-netbird-up.service" ];
       before = [ "circus-agent.service" ];
       path = [
         config.systemd.package

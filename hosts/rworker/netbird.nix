@@ -48,8 +48,12 @@ in
       "network-online.target"
       "netbird-${client}.service"
     ];
-    wants = [ "network-online.target" ];
-    requires = [ "netbird-${client}.service" ];
+    # Not required: the name, metadata and SSH keys below are needed even
+    # when the NetBird daemon does not start.
+    wants = [
+      "network-online.target"
+      "netbird-${client}.service"
+    ];
     path = [
       config.systemd.package
       pkgs.coreutils
@@ -60,11 +64,13 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      # Without NetBird nobody can log in: show failures in the serial
-      # console log (`openstack console log show`).
+      # Show failures in the serial console log
+      # (`openstack console log show`).
       StandardError = "journal+console";
       RuntimeDirectory = "rworker-netbird";
       RuntimeDirectoryMode = "0700";
+      # A join that hangs must not hold up the units ordered after this one.
+      TimeoutStartSec = "5min";
     };
     script = ''
       # nixbot-worker.metadata=URL on the kernel command line points
