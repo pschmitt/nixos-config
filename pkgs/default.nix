@@ -82,8 +82,15 @@ in
   # Personal tools pinned as flake inputs, also available through the additions overlay.
   bunq = inputs.bunq-sh.packages.${pkgs.stdenv.hostPlatform.system}.bunq;
   bruvtab = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  # Its Android build tools currently support x86_64-linux, but not aarch64-linux.
-  declaroid = inputs.declaroid.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  # Its Android build tools (aapt) support x86_64-linux, but not aarch64-linux:
+  # say so, or CI tries to evaluate it there.
+  declaroid =
+    inputs.declaroid.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs
+      (oldAttrs: {
+        meta = (oldAttrs.meta or { }) // {
+          platforms = [ "x86_64-linux" ];
+        };
+      });
   jcalapi = inputs.jcalapi.packages.${pkgs.stdenv.hostPlatform.system}.default;
   jellysync = inputs.jellysync.packages.${pkgs.stdenv.hostPlatform.system}.default;
   ldifj = inputs.ldifj.packages.${pkgs.stdenv.hostPlatform.system}.default;
