@@ -126,6 +126,11 @@ only with the user's explicit approval for that device.
 1. Install a debug APK whose aarch64 bootstrap carries nixpp, rbw and the
    private `etc/nixpp/setup.conf` (controller as an FQDN, its host key, cache
    store/keys/pin URL, `ssh_inputs`, `user`, `email`, `dotfiles_repo`).
+   That file is generated, never kept by hand: nixos-config's
+   `packages.<system>.termuxpp-setup-conf` renders it from
+   nixos-config-private's `lib.termuxppSetup`; pass
+   `--nixpp-setup-config "$(nix build --no-link --print-out-paths github:pschmitt/nixos-config#termuxpp-setup-conf)"`
+   (on a worker) to the bootstrap builder.
    Recipe: termuxpp `docs/en/aarch64-bootstrap.md`. Such APKs and zips embed
    private config: keep them 0600 and local. Reinstalling (`adb install -r`)
    does not re-extract the prefix, so a changed `nixpp` or `setup.conf` needs
