@@ -62,6 +62,17 @@ in
         then
           unalias docker-compose
         fi
+
+        # These Nix aliases must be absent while the yadm-managed Codex plugin
+        # defines its legacy cxt/cxs functions. Restore them after sourcing.
+        if (( $+commands[codex-terra] )) && (( $+aliases[cxt] ))
+        then
+          unalias cxt
+        fi
+        if (( $+commands[codex-sol] )) && (( $+aliases[cxs] ))
+        then
+          unalias cxs
+        fi
       }
 
       zsh::local-plugins-finish() {
@@ -95,6 +106,15 @@ in
         do
           (( $+functions[$hook] )) && "$hook"
         done
+
+        if (( $+commands[codex-terra] ))
+        then
+          builtin alias -- cxt=codex-terra
+        fi
+        if (( $+commands[codex-sol] ))
+        then
+          builtin alias -- cxs=codex-sol
+        fi
         typeset -g ZSH_LOCAL_PLUGINS_LOADED=1
       }
 
