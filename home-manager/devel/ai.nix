@@ -880,7 +880,7 @@ in
 
       resume.agents = {
         claude = {
-          package = config.programs.claude-code.finalPackage;
+          package = claudeCodePackage;
           executable = "claude";
           kind = "claude";
           configDir = config.programs.claude-code.configDir;

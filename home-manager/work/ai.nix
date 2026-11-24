@@ -23,7 +23,7 @@ let
       export CLAUDE_CODE_SUBAGENT_MODEL="sonnet"
       export CLAUDE_CODE_SUBAGENT_MODEL_FORCE="1"
 
-      exec ${config.programs.claude-code.finalPackage}/bin/claude \
+      exec ${config.programs.claude-code.package}/bin/claude \
         --settings "${claudeWorkSettings}" \
         "$@"
     '';
