@@ -65,12 +65,14 @@ jobs:
           [[ "$(wc -l < "$RUNNER_TEMP/circus-paths")" -eq "$(jq 'length' <<< "$OUTPUTS")" ]]
           printf 'url=%s\nkey=%s\n' "$CACHE_URL" "$CACHE_KEY" >> "$GITHUB_OUTPUT"
 
+      # The rofl-* keys (profiles/base/nix-cache-keys.nix) sign many of the
+      # dependencies in S3 that the Circus store no longer holds itself.
       - uses: ./.github/actions/nix-setup
         with:
           nix-conf: |
             extra-substituters = https://nix-community.cachix.org https://cache.numtide.com ${{ steps.cache.outputs.url }}
             # Trust the S3 signer listed in profiles/base/nix-cache-keys.nix.
-            extra-trusted-public-keys = rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g= ${{ steps.cache.outputs.key }}
+            extra-trusted-public-keys = rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g= rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0= rofl-14:XkEHSleW71wOnEnAcTZnYi/badnlAJAUxt6SIzbYsG8= rofl-15:x68gyyrKadDfvJKdpPkRvmPckrYF6XqzlKaqs2xheVw= rofl-16:DB8WQ415B8v3P9r1R8U4pO1iKrOAldbBHbSz+chryXI= ${{ steps.cache.outputs.key }}
           s3-store: ${{ secrets.NIKS3_S3_STORE }}
           s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
