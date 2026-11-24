@@ -292,18 +292,24 @@ probe_worker() {
   local worker_system="" extra="" binfmt=""
   # shellcheck disable=SC2016 # expanded by the worker's shell
   printf -v probe 'nix_c() { nix --extra-experimental-features nix-command config show "$1"; }; printf "system=%%s\\n" "$(nix_c system)"; printf "extra=%%s\\n" "$(nix_c extra-platforms)"; printf "binfmt=%%s\\n" "$(head -n 1 /proc/sys/fs/binfmt_misc/%s 2>/dev/null || head -n 1 /proc/sys/fs/binfmt_misc/qemu-%s 2>/dev/null)"' "$target" "$arch"
-  for _ in $(seq 1 "${RWORKER_NIX_SSH_ATTEMPTS:-10}")
+  local attempts="${RWORKER_NIX_SSH_ATTEMPTS:-10}" errfile last_error=""
+  errfile=$(mktemp) || return 1
+  for _ in $(seq 1 "$attempts")
   do
-    if out=$(rworker ssh "$name" "$probe")
+    if out=$(rworker ssh "$name" "$probe" 2> "$errfile")
     then
       break
     fi
     out=""
+    last_error=$(grep -v '^[[:space:]]*$' "$errfile" | tail -n 1)
     sleep "${RWORKER_NIX_RETRY_DELAY:-3}"
   done
+  rm -f -- "$errfile"
   if [[ -z "$out" ]]
   then
-    warn "worker $name does not accept SSH with its pinned host key"
+    # Not necessarily the host key: any failure of the pinned-key SSH lands
+    # here (sshd or the mesh route not ready, a key mismatch, ...).
+    warn "worker $name does not accept SSH after $attempts attempts (last error: ${last_error:-none})"
     return 1
   fi
   while IFS= read -r line

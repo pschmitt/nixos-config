@@ -380,7 +380,7 @@ test_ssh_never_ready() {
   local n=ssh-never-ready
   run_scenario ssh-never-ready build '.#x'
   expect_rc "$n" 1 \
-    && expect_err "$n" 'pinned host key' \
+    && expect_err "$n" 'does not accept SSH after' \
     && expect_no_trace "$n" 'nix build --max-jobs' \
     && expect_trace "$n" 'rworker down w-test1' \
     && pass "$n"
