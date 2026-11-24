@@ -75,8 +75,10 @@ meeting_data() {
 # The tabs as `id<TAB>title<TAB>url` lines. browser-daemon answers from
 # memory once a browser is connected to its local tab API; bruvtab otherwise.
 tab_list() {
-  if [[ -n "$(browser-daemon tabs clients 2>/dev/null)" ]] && browser-daemon tabs list 2>/dev/null
+  local tabs
+  if tabs="$(browser-daemon tabs --local 2>/dev/null)" && [[ -n "$tabs" ]]
   then
+    printf '%s\n' "$tabs"
     return 0
   fi
   bruvtab list 2>/dev/null

@@ -87,7 +87,7 @@ get_bruvtab_playing_json() {
   local bruvtab_json
   if browser_daemon_tabs_ready
   then
-    bruvtab_json="$(browser-daemon tabs --json list --audible 2>/dev/null)" || return 1
+    bruvtab_json="$(browser-daemon tabs --local --json list --audible 2>/dev/null)" || return 1
   else
     bruvtab_json="$(bruvtab tabs --playing -j 2>/dev/null)" || return 1
   fi
