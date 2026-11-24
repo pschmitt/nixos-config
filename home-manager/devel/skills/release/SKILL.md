@@ -21,6 +21,8 @@ order of steps and the traps that cost rounds before.
    failing one when the fix is small (`merge-prs` skill). Only skip one that needs a real
    migration or a major update, and say which and why. Let CI finish on the resulting `main`
    (`ci-watch` skill).
+   `release prepare` enforces this: it refuses while such PRs are open; name the ones you
+   deliberately leave out in `RELEASE_SKIP_PRS="#12 #34"`.
 4. Pick the version from the existing tags: `git tag --sort=-v:refname | head -3`. Do not skip a
    number (rbw once went to 2.27.2 without a 2.27.1). A change to the rbw agent protocol needs at
    least a minor bump. Any extension source change needs a new version.
