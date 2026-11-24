@@ -99,6 +99,27 @@ in
         };
       }
     ))
+    # The CLI (browser-daemon tabs/nodes/extension …) on a machine without
+    # its own daemon talks to the mesh's daemon over NetBird, with the cluster
+    # secret. Hosts that run a daemon export both themselves.
+    (lib.mkIf
+      (
+        cfg.enable
+        && cfg.node.enable
+        && cfg.node.discoveryOrigin != null
+        && !(config.services.browser-daemon.enable or false)
+      )
+      {
+        sops.secrets."browser-daemon/cluster-secret" = {
+          owner = config.mainUser.username;
+          mode = "0400";
+        };
+        environment.sessionVariables = {
+          BROWSER_DAEMON_URL = cfg.node.discoveryOrigin;
+          BROWSER_DAEMON_SECRET_FILE = config.sops.secrets."browser-daemon/cluster-secret".path;
+        };
+      }
+    )
   ];
 }
 

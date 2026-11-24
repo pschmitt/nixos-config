@@ -164,7 +164,7 @@ browser_daemon_tabs_ready() {
 # else (no browser connected to it yet) from bruvtab.
 browser_tab_list() {
   local tabs
-  if tabs="$(browser-daemon tabs --local 2>/dev/null)" && [[ -n "$tabs" ]]
+  if tabs="$(browser-daemon tabs --local -o tsv 2>/dev/null)" && [[ -n "$tabs" ]]
   then
     printf '%s\n' "$tabs"
     return 0

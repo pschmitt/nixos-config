@@ -76,7 +76,7 @@ meeting_data() {
 # memory once a browser is connected to its local tab API; bruvtab otherwise.
 tab_list() {
   local tabs
-  if tabs="$(browser-daemon tabs --local 2>/dev/null)" && [[ -n "$tabs" ]]
+  if tabs="$(browser-daemon tabs --local -o tsv 2>/dev/null)" && [[ -n "$tabs" ]]
   then
     printf '%s\n' "$tabs"
     return 0
