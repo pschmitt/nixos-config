@@ -7,7 +7,6 @@ let
     (import ./mautrix-signal.nix { inherit prev; })
     (import ./onnxruntime.nix { inherit prev; })
     (import ./squeekboard.nix { inherit prev; })
-    (import ./stalwart.nix { inherit final prev; })
     (import ./tmux.nix { inherit prev; })
   ];
 
