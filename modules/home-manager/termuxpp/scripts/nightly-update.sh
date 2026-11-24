@@ -26,10 +26,25 @@ run_step() {
 }
 
 # Build the current main on a disposable rworker (evaluation included) and
-# switch to it, instead of installing the system CI published in the cache.
-# nixpp leases the worker, copies the result back and releases the worker.
+# switch to it. There is deliberately no fallback to an older system: the
+# result is the latest main or no change. A lost connection to the worker
+# fails one attempt, so retry within the 3600 s the Tasker action waits.
 upgrade_profile() {
-  run_step profile 2700 nixpp upgrade --rworker --remote-eval
+  local attempt=1 deadline=$((SECONDS + 3000)) limit
+  while :
+  do
+    limit=$((deadline - SECONDS))
+    if (( limit < 600 ))
+    then
+      log 'Not enough time left for another rworker upgrade attempt.'
+      return 1
+    fi
+    (( limit <= 2400 )) || limit=2400
+    run_step "profile-$attempt" "$limit" nixpp upgrade --rworker --remote-eval && return 0
+    log "rworker upgrade attempt $attempt failed."
+    attempt=$((attempt + 1))
+    sleep 60
+  done
 }
 
 maintenance() {
