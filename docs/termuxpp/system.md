@@ -30,6 +30,61 @@ nix build '.#termuxppConfigurations.zf10.system'
 nix build '.#termuxppConfigurations.p11.system'
 ```
 
+### Build on a native aarch64 rworker
+
+The systems are `aarch64-linux`; build them natively on a GitHub ARM runner
+lease rather than under emulation. `rworker up` sets the lease up for the
+private S3 cache, private flake inputs and a niks3 push token (opt out with
+`--no-credentials`), so plain `nix` and `niks3` work there:
+
+```sh
+rev=$(git rev-parse origin/main)   # a pushed nixos-config commit
+w=$(rworker up --profile gh-aarch64 --ttl 2h --topic "termuxpp systems $rev" --json | jq -r .name)
+rworker start "$w" -- "nix build --accept-flake-config -L --max-jobs 4 --cores 0 \
+  --no-link --print-out-paths \
+  github:pschmitt/nixos-config/$rev#termuxpp-system-p11 \
+  github:pschmitt/nixos-config/$rev#termuxpp-system-zf10 > systems.txt \
+  && nix path-info -r \$(cat systems.txt) | niks3 push --stdin"
+rworker logs -f "$w"
+rworker down "$w"
+```
+
+Push the whole closure (`nix path-info -r … | niks3 push --stdin`), not only
+the top-level path, then let the phones substitute (`nixpp upgrade`). The
+`packages.aarch64-linux.termuxpp-system-<host>` outputs alias
+`termuxppConfigurations.<host>.system`.
+
+One derivation of each system is `x86_64-linux`: the Android runtime
+`nixpp-runtime-termux` (and its bootstrap seed), which this flake builds with
+the x86_64 nixpkgs. An ARM lease substitutes it from the cache but cannot
+build it, so after a TermuxPP or nixpkgs bump build it first on an x86_64
+worker and push it:
+
+```sh
+w=$(rworker up --ttl 1h --topic "nixpp runtime $rev" --json | jq -r .name)
+rworker start "$w" -- "nix build --accept-flake-config --no-link --print-out-paths --expr '
+  let f = builtins.getFlake \"github:pschmitt/nixos-config/$rev\";
+  in (f.inputs.termuxpp.lib.nixpp.packagesFor f.inputs.nixpkgs.legacyPackages.x86_64-linux).nixpp-runtime-termux
+' > rt.path && nix path-info -r \$(cat rt.path) | niks3 push --stdin"
+```
+
+To find what crosses that boundary for a system, list the `x86_64-linux`
+derivations an `aarch64-linux` derivation uses directly (an evaluation: run it
+in a checkout on a worker):
+
+```sh
+nix derivation show -r "$(nix eval --raw .#packages.aarch64-linux.termuxpp-system-zf10.drvPath)" |
+  jq -r '(.derivations // .) as $d
+    | [$d[] | select(.system == "aarch64-linux") | (.inputs.drvs // .inputDrvs) | keys[]]
+    | unique[] | select($d[.].system == "x86_64-linux")'
+```
+
+The runtime itself also builds on aarch64 hosts (nixpkgs' clang and lld with
+the NDK sysroot), but this flake keeps using the x86_64 build for now.
+
+`nixpp setup` on a phone performs the same native build itself: it leases a
+`gh-aarch64` worker with the phone's key and builds there.
+
 ## Guest command: nixpp
 
 The user-facing interface is **`nixpp`**, a Rust executable built for the Linux
