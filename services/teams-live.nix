@@ -139,8 +139,11 @@ in
               auto_setup = true;
               state_file = "${cfg.dataDir}/state/gitlab-oauth-gitlab.json";
             };
-            # The signed-in dashboard at /gitlab/approve/dashboard, for members of the GitLab group.
-            dashboard.enable = true;
+            # The signed-in dashboard, for members of the GitLab group: the host's start page.
+            dashboard = {
+              enable = true;
+              path = "/dashboard";
+            };
           };
         };
 
@@ -271,6 +274,10 @@ in
         # nothing is rewritten, buffered or cached here.
         "= /gitlab/approve" = approveLocation;
         "^~ /gitlab/approve/" = approveLocation;
+        # The host itself opens the dashboard (served by the approval flow).
+        "= /".return = "302 /dashboard";
+        "= /dashboard" = approveLocation;
+        "^~ /dashboard/" = approveLocation;
         # Existing Teams cards keep working, including their URL fragments.
         "= /approve" = {
           return = "308 /gitlab$request_uri";
