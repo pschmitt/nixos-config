@@ -427,7 +427,10 @@ in
                 ]
                 ++ lib.optional (
                   cfg.githubActionsAgents.pullRequestAuthorIdsFile != null
-                ) "pschmitt/nixos-config/.github/workflows/circus-pr-builder.yml@refs/heads/main";
+                ) "pschmitt/nixos-config/.github/workflows/circus-pr-builder.yml@refs/heads/main"
+                ++ lib.optional (
+                  cfg.githubActionsAgents.kvm.enable && cfg.githubActionsAgents.pullRequestAuthorIdsFile != null
+                ) "pschmitt/nixos-config/.github/workflows/circus-pr-kvm-builder.yml@refs/heads/main";
               };
             };
             ephemeral_pools =
@@ -469,25 +472,7 @@ in
                     agent_binary_url = "${cfg.githubActionsAgents.agentBinaryUrl}#sha256=${cfg.githubActionsAgents.agentBinarySha256}";
                   };
                 };
-              in
-              lib.optional cfg.githubActionsAgents.enable (
-                mainPool
-                // lib.optionalAttrs cfg.qemuOverflow.enable {
-                  qemu_overflow = {
-                    agent_name = "circus-qemu";
-                    system = "aarch64-linux";
-                    supported_features = [ ];
-                    inherit (mainPool) allowed_build_repositories;
-                    # Emulation is slow: give native runners time to start.
-                    grace_secs = 600;
-                    status_file = qemuOverflowStatusPath;
-                    status_ttl_secs = 90;
-                  };
-                }
-              )
-              ++ lib.optional cfg.githubActionsAgents.kvm.enable (
-                mainPool
-                // {
+                kvmPool = mainPool // {
                   name = "gha-x86_64-kvm";
                   allowed_build_repositories = [
                     "pschmitt/anika-blue"
@@ -507,8 +492,44 @@ in
                   github_actions = mainPool.github_actions // {
                     agent_binary_url = "github:pschmitt/circus/${inputs.circus.rev}#circus-agent";
                   };
+                };
+              in
+              lib.optional cfg.githubActionsAgents.enable (
+                mainPool
+                // lib.optionalAttrs cfg.qemuOverflow.enable {
+                  qemu_overflow = {
+                    agent_name = "circus-qemu";
+                    system = "aarch64-linux";
+                    supported_features = [ ];
+                    inherit (mainPool) allowed_build_repositories;
+                    # Emulation is slow: give native runners time to start.
+                    grace_secs = 600;
+                    status_file = qemuOverflowStatusPath;
+                    status_ttl_secs = 90;
+                  };
                 }
               )
+              ++ lib.optional cfg.githubActionsAgents.kvm.enable kvmPool
+              ++
+                lib.optional
+                  (cfg.githubActionsAgents.kvm.enable && cfg.githubActionsAgents.pullRequestAuthorIdsFile != null)
+                  (
+                    kvmPool
+                    // {
+                      name = "gha-pr-x86_64-kvm";
+                      allowed_build_repositories = kvmPool.allowed_build_repositories ++ [
+                        "pschmitt/luks-ssh-unlock"
+                        "pschmitt/stricknani"
+                      ];
+                      poll_interval_secs = 15;
+                      pull_request_author_ids_file = cfg.githubActionsAgents.pullRequestAuthorIdsFile;
+                      github_actions = kvmPool.github_actions // {
+                        # Not circus-pr-builder.yml: Circus keeps one list of
+                        # verified evaluations per workflow.
+                        workflow = "circus-pr-kvm-builder.yml";
+                      };
+                    }
+                  )
               ++
                 lib.optional
                   (cfg.githubActionsAgents.enable && cfg.githubActionsAgents.pullRequestAuthorIdsFile != null)

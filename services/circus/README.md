@@ -136,7 +136,9 @@ Each needs its secret first; a missing SOPS key fails activation.
   feature. The workflow opens a KVM VM before joining Circus and exposes
   `/dev/kvm` to the Nix sandbox. Each runner takes one build, with at most two
   runners in flight. The workflow installs the x86_64 agent from the pinned
-  Circus flake package.
+  Circus flake package. Pull requests from the accounts in
+  `pullRequestAuthorIdsFile` use a second pool with its own workflow,
+  `circus-pr-kvm-builder.yml`.
 
 ## Effects (`services.circus.effects`)
 

@@ -1,0 +1,71 @@
+# KVM workers for verified same-repository PRs. Circus ties the list of
+# verified evaluations to the workflow file, so this pool cannot share
+# circus-pr-builder.yml with the ARM one.
+# Circus writes outputs to S3 using assignment-scoped upload URLs.
+name: Circus PR KVM Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_url:
+        required: true
+        type: string
+      oidc_audience:
+        required: true
+        type: string
+      agent_binary_url:
+        description: Pinned circus-agent binary matching the queue-runner
+        required: true
+        type: string
+      systems:
+        description: Comma-separated Nix systems
+        required: true
+        type: string
+      supported_features:
+        description: Comma-separated supported system features
+        required: false
+        type: string
+        default: ""
+      mandatory_features:
+        description: Comma-separated mandatory system features
+        required: false
+        type: string
+        default: ""
+      max_jobs:
+        required: true
+        type: string
+      cores:
+        required: true
+        type: string
+      speed_factor:
+        required: true
+        type: string
+      agent_name:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-agent:
+    uses: ./.github/workflows/circus-builder.yml
+    with:
+      runner_url: ${{ inputs.runner_url }}
+      oidc_audience: ${{ inputs.oidc_audience }}
+      agent_binary_url: ${{ inputs.agent_binary_url }}
+      systems: ${{ inputs.systems }}
+      supported_features: ${{ inputs.supported_features }}
+      mandatory_features: ${{ inputs.mandatory_features }}
+      max_jobs: ${{ inputs.max_jobs }}
+      cores: ${{ inputs.cores }}
+      speed_factor: ${{ inputs.speed_factor }}
+      agent_name: ${{ inputs.agent_name }}
+    secrets:
+      NB_SETUP_KEY: ${{ secrets.NB_SETUP_KEY }}
+      # Read-only. Circus counts paths in this store as cached and does not
+      # schedule their builds, so the workers must be able to fetch them.
+      NIKS3_S3_STORE: ${{ secrets.NIKS3_S3_STORE }}
+      NIKS3_S3_ACCESS_KEY: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
+      NIKS3_S3_SECRET_KEY: ${{ secrets.NIKS3_S3_SECRET_KEY }}
