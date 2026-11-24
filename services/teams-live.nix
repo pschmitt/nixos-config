@@ -137,6 +137,7 @@ in
             geoip_database = "${pkgs.dbip-city-lite}/share/dbip/dbip-city-lite.mmdb";
             # "Sign in with GitLab" before a confirmation: the page learns who confirms.
             oauth = {
+              auto_setup = true;
               client_id = secretValue "teams-live/gitlab-oauth-client-id";
               client_secret = secretValue "teams-live/gitlab-oauth-client-secret";
             };
