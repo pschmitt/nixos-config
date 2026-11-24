@@ -25,18 +25,11 @@ run_step() {
   return "$status"
 }
 
+# Build the current main on a disposable rworker (evaluation included) and
+# switch to it, instead of installing the system CI published in the cache.
+# nixpp leases the worker, copies the result back and releases the worker.
 upgrade_profile() {
-  local pin obsolete
-  log 'Checking the signed cache pin'
-  pin=$(timeout --kill-after=15 120 nixpp --json upgrade --from-cache --dry-run |
-    jq -er '.path | split("/") | last') || return 1
-  obsolete=$(timeout --kill-after=15 30 nixpp __cache-pin-obsolete "$pin") || return 1
-  if [[ "$obsolete" == true ]]
-  then
-    log 'The signed pin is at or behind the active generation. Keeping the active generation.'
-    return 0
-  fi
-  run_step profile 1500 nixpp upgrade --from-cache
+  run_step profile 2700 nixpp upgrade --rworker --remote-eval
 }
 
 maintenance() {
@@ -134,7 +127,7 @@ main() {
 
   if [[ "$mode" == check ]]
   then
-    run_step profile-check 120 nixpp upgrade --from-cache --dry-run || return 1
+    run_step profile-check 120 rworker ls || return 1
     nightly_result=ready
   else
     maintenance || return 1
