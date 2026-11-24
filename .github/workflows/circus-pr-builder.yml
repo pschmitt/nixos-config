@@ -62,3 +62,8 @@ jobs:
       agent_name: ${{ inputs.agent_name }}
     secrets:
       NB_SETUP_KEY: ${{ secrets.NB_SETUP_KEY }}
+      # Read-only. Circus counts paths in this store as cached and does not
+      # schedule their builds, so the workers must be able to fetch them.
+      NIKS3_S3_STORE: ${{ secrets.NIKS3_S3_STORE }}
+      NIKS3_S3_ACCESS_KEY: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
+      NIKS3_S3_SECRET_KEY: ${{ secrets.NIKS3_S3_SECRET_KEY }}

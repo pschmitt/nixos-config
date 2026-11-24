@@ -96,12 +96,13 @@ permissions:
 env:
   # Same caches as nix-build.yaml: the agent substitutes everything it can
   # (cache.nixos.org, nix-community, niks3) instead of building it.
+  # Many paths in the S3 store are signed only by rofl-10.
   NIKS3_S3_STORE: ${{ secrets.NIKS3_S3_STORE }}
   nix-conf: |-
     fallback = true
     extra-experimental-features = nix-command flakes
     substituters = https://cache.nixos.org/ https://nix-community.cachix.org
-    trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+    trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
 
 jobs:
   build-agent:
@@ -127,6 +128,18 @@ jobs:
               vm = fcntl.ioctl(kvm, 0xAE01, 0)  # KVM_CREATE_VM
               os.close(vm)
           PYTHON
+
+      # The ARM runners have 16 GB of memory; large Rust links need more.
+      - name: Add swap
+        if: inputs.systems != 'x86_64-linux'
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 24G /circus-swap
+          sudo chmod 600 /circus-swap
+          sudo mkswap /circus-swap
+          sudo swapon /circus-swap
+          swapon --show
+          free -h
 
       - name: Set up Nix
         uses: ./.github/actions/nix-setup
