@@ -153,7 +153,7 @@ for one-shot workers, bounded watches, and other CLI equivalents.
   flake from the first run, for example:
 
   ```bash
-  rworker start "$w" -- 'cd rbw && CARGO_TARGET_DIR="$HOME/build-target/rbw" nix develop -c cargo test'
+  rworker start "$w" --topic "rbw tests" -- 'cd rbw && CARGO_TARGET_DIR="$HOME/build-target/rbw" nix develop -c cargo test'
   ```
 
   If `target/` already exists, move it to that target directory first, then use
@@ -194,9 +194,10 @@ for one-shot workers, bounded watches, and other CLI equivalents.
   never in arguments or the Nix store, and `down` the worker when done. If
   that profile cannot write, build on the target or ask before a large
   upload over the home link.
-- Agents must run long jobs with `rworker start "$w" -- 'command'` or MCP
-  `start`, and short jobs with MCP `exec` when available. These register the
-  job and capture combined output. Use `rworker jobs "$w"`, `rworker logs
+- Agents must run long jobs with `rworker start "$w" --topic "what it is for"
+  -- 'command'` or MCP `start`, and short jobs with MCP `exec` when available.
+  **Always** give each job a topic (`topic=`, also for `register-log-file`), e.g.
+  "cargo test": job lists show it. These register the job and capture combined output. Use `rworker jobs "$w"`, `rworker logs
   `"$w" [JOB] [--lines N]` to inspect one worker, or `rworker logs [--lines N]`
   to inspect all workers. **Never filter a job's output inside the worker**
   (`... | tail -n 10`, `> /dev/null`, `2>&1 | rg ...`): the user follows the
@@ -212,7 +213,7 @@ for one-shot workers, bounded watches, and other CLI equivalents.
   polling interval in seconds. Each unnamed job gets a unique ID. MCP `exec`
   returns the ID even on timeout;
   the job continues. If a job must be launched separately, register its existing
-  absolute log file with `rworker setup register-log-file "$w" JOB --log /path/to/log` (or MCP
+  absolute log file with `rworker setup register-log-file "$w" JOB --log /path/to/log --topic "..."` (or MCP
   `setup_register_log_file`) immediately. Logs and metadata disappear with the worker.
 
 ## Secrets and private inputs
