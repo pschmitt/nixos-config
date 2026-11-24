@@ -26,8 +26,8 @@ agent.
 | --- | --- | --- |
 | `https://circus.brkn.lol` | nginx, rofl-15 | Authelia |
 | `https://circus.brkn.lol/api/v1/webhooks/` | nginx, rofl-15 | public, HMAC (`githubWebhook.enable`) |
-| `https://circus.rofl-15.nb.brkn.lol/nix-cache/` | nginx, rofl-15 | NetBird and Tailscale addresses only |
-| `circus://rofl-15.nb.brkn.lol:8443` (agent RPC) | queue-runner | trusted tailnet interfaces only |
+| `https://circus.rofl-15.vpn.brkn.lol/nix-cache/` | nginx, rofl-15 | NetBird and Tailscale addresses only |
+| `circus+tls://circus.rofl-15.vpn.brkn.lol:8443` (agent RPC) | queue-runner | trusted tailnet interfaces only |
 | `127.0.0.1:3000` | circus-server | local |
 
 Sign in to [the build dashboard](https://build.brkn.lol/dash) through Authelia

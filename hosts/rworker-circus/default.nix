@@ -1,6 +1,6 @@
 # A pool rworker for Circus CI (services/circus): the standard build image
 # plus a circus-agent that dials the queue-runner on the Circus host over
-# NetBird. The rworker autoscaler on the ad-hoc control host creates these on
+# NetBird or Tailscale (the vpn name). The rworker autoscaler on the ad-hoc control host creates these on
 # Circus demand and hands each one the pool's agent join token through the
 # OpenStack user-data (`circus_join_token`), never through the image. The
 # same user-data carries the private S3 cache (`nix_cache_conf`,
@@ -184,7 +184,7 @@ in
       name = "rworker-circus";
       # TLS with the queue-runner host's tailnet ACME certificate, like the
       # persistent agents (services/circus/agent.nix).
-      runner_url = "circus+tls://circus.${runnerHost}.${config.domains.netbird}:8443";
+      runner_url = "circus+tls://circus.${runnerHost}.${config.domains.vpn}:8443";
       # Native only: the image could run aarch64 through qemu-user, but the
       # queue-runner would then place aarch64 builds here at emulation speed.
       systems = [ "x86_64-linux" ];

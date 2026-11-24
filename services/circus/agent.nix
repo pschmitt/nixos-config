@@ -18,7 +18,7 @@ in
     runnerHost = lib.mkOption {
       type = lib.types.str;
       example = "rofl-15";
-      description = "Host running the Circus queue-runner, reached over NetBird.";
+      description = "Host running the Circus queue-runner, reached over NetBird or Tailscale.";
     };
 
     maxJobs = lib.mkOption {
@@ -44,7 +44,7 @@ in
       settings.agent = {
         name = config.networking.hostName;
         # TLS with the queue-runner host's tailnet ACME certificate.
-        runner_url = "circus+tls://circus.${cfg.runnerHost}.${config.domains.netbird}:8443";
+        runner_url = "circus+tls://circus.${cfg.runnerHost}.${config.domains.vpn}:8443";
         systems = [ "x86_64-linux" ];
         supported_features = [
           "nixos-test"

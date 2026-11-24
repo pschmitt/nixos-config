@@ -14,16 +14,18 @@ let
   cfg = config.services.circus;
   inherit (config.networking) hostName;
 
-  # Public dashboard behind Authelia, and a NetBird-only name that agents
-  # (rofl-16, GitHub runners joined to NetBird) use for the binary cache.
+  # Public dashboard behind Authelia, and the tailnet-only vhost (and its
+  # certificate). Agents get the vpn name of it, whose record points at
+  # whichever of NetBird and Tailscale works.
   publicHost = "circus.${config.domains.main}";
   buildHost = "build.${config.domains.main}";
   tailnetHost = "circus.${hostName}.${config.domains.netbird}";
+  agentHost = "circus.${hostName}.${config.domains.vpn}";
 
   serverPort = 3000;
   rpcPort = 8443;
   tailnetCertDir = config.security.acme.certs.${tailnetHost}.directory;
-  runnerUrl = "circus+tls://${tailnetHost}:${toString rpcPort}";
+  runnerUrl = "circus+tls://${agentHost}:${toString rpcPort}";
 
   secret = name: config.sops.secrets."circus/${name}".path;
   placeholder = name: config.sops.placeholder."circus/${name}";
@@ -370,7 +372,7 @@ in
             snapshot_substituters = [
               "https://cache.nixos.org/"
               "https://nix-community.cachix.org"
-              "https://${tailnetHost}/nix-cache/"
+              "https://${agentHost}/nix-cache/"
             ]
             ++ lib.filter (lib.hasPrefix "s3://") config.nix.settings.extra-substituters;
             # Also count paths niks3 (s3://nix-cache-brkn-lol in nix.conf)
@@ -411,7 +413,7 @@ in
                 cert_file = "${tailnetCertDir}/fullchain.pem";
                 key_file = "${tailnetCertDir}/key.pem";
               };
-              cache_substituter = "https://${tailnetHost}/nix-cache/";
+              cache_substituter = "https://${agentHost}/nix-cache/";
               cache_public_key = cfg.settings.signing.public_key;
             }
             // lib.optionalAttrs cfg.githubActionsAgents.enable {
@@ -529,7 +531,7 @@ in
 
           cache = {
             enabled = true;
-            cache_url = "https://${tailnetHost}/nix-cache/";
+            cache_url = "https://${agentHost}/nix-cache/";
           };
 
           signing = {

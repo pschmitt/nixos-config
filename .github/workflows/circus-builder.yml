@@ -140,13 +140,29 @@ jobs:
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
 
       # The queue-runner (RPC) and its binary cache are reachable only over
-      # NetBird; the setup key's group needs a policy to rofl-15 TCP 443/8443.
+      # NetBird or Tailscale (rofl-15 TCP 443/8443). One of them is enough:
+      # a failing overlay must not stop the job, the wait below decides.
+      - name: Tailscale Connect
+        if: vars.TS_CIRCUS_CLIENT_ID != ''
+        continue-on-error: true
+        timeout-minutes: 4
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ vars.TS_CIRCUS_CLIENT_ID }}
+          audience: ${{ vars.TS_CIRCUS_AUDIENCE }}
+          tags: tag:circus-builder
+          # Both overlays use 100.64.0.0/10: without its own netfilter rules,
+          # Tailscale does not drop NetBird's replies.
+          args: --netfilter-mode=off --accept-dns=false
+
       - name: Netbird Connect
+        continue-on-error: true
+        timeout-minutes: 4
         uses: Alemiz112/netbird-connect@master
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
-      # NetBird reports "connected" before the route to rofl-15 is usable;
+      # An overlay reports "connected" before the route to rofl-15 is usable;
       # an agent dialing too early fails with "Network unreachable" and an
       # ephemeral session does not retry.
       - name: Wait for the queue-runner
@@ -166,7 +182,7 @@ jobs:
             fi
             sleep 2
           done
-          echo "::error::${host}:${port} unreachable over NetBird"
+          echo "::error::${host}:${port} unreachable over NetBird and Tailscale"
           exit 1
 
       - name: Install x86_64 circus-agent
