@@ -112,13 +112,13 @@ main() {
   cd "$HOME" || return 1
   log "Starting nightly maintenance ($mode)"
 
-  if ! timeout 15 termux-battery-status </dev/null |
+  if ! timeout 15 tpp battery </dev/null |
     jq -e '.plugged != null and .plugged != "UNPLUGGED"' >/dev/null
   then
     nightly_result='deferred (not charging or battery status unavailable)'
     return 0
   fi
-  if ! timeout 15 termux-wifi-connectioninfo </dev/null |
+  if ! timeout 15 tpp wifi connection </dev/null |
     jq -e '.supplicant_state == "COMPLETED"' >/dev/null
   then
     nightly_result='deferred (Wi-Fi disconnected or unavailable)'
