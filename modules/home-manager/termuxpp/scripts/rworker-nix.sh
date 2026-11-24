@@ -335,7 +335,7 @@ probe_worker() {
   printf '%s\n' "$worker_system"
 }
 
-# Prints the `rworker builder` line for TARGET once it matches the host key,
+# Prints the `rworker setup nix builder` line for TARGET once it matches the host key,
 # address and platform the controller reported for the worker.
 build_builder_line() {
   local name="$1" target="$2" worker_system="$3" info="$4" line="$5"
@@ -737,7 +737,7 @@ main() {
     return 2
   fi
   worker_system=$(probe_worker "$WORKER_NAME" "$target") || return 1
-  builder_info=$(rworker builder "$WORKER_NAME" --json) || return 1
+  builder_info=$(rworker setup nix builder "$WORKER_NAME" --json) || return 1
   line=$(jq -er '.builder | strings' <<< "$builder_info") || return 1
   line=$(build_builder_line "$WORKER_NAME" "$target" "$worker_system" "$WORKER_INFO" "$line") || return 1
 

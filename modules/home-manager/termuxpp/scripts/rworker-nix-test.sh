@@ -33,6 +33,12 @@ printf 'rworker %s\n' "$*" >> "$FAKE_TRACE"
 hostkey='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAItestkeytestkeytestkeytestkeytest'
 action="${1:-}"
 shift
+# `rworker setup nix builder NAME` is the current spelling of `rworker builder`.
+if [[ "$action" == setup && "${1:-}" == nix && "${2:-}" == builder ]]
+then
+  action=builder
+  shift 2
+fi
 case "$action" in
   up)
     if [[ "$*" == *' --arch '* ]]
