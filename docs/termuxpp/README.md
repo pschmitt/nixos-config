@@ -378,14 +378,16 @@ The managed profile installs a native Tasker launcher at
 Tasker action to run it in the background and wait up to 3,600 seconds. The job
 runs on Wi-Fi while the phone is charging, and needs 512 MiB of free space.
 
-The job activates the signed cache pin with `nixpp upgrade --from-cache`,
-runs `nixpp gc --keep-generations 3`, and fast-forwards yadm. The cache check
-also recognises older generations that GC has pruned. It syncs Atuin when signed in,
+The job builds the current `main` on a disposable rworker and switches to it
+(`nixpp upgrade --rworker --remote-eval`; the worker is leased and released by
+nixpp, and the step has a 45 minute limit), so it no longer waits for CI to
+publish a signed cache pin. It then runs `nixpp gc --keep-generations 3` and
+fast-forwards yadm. It syncs Atuin when signed in,
 then syncs and updates each
 configured mani workspace. Git runs without prompting. The latest two runs
 are logged under `~/.local/state/termuxpp-nightly/` in the guest. To check the
-current cache and readiness without activating anything, run
-`termuxpp-nightly-update --check`.
+readiness (the rworker controller must answer) without activating anything,
+run `termuxpp-nightly-update --check`.
 
 Use `nixpp gc --keep-generations 3 --dry-run` to preview cleanup. GC preserves
 the active and rollback generations and any generation used by a running
