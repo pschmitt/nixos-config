@@ -69,7 +69,8 @@ jobs:
         with:
           nix-conf: |
             extra-substituters = https://nix-community.cachix.org https://cache.numtide.com ${{ steps.cache.outputs.url }}
-            extra-trusted-public-keys = nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g= ${{ steps.cache.outputs.key }}
+            # Trust the S3 signer listed in profiles/base/nix-cache-keys.nix.
+            extra-trusted-public-keys = rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g= ${{ steps.cache.outputs.key }}
           s3-store: ${{ secrets.NIKS3_S3_STORE }}
           s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
