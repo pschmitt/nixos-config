@@ -658,7 +658,12 @@ def main():
     if not os.path.isdir(cwd):
         parser.error(f'original working directory no longer exists: {cwd}')
     os.chdir(cwd)
-    command = [agent, 'resume', sid] if agent == 'codex' else [agent, '--conversation' if agent == 'agy' else '--resume', sid]
+    if agent == 'codex':
+        command = [agent, 'resume', sid]
+    elif agent == 'agy':
+        command = [agent, '--conversation', sid]
+    else:
+        command = [agent, '--dangerously-skip-permissions', '--resume', sid]
     os.execvp(command[0], command)
 
 
