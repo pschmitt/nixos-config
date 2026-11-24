@@ -199,7 +199,7 @@ let
   sysFewer = "${systemFewer.config.system.build.secretsActivation}/bin/activate-secrets";
 in
 assert assertions;
-pkgs.runCommand "full-nix-sops-tests" { } ''
+pkgs.runCommand "nixpp-sops-tests" { } ''
   set -eu
   fail() { echo "FAIL: $*" >&2; exit 1; }
   # Values are synthetic, but never print them anyway.

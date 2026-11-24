@@ -1,4 +1,4 @@
-"""Regression gate for the full-Nix guest runtime.
+"""Regression gate for the nixpp guest runtime.
 
 Checks the commands the Android runtime has broken before: eza listings (alternate
 signal stacks), zsh, Neovim, Nix configuration/registry (local only), Unix domain
@@ -38,7 +38,7 @@ from pathlib import Path
 
 CHECKS = ('zsh', 'nvim', 'eza', 'nix', 'sockets', 'tmux', 'go', 'bat', 'rg', 'fd', 'rbw', 'osc', 'vivid', 'zoxide', 'rsync')
 # Variables copied into the isolated environment. Runtime-specific launcher
-# variables belong in FULL_NIX_PASS_ENV (space separated names or globs).
+# variables belong in NIXPP_PASS_ENV (space separated names or globs).
 PASS_ENV = (
     'LANG',
     'NIX_STATE_DIR',
@@ -79,7 +79,7 @@ finally:
     client.close()
     if os.path.exists(path):
         os.unlink(path)
-print("FULLNIX-SOCKET-OK")
+print("NIXPP-SOCKET-OK")
 '''
 
 EZA_CASES = (
@@ -177,12 +177,12 @@ class Gate:
             'NIX_CONF_DIR': str(config),
             'LC_ALL': 'C.UTF-8',
             'TERM': 'xterm-256color',
-            'USER': 'fullnix-check',
-            'LOGNAME': 'fullnix-check',
+            'USER': 'nixpp-check',
+            'LOGNAME': 'nixpp-check',
             'GIT_CONFIG_NOSYSTEM': '1',
         }
         patterns = list(PASS_ENV)
-        patterns += os.environ.get('FULL_NIX_PASS_ENV', '').split()
+        patterns += os.environ.get('NIXPP_PASS_ENV', '').split()
         for name, value in os.environ.items():
             if any(fnmatch.fnmatchcase(name, pat) for pat in patterns):
                 env.setdefault(name, value)
@@ -263,9 +263,9 @@ class Gate:
 
 def check_zsh(gate):
     zsh = gate.tool('zsh')
-    res = gate.run([zsh, '-f', '-c', 'print -r -- FULLNIX-ZSH-$ZSH_VERSION'])
+    res = gate.run([zsh, '-f', '-c', 'print -r -- NIXPP-ZSH-$ZSH_VERSION'])
     gate.require(res, 'zsh -f')
-    match = re.search(r'^FULLNIX-ZSH-(\d+\.\d+\S*)$', res.out, re.M)
+    match = re.search(r'^NIXPP-ZSH-(\d+\.\d+\S*)$', res.out, re.M)
     if not match:
         raise CheckFailure('zsh -f did not report a version')
     details = ['zsh ' + match.group(1)]
@@ -281,11 +281,11 @@ def check_zsh(gate):
         details.append('%d startup files parse' % count)
     if not gate.isolated:
         res = gate.run(
-            [zsh, '-l', '-i', '-c', 'print -r -- FULLNIX-ZSH-LOGIN'],
+            [zsh, '-l', '-i', '-c', 'print -r -- NIXPP-ZSH-LOGIN'],
             timeout=gate.args.login_timeout,
         )
         gate.require(res, 'zsh login shell')
-        if 'FULLNIX-ZSH-LOGIN' not in res.out:
+        if 'NIXPP-ZSH-LOGIN' not in res.out:
             raise CheckFailure('zsh login shell did not run the command')
         details.append('login shell ok')
     return details
@@ -294,14 +294,14 @@ def check_zsh(gate):
 def check_nvim(gate):
     nvim = gate.tool('nvim')
     lua = ('lua assert(jit and not jit.status(), "Neovim JIT must be disabled"); '
-           'io.stdout:write("FULLNIX-NVIM-" .. vim.version().major .. "\\n")')
+           'io.stdout:write("NIXPP-NVIM-" .. vim.version().major .. "\\n")')
     rounds = 20 if gate.args.thorough else 1
     for _ in range(rounds):
         res = gate.run(
             [nvim, '--headless', '-u', 'NONE', '-i', 'NONE', '-c', lua, '-c', 'qa!']
         )
         gate.require(res, 'nvim -u NONE')
-        if not re.search(r'^FULLNIX-NVIM-\d+$', res.out, re.M):
+        if not re.search(r'^NIXPP-NVIM-\d+$', res.out, re.M):
             raise CheckFailure('nvim -u NONE did not run Lua')
     details = ['bare startup ok']
     if not gate.isolated:
@@ -310,7 +310,7 @@ def check_nvim(gate):
         for _ in range(2):
             res = gate.run(command, timeout=gate.args.login_timeout)
             gate.require(res, 'nvim with user config')
-            if 'FULLNIX-NVIMCFG-' in res.out:
+            if 'NIXPP-NVIMCFG-' in res.out:
                 break
         else:
             raise CheckFailure('nvim with user config did not run Lua after two starts')
@@ -432,7 +432,7 @@ def check_sockets(gate):
     path = short_socket(gate, 's.sock')
     res = gate.run([python, '-I', '-c', SOCKET_SCRIPT, str(path)])
     gate.require(res, 'unix socket round trip')
-    if 'FULLNIX-SOCKET-OK' not in res.out:
+    if 'NIXPP-SOCKET-OK' not in res.out:
         raise CheckFailure('unix socket script did not finish')
     return ['stream socket, socketpair ok']
 
@@ -493,9 +493,9 @@ def check_go(gate):
 ANSI_RE = re.compile(r'\x1b\[[0-9;?]*[A-Za-z]')
 
 BAT_FIXTURE = (
-    'def fullnix_marker(value):\n'
-    '    return "FULLNIX-BAT-" + str(value)\n'
-    'print(fullnix_marker(42))\n'
+    'def nixpp_marker(value):\n'
+    '    return "NIXPP-BAT-" + str(value)\n'
+    'print(nixpp_marker(42))\n'
 )
 
 # relative path -> content. other.txt must never match "needle-".
@@ -779,7 +779,7 @@ RUNNERS = {
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         prog='check-runtime',
-        description='Regression gate for the full-Nix guest runtime.',
+        description='Regression gate for the nixpp guest runtime.',
     )
     parser.add_argument('--generation', help='Home Manager generation directory')
     parser.add_argument(
@@ -801,7 +801,7 @@ def parse_args(argv):
     parser.add_argument('--login-timeout', type=float, default=90)
     parser.add_argument('--heavy-timeout', type=float, default=300)
     parser.add_argument('--total-timeout', type=float, default=900)
-    parser.add_argument('--scratch-base', default=os.environ.get('FULL_NIX_CHECK_TMP'))
+    parser.add_argument('--scratch-base', default=os.environ.get('NIXPP_CHECK_TMP'))
     args = parser.parse_args(argv)
     if args.isolated and not args.generation:
         parser.error('--isolated needs --generation')

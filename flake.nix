@@ -18,7 +18,7 @@
       flake = false;
     };
 
-    # nixpp (the full-Nix Android runtime and guest system manager) and its
+    # nixpp (the Android runtime and guest system manager) and its
     # helpers; built with this flake's Nixpkgs (lib.nixpp.packagesFor).
     termuxpp = {
       url = "github:pschmitt/termuxpp";

@@ -6,7 +6,7 @@ import tempfile
 
 cache = Path.home() / '.cache'
 cache.mkdir(exist_ok=True)
-with tempfile.TemporaryDirectory(prefix='full-nix-eza-', dir=cache) as directory:
+with tempfile.TemporaryDirectory(prefix='nixpp-eza-', dir=cache) as directory:
     root = Path(directory)
     (root / 'nested').mkdir()
     (root / 'nested' / 'file.txt').write_text('test\n')

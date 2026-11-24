@@ -84,8 +84,8 @@ if [ -e "${0%/*}/../../hang-zsh" ]; then
 fi
 case "$*" in
   *-n*) exit 0 ;;
-  *LOGIN*) echo FULLNIX-ZSH-LOGIN ;;
-  *) echo FULLNIX-ZSH-5.9 ;;
+  *LOGIN*) echo NIXPP-ZSH-LOGIN ;;
+  *) echo NIXPP-ZSH-5.9 ;;
 esac
 FAKE
   write_tool "$dir" nvim <<'FAKE'
@@ -100,8 +100,8 @@ printf '%s\n' "$HOME" > "${0%/*}/../../seen-home"
 printf '%s\n' "${SECRET_TOKEN:-unset}" > "${0%/*}/../../seen-secret"
 printf '%s\n' "${FOO_PASS:-unset}" > "${0%/*}/../../seen-pass"
 case "$*" in
-  *NVIMCFG*) echo FULLNIX-NVIMCFG-0 ;;
-  *) echo FULLNIX-NVIM-0 ;;
+  *NVIMCFG*) echo NIXPP-NVIMCFG-0 ;;
+  *) echo NIXPP-NVIM-0 ;;
 esac
 FAKE
   write_tool "$dir" eza <<'FAKE'
@@ -439,12 +439,12 @@ test_gate_isolation() {
   assert_eq unset "$(cat "$W/gen/seen-pass")" "unlisted variable scrubbed"
   gate_world gate-pass-env
   RC=0
-  env FOO_PASS=passed FULL_NIX_PASS_ENV='FOO_*' \
+  env FOO_PASS=passed NIXPP_PASS_ENV='FOO_*' \
     timeout 120 python3 -I "$CHECKER" --scratch-base "$W/scratch" --timeout 3 \
     --total-timeout 60 --isolated --generation "$W/gen" \
     > "$W/out" 2> "$W/err" || RC=$?
   assert_eq 0 "$RC" "pass-env run rc"
-  assert_eq passed "$(cat "$W/gen/seen-pass")" "FULL_NIX_PASS_ENV passes variables"
+  assert_eq passed "$(cat "$W/gen/seen-pass")" "NIXPP_PASS_ENV passes variables"
 }
 
 test_gate_eza_crash() {
@@ -708,9 +708,9 @@ main() {
       return 0
       ;;
   esac
-  if [[ -z "${FULL_NIX_TEST_BOUNDED:-}" ]]
+  if [[ -z "${NIXPP_TEST_BOUNDED:-}" ]]
   then
-    FULL_NIX_TEST_BOUNDED=1 exec timeout 600 bash "${BASH_SOURCE[0]}" "$@"
+    NIXPP_TEST_BOUNDED=1 exec timeout 600 bash "${BASH_SOURCE[0]}" "$@"
   fi
   WORK=$(mktemp -d "${TMPDIR:-/tmp}/fnxt.XXXXXX") || return 1
   trap cleanup EXIT

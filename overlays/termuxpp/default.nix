@@ -1,7 +1,7 @@
 final: prev:
 let
   signalStack = final.stdenv.mkDerivation {
-    pname = "full-nix-eza-signal-stack";
+    pname = "nixpp-eza-signal-stack";
     version = "1";
     src = ./eza-stack.c;
     dontUnpack = true;
@@ -15,7 +15,7 @@ let
   withSignalStack =
     package: programs:
     final.symlinkJoin {
-      name = "${package.pname or package.name}-full-nix";
+      name = "${package.pname or package.name}-nixpp";
       paths = [ package ];
       passthru.nixppSignalStackPrograms = programs;
       passthru.version = final.lib.getVersion package;

@@ -34,7 +34,7 @@ let
     assert c.nixpp.rworker.controller != null;
     assert c.nixpp.rworker.awsCredentialsFile == c.nixpp.upgradeCache.credentials_file;
     assert c.nixpp.rworker.system == "aarch64-linux";
-    assert c.programs.eza.package.name == "eza-full-nix";
+    assert c.programs.eza.package.name == "eza-nixpp";
     assert builtins.elem c.programs.eza.package c.home.packages;
     assert c.programs.eza.package == home.pkgs.eza;
     assert home.pkgs.bat.nixppSignalStackPrograms == [ "bat" ];

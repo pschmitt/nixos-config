@@ -10,7 +10,7 @@ let
     path = toString inputs.nixpkgs.outPath;
     narHash = inputs.nixpkgs.narHash;
   };
-  lock = (pkgs.formats.json { }).generate "full-nix-flake.lock" {
+  lock = (pkgs.formats.json { }).generate "nixpp-flake.lock" {
     version = 7;
     root = "root";
     nodes = {
@@ -24,19 +24,19 @@ let
       };
     };
   };
-  source = pkgs.runCommand "full-nix-nixpkgs" { } ''
+  source = pkgs.runCommand "nixpp-nixpkgs" { } ''
     mkdir -p "$out"
     cp ${../../../overlays/termuxpp/default.nix} "$out/overlay.nix"
     cp ${../../../overlays/termuxpp/eza-stack.c} "$out/eza-stack.c"
     cp ${../../../overlays/termuxpp/rsync-search-only-ancestors.patch} "$out/rsync-search-only-ancestors.patch"
     cp ${../../../overlays/termuxpp/neovim-treesitter-async-tests.patch} "$out/neovim-treesitter-async-tests.patch"
-    cp ${pkgs.writeText "full-nix-default.nix" ''
+    cp ${pkgs.writeText "nixpp-default.nix" ''
       args:
       import ${inputs.nixpkgs.outPath} (args // {
         overlays = (args.overlays or []) ++ [ (import ./overlay.nix) ];
       })
     ''} "$out/default.nix"
-    cp ${pkgs.writeText "full-nix-flake.nix" ''
+    cp ${pkgs.writeText "nixpp-flake.nix" ''
       {
         inputs.nixpkgs.url = "path:${inputs.nixpkgs.outPath}";
         outputs = { self, nixpkgs }: {
@@ -61,7 +61,7 @@ let
       path = toString inputs.termuxpp.outPath;
     };
   };
-  registry = (pkgs.formats.json { }).generate "full-nix-registry.json" {
+  registry = (pkgs.formats.json { }).generate "nixpp-registry.json" {
     version = 2;
     flakes = lib.mapAttrsToList (id: target: {
       from = {
@@ -79,5 +79,5 @@ in
     settings.flake-registry = "file://${registry}";
     nixPath = [ "nixpkgs=${source}" ];
   };
-  home.file.".local/share/full-nix/nixpkgs".source = source;
+  home.file.".local/share/nixpp/nixpkgs".source = source;
 }

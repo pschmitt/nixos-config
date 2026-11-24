@@ -282,7 +282,7 @@ test_success_emulated() {
   local n=success-emulated
   run_scenario ok --system aarch64-linux build '.#hello' --print-out-paths
   expect_rc "$n" 0 \
-    && expect_trace "$n" 'rworker up --json --ttl 1h --topic full-nix rworker-nix build rwn-' \
+    && expect_trace "$n" 'rworker up --json --ttl 1h --topic nixpp rworker-nix build rwn-' \
     && expect_trace "$n" '--arch aarch64 --queue-timeout 120' \
     && expect_err "$n" 'No native aarch64 worker available. Trying the controller default.' \
     && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://agent@100.64.0.7 aarch64-linux ' \
@@ -299,7 +299,7 @@ test_default_system_and_options() {
   local n=default-options
   run_scenario ok --ttl 30m --topic eza --profile standard --disk 80 shell nixpkgs#eza
   expect_rc "$n" 0 \
-    && expect_trace "$n" 'rworker up --json --ttl 30m --topic full-nix rworker-nix eza rwn-' \
+    && expect_trace "$n" 'rworker up --json --ttl 30m --topic nixpp rworker-nix eza rwn-' \
     && expect_trace "$n" '--profile standard --disk 80' \
     && expect_no_trace "$n" '--arch' \
     && expect_trace "$n" 'nix shell --max-jobs 0 --builders ssh-ng://agent@100.64.0.7 aarch64-linux ' \

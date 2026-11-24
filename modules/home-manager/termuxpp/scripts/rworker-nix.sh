@@ -728,7 +728,7 @@ main() {
     nix_auth=1
   fi
   [[ "$subcommand" == remote-build ]] || arch="${target%-linux}"
-  lease_worker "$ttl" "full-nix rworker-nix ${topic:-$subcommand} $LEASE_NONCE" \
+  lease_worker "$ttl" "nixpp rworker-nix ${topic:-$subcommand} $LEASE_NONCE" \
     "$profile" "$flavor" "$disk" "$nix_cache" "$nix_auth" "$arch" || return
   provider=$(jq -r .provider <<< "$WORKER_INFO") || return
   if [[ "$provider" == github && "$subcommand" == remote-build ]]

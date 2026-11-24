@@ -1,7 +1,7 @@
-# Full-Nix Android host profiles
+# nixpp Android host profiles
 
 Experimental Linux/glibc Home Manager configurations for `zf10` and `p11`, for
-the isolated TermuxPP full-Nix runtime. These are **not** native nixpp bundles,
+the isolated TermuxPP nixpp runtime. These are **not** native nixpp bundles,
 NixOS systems, or nix-on-droid configurations. Both use `aarch64-linux` packages
 and the runtime's persistent `/home/pschmitt`.
 
@@ -42,10 +42,10 @@ transitive rsync dependency of `nixos-rebuild-ng`, including their patch paths:
 
 ```sh
 nix build --impure --expr \
-  '(builtins.getFlake (toString ./.)).homeConfigurations.zf10.config.home.file.".local/share/full-nix/nixpkgs".source' \
-  -o full-nix-nixpkgs
+  '(builtins.getFlake (toString ./.)).homeConfigurations.zf10.config.home.file.".local/share/nixpp/nixpkgs".source' \
+  -o nixpp-nixpkgs
 nix eval --impure --json --file profiles/specializations/termuxpp/package-set-tests.nix \
-  --apply "test: test { source = $(readlink -f full-nix-nixpkgs); }"
+  --apply "test: test { source = $(readlink -f nixpp-nixpkgs); }"
 ```
 
 Standard flake builds use pure evaluation, so the editor module cannot scan the
@@ -169,7 +169,7 @@ fixes here, separate from the native Android/Bionic package profiles.
 
 ## Runtime gate and generation management
 
-`full-nix-check-runtime` checks shell startup, bare/configured Neovim, repeated
+`nixpp-check-runtime` checks shell startup, bare/configured Neovim, repeated
 fixture-based eza listings, the local Nix registry, Unix sockets, tmux and an
 already-built Go executable (`kubectl`). It also checks real `bat` plain,
 numbered and highlighted rendering, nine `rg` cases including PCRE and no-match,
@@ -199,7 +199,7 @@ the source-based interface remains:
 ```sh
 home-manager switch --flake '.#zf10'
 home-manager generations
-full-nix-check-runtime --thorough
+nixpp-check-runtime --thorough
 ```
 
 `max-jobs = 0` still prevents phone compilation, but `home-manager switch`
@@ -345,7 +345,7 @@ SSH and tmux once Android grants access. Existing paths are preserved.
 ### Tasker execution
 
 The TermuxPP Tasker plug-in remains a native Android entry point; selecting a
-full-Nix login does not automatically move existing Tasker scripts into the
+nixpp login does not automatically move existing Tasker scripts into the
 guest. Keep a native launcher in `~/.config/termuxpp/tasker/`, the plug-in's
 allowlisted script directory, and explicitly enter the managed guest:
 
@@ -448,7 +448,7 @@ operations, and no compilation on the phones.
 Both configurations have been built through the standard flake outputs and
 activated in their Linux guests. Candidate and active gates passed on both test
 phones, including configured Neovim and 60 eza listings per gate. The primary
-phone uses the full-Nix login; the second phone retains its native default shell.
+phone uses the nixpp login; the second phone retains its native default shell.
 These checks do not establish long-running/background reliability. Do not switch
 the native nixpp profile or run these activation scripts in the native Android home.
 
