@@ -13,22 +13,13 @@ let
       exec python3 -I ${./scripts/check-runtime.py} "$@"
     '';
   };
-  # Controllers older than the rename still run the helper under its former
-  # name. Drop this once every phone has the controller that uses the new one.
-  legacyName = pkgs.runCommand "nixpp-check-runtime-legacy-name" { } ''
-    mkdir -p $out/bin
-    ln -s ${check-runtime}/bin/nixpp-check-runtime $out/bin/full-nix-check-runtime
-  '';
 in
 {
   options.nixpp.lifecycle.enable = lib.mkEnableOption "Android acceptance checks during standard Home Manager activation";
 
   config = lib.mkIf cfg.enable {
     home = {
-      packages = [
-        check-runtime
-        legacyName
-      ];
+      packages = [ check-runtime ];
       activation = {
         androidPreflight = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
           if [[ -f /etc/ssh/sshd_config ]]

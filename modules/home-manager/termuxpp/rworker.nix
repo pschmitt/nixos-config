@@ -58,11 +58,6 @@ let
   );
 in
 {
-  # The option namespace used to be fullNix; nixos-config-private still sets it.
-  imports = [
-    (lib.mkRenamedOptionModule [ "fullNix" "rworker" "controller" ] [ "nixpp" "rworker" "controller" ])
-  ];
-
   options.nixpp.rworker = {
     enable = lib.mkEnableOption ''
       the optional `rworker-nix` command: it leases a disposable rworker, runs

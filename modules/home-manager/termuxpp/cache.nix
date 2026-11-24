@@ -8,11 +8,6 @@ let
   cache = config.nixpp.upgradeCache;
 in
 {
-  # The option namespace used to be fullNix; nixos-config-private still sets it.
-  imports = [
-    (lib.mkRenamedOptionModule [ "fullNix" "upgradeCache" ] [ "nixpp" "upgradeCache" ])
-  ];
-
   options.nixpp.upgradeCache = lib.mkOption {
     type = lib.types.nullOr (
       lib.types.submodule {
