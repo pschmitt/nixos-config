@@ -27,6 +27,7 @@ in
     ./nix.nix
     ./nodejs.nix
     ./python.nix
+    ./resume.nix
     ./rust.nix
     ./rworker.nix
     ./sh.nix
@@ -35,9 +36,6 @@ in
   ];
 
   home.packages = with pkgs; [
-    (pkgs.writers.writePython3Bin "resume" { flakeIgnore = [ "E501" ]; } (
-      builtins.readFile ./scripts/resume.py
-    ))
     envsubst
     flarectl
     httpasswdPkg

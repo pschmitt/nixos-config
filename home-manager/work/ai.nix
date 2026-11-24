@@ -30,7 +30,13 @@ let
   };
 in
 {
-  programs.zsh.shellAliases.clw = "claude-work";
+  programs.resume.agents.claude-work = {
+    package = claudeWork;
+    executable = "claude-work";
+    kind = "claude";
+    configDir = "${config.xdg.configHome}/claude-work";
+    resumeArgs = [ "--resume" ];
+  };
 
   home.file = {
     ".config/claude-work/rules/context.md".source = ../devel/CONTEXT.md;

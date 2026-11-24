@@ -26,33 +26,75 @@ AGENT_ICONS = {'codex': ('\uec81', '38;2;200;200;200'), 'claude': ('\uec82', '38
                'agy': ('󰊭', '38;5;111')}
 
 
-def records(progress=None):
+def load_agents():
+    config = os.environ.get('RESUME_AGENTS_CONFIG')
+    if not config:
+        raise RuntimeError('RESUME_AGENTS_CONFIG is not set')
+    with open(config, encoding='utf-8') as stream:
+        agents = json.load(stream)
+    if not isinstance(agents, dict) or not agents:
+        raise RuntimeError('resume has no configured agents')
+    return agents
+
+
+def records(agents, progress=None):
     progress = progress or (lambda _: None)
-    progress('Reading Codex titles')
-    home = Path.home()
-    codex_titles = {}
-    index = home / '.config/codex/session_index.jsonl'
-    try:
-        with index.open() as stream:
-            for line in stream:
-                try:
-                    entry = json.loads(line)
-                    if entry.get('id') and entry.get('thread_name'):
-                        codex_titles[entry['id']] = entry['thread_name']
-                except (ValueError, AttributeError):
-                    continue
-    except (OSError, UnicodeError):
-        pass
-    for agent in ('claude', 'claude-work', 'claude-auto', 'codex'):
+    scanned_roots = set()
+    for agent, settings in agents.items():
+        kind = settings['kind']
+        root = Path(settings['configDir'])
+        root_key = (kind, root)
+        if root_key in scanned_roots:
+            continue
+        scanned_roots.add(root_key)
         progress(f'Scanning {agent} sessions')
-        root = home / '.config' / agent
-        pattern = 'sessions/*/*/*/*.jsonl' if agent == 'codex' else 'projects/*/*.jsonl'
+        codex_titles = {}
+        if kind == 'codex':
+            index = root / 'session_index.jsonl'
+            try:
+                with index.open(encoding='utf-8') as stream:
+                    for line in stream:
+                        try:
+                            entry = json.loads(line)
+                            if entry.get('id') and entry.get('thread_name'):
+                                codex_titles[entry['id']] = entry['thread_name']
+                        except (ValueError, AttributeError):
+                            continue
+            except (OSError, UnicodeError):
+                pass
+            pattern = 'sessions/*/*/*/*.jsonl'
+        elif kind == 'agy':
+            pattern = None
+        else:
+            pattern = 'projects/*/*.jsonl'
+        if kind == 'agy':
+            db = root / 'conversation_summaries.db'
+            if not db.exists():
+                continue
+            try:
+                with sqlite3.connect(f'file:{db}?mode=ro', uri=True) as conn:
+                    for sid, title, preview, modified, uris in conn.execute(
+                        'SELECT conversation_id,title,preview,last_modified_time,workspace_uris FROM conversation_summaries'
+                    ):
+                        try:
+                            values = json.loads(uris)
+                            uri = values[0] if isinstance(values, list) and values else ''
+                            cwd = unquote(urlparse(uri).path) if uri.startswith('file:') else ''
+                            stamp = dt.datetime.fromisoformat(modified.replace('Z', '+00:00')).timestamp()
+                            if cwd and stamp > 0:
+                                dt.datetime.fromtimestamp(stamp)
+                                yield (stamp, agent, sid, cwd, title or preview, str(db))
+                        except (ValueError, TypeError, IndexError, OverflowError, OSError):
+                            continue
+            except sqlite3.Error as exc:
+                print(f'resume: {exc}', file=sys.stderr)
+            continue
         for path in root.glob(pattern):
             try:
                 cwd, title, session_id = '', '', path.stem
                 with path.open() as stream:
                     for line in itertools.islice(stream, 100):
-                        if agent == 'codex':
+                        if kind == 'codex':
                             if '"session_meta"' not in line and '"user_message"' not in line and not USER_RECORD.search(line):
                                 continue
                         elif (cwd or '"cwd"' not in line) and not USER_RECORD.search(line):
@@ -62,7 +104,7 @@ def records(progress=None):
                         except (ValueError, UnicodeDecodeError):
                             continue
                         payload = obj.get('payload', {})
-                        if agent == 'codex':
+                        if kind == 'codex':
                             if obj.get('type') == 'session_meta':
                                 cwd = payload.get('cwd', '')
                                 session_id = payload.get('id', session_id)
@@ -84,33 +126,11 @@ def records(progress=None):
                         if cwd and title:
                             break
                 if cwd:
-                    if agent == 'codex':
+                    if kind == 'codex':
                         title = codex_titles.get(session_id, title)
                     yield (path.stat().st_mtime, agent, session_id, cwd, title, str(path))
             except (OSError, UnicodeError):
                 continue
-    progress('Scanning Antigravity sessions')
-    db = home / '.gemini/antigravity-cli/conversation_summaries.db'
-    if db.exists():
-        try:
-            with sqlite3.connect(f'file:{db}?mode=ro', uri=True) as conn:
-                for sid, title, preview, modified, uris in conn.execute(
-                    'SELECT conversation_id,title,preview,last_modified_time,workspace_uris FROM conversation_summaries'
-                ):
-                    try:
-                        values = json.loads(uris)
-                        uri = values[0] if isinstance(values, list) and values else ''
-                        cwd = unquote(urlparse(uri).path) if uri.startswith('file:') else ''
-                        stamp = dt.datetime.fromisoformat(modified.replace('Z', '+00:00')).timestamp()
-                        # Some databases contain year-one sentinel timestamps.
-                        # They cannot be converted to local time on every system.
-                        if cwd and stamp > 0:
-                            dt.datetime.fromtimestamp(stamp)
-                            yield (stamp, 'agy', sid, cwd, title or preview, str(db))
-                    except (ValueError, TypeError, IndexError, OverflowError, OSError):
-                        continue
-        except sqlite3.Error as exc:
-            print(f'resume: {exc}', file=sys.stderr)
 
 
 class StartupSpinner:
@@ -144,16 +164,24 @@ class StartupSpinner:
             sys.stderr.flush()
 
 
-def active_sessions():
-    home = Path.home() / '.config'
+def active_sessions(agents):
     active = {}
-    for agent in ('claude', 'claude-work', 'claude-auto'):
-        for path in (home / agent / 'sessions').glob('*.json'):
+    scanned_roots = set()
+    for agent, settings in agents.items():
+        kind = settings['kind']
+        if kind != 'claude':
+            continue
+        root = Path(settings['configDir'])
+        root_key = (kind, root)
+        if root_key in scanned_roots:
+            continue
+        scanned_roots.add(root_key)
+        for path in (root / 'sessions').glob('*.json'):
             try:
                 record = json.loads(path.read_text())
                 pid = int(record['pid'])
-                cmd = (Path('/proc') / str(pid) / 'cmdline').read_bytes().lower()
-                if b'claude' in cmd and record.get('sessionId'):
+                process_name = (Path('/proc') / str(pid) / 'comm').read_text().lower()
+                if 'claude' in process_name and record.get('sessionId'):
                     active[(agent, record['sessionId'])] = pid
             except (OSError, ValueError, KeyError, TypeError):
                 continue
@@ -168,16 +196,24 @@ def active_sessions():
                     continue
     except OSError:
         pass
-    for path in (home / 'codex/thread-writer-locks').glob('*.lock'):
-        try:
-            with path.open('rb') as lock:
-                try:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    fcntl.flock(lock, fcntl.LOCK_UN)
-                except BlockingIOError:
-                    active[('codex', path.stem)] = lock_owners.get(path.stat().st_ino)
-        except OSError:
+    for agent, settings in agents.items():
+        if settings['kind'] != 'codex':
             continue
+        root = Path(settings['configDir'])
+        root_key = ('codex', root)
+        if root_key in scanned_roots:
+            continue
+        scanned_roots.add(root_key)
+        for path in (root / 'thread-writer-locks').glob('*.lock'):
+            try:
+                with path.open('rb') as lock:
+                    try:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        fcntl.flock(lock, fcntl.LOCK_UN)
+                    except BlockingIOError:
+                        active[(agent, path.stem)] = lock_owners.get(path.stat().st_ino)
+            except OSError:
+                continue
     return active
 
 
@@ -209,8 +245,8 @@ def tmux_pane_for_pid(pid):
     return None
 
 
-def switch_to_live_session(agent, session_id):
-    active = active_sessions()
+def switch_to_live_session(agent, session_id, agents):
+    active = active_sessions(agents)
     if (agent, session_id) not in active:
         return False
     pid = active[(agent, session_id)]
@@ -241,13 +277,18 @@ def cell_width(text):
                for c in text)
 
 
-def message_card(role, agent, content):
+def agent_icon(agent, agents):
+    kind = agents[agent]['kind']
+    return AGENT_ICONS.get(agent, AGENT_ICONS[kind])
+
+
+def message_card(role, agent, content, agents):
     try:
         width = max(20, int(os.environ.get('FZF_PREVIEW_COLUMNS', '80')) - 2)
     except ValueError:
         width = 78
     inner = width - 4
-    icon, color = ('󰀄', '38;5;111') if role == 'user' else AGENT_ICONS[agent]
+    icon, color = ('󰀄', '38;5;111') if role == 'user' else agent_icon(agent, agents)
     label = 'You' if role == 'user' else agent
     border = f'\033[{color}m'
     reset = '\033[0m'
@@ -299,17 +340,17 @@ def file_state(paths):
     return tuple(state)
 
 
-def extract_message(agent, obj):
-    if agent == 'agy':
-        kind = obj.get('type')
-        if kind == 'USER_INPUT' and obj.get('source') != 'SYSTEM_SDK':
+def extract_message(kind, obj):
+    if kind == 'agy':
+        message_kind = obj.get('type')
+        if message_kind == 'USER_INPUT' and obj.get('source') != 'SYSTEM_SDK':
             role = 'user'
-        elif kind == 'PLANNER_RESPONSE':
+        elif message_kind == 'PLANNER_RESPONSE':
             role = 'assistant'
         else:
             return None
         content = obj.get('content', '')
-    elif agent == 'codex':
+    elif kind == 'codex':
         item = obj.get('payload', {})
         if obj.get('type') != 'response_item' or item.get('type') != 'message':
             return None
@@ -327,24 +368,25 @@ def extract_message(agent, obj):
     if not isinstance(content, str):
         return None
     content = content.strip()
-    if agent == 'agy' and role == 'user' and content.startswith('<USER_REQUEST'):
+    if kind == 'agy' and role == 'user' and content.startswith('<USER_REQUEST'):
         match = re.search(r'<USER_REQUEST(?:\s[^>]*)?>(.*?)</USER_REQUEST>', content, re.DOTALL)
         if not match:
             return None
         content = match.group(1).strip()
-    if not content or (agent != 'agy' and content.startswith(('<', '# AGENTS.md', '# Developer', '# system'))):
+    if not content or (kind != 'agy' and content.startswith(('<', '# AGENTS.md', '# Developer', '# system'))):
         return None
     return role, ''.join(c for c in content if c in '\n\t' or 32 <= ord(c) < 127 or ord(c) >= 160)
 
 
-def search_transcripts(rows, query, progress):
+def search_transcripts(rows, query, progress, agents):
     pattern = re.compile(re.escape(query), re.IGNORECASE)
     # Match both literal UTF-8 and JSON-escaped text before parsing records.
     needles = {query.lower().encode('utf-8'), json.dumps(query, ensure_ascii=True)[1:-1].lower().encode('ascii')}
     for index, row in enumerate(rows):
         _, agent, sid, cwd, title, source = row
         progress(f'Searching conversations {index + 1}/{len(rows)}')
-        paths = agy_transcript_paths(source, sid) if agent == 'agy' else [Path(source)]
+        kind = agents[agent]['kind']
+        paths = agy_transcript_paths(source, sid) if kind == 'agy' else [Path(source)]
         path = next((p for p in paths if p.is_file()), None)
         if path is None:
             continue
@@ -356,7 +398,7 @@ def search_transcripts(rows, query, progress):
                     if query.isascii() and not any(needle in lowered for needle in needles):
                         continue
                     try:
-                        message = extract_message(agent, json.loads(raw))
+                        message = extract_message(kind, json.loads(raw))
                         if not message:
                             continue
                         role, content = message
@@ -374,8 +416,9 @@ def search_transcripts(rows, query, progress):
             yield row, hit
 
 
-def preview(agent, path, cwd, title, session_id, timestamp):
+def preview(agent, path, cwd, title, session_id, timestamp, agents):
     reset = '\033[0m'
+    kind = agents[agent]['kind']
 
     def pinned(message):
         try:
@@ -416,7 +459,7 @@ def preview(agent, path, cwd, title, session_id, timestamp):
             print(f'\033[3mCould not read Antigravity summary: {exc}\033[0m', file=sys.stderr)
 
     transcript_path = Path(path)
-    if agent == 'agy':
+    if kind == 'agy':
         transcript_path = next((p for p in agy_transcript_paths(path, session_id) if p.is_file()), None)
         if transcript_path is None:
             agy_summary()
@@ -433,7 +476,7 @@ def preview(agent, path, cwd, title, session_id, timestamp):
                 line = raw_line.decode('utf-8', errors='replace')
                 try:
                     obj = json.loads(line)
-                    message = extract_message(agent, obj)
+                    message = extract_message(kind, obj)
                     if not message:
                         continue
                     role, content = message
@@ -442,17 +485,17 @@ def preview(agent, path, cwd, title, session_id, timestamp):
                     messages.append((role, content[-3000:]))
                 except (ValueError, AttributeError, TypeError):
                     continue
-        if agent == 'agy' and not messages:
+        if kind == 'agy' and not messages:
             agy_summary()
             return
         pinned(latest_user)
         metadata()
         for role, content in messages:
-            message_card(role, agent, content)
+            message_card(role, agent, content, agents)
         if not messages:
             print('\033[3;38;5;245mNo readable messages found.\033[0m')
     except OSError as exc:
-        if agent == 'agy':
+        if kind == 'agy':
             agy_summary()
             return
         pinned('')
@@ -462,24 +505,28 @@ def preview(agent, path, cwd, title, session_id, timestamp):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    try:
+        agents = load_agents()
+    except (OSError, ValueError, RuntimeError) as exc:
+        parser.error(str(exc))
     parser.add_argument('--preview-session', nargs=7, metavar=('AGENT', 'PATH', 'CWD', 'TITLE', 'ID', 'TIME', 'LIVE'), help=argparse.SUPPRESS)
     parser.add_argument('selection', nargs='?', help='session number or ID to resume')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--pick', action='store_true', help='select interactively with fzf (default)')
     mode.add_argument('--list', action='store_true', help='print sessions without opening the picker')
-    parser.add_argument('--agent', choices=('codex', 'claude', 'claude-work', 'claude-auto', 'agy'), help='filter by agent')
+    parser.add_argument('--agent', choices=tuple(agents), help='filter by agent')
     parser.add_argument('--cwd', help='filter by working directory or directory name')
     parser.add_argument('--limit', type=int, default=0, help='maximum displayed results (default: all)')
     args = parser.parse_args()
     if args.preview_session:
         *details, live = args.preview_session
-        preview(*details)
+        preview(*details, agents)
         if live != '1':
             return
         sys.stdout.flush()
         path = Path(details[1])
         paths = [path]
-        if details[0] == 'agy':
+        if agents[details[0]]['kind'] == 'agy':
             paths = agy_transcript_paths(path, details[4]) + [path, Path(str(path) + '-wal')]
         try:
             previous = file_state(paths)
@@ -489,16 +536,16 @@ def main():
                 if current != previous:
                     previous = current
                     print('\033[2J', end='')
-                    preview(*details)
+                    preview(*details, agents)
                     sys.stdout.flush()
         except (OSError, BrokenPipeError):
             return
 
     interactive = sys.stderr.isatty() and not args.list and (args.pick or not args.selection)
     with StartupSpinner(interactive) as spinner:
-        sessions = sorted(records(spinner.update), key=lambda row: row[0], reverse=True)
+        sessions = sorted(records(agents, spinner.update), key=lambda row: row[0], reverse=True)
         spinner.update('Checking active sessions')
-        active = active_sessions()
+        active = active_sessions(agents)
     agent_filter = args.agent
     cwd_filter = args.cwd
     try:
@@ -516,7 +563,7 @@ def main():
         short_cwd = Path(cwd).name or '/'
         if not styled:
             return f'{when:8}  {"●" if live else " "} {agent:11}  {short_cwd:30}  {clean or "untitled"}  —  {cwd}  [{sid}]'
-        icon, color = AGENT_ICONS[agent]
+        icon, color = agent_icon(agent, agents)
         reset = '\033[0m'
         provider = f'\033[{color}m{icon}{reset} {agent:11}'
         status = '\033[1;38;5;114m●\033[0m' if live else ' '
@@ -541,7 +588,7 @@ def main():
                 lines = '\n'.join('\t'.join([display(i, row, styled=True), row[1], row[5], row[3],
                                              ' '.join(str(row[4]).split()), row[2],
                                              dt.datetime.fromtimestamp(row[0]).strftime('%Y-%m-%d %H:%M:%S %Z'),
-                                             '1' if row[1] == 'agy' or (row[1], row[2]) in active else '0'])
+                                             '1' if agents[row[1]]['kind'] == 'agy' or (row[1], row[2]) in active else '0'])
                                   for i, row in enumerate(rows, 1))
                 width = 18 if narrow else 24
                 columns = f'\033[38;5;245m{"LAST":8}   {"AGENT":13} {"CWD":{width}} TOPIC\033[0m'
@@ -576,7 +623,7 @@ def main():
                     if not query:
                         continue
                     with StartupSpinner(sys.stderr.isatty()) as spinner:
-                        hits = list(search_transcripts(filtered(), query, spinner.update))
+                        hits = list(search_transcripts(filtered(), query, spinner.update, agents))
                     if not hits:
                         try:
                             input('No matching messages. Press Enter to return. ')
@@ -587,12 +634,12 @@ def main():
                     matcher = re.compile(re.escape(query), re.IGNORECASE)
                     for row, (role, excerpt) in hits:
                         _, provider, sid, directory, title, source = row
-                        icon, color = AGENT_ICONS[provider]
+                        icon, color = agent_icon(provider, agents)
                         highlighted = matcher.sub(lambda match: '\033[1;38;5;221m' + match.group() + '\033[0m', excerpt)
                         line = f'\033[{color}m{icon}\033[0m {provider}  \033[38;5;109m{Path(directory).name}\033[0m  {role}: {highlighted}'
                         fields = [line, provider, source, directory, ' '.join(str(title).split()), sid,
                                   dt.datetime.fromtimestamp(row[0]).strftime('%Y-%m-%d %H:%M:%S %Z'),
-                                  '1' if provider == 'agy' or (provider, sid) in active else '0']
+                                  '1' if agents[provider]['kind'] == 'agy' or (provider, sid) in active else '0']
                         search_lines.append('\t'.join(fields))
                     found = subprocess.run(
                         ['fzf', '--ansi', '--no-sort', '--no-hscroll', '--layout=reverse', '--delimiter=\t',
@@ -615,7 +662,7 @@ def main():
                     prompt = 'Filter ' + ('agent' if key == 'ctrl-g' else 'directory') + ' ❯ '
                     if key == 'ctrl-g':
                         entries = ['󰒊 All\tAll'] + [
-                            f'\033[{AGENT_ICONS[agent][1]}m{AGENT_ICONS[agent][0]}\033[0m {agent}\t{agent}'
+                            f'\033[{agent_icon(agent, agents)[1]}m{agent_icon(agent, agents)[0]}\033[0m {agent}\t{agent}'
                             for agent in options
                         ]
                         picker_options = ['--ansi', '--delimiter=\t', '--with-nth=1']
@@ -653,18 +700,14 @@ def main():
     if len(matches) != 1:
         parser.error('session not found or ambiguous; use its displayed number')
     _, agent, sid, cwd, _, _ = matches[0]
-    if switch_to_live_session(agent, sid):
+    if switch_to_live_session(agent, sid, agents):
         return
     if not os.path.isdir(cwd):
         parser.error(f'original working directory no longer exists: {cwd}')
     os.chdir(cwd)
-    if agent == 'codex':
-        command = [agent, 'resume', sid]
-    elif agent == 'agy':
-        command = [agent, '--conversation', sid]
-    else:
-        command = [agent, '--dangerously-skip-permissions', '--resume', sid]
-    os.execvp(command[0], command)
+    settings = agents[agent]
+    command = [settings['program'], *settings['resumeArgs'], sid]
+    os.execv(command[0], command)
 
 
 if __name__ == '__main__':

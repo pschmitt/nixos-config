@@ -5,6 +5,16 @@
   ...
 }:
 let
+  claudeCodePackage = pkgs.symlinkJoin {
+    name = "claude-code-yolo";
+    paths = [ pkgs.llm-agents.claude-code ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram "$out/bin/claude" \
+        --add-flags "--dangerously-skip-permissions --remote-control"
+    '';
+    meta.mainProgram = "claude";
+  };
   domainName = config.domains.main;
   codexTrustedProjects =
     paths:
@@ -679,13 +689,9 @@ in
     '';
 
     programs = {
-      zsh.shellAliases = {
-        cl = "claude";
-        cx = "codex";
-      };
       claude-code = {
         enable = true;
-        package = pkgs.llm-agents.claude-code;
+        package = claudeCodePackage;
         configDir = "${config.xdg.configHome}/claude";
         skills = allSkills;
         enableMcpIntegration = true;
@@ -869,6 +875,30 @@ in
           };
 
           tools.shell.showColor = true;
+        };
+      };
+
+      resume.agents = {
+        claude = {
+          package = config.programs.claude-code.finalPackage;
+          executable = "claude";
+          kind = "claude";
+          configDir = config.programs.claude-code.configDir;
+          resumeArgs = [ "--resume" ];
+        };
+        codex = {
+          package = config.programs.codex.package;
+          executable = "codex";
+          kind = "codex";
+          configDir = "${config.xdg.configHome}/codex";
+          resumeArgs = [ "resume" ];
+        };
+        agy = {
+          package = config.programs.antigravity-cli.package;
+          executable = "agy";
+          kind = "agy";
+          configDir = "${config.home.homeDirectory}/.gemini/antigravity-cli";
+          resumeArgs = [ "--conversation" ];
         };
       };
 
