@@ -476,7 +476,8 @@ in
                     system = "aarch64-linux";
                     supported_features = [ ];
                     inherit (mainPool) allowed_build_repositories;
-                    grace_secs = 120;
+                    # Emulation is slow: give native runners time to start.
+                    grace_secs = 600;
                     status_file = qemuOverflowStatusPath;
                     status_ttl_secs = 90;
                   };

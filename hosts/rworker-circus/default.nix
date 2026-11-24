@@ -163,6 +163,17 @@ in
     pool = "circus";
   };
 
+  # NixOS container tests need a UID range in the sandbox (and /dev/net).
+  nix.settings = {
+    experimental-features = [
+      "auto-allocate-uids"
+      "cgroups"
+    ];
+    auto-allocate-uids = true;
+    system-features = [ "uid-range" ];
+    extra-sandbox-paths = [ "/dev/net?" ];
+  };
+
   services.circus-agent = {
     enable = true;
     # Read by systemd (LoadCredential) when the agent starts.
@@ -181,9 +192,11 @@ in
         "nixos-test"
         "benchmark"
         "big-parallel"
+        "uid-range"
       ];
-      # The pool flavor (s1.2xlarge, 32 vCPUs): 4 builds of 8 cores.
-      max_jobs = 4;
+      # The pool flavor (s1.2xlarge, 32 vCPUs). Most builds take under a
+      # minute and few threads, so let eight overlap.
+      max_jobs = 8;
       cores = 8;
     };
   };
