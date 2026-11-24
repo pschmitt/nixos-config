@@ -378,15 +378,21 @@ The managed profile installs a native Tasker launcher at
 Tasker action to run it in the background and wait up to 3,600 seconds. The job
 runs on Wi-Fi while the phone is charging, and needs 512 MiB of free space.
 
-The job builds the current `main` on a disposable rworker and switches to it
-(`nixpp upgrade --rworker --remote-eval`; the worker is leased and released by
-nixpp, and the step has a 45 minute limit), so it no longer waits for CI to
-publish a signed cache pin. It then runs `nixpp gc --keep-generations 3` and
+The job builds the current `main` on a native ARM runner and switches to it
+(`nixpp upgrade --rworker`; nixpp leases the runner through the rworker
+controller with the phone's own key, evaluates and builds there, and releases
+it, and each attempt has a 40 minute limit), so it no longer waits for CI to
+publish a signed cache pin. The phone needs no mesh: the lease section of
+`/etc/nixpp/upgrade.json` (rendered from the same private values as the
+bootstrap's `setup.conf`) names the controller. It never installs an older
+or cached system: a failed attempt is retried within the 50 minute budget, and
+the run fails when none succeeds. It then runs `nixpp gc --keep-generations 3` and
 fast-forwards yadm. It syncs Atuin when signed in,
 then syncs and updates each
 configured mani workspace. Git runs without prompting. The latest two runs
 are logged under `~/.local/state/termuxpp-nightly/` in the guest. To check the
-readiness (the rworker controller must answer) without activating anything,
+readiness (the controller's restricted lease account must accept the phone's
+key) without leasing or activating anything,
 run `termuxpp-nightly-update --check`.
 
 Use `nixpp gc --keep-generations 3 --dry-run` to preview cleanup. GC preserves

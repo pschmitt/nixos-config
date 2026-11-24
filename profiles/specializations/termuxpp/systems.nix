@@ -1,6 +1,11 @@
 { inputs }:
 let
   homes = import ./homes.nix { inherit inputs; };
+  # The private lease settings, shared with the bootstrap's setup.conf.
+  setup = import ./setup-values.nix {
+    inherit (inputs.nixpkgs) lib;
+    inherit inputs;
+  };
 in
 builtins.mapAttrs (
   hostname: home:
@@ -55,6 +60,18 @@ builtins.mapAttrs (
                   flake = "github:pschmitt/nixos-config/main";
                   host = hostname;
                   cache = home.config.nixpp.upgradeCache;
+                  # `nixpp upgrade --rworker` leases a native ARM runner
+                  # through the rworker controller with the phone's own key
+                  # (the cache credentials are the cache's, above). Phones
+                  # reach no OpenStack worker, so no other profile is listed.
+                  lease = {
+                    inherit (setup.values) controller;
+                    controller_host_key = setup.controllerHostKey;
+                    owner = "${setup.values.user}@${hostname}";
+                    key = "${config.user.home}/.ssh/id_ed25519";
+                    profiles = [ "gh-aarch64" ];
+                    ssh_inputs = setup.values.sshInputs or [ ];
+                  };
                 }
                 // inputs.nixpkgs.lib.optionalAttrs (config.system.homeManagerBackupExtension != null) {
                   homeManagerBackupExtension = config.system.homeManagerBackupExtension;

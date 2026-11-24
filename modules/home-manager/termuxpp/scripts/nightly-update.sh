@@ -25,10 +25,12 @@ run_step() {
   return "$status"
 }
 
-# Build the current main on a disposable rworker (evaluation included) and
-# switch to it. There is deliberately no fallback to an older system: the
-# result is the latest main or no change. A lost connection to the worker
-# fails one attempt, so retry within the 3600 s the Tasker action waits.
+# Build the current main on a native ARM runner that nixpp leases through the
+# rworker controller (the `lease` section of /etc/nixpp/upgrade.json; the
+# worker evaluates, builds and is released afterwards) and switch to it. There
+# is deliberately no fallback to an older system: the result is the latest main
+# or no change. A queued runner or a lost connection fails one attempt, so
+# retry within the 3600 s the Tasker action waits.
 upgrade_profile() {
   local attempt=1 deadline=$((SECONDS + 3000)) limit
   while :
@@ -40,11 +42,58 @@ upgrade_profile() {
       return 1
     fi
     (( limit <= 2400 )) || limit=2400
-    run_step "profile-$attempt" "$limit" nixpp upgrade --rworker --remote-eval && return 0
+    run_step "profile-$attempt" "$limit" nixpp upgrade --rworker && return 0
     log "rworker upgrade attempt $attempt failed."
     attempt=$((attempt + 1))
     sleep 60
   done
+}
+
+# Readiness of the lease route without leasing anything: log in to the
+# controller's restricted account with the phone's key, pinned host key and all.
+# Its gate refuses an unknown request with "refused: invalid action" only after
+# it has accepted the key, so that answer proves the route.
+check_lease() {
+  local config=/etc/nixpp/upgrade.json controller host_key key destination port host entry known_hosts reply
+  if ! controller=$(jq -er '.lease.controller' "$config") ||
+    ! host_key=$(jq -er '.lease.controller_host_key' "$config")
+  then
+    log "No lease settings in $config."
+    return 1
+  fi
+  key=$(jq -r '.lease.key // empty' "$config")
+  key=${key:-$HOME/.ssh/id_ed25519}
+  if [[ ! -r "$key" ]]
+  then
+    log "The phone's SSH key $key is missing."
+    return 1
+  fi
+  destination=$controller
+  port=22
+  if [[ "$destination" == *:* ]]
+  then
+    port=${destination##*:}
+    destination=${destination%:*}
+  fi
+  host=${destination##*@}
+  entry=$host
+  if [[ "$port" != 22 ]]
+  then
+    entry="[$host]:$port"
+  fi
+  known_hosts=$(mktemp) || return 1
+  printf '%s %s\n' "$entry" "$host_key" >"$known_hosts"
+  reply=$(timeout 60 ssh -F /dev/null -o BatchMode=yes -o ConnectTimeout=30 \
+    -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$known_hosts" \
+    -o IdentitiesOnly=yes -i "$key" -p "$port" -- "$destination" \
+    'rworker check' </dev/null 2>&1) || true
+  rm -f -- "$known_hosts"
+  if [[ "$reply" != *'refused: invalid action'* ]]
+  then
+    log "The rworker controller did not accept the phone's key: ${reply:-no answer}"
+    return 1
+  fi
+  log 'The rworker controller accepts the phone.'
 }
 
 maintenance() {
@@ -142,7 +191,7 @@ main() {
 
   if [[ "$mode" == check ]]
   then
-    run_step profile-check 120 rworker profiles || return 1
+    check_lease || return 1
     nightly_result=ready
   else
     maintenance || return 1

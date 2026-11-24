@@ -126,10 +126,10 @@ nixpp rebuild --flake /path/to/config --host HOST
 # Evaluate on the first reachable configured builder too (only the flake is
 # locked here; a local flake's source is copied over):
 nixpp rebuild --flake /path/to/config --host HOST --remote-eval
-# Alternatively lease a worker through rworker-nix to build there:
+# Alternatively lease a worker to build there (through the rworker controller
+# of the `lease` section of /etc/nixpp/upgrade.json, else through rworker-nix);
+# it evaluates there too:
 nixpp rebuild --flake /path/to/config --host HOST --rworker
-# ... and evaluate there too:
-nixpp rebuild --flake /path/to/config --host HOST --rworker --remote-eval
 ```
 
 `status` shows the active and previous systems. Use `status --all` or
@@ -138,10 +138,15 @@ controller, the local Nix store, configured SSH builders and the signed cache
 pin. `fetch latest` runs the configured upgrade.
 
 `upgrade --build` selects the host and flake from the system configuration. It
-accepts `--flake` and `--host` overrides, `--rworker` to build on the
+accepts `--flake` and `--host` overrides, `--rworker` to build on a leased
 disposable worker instead of the configured builders, and `--remote-eval` to
-evaluate where the system is built (the first reachable configured builder, or
-the worker with `--rworker`); each of them implies `--build`. With `--build`, `--dry-run`
+evaluate where the system is built (the first reachable configured builder;
+the worker with `--rworker` always evaluates); each of them implies `--build`.
+`--rworker` leases a native ARM runner through the rworker controller named by
+the `lease` section of `/etc/nixpp/upgrade.json` (the phone's own key, no
+mesh), builds the latest revision there and copies it back: it installs that
+system or fails, never an older or cached one. A configuration without a
+`lease` section uses the `rworker-nix` wrapper instead. With `--build`, `--dry-run`
 runs Nix's build planner without contacting the native controller.
 
 Plain `upgrade` (formerly `--from-cache`, still accepted) reads the host's published pin, verifies the system

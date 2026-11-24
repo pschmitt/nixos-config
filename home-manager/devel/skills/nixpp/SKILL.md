@@ -56,11 +56,16 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
      repeatedly added tens of minutes to phone deployments.
    - **Without waiting for CI:** `nixpp upgrade --remote-eval` evaluates and
      builds the configured flake on the first reachable configured builder and
-     switches; `nixpp upgrade --rworker --remote-eval` does the same on a
-     disposable rworker. Use this path for cached closures or quick builds.
-     Both imply `--build`, and neither flag guarantees a native ARM builder.
-     Nix caches what
-     `github:…/main` resolves to for about an hour; pass
+     switches; `nixpp upgrade --rworker` does the same on a leased native ARM
+     (`gh-aarch64`) runner: nixpp leases it through the rworker controller of
+     the `lease` section of `/etc/nixpp/upgrade.json` with the phone's own key
+     (no mesh needed), evaluates and builds the latest revision there (the
+     nightly job's path) and fails instead of installing an older system.
+     Both imply `--build`; the builders route does not guarantee a native ARM
+     builder. `--rworker` without a `lease` section uses the `rworker-nix`
+     wrapper. Nix caches what
+     `github:…/main` resolves to for about an hour (`--rworker` upgrades
+     refresh it); pass
      `--flake github:pschmitt/nixos-config/<sha>` for an exact commit.
      For native ARM builds after a nixpp source change, see
      [Build the Android runtime prerequisite](#build-the-android-runtime-prerequisite).
