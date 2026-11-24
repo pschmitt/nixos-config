@@ -1,6 +1,6 @@
 ---
 name: nixpp
-description: Use when upgrading, inspecting, rolling back or debugging the Nix guest system on a TermuxPP phone with `nixpp` (status, generations, upgrade, rebuild, doctor, gc, recover), when deploying a nixos-config or termuxpp change to the phones, or when a phone's guest system is stale or broken after an upgrade.
+description: Use when enrolling (setting up from scratch) a TermuxPP phone with `nixpp setup`, or upgrading, inspecting, rolling back or debugging the Nix guest system on a TermuxPP phone with `nixpp` (status, generations, upgrade, rebuild, doctor, gc, recover), when deploying a nixos-config or termuxpp change to the phones, or when a phone's guest system is stale or broken after an upgrade.
 ---
 
 # nixpp
@@ -116,6 +116,41 @@ After the upload succeeds, run
 on the claimed phones and verify that the worker profile is `gh-aarch64`.
 If a previous attempt looked up the runtime before it was published, set
 the Nix option `narinfo-cache-negative-ttl = 0` in `NIX_CONFIG` for the retry.
+
+## Enroll a phone from scratch
+
+`nixpp setup` replaces yadm-init's `--nixpp` path (yadm-init now hands over to
+it). Clearing the app's data wipes the native prefix and the whole guest:
+only with the user's explicit approval for that device.
+
+1. Install a debug APK whose aarch64 bootstrap carries nixpp, rbw and the
+   private `etc/nixpp/setup.conf` (controller as an FQDN, its host key, cache
+   store/keys/pin URL, `ssh_inputs`, `user`, `email`, `dotfiles_repo`).
+   Recipe: termuxpp `docs/en/aarch64-bootstrap.md`. Such APKs and zips embed
+   private config: keep them 0600 and local. Reinstalling (`adb install -r`)
+   does not re-extract the prefix, so a changed `nixpp` or `setup.conf` needs
+   a cleared app (fresh bootstrap) or an env override such as
+   `NIXPP_SETUP_CONTROLLER`.
+2. Let the first-start bootstrap finish (the session prompt is the seed
+   guest, `(nix) nix:~$`; red `path ... is not valid` gcroot lines are noise).
+3. Stage the Bitwarden login without typing it:
+   `zsh -lc 'zhj adb::nixpp-setup -d SERIAL --host HOST'` (reads the
+   master password and TOTP of the user's own `bitwarden.com` entry from rbw,
+   writes a 0600 single-use secrets file over adb stdin). The TOTP is fresh for ~30 s: start
+   setup right away.
+4. In the session (seed guest, so through the native side):
+   `nixpp enter --outer -- nixpp-setup --host HOST --secrets-file /data/data/dev.pschmitt.termux/files/home/.nixpp-setup-secrets`.
+   It logs into Bitwarden (or reuses an unlocked agent and syncs), leases a
+   `gh-aarch64` rworker with the phone's key `pschmitt@HOST`, builds the
+   latest `--flake` there (private inputs over `git+ssh`, no tokens; the lease's
+   own store, so the S3 cache applies), copies, activates and clones the
+   dotfiles. `--published` installs the CI-pinned system instead. Re-running
+   resumes.
+5. Open a new session (exit the seed session) and check `nixpp status`.
+
+A build failure on the lease about `nixpp-runtime-termux` or the seed means
+the x86_64 prerequisite is not cached: see
+[Build the Android runtime prerequisite](#build-the-android-runtime-prerequisite).
 
 ## Recover
 
