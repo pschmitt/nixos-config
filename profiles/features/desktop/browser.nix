@@ -114,6 +114,9 @@ in
           owner = config.mainUser.username;
           mode = "0400";
         };
+        # browser-daemon >= 0.23.4 reads this when BROWSER_DAEMON_URL is unset:
+        # a new session variable does not reach running shells or tmux panes.
+        environment.etc."browser-daemon/url".text = "${cfg.node.discoveryOrigin}\n";
         environment.sessionVariables = {
           BROWSER_DAEMON_URL = cfg.node.discoveryOrigin;
           BROWSER_DAEMON_SECRET_FILE = config.sops.secrets."browser-daemon/cluster-secret".path;
