@@ -111,10 +111,16 @@ maintenance() {
 
   for config in private work
   do
-    local manifest="${XDG_CONFIG_HOME:-$HOME/.config}/mani/$config.yaml"
+    local manifest="${XDG_CONFIG_HOME:-$HOME/.config}/mani/$config.yaml" remote_host
+    remote_host=$(manifest_host "$manifest")
     if [[ ! -f "$manifest" ]]
     then
       log "No $config mani config. Skipping."
+    elif [[ -n "$remote_host" ]] && ! host_reachable "$remote_host"
+    then
+      # Work remotes are only reachable from the work network or VPN; an
+      # unreachable host is not a failure of the night.
+      log "$remote_host is unreachable. Skipping the $config repositories."
     elif run_step "mani-$config-sync" 240 mani --config "$manifest" sync
     then
       run_step "mani-$config-update" 480 mani --config "$manifest" run update --all --ignore-non-existing || failed=1
@@ -123,6 +129,27 @@ maintenance() {
     fi
   done
   return "$failed"
+}
+
+# The host of the first remote a mani manifest clones from (https, ssh:// or
+# scp-like git@host:path URLs), or nothing.
+manifest_host() {
+  [[ -f "$1" ]] || return 0
+  sed -nE 's#^[[:space:]]*url:[[:space:]]*["'"'"']?([a-z+]+://)?([^@/]*@)?([^/:"'"'"']+).*#\3#p' "$1" | head -n 1
+}
+
+# Whether a TCP connection to HOST (HTTPS, else SSH) succeeds within seconds.
+host_reachable() {
+  local port
+  for port in 443 22
+  do
+    # shellcheck disable=SC2016 # host and port are arguments of the inner shell
+    if timeout 10 bash -c 'exec 3<>"/dev/tcp/$1/$2"' _ "$1" "$port" 2>/dev/null
+    then
+      return 0
+    fi
+  done
+  return 1
 }
 
 main() {
