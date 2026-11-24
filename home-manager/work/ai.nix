@@ -30,6 +30,8 @@ let
   };
 in
 {
+  programs.zsh.shellAliases.clw = "claude-work";
+
   programs.resume.agents.claude-work = {
     package = claudeWork;
     executable = "claude-work";

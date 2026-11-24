@@ -689,6 +689,7 @@ in
     '';
 
     programs = {
+      zsh.shellAliases.cl = "claude";
       claude-code = {
         enable = true;
         package = claudeCodePackage;
