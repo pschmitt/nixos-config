@@ -65,7 +65,10 @@ in
         "network"
         "netbird"
       ];
-      restartProgram = "${netbirdBin} up";
+      # Not a bare `up`: without the setup key (only the autoconnect unit has
+      # it) that waits for a browser login and holds up the checks below.
+      # Restarting the daemon drops such a pending login.
+      restartProgram = "${pkgs.systemd}/bin/systemctl restart --no-block netbird-netbird-io.service netbird-netbird-io-autoconnect.service";
       # NOTE: Program checks run async: monit evaluates the *previous* run's
       # exit code each cycle. With a bare "then restart" a single transient
       # failure restarts the service, the next run executes while it is still
