@@ -127,7 +127,7 @@ main() {
 
   if [[ "$mode" == check ]]
   then
-    run_step profile-check 120 rworker ls || return 1
+    run_step profile-check 120 rworker profiles || return 1
     nightly_result=ready
   else
     maintenance || return 1
