@@ -378,7 +378,7 @@ in
           # Outputs live in the S3 cache. With the 30-day default, the roots pin
           # nearly the whole store, and nix-gc frees nothing.
           gc = {
-            max_age_days = 3;
+            max_age_days = 2;
             # Each cycle that drops roots also collects garbage; hourly is too often.
             cleanup_interval = 6 * 60 * 60;
           };
