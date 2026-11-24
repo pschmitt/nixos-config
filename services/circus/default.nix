@@ -714,6 +714,8 @@ in
         # Binary cache for agents: tailnet clients only, no SSO (Nix cannot
         # log in). The server only serves paths Circus built or evaluated.
         ${tailnetHost} = {
+          # Also in the certificate, which the queue-runner's RPC serves.
+          serverAliases = lib.remove tailnetHost (config.domains.meshHosts "circus");
           enableACME = true;
           forceSSL = true;
           authelia = {
