@@ -741,6 +741,12 @@
           customPackages = import ./pkgs { inherit pkgs inputs; };
         in
         customPackages
+        // {
+          # The private `nixpp setup` config of a TermuxPP bootstrap zip.
+          termuxpp-setup-conf = import ./profiles/specializations/termuxpp/setup-config.nix {
+            inherit pkgs inputs;
+          };
+        }
         // nixpkgs.lib.optionalAttrs (system == "aarch64-linux") (
           nixpkgs.lib.mapAttrs' (
             host: guest: nixpkgs.lib.nameValuePair "termuxpp-system-${host}" guest.system
