@@ -1807,11 +1807,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1795509116,
-        "narHash": "sha256-BASHmqqjL9VXxsp89PtlGRarIJGJuVvpjLK3C/ttOIs=",
+        "lastModified": 1795514734,
+        "narHash": "sha256-zDp8SrKoOlNfoYWtTZxWfcOnQpOXfigncjiwGzWZeBM=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "7623ae4bf0c565a96f166c2e610417517ba12ed4",
+        "rev": "0123aca0762af3cec8f72f3cb0ad7d5bdec30ade",
         "type": "github"
       },
       "original": {
