@@ -207,6 +207,12 @@ in
   };
 
   config = {
+    # GC walks the closure of every live root. With derivers it also keeps and
+    # walks their whole build graphs (four times as many .drv files as other
+    # paths here), which took most of an hour. Circus roots the derivations of
+    # pending builds itself.
+    nix.settings.keep-derivations = false;
+
     # The queue-runner writes the short-lived report in its StateDirectory.
     users.users.circus-server.extraGroups = lib.mkIf cfg.qemuOverflow.enable [ "circus" ];
 
@@ -378,7 +384,7 @@ in
           # Outputs live in the S3 cache. With the 30-day default, the roots pin
           # nearly the whole store, and nix-gc frees nothing.
           gc = {
-            max_age_days = 2;
+            max_age_days = 1;
             # Each cycle that drops roots also collects garbage; hourly is too often.
             cleanup_interval = 6 * 60 * 60;
           };
