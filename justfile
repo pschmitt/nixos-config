@@ -69,6 +69,10 @@ alias fetch-blobs := fetch-proprietary-garbage
 fetch-proprietary-garbage *args:
   ./just/fetch-proprietary-garbage.sh "$@"
 
+# Verify a local proprietary source and import it into a worker’s Nix store.
+seed-blob worker package file:
+  ./scripts/seed-blob.sh "$@"
+
 # All tofu recipes (tofu, tofu-remote, tofu-yolo) are private-repo-only now —
 # the tofu config itself lives there. Run them from the private checkout:
 #   just -f "$PRIVATE_CONFIG_DIR/justfile" --working-directory "$PRIVATE_CONFIG_DIR" tofu-remote rofl-14 apply -auto-approve
