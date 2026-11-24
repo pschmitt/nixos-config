@@ -189,6 +189,8 @@ in
     terminal-onclick-url-open = true;
     create-session-on-single-session-switch = true;
     terminal-toast-position = "top-right";
+    # Gesture feedback pills in the middle of the screen.
+    gesture-feedback-position = "center";
   };
   # The scripts the app runs for shared files and URLs (formerly in yadm), and a
   # README. The app reads ~/.config/termuxpp outside the guest, so install real
