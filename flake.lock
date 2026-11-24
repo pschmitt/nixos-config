@@ -2438,6 +2438,22 @@
         "type": "github"
       }
     },
+    "rbw-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1795477500,
+        "narHash": "sha256-RY11ZgPP0nglSXgbKVFzOc0C2jK4/oAv/TMSdBOWqlc=",
+        "owner": "pschmitt",
+        "repo": "rbw",
+        "rev": "1faa09c7846d4d7ebb8d8e76300f0448bb8f961f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "rbw",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "ai-memory": "ai-memory",
@@ -2968,14 +2984,15 @@
         "fenix": "fenix_2",
         "nixpkgs": [
           "nixpkgs"
-        ]
+        ],
+        "rbw-src": "rbw-src"
       },
       "locked": {
-        "lastModified": 1795531277,
-        "narHash": "sha256-FC+7DHJg69yb0X0wzSaDL2v1q+xvb3bdqdnH0Y0p1hw=",
+        "lastModified": 1795542935,
+        "narHash": "sha256-ed7KORYu/ycL22oqdWSN8owCCy1PoDMk9cTzza7+ihI=",
         "owner": "pschmitt",
         "repo": "termuxpp",
-        "rev": "5324dcb41aa2367c9cc3ff3f3af8ee29f8573e4f",
+        "rev": "185a765b21f18ba7c65f89b1761dbdb6eaad45e8",
         "type": "github"
       },
       "original": {
