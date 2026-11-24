@@ -15,6 +15,25 @@ from unittest.mock import patch
 import circus_effects as ce
 
 
+class RunGroupTest(unittest.TestCase):
+    def test_timeout_kills_grandchildren(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            pid_file = Path(tmp) / "pid"
+            with self.assertRaises(ce.subprocess.TimeoutExpired):
+                ce.run_group(["sh", "-c", f"sleep 60 & echo $! > {pid_file}; wait"], 0.5)
+            pid = int(pid_file.read_text())
+            for _ in range(50):
+                stat = Path(f"/proc/{pid}/stat")
+                if not stat.exists() or stat.read_text().split()[2] == "Z":
+                    return
+                time.sleep(0.1)
+            self.fail("grandchild survived the timeout")
+
+    def test_returns_output(self) -> None:
+        result = ce.run_group(["echo", "hi"], 5, stdout=ce.subprocess.PIPE)
+        self.assertEqual((result.returncode, result.stdout), (0, "hi\n"))
+
+
 class ArtifactJobsTest(unittest.TestCase):
     def test_images_and_phone_systems_resolve_to_their_own_outputs(self) -> None:
         effects = {

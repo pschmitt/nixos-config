@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -241,14 +242,25 @@ def branch_head(repository: str, branch: str) -> str | None:
     return out.split()[0] if out.strip() else None
 
 
+def run_group(cmd: list[str], timeout: float, *, stdout: int | None = None) -> subprocess.CompletedProcess[str]:
+    """Run cmd in its own process group and kill all of it on timeout.
+
+    subprocess.run only kills the direct child: the `nix` processes of nbo would
+    live on and hold their nix-daemon connections and store locks.
+    """
+    with subprocess.Popen(cmd, stdout=stdout, text=True, start_new_session=True) as proc:
+        try:
+            out, _ = proc.communicate(timeout=timeout)
+        except BaseException:
+            os.killpg(proc.pid, signal.SIGKILL)
+            raise
+    return subprocess.CompletedProcess(cmd, proc.returncode, out)
+
+
 def list_effects(settings: Settings, flake_ref: str) -> dict[str, Effect]:
-    out = subprocess.run(
-        [settings.nbo, "effects", "list", flake_ref],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=1800,
-    ).stdout
+    result = run_group([settings.nbo, "effects", "list", flake_ref], 1800, stdout=subprocess.PIPE)
+    result.check_returncode()
+    out = result.stdout
     effects = {}
     for name, meta in json.loads(out).items():
         effects[name] = Effect(
@@ -306,8 +318,7 @@ def run_one(settings: Settings, effect: Effect, flake_ref: str, commit: str, che
     if settings.secrets_file:
         cmd += ["--secrets", str(settings.secrets_file)]
     cmd.append(f"{flake_ref}#{effect.name}")
-    result = subprocess.run(cmd, check=False, timeout=6 * 3600)
-    return result.returncode
+    return run_group(cmd, 6 * 3600).returncode
 
 
 def process(

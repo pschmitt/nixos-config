@@ -28,13 +28,18 @@
   # Keep the shared build directory from accumulating abandoned work trees.
   systemd.tmpfiles.rules = [
     "e /home/${config.mainUser.username}/build - - - 3d"
+    # Interrupted builds leave their scratch behind and Nix never removes it.
+    # Boot only (!): nothing is building yet.
+    "R! /nix/var/nix/builds/nix-*"
   ];
 
-  # CI can fill the store between scheduled collections. Keep room for the
-  # database, build logs, and incoming build inputs.
+  # Last resort against a full disk; the scheduled collection does the regular
+  # work. Every daemon worker below min-free runs its own full collection and
+  # they queue on one lock, so a node that sits below it with little garbage
+  # stalls every build and evaluation for hours.
   nix.settings = {
-    min-free = 20 * 1024 * 1024 * 1024;
-    max-free = 40 * 1024 * 1024 * 1024;
+    min-free = 5 * 1024 * 1024 * 1024;
+    max-free = 15 * 1024 * 1024 * 1024;
   };
 
   systemd.services.nix-gc.serviceConfig.ExecStartPre =
