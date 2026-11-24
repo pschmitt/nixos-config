@@ -87,9 +87,15 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
 4. Verify with `nixpp status`: a new current generation with today's date.
    Release the device claim afterwards.
 
-The nightly job (`termuxpp-nightly-update`) already runs the published-system
-upgrade on Wi-Fi while charging; `termuxpp-nightly-update --check` shows its
-readiness without activating anything.
+The nightly job (`termuxpp-nightly-update`, Wi-Fi and charging only) runs
+`nixpp upgrade --rworker`: it builds the latest `main` on a leased `gh-aarch64`
+runner through the controller's restricted `phone-rworker` account, retries
+within its budget and never installs an older system ("latest or nothing").
+`termuxpp-nightly-update --check` shows its readiness, including whether the
+controller accepts the phone, without activating anything. Its log is
+`~/.local/state/termuxpp-nightly/last-run.log`. Phones are on neither NetBird
+nor Tailscale: anything that needs a mesh route to an OpenStack worker fails
+there ("does not accept SSH").
 
 ### Build the Android runtime prerequisite
 
@@ -146,10 +152,12 @@ only with the user's explicit approval for that device.
 3. Stage the Bitwarden login without typing it:
    `zsh -lc 'zhj adb::nixpp-setup -d SERIAL --host HOST'` (reads the
    master password and TOTP of the user's own `bitwarden.com` entry from rbw,
-   writes a 0600 single-use secrets file over adb stdin). The TOTP is fresh for ~30 s: start
-   setup right away.
-4. In the session (seed guest, so through the native side):
-   `nixpp enter --outer -- nixpp-setup --host HOST --secrets-file /data/data/dev.pschmitt.termux/files/home/.nixpp-setup-secrets`.
+   writes a 0600 single-use secrets file over adb stdin). The TOTP is fresh for ~30 s:
+   stage it and type the setup command in the same step (a stale code makes
+   rbw ask for a fresh one at a terminal prompt you cannot fill safely:
+   Ctrl-C, delete the secrets file, stage again).
+4. In the session (the seed guest hands `nixpp setup` to the native side):
+   `nixpp setup --host HOST --secrets-file /data/data/dev.pschmitt.termux/files/home/.nixpp-setup-secrets`.
    It logs into Bitwarden (or reuses an unlocked agent and syncs), leases a
    `gh-aarch64` rworker with the phone's key `pschmitt@HOST`, builds the
    latest `--flake` there (private inputs over `git+ssh`, no tokens; the lease's
@@ -161,6 +169,12 @@ only with the user's explicit approval for that device.
 A build failure on the lease about `nixpp-runtime-termux` or the seed means
 the x86_64 prerequisite is not cached: see
 [Build the Android runtime prerequisite](#build-the-android-runtime-prerequisite).
+Before a setup or upgrade test, build that prerequisite and the host's system
+for the current `main` (nixos-config `docs/termuxpp/system.md`, "Build on a
+native aarch64 rworker") and push them: the phone then copies from the signed
+cache instead of through the controller relay. Never redeploy the controller
+host while a phone copies through its relay: the switch cuts the connection
+("Software caused connection abort") and the run fails.
 
 ## Recover
 
