@@ -139,6 +139,8 @@ in
               auto_setup = true;
               state_file = "${cfg.dataDir}/state/gitlab-oauth-gitlab.json";
             };
+            # The signed-in dashboard at /gitlab/approve/dashboard, for members of the GitLab group.
+            dashboard.enable = true;
           };
         };
 
