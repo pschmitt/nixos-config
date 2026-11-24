@@ -5,6 +5,24 @@
   ...
 }:
 let
+  codexModel = pkgs.writeShellApplication {
+    name = "codex-model";
+    runtimeInputs = [
+      config.programs.codex.package
+      pkgs.jq
+    ];
+    text = builtins.readFile ./scripts/codex-model.sh;
+  };
+  codexTerra = pkgs.writeShellApplication {
+    name = "codex-terra";
+    runtimeInputs = [ codexModel ];
+    text = ''exec codex-model terra "$@"'';
+  };
+  codexSol = pkgs.writeShellApplication {
+    name = "codex-sol";
+    runtimeInputs = [ codexModel ];
+    text = ''exec codex-model sol --subagent-family terra "$@"'';
+  };
   claudeCodePackage = pkgs.symlinkJoin {
     name = "claude-code-yolo";
     paths = [ pkgs.llm-agents.claude-code ];
@@ -689,7 +707,12 @@ in
     '';
 
     programs = {
-      zsh.shellAliases.cl = "claude";
+      zsh.shellAliases = {
+        cl = "claude";
+        cx = "codex";
+        cxt = "codex-terra";
+        cxs = "codex-sol";
+      };
       claude-code = {
         enable = true;
         package = claudeCodePackage;
@@ -1020,6 +1043,8 @@ in
           claudeOgl
           claudeStatusline
           claudeTmuxRename
+          codexSol
+          codexTerra
           codexOgl
           pkgs.concord-mcp
         ];
