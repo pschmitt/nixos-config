@@ -188,6 +188,9 @@ in
     terminal-triple-tap-command = "ssh::tmux f";
     # The active tmux window as a filled accent pill.
     terminal-tmux-sidebar-style = "rounded";
+    # The session and tmux window pickers open in the middle of the terminal,
+    # above the keyboard while it is shown.
+    terminal-picker-position = "terminal";
     # Swiping right with two fingers opens the session sidebar.
     terminal-2-finger-swipe-right-action = "open-sidebar";
     terminal-onclick-url-open = true;
