@@ -108,27 +108,6 @@ status_left() {
   echo " "
 }
 
-curl_cache() {
-  "${HOME}/bin/curl-cache" "$@"
-}
-
-current_weather() {
-  # NOTE
-  # The first sed command removes the space after the weather icon
-  # The second sed removes the '+' sign in front of positives temperatures
-  # and the unit (°C)
-  # FIXME 's/\+([0-9]+)°C/\1/' does not work on termux ("°" especially)
-  res=$(curl_cache -c 300 -m 10 "wttr.in?m&format=%c%t")
-
-  if [[ "$res" =~ ^"Unknown location".* ]]
-  then
-    echo "[tmux-status.sh] Error fetching weather: $res" >&2
-    echo "😳wut?"
-  else
-    sed -r 's/(.) (.+)/\1\2/; s/\+([0-9]+).C/\1/' <<< "$res"
-  fi
-}
-
 system_load() {
   uptime | sed -r 's/.*load average: (.+), (.+), (.+)/\1 \2 \3/; s/,/./g'
 }

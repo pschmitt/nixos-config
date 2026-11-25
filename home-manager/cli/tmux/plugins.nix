@@ -52,17 +52,6 @@ in
     };
   }
   {
-    name = "tmux-battery";
-    plugin = pinned {
-      owner = "pschmitt";
-      repo = "tmux-battery";
-      rev = "2e85180753241e5b6756a424980ba6181730783b";
-      hash = "sha256-5UqwGzJA8mTeyFKL7/RBP7Xba2zXOJKmGiF6v0R9poI=";
-      date = "2026-09-06";
-      rtpFilePath = "battery.tmux";
-    };
-  }
-  {
     name = "tmux-cpu";
     plugin = pinned {
       owner = "pschmitt";
@@ -115,17 +104,6 @@ in
       hash = "sha256-F9UtG0sLL437BCGFMmdrVKeGkmHWDnasJa5/GBPOMKs=";
       date = "2026-09-17";
       rtpFilePath = "ssh-split.tmux";
-    };
-  }
-  {
-    name = "tmux-weather";
-    plugin = pinned {
-      owner = "pschmitt";
-      repo = "tmux-weather";
-      rev = "f3668cc11aa312023bc6fd69423c21e6d258a3b8";
-      hash = "sha256-pQrY207OL5ux1FMk+POxknDKmpJP1uBtVoN2KxSYFLg=";
-      date = "2021-04-26";
-      rtpFilePath = "tmux-weather.tmux";
     };
   }
   {
