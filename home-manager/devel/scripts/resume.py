@@ -40,6 +40,31 @@ def selection_matches(row, selection, agents):
     return any(selection.casefold() in value.casefold() for value in session_ids(row, agents))
 
 
+def concord_claim_owners(selection):
+    """Find owners of active Concord tasks matching a task or claim name."""
+    try:
+        result = subprocess.run(['concord', 'status'], capture_output=True, text=True, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError(f'cannot look up Concord claims: {exc}') from exc
+    active = False
+    owners = set()
+    for line in result.stdout.splitlines():
+        if line == 'Active work':
+            active = True
+            continue
+        if active and line and not line.startswith(' '):
+            break
+        if not active:
+            continue
+        match = re.match(r'^\s+(\S+)\s+active\s+v\d+\s+(\S+)\s+.*?touches: (.*)$', line)
+        if match:
+            task, owner, claims = match.groups()
+            claims = re.sub(r'  \(child of .*\)$', '', claims).split(', ')
+            if any(selection.casefold() in value.casefold() for value in [task, *claims]):
+                owners.add(owner)
+    return owners
+
+
 def load_agents():
     config = os.environ.get('RESUME_AGENTS_CONFIG')
     if not config:
@@ -524,7 +549,7 @@ def main():
     except (OSError, ValueError, RuntimeError) as exc:
         parser.error(str(exc))
     parser.add_argument('--preview-session', nargs=7, metavar=('AGENT', 'PATH', 'CWD', 'TITLE', 'ID', 'TIME', 'LIVE'), help=argparse.SUPPRESS)
-    parser.add_argument('selection', nargs='?', help='session number, ID, or Concord agent ID to resume')
+    parser.add_argument('selection', nargs='?', help='session number, ID, Concord agent ID or claim to resume')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--pick', action='store_true', help='select interactively with fzf (default)')
     mode.add_argument('--list', action='store_true', help='print sessions without opening the picker')
@@ -570,6 +595,14 @@ def main():
             selected_row = sessions[int(args.selection) - 1]
         else:
             candidates = [row for row in sessions if selection_matches(row, args.selection, agents)]
+            if not candidates:
+                try:
+                    owners = concord_claim_owners(args.selection)
+                except RuntimeError as exc:
+                    parser.error(str(exc))
+                candidates = [row for row in sessions if any(owner in session_ids(row, agents) for owner in owners)]
+                if owners and not candidates:
+                    parser.error('claim owner has no locally recorded session')
             exact = [row for row in candidates if args.selection.casefold() in
                      (value.casefold() for value in session_ids(row, agents))]
             candidates = exact or candidates
