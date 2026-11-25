@@ -1,9 +1,25 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   inherit (lib) mkOption types;
   cfg = config.services.ha-mcp;
   # renovate: datasource=docker depName=ghcr.io/homeassistant-ai/ha-mcp
   version = "9.2.0";
+  # ha-mcp supplies a Uvicorn logging config that ignores FASTMCP_LOG_LEVEL.
+  # Its access log otherwise records the secret MCP path on every request.
+  serverEntrypoint = pkgs.writeText "ha-mcp-web.py" ''
+    import uvicorn.config
+
+    uvicorn.config.LOGGING_CONFIG["loggers"]["uvicorn.access"]["level"] = "WARNING"
+
+    from ha_mcp.__main__ import main_web
+
+    main_web()
+  '';
   instance = {
     options = {
       homeAssistantUrl = mkOption {
@@ -36,7 +52,10 @@ in
     name = "ha-mcp-${name}";
     value = {
       image = "ghcr.io/homeassistant-ai/ha-mcp:${version}";
-      cmd = [ "ha-mcp-web" ];
+      cmd = [
+        "python"
+        "/etc/ha-mcp-web.py"
+      ];
       environment = {
         HOMEASSISTANT_URL = instance.homeAssistantUrl;
         HA_MCP_DISABLE_SETTINGS_UI = "true";
@@ -47,7 +66,10 @@ in
         instance.serverEnvironmentFile
       ];
       ports = [ "127.0.0.1:${toString instance.port}:8086" ];
-      volumes = [ "ha-mcp-${name}:/home/mcpuser/.ha-mcp" ];
+      volumes = [
+        "${serverEntrypoint}:/etc/ha-mcp-web.py:ro"
+        "ha-mcp-${name}:/home/mcpuser/.ha-mcp"
+      ];
     };
   }) cfg.instances;
 }
