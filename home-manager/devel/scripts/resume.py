@@ -29,13 +29,15 @@ AGENT_ICONS = {'codex': ('\uec81', '38;2;200;200;200'), 'claude': ('\uec82', '38
 CONCORD_KINDS = {'codex': 'codex', 'claude': 'claude-code', 'agy': 'antigravity'}
 
 
-def selection_matches(row, selection, agents):
+def session_ids(row, agents):
     agent, session_id = row[1:3]
-    if session_id == selection:
-        return True
     kind = CONCORD_KINDS.get(agents[agent]['kind'])
     digest = hashlib.sha256(session_id.encode()).hexdigest()[:8]
-    return kind is not None and selection == f'{kind}:{digest}'
+    return (session_id, f'{kind}:{digest}') if kind else (session_id,)
+
+
+def selection_matches(row, selection, agents):
+    return any(selection.casefold() in value.casefold() for value in session_ids(row, agents))
 
 
 def load_agents():
@@ -560,6 +562,24 @@ def main():
         active = active_sessions(agents)
     agent_filter = args.agent
     cwd_filter = args.cwd
+    selection_filter = None
+    selection_candidates = None
+    selected_row = None
+    if args.selection and not args.pick and not args.list:
+        if args.selection.isdigit() and 1 <= int(args.selection) <= len(sessions):
+            selected_row = sessions[int(args.selection) - 1]
+        else:
+            candidates = [row for row in sessions if selection_matches(row, args.selection, agents)]
+            exact = [row for row in candidates if args.selection.casefold() in
+                     (value.casefold() for value in session_ids(row, agents))]
+            candidates = exact or candidates
+            if len(candidates) == 1:
+                selected_row = candidates[0]
+            elif not candidates:
+                parser.error('session not found')
+            else:
+                selection_filter = args.selection
+                selection_candidates = candidates
     try:
         terminal_width = os.get_terminal_size(0).columns
         narrow = terminal_width < 100
@@ -582,14 +602,16 @@ def main():
         width = 18 if narrow else 24
         folder = short_cwd if len(short_cwd) <= width else '…' + short_cwd[-(width - 1):]
         topic = clean if clean else '\033[3;38;5;245muntitled\033[0m'
+        ids = ' '.join(session_ids(row, agents))
         return (f'\033[38;5;245m{when:8}{reset} {status} {provider} '
-                f'\033[38;5;109m{folder:{width}}{reset} {topic}')
+                f'\033[38;5;109m{folder:{width}}{reset} {topic} \033[38;5;245m{ids}{reset}')
 
     def filtered():
         return [row for row in sessions
-                if (not agent_filter or row[1] == agent_filter) and (not cwd_filter or (row[3] == cwd_filter if cwd_filter.startswith('/') else cwd_filter.casefold() in row[3].casefold()))]
+                if (selection_candidates is None or row in selection_candidates)
+                and (not agent_filter or row[1] == agent_filter) and (not cwd_filter or (row[3] == cwd_filter if cwd_filter.startswith('/') else cwd_filter.casefold() in row[3].casefold()))]
 
-    if args.pick or (not args.list and not args.selection):
+    if args.pick or selection_filter or (not args.list and not args.selection):
         env = os.environ.copy()
         env.pop('FZF_DEFAULT_OPTS', None)
         env.pop('FZF_DEFAULT_OPTS_FILE', None)
@@ -609,6 +631,8 @@ def main():
                 hint = '\033[38;5;60m'
                 shortcuts = f'{key}^T {hint}search  {key}^G {hint}agent  {key}^D {hint}cwd  {key}^R {hint}reset  {key}Pg↑/↓ {hint}scroll'
                 filters = f'agent: {agent_filter or "all"}  cwd: {folder_label}'
+                if selection_filter:
+                    filters += f'  id: {selection_filter}'
                 list_width = terminal_width // 2 - 5 if terminal_width >= 120 else terminal_width - 4
                 spacing = max(2, list_width - cell_width('^T search  ^G agent  ^D cwd  ^R reset  Pg↑/↓ scroll  M-Q quit') - cell_width(filters))
                 footer = f'{shortcuts}{" " * spacing}{hint}{filters}\033[0m'
@@ -626,6 +650,8 @@ def main():
                 key, _, selected = result.stdout.partition('\n')
                 if key == 'ctrl-r':
                     agent_filter = cwd_filter = None
+                    selection_filter = None
+                    selection_candidates = None
                     continue
                 if key == 'ctrl-t':
                     try:
@@ -666,7 +692,9 @@ def main():
                         if pressed == 'alt-Q':
                             return
                         if selected_hit:
-                            args.selection = selected_hit.split('\t')[5]
+                            fields = selected_hit.split('\t')
+                            selected_row = next(row for row in sessions if row[1] == fields[1] and row[5] == fields[2] and row[2] == fields[5])
+                            args.selection = fields[5]
                             break
                     continue
                 if key in ('ctrl-g', 'ctrl-d'):
@@ -697,7 +725,9 @@ def main():
                     continue
                 if not selected:
                     return
-                args.selection = selected.split('\t')[5]
+                fields = selected.split('\t')
+                selected_row = next(row for row in sessions if row[1] == fields[1] and row[5] == fields[2] and row[2] == fields[5])
+                args.selection = fields[5]
                 break
         except FileNotFoundError:
             parser.error('the picker requires fzf')
@@ -707,11 +737,12 @@ def main():
                 break
             print(display(i, row))
         return
-    matches = ([sessions[int(args.selection) - 1]] if args.selection.isdigit() and 1 <= int(args.selection) <= len(sessions)
-               else [row for row in sessions if selection_matches(row, args.selection, agents)])
-    if len(matches) != 1:
-        parser.error('session not found or ambiguous; use its displayed number')
-    _, agent, sid, cwd, _, _ = matches[0]
+    if selected_row is None:
+        matches = [row for row in sessions if row[2] == args.selection]
+        if len(matches) != 1:
+            parser.error('session not found or ambiguous; use its displayed number')
+        selected_row = matches[0]
+    _, agent, sid, cwd, _, _ = selected_row
     if switch_to_live_session(agent, sid, agents):
         return
     if not os.path.isdir(cwd):
