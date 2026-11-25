@@ -4,6 +4,7 @@ from collections import deque
 import datetime as dt
 import itertools
 import fcntl
+import hashlib
 import time
 import threading
 import unicodedata
@@ -24,6 +25,17 @@ USER_RECORD = re.compile(r'"(?:type|role)"\s*:\s*"user"')
 AGENT_ICONS = {'codex': ('\uec81', '38;2;200;200;200'), 'claude': ('\uec82', '38;2;217;119;87'),
                'claude-work': ('\uec82', '38;2;217;119;87'), 'claude-auto': ('\uec82', '38;2;217;119;87'),
                'agy': ('󰊭', '38;5;111')}
+
+CONCORD_KINDS = {'codex': 'codex', 'claude': 'claude-code', 'agy': 'antigravity'}
+
+
+def selection_matches(row, selection, agents):
+    agent, session_id = row[1:3]
+    if session_id == selection:
+        return True
+    kind = CONCORD_KINDS.get(agents[agent]['kind'])
+    digest = hashlib.sha256(session_id.encode()).hexdigest()[:8]
+    return kind is not None and selection == f'{kind}:{digest}'
 
 
 def load_agents():
@@ -510,7 +522,7 @@ def main():
     except (OSError, ValueError, RuntimeError) as exc:
         parser.error(str(exc))
     parser.add_argument('--preview-session', nargs=7, metavar=('AGENT', 'PATH', 'CWD', 'TITLE', 'ID', 'TIME', 'LIVE'), help=argparse.SUPPRESS)
-    parser.add_argument('selection', nargs='?', help='session number or ID to resume')
+    parser.add_argument('selection', nargs='?', help='session number, ID, or Concord agent ID to resume')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--pick', action='store_true', help='select interactively with fzf (default)')
     mode.add_argument('--list', action='store_true', help='print sessions without opening the picker')
@@ -696,7 +708,7 @@ def main():
             print(display(i, row))
         return
     matches = ([sessions[int(args.selection) - 1]] if args.selection.isdigit() and 1 <= int(args.selection) <= len(sessions)
-               else [row for row in sessions if row[2] == args.selection])
+               else [row for row in sessions if selection_matches(row, args.selection, agents)])
     if len(matches) != 1:
         parser.error('session not found or ambiguous; use its displayed number')
     _, agent, sid, cwd, _, _ = matches[0]
