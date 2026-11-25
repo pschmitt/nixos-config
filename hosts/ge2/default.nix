@@ -23,7 +23,10 @@
 
   dotfiles.desktop.browser.node.enable = true;
 
-  home-manager.users.${config.mainUser.username}.services.gnome-keyring.autoUnlockSops = true;
+  home-manager.users.${config.mainUser.username}.services = {
+    flatpak.runWithoutGui = true;
+    gnome-keyring.autoUnlockSops = true;
+  };
 
   services.flatpak.runWithoutGui = true;
 
