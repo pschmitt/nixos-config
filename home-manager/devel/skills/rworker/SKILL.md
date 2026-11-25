@@ -162,7 +162,7 @@ for one-shot workers, bounded watches, and other CLI equivalents.
 - **Android/Gradle:** `nix develop` needs the project's Android SDK shell; give
   it `--disk 250` (Gradle caches are large) and a TTL covering the first build.
   Pass `-Pandroid.aapt2FromMavenOverride="$ANDROID_HOME/build-tools/<ver>/aapt2"`
-  to `./gradlew` so AGP uses the Nix-wrapped `aapt2` instead of Maven's binary.
+  so AGP uses the Nix-wrapped `aapt2`. Maven Central 429s: [android-gradle](references/android-gradle.md).
 - **Nix evaluation:** Remote builders and `--eval-store` do not move evaluation.
   Sync the tree and run Nix on the worker for expensive evaluations. Follow
   the repository's workload policy for deciding when to offload.
