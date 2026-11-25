@@ -39,9 +39,18 @@ let
       ++ lib.optional (
         cfg.tdp.enable && cfg.tdp.command != null
       ) "TDP_COMMAND=${lib.escapeShellArg (toString cfg.tdp.command)}"
-      ++ lib.optional (
-        cfg.batteryPowerSaverBrightnessPercent != null
-      ) "BATTERY_POWER_SAVER_BRIGHTNESS_PERCENT=${toString cfg.batteryPowerSaverBrightnessPercent}"
+      ++ [
+        "BATTERY_BRIGHTNESS_PERCENT=${toString cfg.brightness.batteryPercent}"
+        "CONNECTED_MINIMUM_BRIGHTNESS_PERCENT=${toString cfg.brightness.connectedMinimumPercent}"
+      ]
+      ++ lib.mapAttrsToList (
+        name: value:
+        "BRIGHTNESS_BATTERY_${lib.toUpper (lib.replaceStrings [ "-" ] [ "_" ] name)}=${toString value}"
+      ) cfg.brightness.batteryProfiles
+      ++ lib.mapAttrsToList (
+        name: value:
+        "BRIGHTNESS_CONNECTED_${lib.toUpper (lib.replaceStrings [ "-" ] [ "_" ] name)}=${toString value}"
+      ) cfg.brightness.connectedProfiles
       ++ lib.mapAttrsToList (
         name: profile: "${profileVariable name}=${lib.escapeShellArg (profileLimits profile)}"
       ) cfg.tdp.profiles

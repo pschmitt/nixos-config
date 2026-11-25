@@ -63,10 +63,27 @@ in
       description = "User-level systemd units to resume, if previously active, when leaving power-saver.";
     };
 
-    batteryPowerSaverBrightnessPercent = lib.mkOption {
-      type = lib.types.nullOr (lib.types.ints.between 0 100);
-      default = null;
-      description = "Display brightness percentage while on battery in power-saver.";
+    brightness = {
+      batteryPercent = lib.mkOption {
+        type = lib.types.ints.between 0 100;
+        default = 30;
+        description = "Display brightness percentage on battery, unless overridden by the active profile.";
+      };
+      batteryProfiles = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.ints.between 0 100);
+        default = { };
+        description = "Battery brightness percentages keyed by power profile.";
+      };
+      connectedMinimumPercent = lib.mkOption {
+        type = lib.types.ints.between 0 100;
+        default = 50;
+        description = "Minimum display brightness on external power, unless overridden by the active profile.";
+      };
+      connectedProfiles = lib.mkOption {
+        type = lib.types.attrsOf (lib.types.ints.between 0 100);
+        default = { };
+        description = "Minimum external-power brightness percentages keyed by power profile.";
+      };
     };
 
     tdp = {

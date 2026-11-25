@@ -94,7 +94,11 @@ in
       };
     };
   };
-  services.ppd-react.batteryPowerSaverBrightnessPercent = 15;
+  services.ppd-react.brightness = {
+    batteryPercent = 30;
+    batteryProfiles.power-saver = 15;
+    connectedMinimumPercent = 50;
+  };
 
   security.polkit.extraConfig = ''
     polkit.addRule(function (action, subject) {

@@ -108,17 +108,17 @@ apply_tdp_profile() {
 apply_display_brightness() {
   local power_state="$1"
   local profile="$2"
-  local brightness_percentage=30
+  local brightness_percentage
+  local profile_key="${profile^^}"
+  local profile_variable
   local brightness_info
   local current_percentage
 
+  profile_key="${profile_key//-/_}"
   case "$power_state" in
     battery)
-      if [[ "$profile" == power-saver ]] &&
-        [[ -n "${BATTERY_POWER_SAVER_BRIGHTNESS_PERCENT:-}" ]]
-      then
-        brightness_percentage="$BATTERY_POWER_SAVER_BRIGHTNESS_PERCENT"
-      fi
+      profile_variable="BRIGHTNESS_BATTERY_${profile_key}"
+      brightness_percentage="${!profile_variable:-$BATTERY_BRIGHTNESS_PERCENT}"
 
       if ! brightnessctl set "${brightness_percentage}%" >/dev/null
       then
@@ -126,6 +126,8 @@ apply_display_brightness() {
       fi
     ;;
     connected)
+      profile_variable="BRIGHTNESS_CONNECTED_${profile_key}"
+      brightness_percentage="${!profile_variable:-$CONNECTED_MINIMUM_BRIGHTNESS_PERCENT}"
       if ! brightness_info="$(brightnessctl -m info 2>/dev/null)"
       then
         log_warn "failed to read display brightness on external power"
@@ -140,9 +142,9 @@ apply_display_brightness() {
         return 0
       fi
 
-      if (( current_percentage < 50 )) && ! brightnessctl set 50% >/dev/null
+      if (( current_percentage < brightness_percentage )) && ! brightnessctl set "${brightness_percentage}%" >/dev/null
       then
-        log_warn "failed to raise display brightness to 50% on external power"
+        log_warn "failed to raise display brightness to ${brightness_percentage}% on external power"
       fi
     ;;
   esac
