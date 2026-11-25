@@ -19,5 +19,7 @@
     ./users.nix
   ];
 
+  boot.zfs.forceImportRoot = false;
+
   system.stateVersion = "25.11";
 }
