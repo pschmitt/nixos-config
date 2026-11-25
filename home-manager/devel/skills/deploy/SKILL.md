@@ -72,7 +72,12 @@ gotchas). This skill is the order of steps.
    `while [ "$(systemctl show -P ActiveState nixos-upgrade)" = activating ]; do sleep 10; done`.
    Then verify each host: `readlink -f /run/current-system` changed, the unit is `inactive` with
    `Finished NixOS Upgrade` in `journalctl -u nixos-upgrade`, and the thing you deployed is there
-   (version, unit, file). Read the end of the journal: if it says a reboot is needed, tell the
+   (version, unit, file). Find the deployed binary through the unit, not the process:
+   `systemctl show -P ExecStart UNIT` names its store path. `/proc/PID/exe` of a service that
+   runs as its own user is unreadable without root, so `readlink` returns nothing and a `grep`
+   on it reports 0 matches, which looks like the old version (2026-11-25, browser-daemon). Grep
+   for a string the program prints (a log message), never for a code comment: comments are not
+   in the binary. Read the end of the journal: if it says a reboot is needed, tell the
    user instead of rebooting. A `just deploy` SSH timeout is not a failure until you checked
    (`AGENTS.md`, deployment gotchas). Release the Concord claim as soon as the switch is verified.
 8. **Report** what was bumped (old and new commit), which hosts, which were skipped or off.
@@ -120,7 +125,12 @@ project's own CI is a `release` concern.)
   fresh project commit), never restart the build nodes (rofl-13 to rofl-16) together with each
   other or with their clients: each offloads the same derivation to another, and they wait on
   each other's locks for hours with no error (2026-11-12, browser-daemon). Upgrade one build node
-  alone; once it has finished (the build is then cached), run the others in parallel.
+  alone; once it has finished, run the others in parallel. Its finishing does not always make
+  the build available to the others: on 2026-11-25 rofl-15 and rofl-16, started 25 s after
+  rofl-13 had switched, still built the same browser-daemon derivation on each other and hung for
+  30 minutes. Before starting the rest, check that the new store path is in the cache they
+  substitute from (`nix path-info --store <cache-url> PATH`); if it is not, start them one at a
+  time.
   If upgrades already hang on `building ... on 'ssh-ng://...'`, stop them all
   (`systemctl stop nixos-upgrade`, safe before the switch) and restart in that order.
 - A deploy that touches an agent skill or `CONTEXT.md` only takes effect in new sessions.
