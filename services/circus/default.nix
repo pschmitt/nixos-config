@@ -435,17 +435,15 @@ in
             };
             ephemeral_pools =
               let
-                consumerOnlyArmRepositories = [
-                  "pschmitt/bruvtab"
-                  "pschmitt/jellysync"
-                  "pschmitt/teams-live"
-                ];
+                # No pull request builds.
+                trustedOnlyArmRepositories = [ "pschmitt/bruvtab" ];
                 mainPool = {
                   name = "gha-aarch64-linux";
                   allowed_build_repositories = [
                     "pschmitt/anika-blue"
                     "pschmitt/browser-daemon"
                     "pschmitt/circus"
+                    "pschmitt/jellysync"
                     "pschmitt/luks-ssh-unlock"
                     "pschmitt/monarch"
                     "pschmitt/nixos-config"
@@ -453,9 +451,10 @@ in
                     "pschmitt/rworker"
                     "pschmitt/stricknani"
                     "pschmitt/tagesschau"
+                    "pschmitt/teams-live"
                     "pschmitt/termuxpp"
                   ]
-                  ++ consumerOnlyArmRepositories;
+                  ++ trustedOnlyArmRepositories;
                   systems = [ "aarch64-linux" ];
                   supported_features = [ "big-parallel" ];
                   max_jobs = 2;
@@ -479,6 +478,7 @@ in
                     "pschmitt/circus"
                     "pschmitt/monarch"
                     "pschmitt/nixos-config"
+                    "pschmitt/stricknani"
                   ];
                   systems = [ "x86_64-linux" ];
                   supported_features = [
@@ -519,7 +519,6 @@ in
                       name = "gha-pr-x86_64-kvm";
                       allowed_build_repositories = kvmPool.allowed_build_repositories ++ [
                         "pschmitt/luks-ssh-unlock"
-                        "pschmitt/stricknani"
                       ];
                       poll_interval_secs = 15;
                       pull_request_author_ids_file = cfg.githubActionsAgents.pullRequestAuthorIdsFile;
@@ -538,7 +537,7 @@ in
                     // {
                       name = "gha-pr-aarch64-linux";
                       allowed_build_repositories = lib.filter (
-                        repo: !(builtins.elem repo consumerOnlyArmRepositories)
+                        repo: !(builtins.elem repo trustedOnlyArmRepositories)
                       ) mainPool.allowed_build_repositories;
                       max_inflight = 4;
                       poll_interval_secs = 15;
