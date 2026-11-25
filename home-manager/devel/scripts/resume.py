@@ -80,6 +80,13 @@ def load_agents():
     return agents
 
 
+def modified_time(path):
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0
+
+
 def records(agents, progress=None):
     progress = progress or (lambda _: None)
     scanned_roots = set()
@@ -132,7 +139,7 @@ def records(agents, progress=None):
             except sqlite3.Error as exc:
                 print(f'resume: {exc}', file=sys.stderr)
             continue
-        for path in root.glob(pattern):
+        for path in sorted(root.glob(pattern), key=modified_time, reverse=True):
             try:
                 cwd, title, session_id = '', '', path.stem
                 with path.open() as stream:
@@ -584,11 +591,30 @@ def main():
         except (OSError, BrokenPipeError):
             return
 
-    interactive = sys.stderr.isatty() and not args.list and (args.pick or not args.selection)
-    with StartupSpinner(interactive) as spinner:
-        sessions = sorted(records(agents, spinner.update), key=lambda row: row[0], reverse=True)
-        spinner.update('Checking active sessions')
+    streaming = not args.list and (args.pick or not args.selection)
+    sessions = []
+    active = {}
+    claims_by_owner = {}
+    discovery_done = threading.Event()
+
+    def discover():
+        try:
+            active.update(active_sessions(agents))
+            try:
+                claims_by_owner.update(concord_claims())
+            except RuntimeError:
+                pass
+            for row in records(agents):
+                sessions.append(row)
+        finally:
+            discovery_done.set()
+
+    if streaming:
+        threading.Thread(target=discover, daemon=True).start()
+    else:
+        sessions = sorted(records(agents), key=lambda row: row[0], reverse=True)
         active = active_sessions(agents)
+        discovery_done.set()
     agent_filter = args.agent
     cwd_filter = args.cwd
     selection_filter = None
@@ -650,10 +676,11 @@ def main():
                 and (not agent_filter or row[1] == agent_filter) and (not cwd_filter or (row[3] == cwd_filter if cwd_filter.startswith('/') else cwd_filter.casefold() in row[3].casefold()))]
 
     if args.pick or selection_filter or picker_query or (not args.list and not args.selection):
-        try:
-            claims_by_owner = concord_claims()
-        except RuntimeError:
-            claims_by_owner = {}
+        if not streaming:
+            try:
+                claims_by_owner = concord_claims()
+            except RuntimeError:
+                pass
 
         def picker_display(row):
             names = sorted({name for ident in session_ids(row, agents) for name in claims_by_owner.get(ident, ())})
@@ -684,16 +711,41 @@ def main():
                 list_width = terminal_width // 2 - 5 if terminal_width >= 120 else terminal_width - 4
                 spacing = max(2, list_width - cell_width('^T search  ^G agent  ^D cwd  ^R reset  Pg↑/↓ scroll  M-Q quit') - cell_width(filters))
                 footer = f'{shortcuts}{" " * spacing}{hint}{filters}\033[0m'
-                result = subprocess.run(
-                    ['fzf', '--ansi', '--info=hidden', '--no-separator', '--no-hscroll', '--delimiter=\t', '--with-nth=1', '--tiebreak=index', '--layout=reverse',
+                command = ['fzf', '--ansi', '--info=inline', '--no-separator', '--no-hscroll', '--delimiter=\t', '--with-nth=1', '--tiebreak=index', '--layout=reverse',
                      '--prompt=󰍉  Session  ❯ ', '--pointer=❯', '--marker=󰄬', theme,
                      '--query=' + (picker_query or ''), '--print-query',
                      '--bind=alt-Q:abort,alt-up:preview-up,alt-down:preview-down,alt-k:preview-up,alt-j:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
                      '--expect=ctrl-g,ctrl-d,ctrl-r,ctrl-t', '--header=' + columns, '--footer=' + footer, '--footer-border=none',
                      '--preview=' + ' '.join(map(shlex.quote, [sys.executable, __file__, '--preview-session'])) + ' {2} {3} {4} {5} {6} {7} {8}',
-                     '--preview-window=right:50%:wrap-word:follow:noinfo:~1:<60(down:40%:wrap-word:follow:noinfo:~1)', '--preview-wrap-sign='],
-                    input=lines, text=True, stdout=subprocess.PIPE, env=env,
-                )
+                     '--preview-window=right:50%:wrap-word:follow:noinfo:~1:<60(down:40%:wrap-word:follow:noinfo:~1)', '--preview-wrap-sign=']
+                if streaming:
+                    process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, env=env)
+
+                    def feed_picker(process=process):
+                        try:
+                            offset = 0
+                            while True:
+                                rows_now = filtered()
+                                for row in rows_now[offset:]:
+                                    fields = [picker_display(row), row[1], row[5], row[3],
+                                              ' '.join(str(row[4]).split()), row[2],
+                                              dt.datetime.fromtimestamp(row[0]).strftime('%Y-%m-%d %H:%M:%S %Z'),
+                                              '1' if agents[row[1]]['kind'] == 'agy' or (row[1], row[2]) in active else '0']
+                                    process.stdin.write('\t'.join(fields) + '\n')
+                                process.stdin.flush()
+                                offset = len(rows_now)
+                                if discovery_done.wait(0.05):
+                                    if offset == len(filtered()):
+                                        break
+                            process.stdin.close()
+                        except (BrokenPipeError, ValueError):
+                            pass
+
+                    threading.Thread(target=feed_picker, daemon=True).start()
+                    output = process.stdout.read()
+                    result = subprocess.CompletedProcess(command, process.wait(), output)
+                else:
+                    result = subprocess.run(command, input=lines, text=True, stdout=subprocess.PIPE, env=env)
                 if result.returncode:
                     return
                 picker_query, _, output = result.stdout.partition('\n')
