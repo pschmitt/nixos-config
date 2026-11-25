@@ -273,8 +273,12 @@ run_update() {
   export GIT_ROOT="$git_root"
 
   export NIXPKGS_ALLOW_UNFREE=1
-  echo "Running: nix run --impure 'nixpkgs#nix-update' -- ${args[*]}" >&2
-  nix run --impure nixpkgs#nix-update -- "${args[@]}"
+  # nix-update 1.16.0 (nixpkgs) breaks `--flake` on Nix 2.35 ("opening file
+  # /nix/store/...-source: No such file"); fixed in 1.17.0, which nixpkgs does
+  # not ship yet. Go back to nixpkgs#nix-update once it does.
+  local nix_update_ref="github:Mic92/nix-update/v1.17.0"
+  echo "Running: nix run --impure '${nix_update_ref}' -- ${args[*]}" >&2
+  nix run --impure "$nix_update_ref" -- "${args[@]}"
 }
 
 main() {
