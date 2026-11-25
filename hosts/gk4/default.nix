@@ -2,6 +2,7 @@
 {
   imports = [
     ../../profiles/specializations/workstation
+    ../../services/luks-ssh-unlock/push-client.nix
     ../../services/nixos-installer-boot-entry.nix
 
     ./hardware-configuration.nix

@@ -1,6 +1,7 @@
 {
   imports = [
     ../../profiles/specializations/server
+    ../../services/luks-ssh-unlock/push-client.nix
 
     ./disk-config.nix
     ./hardware-configuration.nix

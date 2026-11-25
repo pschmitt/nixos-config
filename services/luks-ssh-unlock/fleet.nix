@@ -215,6 +215,10 @@ let
     value = {
       sopsFile = luksSecretsFile target;
       key = "ssh/${keySet}/${algo}/pubkey";
+    }
+    // lib.optionalAttrs (target.hasInitrdCheck && keySet == "host_keys" && algo == "ed25519") {
+      group = "luks-push-${target.name}";
+      mode = "0440";
     };
   };
 
@@ -308,6 +312,10 @@ let
       enable = target.hasInitrdCheck;
       paranoid = true;
       requireSignature = true;
+      pushReceiver = lib.optionalAttrs target.hasInitrdCheck {
+        enable = true;
+        authorizedKeysFile = config.sops.secrets."ssh/${target.name}/host_keys/ed25519/pubkey".path;
+      };
     };
 
     healthcheck = {

@@ -1,6 +1,7 @@
 {
   imports = [
     ../../profiles/specializations/rofl-build-node
+    ../../services/luks-ssh-unlock/push-client.nix
 
     ./hardware-configuration.nix
     ./networking.nix

@@ -5,6 +5,7 @@
     ../../profiles/features/network/ha-sshfs.nix
     ../../profiles/features/network/roflnet.nix
     ../../profiles/specializations/server
+    ../../services/luks-ssh-unlock/push-client.nix
 
     ./browserless-public.nix
     ./disk-config.nix

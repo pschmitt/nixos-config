@@ -3,6 +3,7 @@
   imports = [
     ../../profiles/features/work/elgato-stream-deck.nix
     ../../profiles/specializations/workstation
+    ../../services/luks-ssh-unlock/push-client.nix
 
     ./audio.nix
     ./boot.nix

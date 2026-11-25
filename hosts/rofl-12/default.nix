@@ -3,6 +3,7 @@
     ../../profiles/base/users/home-assistant.nix
     ../../profiles/features/network/roflnet.nix
     ../../profiles/specializations/server
+    ../../services/luks-ssh-unlock/push-client.nix
 
     ./hardware-configuration.nix
     ./hardware.nix

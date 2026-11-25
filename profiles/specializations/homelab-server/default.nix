@@ -3,7 +3,7 @@
 # Only what's genuinely identical between the two host configs lives here;
 # host-specific values (network interfaces, VM staging vs. production,
 # backup/migration state) stay in hosts/fnuc/ and hosts/lrz/.
-{ lib, ... }:
+{ inputs, lib, ... }:
 {
   imports = [
     ../interactive-server
@@ -11,6 +11,8 @@
 
     ../../../services/syslog-server.nix
     ../../../services/luks-ssh-unlock/fleet.nix
+    ../../../services/luks-ssh-unlock/push-client.nix
+    (inputs.nixos-config-private.outPath + "/services/luks-ssh-unlock-push-home.nix")
     ../../../services/smokeping.nix
     ../../../services/reolink-ftp.nix
     ../../../services/web-vnc-console.nix
