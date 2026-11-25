@@ -29,6 +29,11 @@ let
       tuiCommands = [ "console=" ];
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
+      dhcpListener = {
+        enable = true;
+        interface = "any";
+        clientHostname = "ge2";
+      };
     }
     {
       name = "gk4";
@@ -37,6 +42,11 @@ let
       tuiCommands = [ "console=" ];
       hasInitrdCheck = true;
       healthcheckCmd = "/run/current-system/sw/bin/findmnt -J / | /run/current-system/sw/bin/jq -er '.filesystems[] | select(.target == \"/\") | .source | test(\"luks-root\")'";
+      dhcpListener = {
+        enable = true;
+        interface = "any";
+        clientHostname = "gk4";
+      };
     }
     {
       name = "lrz";
