@@ -40,14 +40,14 @@ def selection_matches(row, selection, agents):
     return any(selection.casefold() in value.casefold() for value in session_ids(row, agents))
 
 
-def concord_claim_owners(selection):
-    """Find owners of active Concord tasks matching a task or claim name."""
+def concord_claims():
+    """Return active task and claim names indexed by their Concord owner."""
     try:
         result = subprocess.run(['concord', 'status'], capture_output=True, text=True, check=True)
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:
         raise RuntimeError(f'cannot look up Concord claims: {exc}') from exc
     active = False
-    owners = set()
+    owners = {}
     for line in result.stdout.splitlines():
         if line == 'Active work':
             active = True
@@ -60,9 +60,13 @@ def concord_claim_owners(selection):
         if match:
             task, owner, claims = match.groups()
             claims = re.sub(r'  \(child of .*\)$', '', claims).split(', ')
-            if any(selection.casefold() in value.casefold() for value in [task, *claims]):
-                owners.add(owner)
+            owners.setdefault(owner, set()).update([task, *(claim for claim in claims if claim != '-')])
     return owners
+
+
+def concord_claim_owners(selection):
+    return {owner for owner, names in concord_claims().items()
+            if any(selection.casefold() in name.casefold() for name in names)}
 
 
 def load_agents():
@@ -645,6 +649,16 @@ def main():
                 and (not agent_filter or row[1] == agent_filter) and (not cwd_filter or (row[3] == cwd_filter if cwd_filter.startswith('/') else cwd_filter.casefold() in row[3].casefold()))]
 
     if args.pick or selection_filter or (not args.list and not args.selection):
+        try:
+            claims_by_owner = concord_claims()
+        except RuntimeError:
+            claims_by_owner = {}
+
+        def picker_display(row):
+            names = sorted({name for ident in session_ids(row, agents) for name in claims_by_owner.get(ident, ())})
+            suffix = f' \033[38;5;109m{" ".join(names)}\033[0m' if names else ''
+            return display(0, row, styled=True) + suffix
+
         env = os.environ.copy()
         env.pop('FZF_DEFAULT_OPTS', None)
         env.pop('FZF_DEFAULT_OPTS_FILE', None)
@@ -652,7 +666,7 @@ def main():
         try:
             while True:
                 rows = filtered()
-                lines = '\n'.join('\t'.join([display(i, row, styled=True), row[1], row[5], row[3],
+                lines = '\n'.join('\t'.join([picker_display(row), row[1], row[5], row[3],
                                              ' '.join(str(row[4]).split()), row[2],
                                              dt.datetime.fromtimestamp(row[0]).strftime('%Y-%m-%d %H:%M:%S %Z'),
                                              '1' if agents[row[1]]['kind'] == 'agy' or (row[1], row[2]) in active else '0'])
