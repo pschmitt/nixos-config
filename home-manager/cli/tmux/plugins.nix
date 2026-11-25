@@ -3,7 +3,7 @@
 # after tpm's checkout directories, since scripts look them up in
 # $TMUX_PLUGIN_MANAGER_PATH (~/.local/share/tpm).
 # Disabled before the move: noscript/tmux-mighty-scroll
-{ pkgs }:
+{ inputs, pkgs }:
 let
   inherit (pkgs) fetchFromGitHub;
   inherit (pkgs.tmuxPlugins) mkTmuxPlugin;
@@ -117,5 +117,11 @@ in
   {
     name = "tmux-sensible";
     plugin = pkgs.tmuxPlugins.sensible;
+  }
+  # Reports the windows to TermuxPP terminals (the phones' sidebar and window
+  # picker) and lets them switch windows; other terminals ignore it.
+  {
+    name = "termuxpp";
+    plugin = (inputs.termuxpp.lib.tmux.packagesFor pkgs).tmux-termuxpp;
   }
 ]
