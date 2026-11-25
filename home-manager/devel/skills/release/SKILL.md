@@ -31,7 +31,11 @@ order of steps and the traps that cost rounds before.
    dates it, check that each commit since the last tag (`git log vLAST..`) is covered, add what
    is missing (merged dependency PRs, other agents' work), and merge entries for intermediate
    steps into what actually ships. A forgotten changelog means editing the last release.
-6. The tag is GPG-signed: run the unlock and probe from `CONTEXT.md` (`gpg-signing` skill) right
+6. For browser-daemon, review the release changes for effects on Home Assistant. Update the
+   integration code in `custom_components/browser_daemon/` for daemon API, Python client, or
+   behavior changes, and validate it with the component's checks before tagging. Release
+   preparation bumps the integration version and its pinned Python client automatically.
+7. The tag is GPG-signed: run the unlock and probe from `CONTEXT.md` (`gpg-signing` skill) right
    before every signed commit and again right before `release-tag`; the cache can expire while
    CI runs.
 
@@ -48,6 +52,9 @@ order of steps and the traps that cost rounds before.
   check the pin commit landed.
 
 ## After: roll it out
+
+For browser-daemon, verify the matching `browser-daemon-client` version is available on
+PyPI before updating the integration in Home Assistant.
 
 1. Follow the `deploy` skill for the rollout (bump the input in `nixos-config` on an `rworker`,
    commit, push, deploy to the affected hosts). The standing rule is to do this without asking;

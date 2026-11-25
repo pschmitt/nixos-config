@@ -16,6 +16,12 @@ There is one browser MCP, `browser-daemon`. Browsers run on a mesh of nodes.
 - `browser_use` closes the current browser when it switches.
 - A shared profile can have tabs owned by other clients (`browser_profile_tabs`); leave those alone.
 
+## Open a tab in an extension-backed browser
+
+- Run `browser_shared_nodes` to find the online browser, its UUID, and its hosting daemon.
+- Use `browser_shared_open_tab` with `browser`, `daemon`, and `target` (a URL or search terms). The owner must allow opening shared tabs. MCP opens the tab in the **Agents** group and returns its shared tab ID.
+- If an older MCP connection lacks that tool, reconnect to pick up the current tool list. From the shell, `browser-daemon tabs new --node <browser-name> <target>` opens and focuses a new tab. `--daemon` is an alias for `--node`. Add `--background` (alias `--no-activate`) to preserve focus, or `--tab-group <group>` to use or create a named group.
+
 ## Label your session
 
 The dashboard shows which agent and conversation drive a session. When you start, label it with a few words, like a tmux window name, and again when the task changes:
