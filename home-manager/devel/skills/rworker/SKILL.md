@@ -207,12 +207,12 @@ for one-shot workers, bounded watches, and other CLI equivalents.
   `rworker logs "$w" JOB --lines 40`. `rworker logs -f` follows all jobs across all workers
   (`--topic`/`--agent` regex-filter `logs`/`events`; a leading `!` inverts, e.g. `--topic '!build'`), with colored `WORKER/JOB` prefixes. It discovers new jobs within about one
   second and rescans the worker list every five seconds, attaching to new workers
-  and stopping when workers disappear. `rworker events` emits only lifecycle
+  and stopping when workers disappear. In a terminal (a tmux pane) `logs -f`
+  opens the TUI; pass `--plain` there (pipes always print plain). `rworker events` emits only lifecycle
   changes after its initial snapshot: workers added or deleted, jobs added or
   deleted, and job state changes. Use `rworker events --interval N` to set the
   polling interval in seconds. Each unnamed job gets a unique ID. MCP `exec`
-  returns the ID even on timeout;
-  the job continues. If a job must be launched separately, register its existing
+  returns the ID even on timeout; the job continues. If a job must be launched separately, register its existing
   absolute log file with `rworker setup register-log-file "$w" JOB --log /path/to/log --topic "..."` (or MCP
   `setup_register_log_file`) immediately. Logs and metadata disappear with the worker.
 
