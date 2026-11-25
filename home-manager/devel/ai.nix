@@ -25,6 +25,7 @@ let
   };
   claudeCodePackage = pkgs.symlinkJoin {
     name = "claude-code-yolo";
+    version = pkgs.llm-agents.claude-code.version;
     paths = [ pkgs.llm-agents.claude-code ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
