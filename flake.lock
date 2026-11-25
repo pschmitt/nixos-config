@@ -124,11 +124,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795537528,
-        "narHash": "sha256-xSwe54JvHFLovvG4olqH6eDrbAw/4QPnjxK1nTrBAyo=",
+        "lastModified": 1795596441,
+        "narHash": "sha256-Eyx4jQPVnFP0TtRMiCvd3wfHjdsWm5kfD4VwTA9EUFw=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "c58ebbe2c58ad83b43bfa2e3b0320f4ef2ae2805",
+        "rev": "ead9660b3fc4f38c685a3e0a5333dc3384dbefbf",
         "type": "github"
       },
       "original": {
@@ -2965,11 +2965,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795536649,
-        "narHash": "sha256-gVXt62HJeKT+YC0oSSxhGtepKMIIxptlJPtGLWd119Y=",
+        "lastModified": 1795596533,
+        "narHash": "sha256-OHccWsEZ0VG1n5CXsVMlmLE11IHkMPY0wmUGgjkG6W0=",
         "owner": "pschmitt",
         "repo": "teams-live",
-        "rev": "9fcbe8d48c1fa2e9d2a6c28052ca14119c226e6e",
+        "rev": "c118ed83329d6b97e90cf2ab417d6829c490bedf",
         "type": "github"
       },
       "original": {
