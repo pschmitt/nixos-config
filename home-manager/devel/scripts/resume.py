@@ -593,6 +593,7 @@ def main():
     cwd_filter = args.cwd
     selection_filter = None
     selection_candidates = None
+    picker_query = None
     selected_row = None
     if args.selection and not args.pick and not args.list:
         if args.selection.isdigit() and 1 <= int(args.selection) <= len(sessions):
@@ -602,8 +603,8 @@ def main():
             if not candidates:
                 try:
                     owners = concord_claim_owners(args.selection)
-                except RuntimeError as exc:
-                    parser.error(str(exc))
+                except RuntimeError:
+                    owners = set()
                 candidates = [row for row in sessions if any(owner in session_ids(row, agents) for owner in owners)]
                 if owners and not candidates:
                     parser.error('claim owner has no locally recorded session')
@@ -613,7 +614,7 @@ def main():
             if len(candidates) == 1:
                 selected_row = candidates[0]
             elif not candidates:
-                parser.error('session not found')
+                picker_query = args.selection
             else:
                 selection_filter = args.selection
                 selection_candidates = candidates
@@ -648,7 +649,7 @@ def main():
                 if (selection_candidates is None or row in selection_candidates)
                 and (not agent_filter or row[1] == agent_filter) and (not cwd_filter or (row[3] == cwd_filter if cwd_filter.startswith('/') else cwd_filter.casefold() in row[3].casefold()))]
 
-    if args.pick or selection_filter or (not args.list and not args.selection):
+    if args.pick or selection_filter or picker_query or (not args.list and not args.selection):
         try:
             claims_by_owner = concord_claims()
         except RuntimeError:
@@ -686,6 +687,7 @@ def main():
                 result = subprocess.run(
                     ['fzf', '--ansi', '--info=hidden', '--no-separator', '--no-hscroll', '--delimiter=\t', '--with-nth=1', '--tiebreak=index', '--layout=reverse',
                      '--prompt=󰍉  Session  ❯ ', '--pointer=❯', '--marker=󰄬', theme,
+                     '--query=' + (picker_query or ''), '--print-query',
                      '--bind=alt-Q:abort,alt-up:preview-up,alt-down:preview-down,alt-k:preview-up,alt-j:preview-down,pgup:preview-page-up,pgdn:preview-page-down',
                      '--expect=ctrl-g,ctrl-d,ctrl-r,ctrl-t', '--header=' + columns, '--footer=' + footer, '--footer-border=none',
                      '--preview=' + ' '.join(map(shlex.quote, [sys.executable, __file__, '--preview-session'])) + ' {2} {3} {4} {5} {6} {7} {8}',
@@ -694,11 +696,13 @@ def main():
                 )
                 if result.returncode:
                     return
-                key, _, selected = result.stdout.partition('\n')
+                picker_query, _, output = result.stdout.partition('\n')
+                key, _, selected = output.partition('\n')
                 if key == 'ctrl-r':
                     agent_filter = cwd_filter = None
                     selection_filter = None
                     selection_candidates = None
+                    picker_query = None
                     continue
                 if key == 'ctrl-t':
                     try:
