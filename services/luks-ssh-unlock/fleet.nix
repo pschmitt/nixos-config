@@ -217,7 +217,7 @@ let
       key = "ssh/${keySet}/${algo}/pubkey";
     }
     // lib.optionalAttrs (target.hasInitrdCheck && keySet == "host_keys" && algo == "ed25519") {
-      group = "luks-push-${target.name}";
+      group = "luks-ssh-unlock-push-${target.name}";
       mode = "0440";
     };
   };

@@ -1428,11 +1428,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795617629,
-        "narHash": "sha256-bJiTZIP1UA0rcuDrU1ALlv7Hohg74A1X3WRn3qnbNFw=",
+        "lastModified": 1795619863,
+        "narHash": "sha256-JOVW/x62jUmZ9CCiK78Rw++KC+4XjAlqVG3wL+Ap0Jc=",
         "owner": "pschmitt",
         "repo": "luks-ssh-unlock",
-        "rev": "24d6f875a082a32273ab1b417abe17891f09b41f",
+        "rev": "dd4140e98863c4284c10be0cc1f0162d63065c13",
         "type": "github"
       },
       "original": {
