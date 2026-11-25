@@ -16,7 +16,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "android-skills";
-  version = "1.0.23";
+  version = "1.0.24";
 
   src = androidSkillsSrc;
 
