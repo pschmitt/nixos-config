@@ -28,6 +28,11 @@ let
         default = null;
         description = "Working directory for the service.";
       };
+      notification = mkOption {
+        type = types.nullOr types.bool;
+        default = null;
+        description = "Show a notification while this service runs. Null uses nixpp.serviceNotifications.enable.";
+      };
       allowedSsids = mkOption {
         type = types.listOf types.str;
         default = [ ];
@@ -72,10 +77,30 @@ let
           "cd /"
         else
           "cd ${lib.escapeShellArg service.workingDirectory}";
+      notify =
+        service.notification != null && service.notification
+        || (service.notification == null && config.nixpp.serviceNotifications.enable);
+      notificationId = "nixpp-service-${name}";
       run = pkgs.writeShellScript "nixpp-service-${name}-run" ''
         exec 2>&1
         ${workingDirectory}
+        export PATH=${lib.escapeShellArg "${config.user.home}/.nix-profile/bin:/run/current-system/sw/bin:/bin:/usr/bin"}
+        notification=${if notify then "true" else "false"}
+        settings=/run/nixpp-runtime/service-state/settings.json
+        if [ -r "$settings" ]; then
+          override=$(${pkgs.jq}/bin/jq -r --arg name ${lib.escapeShellArg name} 'if .[$name] | type == "object" and has("notification") then .[$name].notification else empty end' "$settings" 2>/dev/null || true)
+          case "$override" in true|false) notification=$override ;; esac
+        fi
+        if [ "$notification" = true ] && command -v tpp >/dev/null 2>&1; then
+          timeout 5 tpp notification send --id ${lib.escapeShellArg notificationId} --channel ${lib.escapeShellArg notificationId} --title ${lib.escapeShellArg name} --content "Service is running" --ongoing --alert-once --priority low </dev/null || true
+        fi
         exec ${pkgs.coreutils}/bin/env -i "XDG_RUNTIME_DIR=/run/user/$(id -u)" ${environmentArguments} ${lib.escapeShellArgs service.command}
+      '';
+      finish = pkgs.writeShellScript "nixpp-service-${name}-finish" ''
+        export PATH=${lib.escapeShellArg "${config.user.home}/.nix-profile/bin:/run/current-system/sw/bin:/bin:/usr/bin"}
+        if command -v tpp >/dev/null 2>&1; then
+          timeout 5 tpp notification remove ${lib.escapeShellArg notificationId} </dev/null || true
+        fi
       '';
       logRun = pkgs.writeShellScript "nixpp-service-${name}-log-run" ''
         mkdir -p ./main
@@ -86,6 +111,7 @@ let
     pkgs.runCommand "nixpp-service-${name}" { } ''
       mkdir -p "$out/log"
       install -m 0755 ${run} "$out/run"
+      install -m 0755 ${finish} "$out/finish"
       install -m 0755 ${logRun} "$out/log/run"
     ''
   ) services;
@@ -115,6 +141,8 @@ in
     default = { };
     description = "Declarative services supervised within the Android guest.";
   };
+
+  options.nixpp.serviceNotifications.enable = lib.mkEnableOption "running guest service notifications by default";
 
   config = {
     assertions = lib.concatLists (
