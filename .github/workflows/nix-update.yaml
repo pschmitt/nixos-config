@@ -31,6 +31,12 @@ jobs:
 
       - name: Install Nix
         uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
+        with:
+          # NOTE needs a PAT (not the workflow's GITHUB_TOKEN, which is scoped
+          # to this repo only) so nix can fetch the private
+          # nixos-config-private input
+          extra-conf: |
+            access-tokens = github.com=${{ secrets.GH_TOKEN_FOR_UPDATES }}
 
       - name: Collect package matrix
         id: packages
@@ -90,6 +96,12 @@ jobs:
 
       - name: Install Nix
         uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
+        with:
+          # NOTE needs a PAT (not the workflow's GITHUB_TOKEN, which is scoped
+          # to this repo only) so nix can fetch the private
+          # nixos-config-private input
+          extra-conf: |
+            access-tokens = github.com=${{ secrets.GH_TOKEN_FOR_UPDATES }}
 
       - name: Capture current version for ${{ matrix.package }}
         id: version_before
@@ -260,6 +272,12 @@ jobs:
 
       - name: Install Nix
         uses: pschmitt/ci-workflows/.github/actions/nix-setup@main
+        with:
+          # NOTE needs a PAT (not the workflow's GITHUB_TOKEN, which is scoped
+          # to this repo only) so nix can fetch the private
+          # nixos-config-private input
+          extra-conf: |
+            access-tokens = github.com=${{ secrets.GH_TOKEN_FOR_UPDATES }}
 
       - name: Capture current version for ${{ matrix.package }}
         id: version_before
