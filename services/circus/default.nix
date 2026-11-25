@@ -476,6 +476,7 @@ in
                   allowed_build_repositories = [
                     "pschmitt/anika-blue"
                     "pschmitt/circus"
+                    "pschmitt/luks-ssh-unlock"
                     "pschmitt/monarch"
                     "pschmitt/nixos-config"
                     "pschmitt/stricknani"
@@ -517,9 +518,6 @@ in
                     kvmPool
                     // {
                       name = "gha-pr-x86_64-kvm";
-                      allowed_build_repositories = kvmPool.allowed_build_repositories ++ [
-                        "pschmitt/luks-ssh-unlock"
-                      ];
                       poll_interval_secs = 15;
                       pull_request_author_ids_file = cfg.githubActionsAgents.pullRequestAuthorIdsFile;
                       github_actions = kvmPool.github_actions // {
