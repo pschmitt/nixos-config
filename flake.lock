@@ -1448,11 +1448,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795594180,
-        "narHash": "sha256-jaKVOKkFJ/rfh5Bg24xFf/j8PtOkTWWzcNEGlvThb5o=",
+        "lastModified": 1795615556,
+        "narHash": "sha256-4ZTfCYghMiVEDCju99384o5zP8t5ipo7wM+npHPvGPs=",
         "owner": "pschmitt",
         "repo": "luks-ssh-unlock",
-        "rev": "433450714ea6592c317f23b8c9fcb74526f6340b",
+        "rev": "a6ab35687bed39d5ad3fc16607f67d76f01e6375",
         "type": "github"
       },
       "original": {
@@ -1807,11 +1807,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1795612308,
-        "narHash": "sha256-A0glPg/5AU6tJNBub7WZqXHuN3DnLgdHqdKd02tyuco=",
+        "lastModified": 1795615585,
+        "narHash": "sha256-u5ExkHKSjGXY7ZVRux89wCjaAt4DNxaXgwyU7xGie2E=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "eda2addadfaba6de79612181c74c6e84f3d75f6d",
+        "rev": "aa0985451ffc3f88eca554d3f187469273a51b2f",
         "type": "github"
       },
       "original": {
