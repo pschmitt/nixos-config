@@ -1,6 +1,6 @@
 ---
 name: shell
-description: Use when writing, editing, reviewing, or generating shell code in bash, sh, or zsh. Applies to scripts, sourced shell files, functions, and shell snippets. Enforces the repo shell style and safe entrypoint/error-handling patterns.
+description: Use when writing, editing, reviewing, or generating shell code in bash, sh, or zsh. Applies to scripts, sourced shell files, functions, and shell snippets, including one-off commands an agent runs in its zsh shell (loops over lists, word splitting, globs). Enforces the repo shell style and safe entrypoint/error-handling patterns.
 ---
 
 # Shell
@@ -50,6 +50,26 @@ Use this skill for bash, sh, and zsh work.
 
 - Standalone scripts: check each command that can fail (`cmd || return 1`) rather than relying on `set -e` alone.
 - Scripts wrapped in Nix: follow the repo `AGENTS.md` ("Shell scripts in Nix"); `pkgs.writeShellApplication` adds `set -euo pipefail` and build-time shellcheck.
+
+## One-off commands in zsh
+
+An agent's command line runs in zsh, which differs from bash where loops over
+lists usually go wrong. The failures are silent: the command runs with wrong
+arguments and reports nothing useful.
+
+- Unquoted `$x` is **not** split into words. `x="node id"; set -- $x` leaves one
+  argument, so `$1` is the whole string and `$2` is empty; a URL built from them
+  is malformed and `curl` answers `000` (2026-11-25). Split on purpose with
+  `${=x}`, or loop over pairs with an array or `while read -r node id`.
+- Unquoted `*` is expanded by the shell that sees it, before `sudo` runs. In
+  `ssh host 'sudo du -sh /root-only/*'` the remote zsh cannot read the directory
+  and fails with `no matches found`. Let the privileged shell expand it:
+  `ssh host 'sudo sh -c "du -sh /root-only/*"'`.
+- A glob that matches nothing is an error in zsh, not the literal pattern. Use
+  `(N)` (`for f in dir/*(N)`) or quote the pattern when it is meant for another
+  program.
+- When a command must behave like bash, run it as `bash -c '...'` instead of
+  rewriting it for zsh.
 
 ## Reference pattern
 
