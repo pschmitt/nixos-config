@@ -2967,11 +2967,11 @@
         "rbw-src": "rbw-src"
       },
       "locked": {
-        "lastModified": 1795617264,
-        "narHash": "sha256-cdkVAMeCiu0XbSQVTvgUgv3mBHl5lUi3p7PNLn5VYzw=",
+        "lastModified": 1795626729,
+        "narHash": "sha256-JUJrdramI3k2VJwE9AYdniNSe7BeIV5PT06U0LKUplw=",
         "owner": "pschmitt",
         "repo": "termuxpp",
-        "rev": "453c6f234b1654fedf885d248b296feb00d297f3",
+        "rev": "3e0724fee54d785e4360cdf2c50a28919c0bba14",
         "type": "github"
       },
       "original": {
