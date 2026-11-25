@@ -12,6 +12,7 @@ let
   dashboardPort = 9119;
   signalCliPort = 8712;
   hermesApiPort = 8642;
+  hermesHaMcpPort = 9585;
   signalCliDataDir = "${config.services.hermes-agent.stateDir}/.signal-cli";
   gpgHome = "${config.services.hermes-agent.stateDir}/.gnupg";
   ghConfigRoot = "${config.services.hermes-agent.stateDir}/.config/gh";
@@ -161,6 +162,7 @@ let
     text = ''
       config="${config.services.hermes-agent.stateDir}/.hermes/config.yaml"
       [[ -f "$config" ]] || exit 0
+      yq -i 'del(.mcp_servers."home-assistant".headers)' "$config"
       for name in ${lib.escapeShellArgs retiredMcpServers}
       do
         NAME="$name" yq -i 'del(.mcp_servers[strenv(NAME)])' "$config"
@@ -207,6 +209,7 @@ in
 {
   imports = [
     inputs.hermes-agent.nixosModules.default
+    ../modules/ha-mcp.nix
   ];
 
   security.sudo.extraRules = [
@@ -222,22 +225,8 @@ in
   ];
 
   sops = {
-    # `home-assistant/token` is the canonical Home Assistant token name. The
-    # Home Manager declaration reads it from each host's SOPS file and gives
-    # it to the logged-in user; this service declaration reads the shared
-    # copy only to render the root-owned Hermes environment file.
-    # `hermes/home-assistant/llat` is a separate LLAT stored in rofl-10's
-    # SOPS file and must be owned by the Hermes service account.
     secrets = {
       "n8n/mcp/token" = {
-        sopsFile = config.sops.defaultSopsFile;
-        mode = "0400";
-      };
-      "home-assistant/token" = {
-        sopsFile = config.sops.defaultSopsFile;
-        mode = "0400";
-      };
-      "home-assistant/mcp-url" = {
         sopsFile = config.sops.defaultSopsFile;
         mode = "0400";
       };
@@ -246,6 +235,7 @@ in
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
+      "hermes/home-assistant/mcp-path" = config.sops.mkHostSecret { mode = "0400"; };
       "hermes/matrix/password" = config.sops.mkHostSecret {
         mode = "0400";
       };
@@ -329,11 +319,26 @@ in
       };
     };
     templates = {
+      "hermes/ha-mcp-token.env" = {
+        content = ''
+          HOMEASSISTANT_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}
+        '';
+        mode = "0400";
+        restartUnits = [ "${config.virtualisation.oci-containers.backend}-ha-mcp-hermes.service" ];
+      };
+      "hermes/ha-mcp-path.env" = {
+        content = ''
+          MCP_SECRET_PATH=${config.sops.placeholder."hermes/home-assistant/mcp-path"}
+        '';
+        mode = "0400";
+        restartUnits = [ "${config.virtualisation.oci-containers.backend}-ha-mcp-hermes.service" ];
+      };
       "hermes/mcp.env" = {
         content = ''
           MCP_N8N_API_KEY=${config.sops.placeholder."n8n/mcp/token"}
-          MCP_HOME_ASSISTANT_API_KEY=${config.sops.placeholder."home-assistant/token"}
-          MCP_HOME_ASSISTANT_URL=${config.sops.placeholder."home-assistant/mcp-url"}
+          MCP_HERMES_HA_URL=http://127.0.0.1:${toString hermesHaMcpPort}${
+            config.sops.placeholder."hermes/home-assistant/mcp-path"
+          }
           HERMES_AGENT_HELP_GUIDANCE=For GitHub interactions, prefer the gh-brkn-lol account by default: use the github-gh-brkn-lol MCP server or gh-brkn-lol command. Use the github-pschmitt MCP server or gh-pschmitt command only when the pschmitt account is specifically needed; verify identity before account-sensitive actions and do not switch credentials without explicit instruction. For host Nix changes, initialize the checkout with hermes-nixos-init if ${hermesNixFlakeDir} is missing, edit that checkout, run nixos-rebuild dry-build --flake ${hermesNixFlakeDir}#rofl-10, then run hermes-nixos-apply to request the privileged switch.
           HASS_URL=https://ha.${config.domains.main}
           HASS_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}
@@ -396,6 +401,12 @@ in
   };
 
   services = {
+    ha-mcp.instances.hermes = {
+      homeAssistantUrl = "https://ha.${config.domains.main}";
+      tokenEnvironmentFile = config.sops.templates."hermes/ha-mcp-token.env".path;
+      serverEnvironmentFile = config.sops.templates."hermes/ha-mcp-path.env".path;
+      port = hermesHaMcpPort;
+    };
     hermes-agent = {
       enable = true;
       package = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
@@ -476,8 +487,7 @@ in
             timeout = 90;
           };
           home-assistant = {
-            url = "\${MCP_HOME_ASSISTANT_URL}";
-            headers.Authorization = "Bearer \${MCP_HOME_ASSISTANT_API_KEY}";
+            url = "\${MCP_HERMES_HA_URL}";
             connect_timeout = 30;
             timeout = 90;
           };
@@ -693,8 +703,14 @@ in
       };
 
       hermes-agent = {
-        after = [ "signal-cli-daemon.service" ];
-        wants = [ "signal-cli-daemon.service" ];
+        after = [
+          "${config.virtualisation.oci-containers.backend}-ha-mcp-hermes.service"
+          "signal-cli-daemon.service"
+        ];
+        wants = [
+          "${config.virtualisation.oci-containers.backend}-ha-mcp-hermes.service"
+          "signal-cli-daemon.service"
+        ];
         environment = {
           GNUPGHOME = gpgHome;
           SOPS_AGE_KEY_FILE = sopsAgeKeyFile;
