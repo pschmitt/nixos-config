@@ -591,7 +591,10 @@ def main():
         except (OSError, BrokenPipeError):
             return
 
-    streaming = not args.list and (args.pick or not args.selection)
+    search_term = (args.selection and not args.selection.isdigit()
+                   and ':' not in args.selection
+                   and not re.fullmatch(r'[0-9a-fA-F-]+', args.selection))
+    streaming = not args.list and (args.pick or not args.selection or search_term)
     sessions = []
     active = {}
     claims_by_owner = {}
@@ -619,9 +622,9 @@ def main():
     cwd_filter = args.cwd
     selection_filter = None
     selection_candidates = None
-    picker_query = None
+    picker_query = args.selection if search_term else None
     selected_row = None
-    if args.selection and not args.pick and not args.list:
+    if args.selection and not args.pick and not args.list and not streaming:
         if args.selection.isdigit() and 1 <= int(args.selection) <= len(sessions):
             selected_row = sessions[int(args.selection) - 1]
         else:
