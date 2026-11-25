@@ -25,14 +25,6 @@ let
       doCheck = false;
     };
 
-  cmp-bruvtab = plugin {
-    owner = "pschmitt";
-    repo = "cmp-bruvtab";
-    rev = "b6cb9f2eb6f80ca5c4631610e0aa5560525cca46";
-    hash = "sha256-g8gcUn7G8acFMHN2EE2erKA0zKH2U86UuBE3YxYdxzk=";
-    version = "0-unstable-2026-10-31";
-  };
-
   cmp-nerdfont = plugin {
     owner = "chrisgrieser";
     repo = "cmp-nerdfont";
@@ -43,11 +35,6 @@ let
 
   # nvim-cmp sources served through blink.compat
   compatSources = {
-    bruvtab.enabled = mkRaw ''
-      function()
-        return not require("utils").is_termux() and vim.fn.executable("bruvtab") == 1
-      end
-    '';
     digraphs = { };
     nerdfont = { };
     tmux = { };
@@ -55,7 +42,6 @@ let
 in
 {
   extraPlugins = [
-    cmp-bruvtab
     cmp-nerdfont
     pkgs.vimPlugins.cmp-digraphs
     pkgs.vimPlugins.cmp-tmux
@@ -138,10 +124,17 @@ in
             "buffer"
             "emoji"
             "omni"
+            "browser"
           ]
           ++ lib.attrNames compatSources;
 
           providers = {
+            browser = {
+              name = "Browser";
+              module = "config.browser-completion";
+              async = true;
+              score_offset = -3;
+            };
             emoji = {
               module = "blink-emoji";
               name = "Emoji";

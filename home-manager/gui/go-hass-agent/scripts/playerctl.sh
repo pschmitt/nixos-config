@@ -81,16 +81,10 @@ print(json.dumps(selected))
 PY
 }
 
-# A tab playing sound (also WebAudio, which has no MPRIS player): from the
-# local tab API, else from bruvtab. Both list objects with .title and .url.
-get_bruvtab_playing_json() {
-  local bruvtab_json
-  if browser_daemon_tabs_ready
-  then
-    bruvtab_json="$(browser-daemon tabs --local --json list --audible 2>/dev/null)" || return 1
-  else
-    bruvtab_json="$(bruvtab tabs --playing -j 2>/dev/null)" || return 1
-  fi
+# A tab playing sound, including WebAudio without an MPRIS player.
+get_browser_playing_json() {
+  local tabs
+  tabs="$(browser-daemon tabs --local --json --audible 2>/dev/null)" || return 1
 
   jq -cer '
     if length == 0 then
@@ -106,7 +100,7 @@ get_bruvtab_playing_json() {
         track_url: (.url // "")
       }
     end
-  ' <<< "$bruvtab_json"
+  ' <<< "$tabs"
 }
 
 get_active_player() {
@@ -199,7 +193,7 @@ main() {
     [[ -n "$play_state" ]] || play_state="unavailable"
   else
     local fallback_json=""
-    fallback_json="$(get_bruvtab_playing_json 2>/dev/null)" || true
+    fallback_json="$(get_browser_playing_json 2>/dev/null)" || true
     if [[ -z "$fallback_json" ]]; then
       fallback_json="$(get_mpris_player_json 2>/dev/null)" || true
     fi

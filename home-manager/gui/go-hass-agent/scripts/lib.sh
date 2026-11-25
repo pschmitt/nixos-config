@@ -153,48 +153,7 @@ hyprctl_wrapper() {
   command hyprctl "$@"
 }
 
-# Whether browser-daemon's local tab API has a browser connected: it answers
-# from memory in about a millisecond, bruvtab costs ~250 ms of CPU per call.
-browser_daemon_tabs_ready() {
-  command -v browser-daemon >/dev/null 2>&1 || return 1
-  [[ -n "$(browser-daemon nodes --local --json 2>/dev/null | jq -r '.browsers[]?.name')" ]]
-}
-
-# The browsers' tabs as `id<TAB>title<TAB>url` lines: from the local tab API,
-# else (no browser connected to it yet) from bruvtab.
+# The local browsers' tabs as id, title and URL, separated by tabs.
 browser_tab_list() {
-  local tabs
-  if tabs="$(browser-daemon tabs --local -o tsv 2>/dev/null)" && [[ -n "$tabs" ]]
-  then
-    printf '%s\n' "$tabs"
-    return 0
-  fi
-  bruvtab_list_cached
-}
-
-# `bruvtab list` costs ~250 ms of CPU and several 15s sensors (pp,
-# online-meeting) need it, so share one result for longer than their 15s
-# interval, or the two would never hit each other's cache. A race
-# between two sensors only costs one extra call.
-bruvtab_list_cached() {
-  local ttl="${BRUVTAB_LIST_CACHE_TTL:-20}"
-  local cache="${XDG_RUNTIME_DIR:-/tmp}/go-hass-agent-bruvtab-list"
-  local mtime
-
-  if mtime="$(stat -c %Y "$cache" 2>/dev/null)" && (( EPOCHSECONDS - mtime < ttl ))
-  then
-    cat "$cache"
-    return 0
-  fi
-
-  command -v bruvtab >/dev/null 2>&1 || return 1
-
-  local tmp="${cache}.$$"
-  if ! bruvtab list > "$tmp" 2>/dev/null
-  then
-    rm -f "$tmp"
-    return 1
-  fi
-  mv -f "$tmp" "$cache"
-  cat "$cache"
+  browser-daemon tabs --local -o tsv 2>/dev/null
 }

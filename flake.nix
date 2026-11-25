@@ -66,11 +66,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    bruvtab = {
-      url = "github:pschmitt/bruvtab";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     browser-daemon = {
       url = "github:pschmitt/browser-daemon";
       inputs = {

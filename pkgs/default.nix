@@ -81,7 +81,6 @@ in
   browser-daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
   # Personal tools pinned as flake inputs, also available through the additions overlay.
   bunq = inputs.bunq-sh.packages.${pkgs.stdenv.hostPlatform.system}.bunq;
-  bruvtab = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
   # Its Android build tools (aapt) support x86_64-linux, but not aarch64-linux:
   # say so, or CI tries to evaluate it there.
   declaroid =

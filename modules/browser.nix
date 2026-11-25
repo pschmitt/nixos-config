@@ -11,12 +11,6 @@ let
   rbwFirefoxAddon = rbwBrowserPackages.firefox-addon;
   rbwChromiumAddon = rbwBrowserPackages.chromium-addon;
   nodePackages = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system};
-  bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  bruvtabFirefoxAddon = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.firefoxAddon;
-  bruvtabChromeCrx = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.chromeCrx;
-  bruvtabChromeExtensionId =
-    (builtins.fromJSON (builtins.readFile "${inputs.bruvtab}/browser/packages/metadata.json"))
-    .chromiumId;
 in
 {
   options.dotfiles.desktop.browser = {
@@ -89,7 +83,6 @@ in
     userPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = [
-        bruvtabPkg
         pkgs.tor-browser
         inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
       ];
@@ -136,7 +129,6 @@ in
         default =
           with pkgs;
           [
-            bruvtabPkg
             rbwNativeHost
             fx-cast-bridge
             native-client
@@ -151,7 +143,6 @@ in
         default = with pkgs.firefox-addons; [
           auto-tab-discard
           bitwarden
-          bruvtabFirefoxAddon
           consent-o-matic
           don-t-fuck-with-paste
           external-application
@@ -392,7 +383,6 @@ in
       nativeMessagingHosts = lib.mkOption {
         type = lib.types.listOf lib.types.package;
         default = [
-          bruvtabPkg
           rbwNativeHost
         ]
         # The node extension's local tab API host.
@@ -416,11 +406,6 @@ in
             }
             {
               id = "nngceckbapebfimnlniiiahkandclblb";
-            }
-            {
-              id = bruvtabChromeExtensionId;
-              crxPath = "${bruvtabChromeCrx}/bruvtab.crx";
-              inherit (bruvtabPkg) version;
             }
             {
               id = "ddkjiahejlhfcafbddmgiahcphecmpfh";

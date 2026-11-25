@@ -124,36 +124,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1795608617,
-        "narHash": "sha256-Ko3R3xpmWeDYDrR5sxLjT80RzYDnOo80rC8RxIimLrQ=",
+        "lastModified": 1795616499,
+        "narHash": "sha256-T3yHEVZjQNFmAnWy6k7h4/J0t99VOs2MPAqfmo1AZVk=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "a42024aa83f791ff96e114825077734c13492874",
+        "rev": "b1d0acafe93379123076d9bc381600cd17593d5c",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "type": "github"
-      }
-    },
-    "bruvtab": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1795445637,
-        "narHash": "sha256-rQKoMkGav5HxAiyCgDYRlpfIA1/aXqlkvJ0CX/17C6M=",
-        "owner": "pschmitt",
-        "repo": "bruvtab",
-        "rev": "fb766acd063a4b07821a6eba4d83081d02adc471",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pschmitt",
-        "repo": "bruvtab",
         "type": "github"
       }
     },
@@ -2459,7 +2439,6 @@
         "ai-memory": "ai-memory",
         "anika-blue": "anika-blue",
         "browser-daemon": "browser-daemon",
-        "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
         "circus": "circus",
         "codex-ha-bridge": "codex-ha-bridge",

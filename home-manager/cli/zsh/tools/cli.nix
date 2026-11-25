@@ -3,7 +3,6 @@
 {
   imports = [
     ./adb.nix
-    ./bruvtab.nix
     ./fd.nix
     ./jq.nix
     ./ketall.nix
