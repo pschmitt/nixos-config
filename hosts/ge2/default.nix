@@ -4,6 +4,7 @@
     ../../profiles/features/work/elgato-stream-deck.nix
     ../../profiles/specializations/workstation
 
+    ./audio.nix
     ./boot.nix
     ./crash-diagnostics.nix
     ./falcon-sensor-vm.nix
