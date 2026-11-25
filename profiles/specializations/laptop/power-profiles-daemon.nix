@@ -12,16 +12,7 @@ let
   batteryProfileVariable =
     profile: "TDP_BATTERY_PROFILE_${lib.toUpper (lib.replaceStrings [ "-" ] [ "_" ] profile)}";
 
-  profileLimits =
-    profile:
-    lib.concatStringsSep " " (
-      map toString [
-        profile.stapmLimit
-        profile.fastLimit
-        profile.slowLimit
-        profile.apuSlowLimit
-      ]
-    );
+  profileLimits = profile: lib.concatStringsSep " " (map toString (lib.replicate 4 (profile * 1000)));
 
   ppdReactConfig = pkgs.writeText "ppd-react.conf" (
     lib.concatStringsSep "\n" (
@@ -40,23 +31,27 @@ let
         cfg.tdp.enable && cfg.tdp.command != null
       ) "TDP_COMMAND=${lib.escapeShellArg (toString cfg.tdp.command)}"
       ++ [
-        "BATTERY_BRIGHTNESS_PERCENT=${toString cfg.brightness.batteryPercent}"
-        "CONNECTED_MINIMUM_BRIGHTNESS_PERCENT=${toString cfg.brightness.connectedMinimumPercent}"
+        "BATTERY_BRIGHTNESS_PERCENT=${toString cfg.defaults.brightness}"
+        "CONNECTED_MINIMUM_BRIGHTNESS_PERCENT=${toString cfg.defaults.connectedMinimumBrightness}"
       ]
-      ++ lib.mapAttrsToList (
-        name: value:
-        "BRIGHTNESS_BATTERY_${lib.toUpper (lib.replaceStrings [ "-" ] [ "_" ] name)}=${toString value}"
-      ) cfg.brightness.batteryProfiles
-      ++ lib.mapAttrsToList (
-        name: value:
-        "BRIGHTNESS_CONNECTED_${lib.toUpper (lib.replaceStrings [ "-" ] [ "_" ] name)}=${toString value}"
-      ) cfg.brightness.connectedProfiles
-      ++ lib.mapAttrsToList (
-        name: profile: "${profileVariable name}=${lib.escapeShellArg (profileLimits profile)}"
-      ) cfg.tdp.profiles
-      ++ lib.mapAttrsToList (
-        name: profile: "${batteryProfileVariable name}=${lib.escapeShellArg (profileLimits profile)}"
-      ) cfg.tdp.batteryProfiles
+      ++ lib.concatLists (
+        lib.mapAttrsToList (
+          name: profile:
+          let
+            key = lib.toUpper (lib.replaceStrings [ "-" ] [ "_" ] name);
+          in
+          lib.optional (profile.brightness != null) "BRIGHTNESS_BATTERY_${key}=${toString profile.brightness}"
+          ++ lib.optional (
+            profile.connectedMinimumBrightness != null
+          ) "BRIGHTNESS_CONNECTED_${key}=${toString profile.connectedMinimumBrightness}"
+          ++ lib.optional (
+            profile.tdp != null
+          ) "${profileVariable name}=${lib.escapeShellArg (profileLimits profile.tdp)}"
+          ++ lib.optional (
+            profile.batteryTdp != null
+          ) "${batteryProfileVariable name}=${lib.escapeShellArg (profileLimits profile.batteryTdp)}"
+        ) cfg.profiles
+      )
     )
     + "\n"
   );

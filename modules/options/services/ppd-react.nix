@@ -1,26 +1,4 @@
 { lib, ... }:
-let
-  tdpProfile = lib.types.submodule {
-    options = {
-      stapmLimit = lib.mkOption {
-        type = lib.types.ints.between 1000 1000000;
-        description = "STAPM limit in milliwatts.";
-      };
-      fastLimit = lib.mkOption {
-        type = lib.types.ints.between 1000 1000000;
-        description = "Fast PPT limit in milliwatts.";
-      };
-      slowLimit = lib.mkOption {
-        type = lib.types.ints.between 1000 1000000;
-        description = "Slow PPT limit in milliwatts.";
-      };
-      apuSlowLimit = lib.mkOption {
-        type = lib.types.ints.between 1000 1000000;
-        description = "APU slow PPT limit in milliwatts.";
-      };
-    };
-  };
-in
 {
   options.services.ppd-react = {
     enable = lib.mkEnableOption "power-profiles-daemon integration service" // {
@@ -63,27 +41,48 @@ in
       description = "User-level systemd units to resume, if previously active, when leaving power-saver.";
     };
 
-    brightness = {
-      batteryPercent = lib.mkOption {
+    defaults = {
+      brightness = lib.mkOption {
         type = lib.types.ints.between 0 100;
         default = 30;
-        description = "Display brightness percentage on battery, unless overridden by the active profile.";
+        description = "Battery brightness percentage when the profile has no override.";
       };
-      batteryProfiles = lib.mkOption {
-        type = lib.types.attrsOf (lib.types.ints.between 0 100);
-        default = { };
-        description = "Battery brightness percentages keyed by power profile.";
-      };
-      connectedMinimumPercent = lib.mkOption {
+      connectedMinimumBrightness = lib.mkOption {
         type = lib.types.ints.between 0 100;
         default = 50;
-        description = "Minimum display brightness on external power, unless overridden by the active profile.";
+        description = "Minimum brightness on external power when the profile has no override.";
       };
-      connectedProfiles = lib.mkOption {
-        type = lib.types.attrsOf (lib.types.ints.between 0 100);
-        default = { };
-        description = "Minimum external-power brightness percentages keyed by power profile.";
-      };
+    };
+
+    profiles = lib.mkOption {
+      type = lib.types.attrsOf (
+        lib.types.submodule {
+          options = {
+            tdp = lib.mkOption {
+              type = lib.types.nullOr (lib.types.ints.between 1 1000);
+              default = null;
+              description = "TDP in watts for all limits, used on external power and as the battery fallback.";
+            };
+            batteryTdp = lib.mkOption {
+              type = lib.types.nullOr (lib.types.ints.between 1 1000);
+              default = null;
+              description = "Optional battery TDP in watts for all limits.";
+            };
+            brightness = lib.mkOption {
+              type = lib.types.nullOr (lib.types.ints.between 0 100);
+              default = null;
+              description = "Display brightness percentage on battery.";
+            };
+            connectedMinimumBrightness = lib.mkOption {
+              type = lib.types.nullOr (lib.types.ints.between 0 100);
+              default = null;
+              description = "Minimum display brightness percentage on external power.";
+            };
+          };
+        }
+      );
+      default = { };
+      description = "TDP and brightness settings keyed by power profile.";
     };
 
     tdp = {
@@ -94,19 +93,6 @@ in
         default = null;
         description = "Command accepting ryzenadj-style TDP limit arguments.";
       };
-
-      profiles = lib.mkOption {
-        type = lib.types.attrsOf tdpProfile;
-        default = { };
-        description = "TDP limits keyed by power-profiles-daemon profile name.";
-      };
-
-      batteryProfiles = lib.mkOption {
-        type = lib.types.attrsOf tdpProfile;
-        default = { };
-        description = "TDP limits keyed by power-profiles-daemon profile name while on battery.";
-      };
-
     };
   };
 }
