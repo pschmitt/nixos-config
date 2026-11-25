@@ -186,6 +186,8 @@ in
     terminal-triple-tap-action = "send-keys";
     terminal-triple-tap-keys = "CTRL SHIFT F12";
     terminal-triple-tap-command = "ssh::tmux f";
+    # The active tmux window as a filled accent pill.
+    terminal-tmux-sidebar-style = "rounded";
     # Swiping right with two fingers opens the session sidebar.
     terminal-2-finger-swipe-right-action = "open-sidebar";
     terminal-onclick-url-open = true;
