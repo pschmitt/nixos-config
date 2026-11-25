@@ -2936,11 +2936,11 @@
     "teams-auth-source": {
       "flake": false,
       "locked": {
-        "lastModified": 1795307370,
-        "narHash": "sha256-mQpNIYQMis7NRaJOjTK746fL594Y8/jcD+nXn9FlUBA=",
+        "lastModified": 1795597206,
+        "narHash": "sha256-H8rW71YPRoSiU8tXoVCdyCWEowVovJWTxv9h2sm0mIc=",
         "owner": "pschmitt",
         "repo": "homeassistant-msteams",
-        "rev": "60cd96deb9c481dfe0bb95de87313d6d1e8a197f",
+        "rev": "f6cf2f29f27adb176a0d1ef514b0cd71b161478c",
         "type": "github"
       },
       "original": {
