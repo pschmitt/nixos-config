@@ -2936,11 +2936,11 @@
     "teams-auth-source": {
       "flake": false,
       "locked": {
-        "lastModified": 1795597206,
-        "narHash": "sha256-H8rW71YPRoSiU8tXoVCdyCWEowVovJWTxv9h2sm0mIc=",
+        "lastModified": 1795599062,
+        "narHash": "sha256-kuh0x52ilSWBy2Kp4+j4oxD09oIKTT/rqVD1c+6tNgQ=",
         "owner": "pschmitt",
         "repo": "homeassistant-msteams",
-        "rev": "f6cf2f29f27adb176a0d1ef514b0cd71b161478c",
+        "rev": "54cec0cd67b33a333230a5022c73c4a81c3c5e19",
         "type": "github"
       },
       "original": {
@@ -2965,11 +2965,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795596533,
-        "narHash": "sha256-OHccWsEZ0VG1n5CXsVMlmLE11IHkMPY0wmUGgjkG6W0=",
+        "lastModified": 1795599090,
+        "narHash": "sha256-Oqmb/30ar1V1My+9oEa1Z5/ciotKG45/IqN3c9CNYJs=",
         "owner": "pschmitt",
         "repo": "teams-live",
-        "rev": "c118ed83329d6b97e90cf2ab417d6829c490bedf",
+        "rev": "c81ca6767bb160b6d0589149b7c3bae3f4fb8843",
         "type": "github"
       },
       "original": {

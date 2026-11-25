@@ -92,6 +92,7 @@ in
         browser_daemon = {
           url = "https://browser.fnuc.nb.brkn.lol";
           profile = "ha-msteams";
+          node_group = "cloud";
           secret_file = secrets."browser-daemon/cluster-secret".path;
         };
 
