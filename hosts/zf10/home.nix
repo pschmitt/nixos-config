@@ -16,4 +16,7 @@
       wrapProgram "$out/bin/fzf" --set GOMAXPROCS 1
     '';
   };
+
+  # A double tap on the terminal opens the session sidebar.
+  nixpp.properties.terminal-double-tap-action = "open-sidebar";
 }

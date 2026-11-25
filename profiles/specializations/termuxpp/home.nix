@@ -186,6 +186,8 @@ in
     terminal-triple-tap-action = "send-keys";
     terminal-triple-tap-keys = "CTRL SHIFT F12";
     terminal-triple-tap-command = "ssh::tmux f";
+    # Swiping right with two fingers opens the session sidebar.
+    terminal-2-finger-swipe-right-action = "open-sidebar";
     terminal-onclick-url-open = true;
     create-session-on-single-session-switch = true;
     terminal-toast-position = "top-right";
