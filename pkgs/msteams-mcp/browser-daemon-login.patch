@@ -1,6 +1,6 @@
 diff --git a/src/auth/browser-daemon.test.ts b/src/auth/browser-daemon.test.ts
 new file mode 100644
-index 0000000..d25a976
+index 0000000..b300060
 --- /dev/null
 +++ b/src/auth/browser-daemon.test.ts
 @@ -0,0 +1,128 @@
@@ -134,7 +134,7 @@ index 0000000..d25a976
 +});
 diff --git a/src/auth/browser-daemon.ts b/src/auth/browser-daemon.ts
 new file mode 100644
-index 0000000..c2dd002
+index 0000000..38f93e5
 --- /dev/null
 +++ b/src/auth/browser-daemon.ts
 @@ -0,0 +1,315 @@
@@ -454,7 +454,7 @@ index 0000000..c2dd002
 +  }
 +}
 diff --git a/src/auth/token-refresh.ts b/src/auth/token-refresh.ts
-index f30f450..7adb157 100644
+index 1f51fd2..12a66bb 100644
 --- a/src/auth/token-refresh.ts
 +++ b/src/auth/token-refresh.ts
 @@ -2,7 +2,8 @@
@@ -477,12 +477,11 @@ index f30f450..7adb157 100644
  import { refreshTokensViaHttp, type OnDemandResource } from './token-refresh-http.js';
  import { createBrowserContext, closeBrowser } from '../browser/context.js';
  import { ensureAuthenticated } from '../browser/auth.js';
-@@ -91,8 +93,49 @@ async function refreshCoreTokens(): Promise<Result<void>> {
-     ? 'HTTP refresh reported success but no valid Substrate token found, falling back to browser'
-     : `HTTP refresh failed: ${httpResult.error.message}, falling back to browser (session cookies may still be valid)`);
+@@ -92,12 +94,53 @@ async function refreshCoreTokens(): Promise<Result<void>> {
+     : `HTTP refresh failed: ${httpResult.error.message}`;
+   log.warn('token-refresh', `Falling back to browser after HTTP refresh: ${httpFailure}`);
  
 -  // ── Strategy 2: Browser refresh (fallback) ──────────────────────────
--  return refreshViaHeadlessBrowser();
 +  // ── Strategy 2: Teams login of a browser-daemon profile ─────────────
 +  let daemonFailure: Awaited<ReturnType<typeof signInViaBrowserDaemon>> | undefined;
 +  if (browserDaemonConfig()) {
@@ -492,11 +491,13 @@ index f30f450..7adb157 100644
 +  }
 +
 +  // ── Strategy 3: Browser refresh (fallback) ──────────────────────────
-+  const browserResult = await refreshViaHeadlessBrowser();
+   const browser = await refreshViaHeadlessBrowser();
+   if (browser.ok) return browser;
 +  // A local browser rarely exists where a daemon is configured; its error would hide the real one
-+  return browserResult.ok || !daemonFailure ? browserResult : daemonFailure;
-+}
-+
++  if (daemonFailure) return daemonFailure;
+   return err({ ...browser.error, message: `${httpFailure}\n${browser.error.message}` });
+ }
+ 
 +/**
 + * Replaces the session with the Teams login of the configured browser-daemon
 + * profile, then mints the tokens Teams had not cached yet.
@@ -526,45 +527,47 @@ index f30f450..7adb157 100644
 +      { suggestions: [`Sign in to Teams in the browser-daemon profile "${config.profile}", then retry the original request`] },
 +    ));
 +  }
- }
- 
++}
++
  /**
+  * Opens a headless browser with the persistent profile and lets MSAL
+  * silently refresh tokens using its session cookies.
 diff --git a/src/server.ts b/src/server.ts
-index c8d5682..90554f7 100644
+index 1f0deab..73492a3 100644
 --- a/src/server.ts
 +++ b/src/server.ts
-@@ -27,6 +27,7 @@ import {
-   extractCsaToken,
-   getUserProfile,
- } from './auth/token-extractor.js';
+@@ -23,6 +23,7 @@ import {
+ } from './auth/session-store.js';
+ import { getUserProfile } from './auth/token-extractor.js';
+ import { getAuthCapabilities } from './tools/auth-tools.js';
 +import { browserDaemonConfig } from './auth/browser-daemon.js';
  import { refreshTokensViaBrowser } from './auth/token-refresh.js';
  
  // API modules
-@@ -251,6 +252,8 @@ export class TeamsServer {
+@@ -232,6 +233,8 @@ export class TeamsServer {
+           }
  
-           // Auto-login failed — return a strongly-worded error directing to forceNew
-           log.error('auto-login', 'Automatic re-authentication failed.');
+           log.error('auto-login', refresh.error.message);
 +          // The refresh error already says what to do when a browser-daemon profile is the way in
 +          if (browserDaemonConfig()) return this.formatError(refresh.error);
-           return this.formatError(createError(
-             ErrorCode.AUTH_REQUIRED,
-             'ACTION REQUIRED: Teams session has expired and automatic re-authentication failed. You MUST call teams_login with forceNew: true to clear stale state and re-authenticate. Do NOT call teams_login without forceNew — it will return early without fixing the problem.',
+           return this.formatError({
+             ...result.error,
+             message: `${result.error.message} Automatic re-authentication failed: ${refresh.error.message}`,
 diff --git a/src/tools/auth-tools.ts b/src/tools/auth-tools.ts
-index 016c571..83b051f 100644
+index 0918c1a..0a41ec1 100644
 --- a/src/tools/auth-tools.ts
 +++ b/src/tools/auth-tools.ts
 @@ -23,6 +23,8 @@ import {
-   extractSkypeSpacesToken,
  } from '../auth/token-extractor.js';
+ import { createError, ErrorCode } from '../types/errors.js';
  import { refreshTokensViaHttp } from '../auth/token-refresh-http.js';
 +import { signInViaBrowserDaemon } from '../auth/token-refresh.js';
 +import { browserDaemonConfig } from '../auth/browser-daemon.js';
  import { createBrowserContext, closeBrowser } from '../browser/context.js';
  import * as log from '../utils/logger.js';
  import { resetAssignmentsAvailability, clearRegionCache } from '../utils/auth-guards.js';
-@@ -97,6 +99,26 @@ async function fillCoreCredentialGaps(): Promise<void> {
-   }
+@@ -108,6 +110,22 @@ async function finishLogin(message: string, tokenStatus?: ReturnType<typeof getS
+   return { success: true, data: { message, ...data } };
  }
  
 +/**
@@ -580,17 +583,13 @@ index 016c571..83b051f 100644
 +    return null;
 +  }
 +
-+  await fillCoreCredentialGaps();
-+  return {
-+    success: true,
-+    data: { message: 'Login completed from the browser-daemon profile. Session has been saved.' },
-+  };
++  return finishLogin('Login completed from the browser-daemon profile. Session has been saved.');
 +}
 +
  async function handleLogin(
    input: z.infer<typeof LoginInputSchema>,
  ): Promise<ToolResult> {
-@@ -108,7 +130,7 @@ async function handleLogin(
+@@ -119,7 +137,7 @@ async function handleLogin(
      // earlier account can survive to be mixed into the new login.
      clearAllLocalData();
      clearRegionCache();
@@ -599,8 +598,8 @@ index 016c571..83b051f 100644
    }
  
    // Fast path: if tokens are still valid, skip browser entirely
-@@ -127,6 +149,9 @@ async function handleLogin(
-     };
+@@ -128,6 +146,9 @@ async function handleLogin(
+     return finishLogin(`Already authenticated. Token valid for ${tokenStatus.minutesRemaining} more minutes.`, tokenStatus);
    }
  
 +  const daemonLogin = await loginViaDaemon();

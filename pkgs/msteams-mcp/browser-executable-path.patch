@@ -1,8 +1,8 @@
 diff --git a/src/browser/context.ts b/src/browser/context.ts
-index 63aafeb..3429b04 100644
+index 054cd16..872f4c0 100644
 --- a/src/browser/context.ts
 +++ b/src/browser/context.ts
-@@ -113,6 +113,12 @@ function cleanupStaleSingletonLock(): boolean {
+@@ -119,6 +119,12 @@ function cleanupStaleSingletonLock(): boolean {
    return false;
  }
  
@@ -12,15 +12,18 @@ index 63aafeb..3429b04 100644
 + */
 +const BROWSER_EXECUTABLE = process.env.TEAMS_MCP_BROWSER_PATH || undefined;
 +
- /**
-  * Determines the browser channel to use based on the platform.
-  * - Windows: Use Microsoft Edge (always installed on Windows 10+)
-@@ -157,7 +163,7 @@ export async function createBrowserContext(
-   const launchBrowser = async (): Promise<BrowserManager> => {
-     const context = await chromium.launchPersistentContext(BROWSER_PROFILE_DIR, {
-       headless,
--      channel,
-+      ...(BROWSER_EXECUTABLE ? { executablePath: BROWSER_EXECUTABLE } : { channel }),
-       viewport: { width: 1280, height: 800 },
-       acceptDownloads: false,
-     });
+ export type BrowserChoice = 'chrome' | 'msedge' | 'firefox';
+ 
+ const BROWSER_CHOICES: readonly BrowserChoice[] = ['chrome', 'msedge', 'firefox'];
+@@ -194,7 +200,10 @@ export async function createBrowserContext(
+     };
+     const context = isFirefox
+       ? await firefox.launchPersistentContext(FIREFOX_PROFILE_DIR, options)
+-      : await chromium.launchPersistentContext(BROWSER_PROFILE_DIR, { ...options, channel: browser });
++      : await chromium.launchPersistentContext(BROWSER_PROFILE_DIR, {
++          ...options,
++          ...(BROWSER_EXECUTABLE ? { executablePath: BROWSER_EXECUTABLE } : { channel: browser }),
++        });
+ 
+     // Persistent contexts start with one page; use it or create one
+     const page = context.pages()[0] ?? await context.newPage();
