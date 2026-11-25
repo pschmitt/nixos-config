@@ -15,7 +15,8 @@ let
         description = "Start this guest service when a Nix guest session opens.";
       };
       command = mkOption {
-        type = types.nonEmptyListOf types.str;
+        type = types.listOf types.str;
+        default = [ ];
         description = "Executable and arguments to run under supervision.";
       };
       environment = mkOption {
@@ -58,6 +59,7 @@ let
       };
     };
   };
+  guestServices = removeAttrs services [ "adb-shell" ];
   serviceDirectories = lib.mapAttrs (
     name: service:
     let
@@ -88,6 +90,10 @@ let
         notification=${if notify then "true" else "false"}
         settings=/run/nixpp-runtime/service-state/settings.json
         if [ -r "$settings" ]; then
+          ${lib.optionalString (service.notification == null) ''
+            global=$(${pkgs.jq}/bin/jq -r 'if ._defaults | type == "object" and has("notification") then ._defaults.notification else empty end' "$settings" 2>/dev/null || true)
+            case "$global" in true|false) notification=$global ;; esac
+          ''}
           override=$(${pkgs.jq}/bin/jq -r --arg name ${lib.escapeShellArg name} 'if .[$name] | type == "object" and has("notification") then .[$name].notification else empty end' "$settings" 2>/dev/null || true)
           case "$override" in true|false) notification=$override ;; esac
         fi
@@ -114,13 +120,13 @@ let
       install -m 0755 ${finish} "$out/finish"
       install -m 0755 ${logRun} "$out/log/run"
     ''
-  ) services;
+  ) guestServices;
   manifest = (pkgs.formats.json { }).generate "nixpp-services.json" (
     lib.mapAttrs (name: service: {
       enabled = service.enable;
       inherit (service) allowedSsids allowedSsidsFile;
       directory = toString serviceDirectories.${name};
-    }) services
+    }) guestServices
   );
   serviceCommand = pkgs.writeShellApplication {
     name = "svc";
@@ -154,12 +160,26 @@ in
             message = "services.${name} must use a valid service name";
           }
           {
-            assertion = lib.hasPrefix "/" (builtins.head service.command);
-            message = "services.${name}.command must use an absolute executable path";
+            assertion =
+              name == "adb-shell"
+              || (service.command != [ ] && lib.hasPrefix "/" (builtins.head service.command));
+            message = "services.${name}.command must be nonempty and use an absolute executable path";
           }
           {
-            assertion = name != "adb-shell";
-            message = "adb-shell belongs to the TermuxPP app; restrict it with nixpp.adbShell.allowedSsids";
+            assertion = name != "adb-shell" || service.command == [ ];
+            message = "adb-shell is managed by the TermuxPP app and cannot have a guest command";
+          }
+          {
+            assertion =
+              name != "adb-shell"
+              || (
+                service.enable
+                && service.environment == { }
+                && service.workingDirectory == null
+                && service.allowedSsids == [ ]
+                && service.allowedSsidsFile == null
+              );
+            message = "services.adb-shell only supports notification; use nixpp.adbShell for network settings";
           }
           {
             assertion = lib.all (ssid: ssid != "" && !(lib.hasInfix "," ssid)) service.allowedSsids;
@@ -180,7 +200,23 @@ in
         }) service.environment
       ) services
     );
-    environment.systemPackages = [ serviceCommand ];
-    environment.etc."nixpp/services.json".source = manifest;
+    environment = {
+      systemPackages = [ serviceCommand ];
+      etc = {
+        "nixpp/services.json".source = manifest;
+        "nixpp/service-notification-default".text =
+          if config.nixpp.serviceNotifications.enable then "true\n" else "false\n";
+        "nixpp/adb-shell-notification".text =
+          let
+            notification = if services ? adb-shell then services.adb-shell.notification else null;
+          in
+          if notification == null then
+            "inherit\n"
+          else if notification then
+            "true\n"
+          else
+            "false\n";
+      };
+    };
   };
 }

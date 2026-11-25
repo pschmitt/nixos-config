@@ -398,6 +398,14 @@ main() {
     then
       mv -f -- "$runtime/.manifest.json.$$" "$runtime/manifest.json" || rm -f -- "$runtime/.manifest.json.$$"
     fi
+    if cp -- "${NIXPP_SVC_NOTIFICATION_DEFAULT:-/etc/nixpp/service-notification-default}" "$runtime/.notification-default.$$" 2>/dev/null
+    then
+      mv -f -- "$runtime/.notification-default.$$" "$runtime/notification-default" || rm -f -- "$runtime/.notification-default.$$"
+    fi
+    if cp -- "${NIXPP_SVC_ADB_NOTIFICATION:-/etc/nixpp/adb-shell-notification}" "$runtime/.notification-adb-shell.$$" 2>/dev/null
+    then
+      mv -f -- "$runtime/.notification-adb-shell.$$" "$runtime/notification-adb-shell" || rm -f -- "$runtime/.notification-adb-shell.$$"
+    fi
     if [[ -r $runtime/system-generation ]]
     then
       IFS= read -r old_generation < "$runtime/system-generation"
