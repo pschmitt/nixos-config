@@ -135,7 +135,6 @@ in
       (execBind "SUPER + SHIFT + s" "walker-menu soundboard stop")
       (execBind "SUPER + SHIFT + H" "noctalia msg panel-toggle pschmitt/ha:panel")
 
-      (execBind "SUPER + numbersign" "waypoint")
       (bind "SUPER + ALT + R" ''hl.dsp.submap("${resizeSubmap}")'')
 
       # ── Media / brightness (locked = works on the lock screen) ────────

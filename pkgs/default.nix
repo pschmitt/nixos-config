@@ -157,7 +157,6 @@ in
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   todoist-cli = pkgs.callPackage ./todoist-cli { };
   todoist-mcp = pkgs.callPackage ./todoist-mcp { };
-  waypoint = pkgs.callPackage ./waypoint { };
   inherit (zsh-tools)
     kubectl-ksh
     kubectl-socks5-proxy
