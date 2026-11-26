@@ -287,31 +287,19 @@
   # Remove  icon before dirs by not setting a generic catch-all dir class
   # More "adult" emojis available at https://www.emojicopy.com/ (search term: "japan")
   # 🏯🌋🗻🏣🏩🗾🎑🍤🍙🍚🍵🉐🈲🈹🈵💠🈳🈯🎴⛩️🥢
-  # Named directories (hash -d) only exist on hosts that have the directory:
-  # only add a class when its named directory is defined, otherwise zsh fails
-  # to expand the pattern on every prompt ("no such user or named directory").
-  typeset -g POWERLEVEL9K_DIR_CLASSES=()
-  local _p10k_class_pattern _p10k_class_name _p10k_class_icon
-  for _p10k_class_pattern _p10k_class_name _p10k_class_icon in \
-    "~hypr(|/*)" HYPR '󰯌' \
-    "~ssh(|/*)" SSH '👺' \
-    "~tmp(|/*)" TMP '' \
-    "~tmx(|/*)" TMX '' \
-    "~vim(|/*)" VIM '' \
-    "~zpl(|/*)" ZPL '🍱' \
-    "~zsh(|/*)" ZSH '🎴' \
-    "~zsh/zinit(|/*)" ZINIT '👘' \
-    "~p(|/*)" PRV '🎳' \
+  # The named directories come from programs.zsh.dirHashes (config/directories.nix)
+  # and exist on every host; ~tmp is hashed at runtime before this file loads.
+  typeset -g POWERLEVEL9K_DIR_CLASSES=(
+    "~hypr(|/*)" HYPR '󰯌'
+    "~ssh(|/*)" SSH '👺'
+    "~tmp(|/*)" TMP ''
+    "~tmx(|/*)" TMX ''
+    "~vim(|/*)" VIM ''
+    "~zpl(|/*)" ZPL '🍱'
+    "~zsh(|/*)" ZSH '🎴'
+    "~p(|/*)" PRV '🎳'
     "~w(|/*)" WRK '🏢'
-  do
-    if hash -d "${${_p10k_class_pattern#\~}%%[/(]*}" &>/dev/null
-    then
-      POWERLEVEL9K_DIR_CLASSES+=(
-        "$_p10k_class_pattern" "$_p10k_class_name" "$_p10k_class_icon"
-      )
-    fi
-  done
-  unset _p10k_class_pattern _p10k_class_name _p10k_class_icon
+  )
 
   typeset -g POWERLEVEL9K_DIR_DOCKER_SWARM_VISUAL_IDENTIFIER_EXPANSION='🐳'
   typeset -g POWERLEVEL9K_DIR_DOCKER_SWARM_NOT_WRITABLE_VISUAL_IDENTIFIER_EXPANSION="${POWERLEVEL9K_DIR_DOCKER_SWARM_VISUAL_IDENTIFIER_EXPANSION} ${POWERLEVEL9K_LOCK_ICON}"

@@ -33,24 +33,7 @@ in
       autoload -Uz manydots-magic
       manydots-magic
 
-      # OSC 7
-      function __osc7-pwd() {
-        emulate -L zsh # also sets localoptions for us
-        setopt extendedglob
-        local LC_ALL=C
-        # FIXME Below is supposed to leverage named dirs (ie: ~c for ~/.config) but it
-        # does not really work in wezterm (no path displayed and the hostname gets an
-        # extra '~' appended to it for some reason)
-        # local cwd="''${(z)$(print -P "%~")[1]}"
-        printf '\e]7;file://%s%s\e\' $HOST ''${PWD//(#m)([^@-Za-z&-;_~])/%''${(l:2::0:)$(([##16]#MATCH))}}
-      }
-
-      function __chpwd-osc7-pwd() {
-        (( ZSH_SUBSHELL )) || __osc7-pwd
-      }
-      __chpwd-osc7-pwd  # execute right away
-      # add-zsh-hook -Uz chpwd __chpwd-osc7-pwd
-      chpwd_functions+=(__chpwd-osc7-pwd)
+      ${builtins.readFile ../../../../../home-manager/cli/zsh/shared/osc7.zsh}
 
       # This little snippets sets TERM to TERM_SSH_CLIENT which holds the ssh
       # client's TERM value. It is sent by the ssh::fix-term zsh func.
@@ -60,17 +43,7 @@ in
           ;;
       esac
 
-      zmodload zsh/terminfo
-      terminfo_bind() {
-        local key="$1"
-        local func="$2"
-        if [[ -n "''${terminfo[$key]}" ]]
-        then
-          bindkey "''${terminfo[$key]}" "$func"
-          return 0
-        fi
-        return 1
-      }
+      ${builtins.readFile ../../../../../home-manager/cli/zsh/shared/bindkeys.zsh}
 
       # remove slash ("/") from what zsh considers a "word" character,
       # so backward-kill-word will stop at each /
@@ -95,17 +68,6 @@ in
       # For Termux, since we are often ssh'ing through an intermediary host
       bindkey "^[OH"    beginning-of-line # Home
       bindkey "^[OF"    end-of-line       # End
-
-      # Undo/Redo
-      bindkey '^[z' undo  # alt-z
-      bindkey '^[y' redo  # alt-y
-      bindkey "^[m" copy-prev-shell-word # alt-m
-
-      # ctrl-e to edit current line in editor
-      autoload -Uz edit-command-line
-      zle -N edit-command-line
-      bindkey '\C-e' edit-command-line
-      bindkey '^E' edit-command-line
     '';
   };
 }

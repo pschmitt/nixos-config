@@ -31,8 +31,6 @@ let
     ansible = "${privateDevel}/ansible-stuff.git";
     zpl = "${config.xdg.configHome}/zsh/plugins/local";
     zsh = "${config.xdg.configHome}/zsh";
-  };
-  staticDirectories = {
     turris = "/mnt/turris";
     trs = "/mnt/turris";
     home-assistant = "/mnt/ha";
@@ -40,64 +38,32 @@ let
     hass = "/mnt/ha";
     ha = "/mnt/ha";
   };
-  directoryRegistrations = lib.concatMapStringsSep "\n" (name: ''
-    hashdir-if-exists ${lib.escapeShellArg directories.${name}} ${lib.escapeShellArg name}
-  '') (builtins.attrNames directories);
 in
 {
   programs.zsh = {
-    # Keep these shared locations as defaults so a host module can replace
-    # paths that differ on that machine.
-    dirHashes = lib.mapAttrs (_: value: lib.mkDefault value) staticDirectories;
-    shellAliases = lib.mapAttrs' (name: directory: {
-      name = "cd${name}";
-      value = lib.mkDefault "cd ${lib.escapeShellArg directory}";
-    }) staticDirectories;
+    # Named directories (~nix, ~zpl, ...) and their cd<name> aliases. Defaults,
+    # so a host module can replace paths that differ on that machine.
+    dirHashes = lib.mapAttrs (_: lib.mkDefault) directories;
+    shellAliases = lib.mapAttrs' (
+      name: directory: lib.nameValuePair "cd${name}" (lib.mkDefault "cd ${lib.escapeShellArg directory}")
+    ) directories;
 
+    # Only known at runtime. Before p10k.zsh (order 891), whose dir classes
+    # use ~tmp.
     initContent = lib.mkOrder 610 ''
-      hashdir() {
-        local directory="$1"
-        shift
-
-        local -a names
-        if [[ -z "''${1:-}" ]]
-        then
-          names=("''${directory:t}")
-        else
-          names=("''${(@s/,/)@}")
-        fi
-
-        local name
-        for name in "''${names[@]}"
+      () {
+        local name directory
+        local -a firefox_profiles=("$HOME/.mozilla/firefox"/*default(N/))
+        for name directory in \
+          tmp "''${TMPDIR:-/tmp}" \
+          pref "''${PREFIX:-}" \
+          ffx "''${firefox_profiles[1]:-}"
         do
+          [[ -n "$directory" && -d "$directory" ]] || continue
           hash -d "$name=$directory"
           alias "cd$name=cd ''${(q)directory}"
         done
       }
-
-      hashdir-if-exists() {
-        local directory="$1"
-        shift
-        [[ -n "$directory" && -d "$directory" ]] || return 1
-        hashdir "$directory" "$@"
-      }
-
-      ${directoryRegistrations}
-
-      local directory firefox_profile
-      directory="''${TMPDIR:-/tmp}"
-      hashdir-if-exists "$directory" tmp
-
-      if [[ -n "''${PREFIX:-}" ]]
-      then
-        hashdir-if-exists "$PREFIX" pref
-      fi
-
-      for firefox_profile in "$HOME/.mozilla/firefox"/*default(N)
-      do
-        hashdir-if-exists "$firefox_profile" ffx
-        break
-      done
     '';
   };
 }

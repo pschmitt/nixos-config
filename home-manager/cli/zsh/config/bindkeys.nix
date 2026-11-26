@@ -3,10 +3,7 @@
   programs.zsh = {
     defaultKeymap = "viins";
     initContent = lib.mkOrder 1300 ''
-      zmodload zsh/terminfo
-      terminfo_bind() {
-        [[ -n "''${terminfo[$1]}" ]] && bindkey -- "''${terminfo[$1]}" "$2"
-      }
+      ${builtins.readFile ../shared/bindkeys.zsh}
 
       terminfo_bind khome beginning-of-line
       terminfo_bind kend end-of-line
@@ -20,14 +17,10 @@
       terminfo_bind knp end-of-buffer-or-history
       terminfo_bind kcbt reverse-menu-complete
       bindkey '^H' backward-kill-word
-      bindkey '^[z' undo
-      bindkey '^[y' redo
       bindkey '^i' expand-or-complete-prefix
-      bindkey '^[m' copy-prev-shell-word
 
       zsh-widget-noop() { }
       zle -N zsh-widget-noop
-      bindkey '^e' edit-command-line
       bindkey '^[#' pound-insert
       zle -N vim-that
       bindkey '^[e' vim-that
