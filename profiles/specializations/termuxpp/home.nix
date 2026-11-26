@@ -217,15 +217,9 @@ in
               // {
                 key = "ESC";
                 display = "Esc";
+                background-color = "#514268";
+                text-color = "#EBDDFF";
                 popup = "DEL";
-              }
-            )
-            (
-              keycap
-              // {
-                key = "/";
-                popup = "~";
-                hint = "~";
               }
             )
             (
@@ -233,8 +227,6 @@ in
               // {
                 key = "-";
                 hold = "_";
-                popup = "|";
-                hint = "|";
               }
             )
             (
@@ -262,13 +254,17 @@ in
                 display = "End";
               }
             )
+            (keycap // { key = "|"; })
           ]
           [
             (
               keycap
               // {
                 key = "TAB";
-                popup = "BACKSLASH";
+                hold = "ALT";
+                hold-display = "Alt";
+                popup = "BKSP";
+                hint = "⌫";
               }
             )
             (
@@ -278,15 +274,6 @@ in
                 display = "Ctrl";
                 hold = "SHIFT";
                 hold-display = "Shift";
-              }
-            )
-            (
-              keycap
-              // {
-                key = "ALT";
-                display = "Alt";
-                popup = "BKSP";
-                hint = "⌫";
               }
             )
             (
@@ -318,6 +305,15 @@ in
                   key = "END";
                   display = "End";
                 };
+              }
+            )
+            (
+              keycap
+              // {
+                key = "/";
+                hold = "BACKSLASH";
+                popup = "~";
+                hint = "~";
               }
             )
           ]
