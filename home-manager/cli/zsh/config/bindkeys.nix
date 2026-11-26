@@ -40,7 +40,7 @@
           bindkey '^[OP' zsh-widget-noop
           bindkey '^[OM' zsh-widget-noop
           ;;
-        *konsole-256color|tmux-256color|foot|wezterm)
+        tmux-256color|foot|wezterm)
           bindkey '^[[1~' beginning-of-line
           bindkey '^[[4~' end-of-line
           bindkey '^[[1;5C' forward-word

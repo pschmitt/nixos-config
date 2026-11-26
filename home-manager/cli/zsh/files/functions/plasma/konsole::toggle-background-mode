@@ -1,8 +1,0 @@
-# https://www.reddit.com/r/kde/comments/jp0o6o/toggle_konsole_running_in_background_mode_via_cli/
-qdbus \
-  org.kde.kglobalaccel \
-  /component/konsole \
-  invokeShortcut \
-  "Konsole Background Mode"
-
-# vim: set ft=zsh et ts=2 sw=2 :

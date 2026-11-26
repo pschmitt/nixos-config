@@ -29,9 +29,6 @@ prompt="${1:-PIN:}"
 if [[ -z "$SSH_CONNECTION" && -n "${WAYLAND_DISPLAY}${DISPLAY}" && -z "$nogui" ]]
 then
   case "${XDG_CURRENT_DESKTOP:l}" in
-    *kde*|*plasma*)
-      pinentry_cmd=pinentry-qt
-      ;;
     *gnome*|*sway*|hyprland)
       pinentry_cmd=pinentry-gnome3
       ;;
