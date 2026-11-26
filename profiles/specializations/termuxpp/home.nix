@@ -316,10 +316,10 @@ in
             (
               keycap
               // {
-                key = "/";
+                key = "-";
                 hold = "BACKSLASH";
-                popup = "~";
-                hint = "~";
+                popup = "/";
+                hint = "/";
               }
             )
           ]
