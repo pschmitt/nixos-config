@@ -228,18 +228,18 @@
       },
       "locked": {
         "host": "git.wiit.one",
-        "lastModified": 1793278067,
-        "narHash": "sha256-amAgO1pZKXDP/UonTufXkrnouHoXSwqMPRxJuUuwTgI=",
+        "lastModified": 1794985483,
+        "narHash": "sha256-6Ssji1pgopTSNmuAXkf5wxFwtXle/2QK1c9aIx5Xb2c=",
         "owner": "kubernetes%2Fcode",
         "repo": "cluster-operator",
-        "rev": "d3248680cb5dabdc5a7af574d847e3ada368c96b",
+        "rev": "e8bb0f7987ae05ff1d18b744525dd193ee34e189",
         "type": "gitlab"
       },
       "original": {
         "host": "git.wiit.one",
         "owner": "kubernetes%2Fcode",
-        "ref": "dev",
         "repo": "cluster-operator",
+        "rev": "e8bb0f7987ae05ff1d18b744525dd193ee34e189",
         "type": "gitlab"
       }
     },
@@ -1787,11 +1787,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1795707553,
-        "narHash": "sha256-EJcSaXIJyPPMnf8RAvwMsozfJLthjFAXjJ3LHlJdkbg=",
+        "lastModified": 1795708872,
+        "narHash": "sha256-+wF7Cr7qxeO08BFrjfnde3zH99n6SA2x5ftPsoaewoo=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "c1b4a170f0d4bf875a0d2ba7d7a86e67e752ee64",
+        "rev": "10935e9bc12b03452f049da908fc5daa6ec1c8c4",
         "type": "github"
       },
       "original": {
