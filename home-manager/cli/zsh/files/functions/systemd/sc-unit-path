@@ -1,0 +1,9 @@
+local res=$(systemctl show -p FragmentPath $@ | \
+  awk -F = '{ print $2 }')
+
+echo "$res"
+
+# Return 1 if path is empty
+[[ -n "$res" ]]
+
+# vim: set ft=zsh et ts=2 sw=2 :

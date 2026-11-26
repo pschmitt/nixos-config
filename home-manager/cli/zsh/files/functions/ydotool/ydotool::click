@@ -1,0 +1,34 @@
+local count=(-c 1)
+local interval=(-i 0.1)
+
+zparseopts -D -E -K \
+  {c,-count,-clicks}:=count \
+  {i,-interval}:=interval
+count=${count[2]}
+interval=${interval[2]}
+
+# Store current mouse position
+local mouse_x mouse_y
+mouse::position | read -r mouse_x mouse_y
+
+# Store current active window
+local active_window=$(window-manager::active-window --raw)
+
+local target_x="$1"
+local target_y="$2"
+
+# Click on target
+local i
+for i in {1..$count}
+do
+  echo_info "Click #${i}"
+  ydotool mousemove -a $target_x $target_y
+  ydotool click '0xC0'
+  [[ "$count" -gt 1 ]] && sleep $interval
+done
+
+# Restore mouse position and focussed window
+ydotool mousemove -a $mouse_x $mouse_y
+window-manager::focus-window $active_window
+
+# vim: set ft=zsh et ts=2 sw=2 :

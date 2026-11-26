@@ -1,0 +1,148 @@
+# vCard helpers
+local usage
+usage="usage: $0 [--json] [FILE]"
+local help
+local -a json_opt
+
+zparseopts -D -E -K -- \
+  {h,help}=help \
+  {j,-json}=json_opt
+
+if [[ -n $help ]]
+then
+  print $usage
+  return 0
+fi
+
+local file_path
+if (( $# > 0 ))
+then
+  file_path="$1"
+fi
+
+local vcard_data
+if [[ -n $file_path ]]
+then
+  if [[ ! -f $file_path ]]
+  then
+    echo_error "vCard file not found: $file_path"
+    return 1
+  fi
+  vcard_data=$(<"$file_path")
+else
+  if ! vcard_data=$(cat)
+  then
+    return 1
+  fi
+fi
+
+if [[ -z $vcard_data ]]
+then
+  echo_error "No vCard data provided"
+  return 1
+fi
+
+local parsed
+if ! parsed=$(jc -q --vcf <<< "$vcard_data")
+then
+  echo_error "Failed to parse vCard data"
+  return 1
+fi
+
+local payload
+if ! payload=$(jq -ce '
+  def gather_items:
+    if type == "array" then
+      reduce .[] as $item ([]; . + ($item | gather_items))
+    elif type == "object" then
+      ((if (
+            has("fn")
+            or has("n")
+            or has("uid")
+            or has("emails")
+            or has("phones")
+            or has("addresses")
+            or has("adr")
+            or has("photo")
+            or has("org")
+            or has("title")
+          )
+        then [.] else [] end)
+      + (. as $obj | reduce (keys_unsorted[]?) as $k ([]; . + ($obj[$k] | gather_items))))
+    else [] end;
+  {source: "vdir", items: (. | gather_items | unique_by(.uid? // .fn? // (.n? | tostring)))}
+' <<< "$parsed")
+then
+  echo_error "Failed to prepare vCard data"
+  return 1
+fi
+
+local normalized
+if ! normalized=$(contact::normalize-data <<< "$payload")
+then
+  echo_error "Failed to normalize vCard data"
+  return 1
+fi
+
+local contacts_array
+if ! contacts_array=$(jq -ce '
+  if type == "array" then .
+  elif type == "object" then [.]
+  elif type == "null" then []
+  else [] end
+' <<< "$normalized")
+then
+  echo_error "Failed to format normalized vCard data"
+  return 1
+fi
+
+if (( ${#json_opt[@]} > 0 ))
+then
+  jq -e <<< "$contacts_array"
+  return $?
+fi
+
+local contact_count
+contact_count=$(jq -r 'length' <<< "$contacts_array")
+
+if (( contact_count == 0 ))
+then
+  echo_error "No contacts found in vCard data"
+  return 1
+fi
+
+local contacts_json
+if ! contacts_json=$(jq -cr '.[]?' <<< "$contacts_array")
+then
+  echo_error "Failed to extract contacts from normalized data"
+  return 1
+fi
+
+local -a raw_entries
+raw_entries=("${(@f)contacts_json}")
+
+local -a entries
+entries=()
+
+local entry
+for entry in "${raw_entries[@]}"
+do
+  if [[ -z $entry ]]
+  then
+    continue
+  fi
+  entries+=("$entry")
+done
+
+if (( ${#entries[@]} == 0 ))
+then
+  echo_error "No contacts found in vCard data"
+  return 1
+fi
+
+for entry in "${entries[@]}"
+do
+  contact::display <<< "$entry"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

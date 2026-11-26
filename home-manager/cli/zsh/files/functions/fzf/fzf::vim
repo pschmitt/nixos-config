@@ -1,0 +1,17 @@
+if [[ $# -lt 1 ]] || [[ "$1" == "-h" ]]
+then
+  echo "Usage: $0 CMD"
+  return
+fi
+
+local ffpath="$(find . -iname "*$1*" | head -1)"
+
+if [[ -z "$ffpath" ]]
+then
+  echo "Couldn't find file matching $1" >&2
+  return 1
+fi
+
+$EDITOR "$ffpath"
+
+# vim: set ft=zsh et ts=2 sw=2 :

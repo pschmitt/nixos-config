@@ -1,0 +1,58 @@
+local usage="usage: $0 [BT_DEVICE_NAME]"
+local silent notify
+
+zparseopts -D -K -E -- \
+  {s,-silent,q,-quiet}=silent \
+  {n,-notify}=notify
+
+local name
+if [[ -n "$1" ]]
+then
+  name="$1"
+else
+  name=$(bt::list-audio-devices --connected | head -1)
+  if [[ -z "$name" ]]
+  then
+    echo_error "No connected device found"
+    return 1
+  fi
+fi
+
+local name="$(bt::device-alias -i "$name")"
+local mac="$(bt::name-to-mac-address "$name")"
+local profile="${2:-a2dp-sink}"
+local card_name="${mac//:/_}"
+
+if bt::is-connected "$name"
+then
+  if [[ -n "$notify" ]] && bt::is-audio-device "$mac"
+  then
+    if command -v osd &>/dev/null
+    then
+      osd -c bluetooth -i bluetooth-connected -I "#4C9AFF" -d "$name" "Bluetooth headset connected"
+    else
+      notify-send -c bluetooth " Bluetooth headset" "$name"
+    fi
+  fi
+else
+  echo_error "Not connected to bt device '$name'"
+  return 1
+fi
+
+if [[ -n "$profile" ]]
+then
+  if ! trytill --tries 3 pulseaudio::set-card-profile "$card_name" "$profile"
+  then
+    echo_err "Unable to set card profile to $profile"
+  fi
+fi
+
+if trytill --tries 5 pulseaudio::set-default-sink "$card_name"
+then
+  [[ -z "$silent" ]] && audio::stereo-test
+  pulseaudio::set-defaults-for-all-apps
+fi
+
+hass::script script.phone_bluetooth_off
+
+# vim: set ft=zsh et ts=2 sw=2 :

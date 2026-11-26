@@ -1,0 +1,15 @@
+local size=(--size 500)
+local extension=(--extension png)
+zparseopts -D -E -K {s,-size}:=size {e,-extension}:=extension
+size=${size[2]}
+extension=${extension[2]}
+
+local email="${${1:-$EMAIL}:l}"
+
+# https://en.gravatar.com/site/implement/images/
+# NOTE printf is the way to go here (the trailing \n matters)
+local md5sum=$(printf "$EMAIL" | md5sum --binary | awk '{ print $1 }')
+
+echo "$email https://www.gravatar.com/avatar/${md5sum}.${extension}?size=${size}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

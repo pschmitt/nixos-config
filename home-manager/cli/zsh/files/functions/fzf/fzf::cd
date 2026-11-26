@@ -1,0 +1,3 @@
+cd "$(fd -H -E "**/.git/" -t d | fzf --header "$PWD")"
+
+# vim: set ft=zsh et ts=2 sw=2 :

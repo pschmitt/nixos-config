@@ -1,0 +1,7 @@
+local tmpfile=$(mktemp)
+trap "rm -rf '$tmpfile'" EXIT
+
+xcp >! "$tmpfile"
+patch -p1 <"$tmpfile"
+
+# vim: set ft=zsh et ts=2 sw=2 :

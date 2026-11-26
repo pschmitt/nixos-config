@@ -1,0 +1,7 @@
+while true
+do
+  docker compose logs -f --tail=10 "$@"
+  sleep 2
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

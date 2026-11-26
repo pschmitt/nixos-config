@@ -1,0 +1,23 @@
+local usage="usage: $0 [USB_DEVICE_DESCRIPTION]"
+local help dryrun
+zparseopts -D -E -K -- {h,-help}=help {k,-dry-run,-dryrun}=dryrun
+
+if [[ -n $help ]]
+then
+  print -- $usage
+  return 0
+fi
+
+local desc="${1:-Fingerprint}"
+
+usb::reset $dryrun "$desc" || return 1
+
+if [[ -n $dryrun ]]
+then
+  echo_info "Dry run enabled, not restarting fprintd"
+  return 0
+fi
+
+sudo systemctl restart fprintd.service
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,60 @@
+local help usage="usage: $0 [--force] VENDOR_ID PRODUCT_ID ON|OFF"
+
+local force
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {f,-force}=force
+
+if [[ -n $help ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local vid="$1"
+local pid="$2"
+local value="$3"
+
+if [[ -z "$vid" || -z "$pid" || -z $value ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local action
+case "${value:l}" in
+  on|enable|1|true)
+    action="Connect"
+    value=1
+    ;;
+  *)
+    action="Disconnect"
+    value=0
+    ;;
+esac
+
+local devpath=$(usb::find "$vid" "$pid")
+
+if [[ -z "$devpath" ]]
+then
+  echo_error "device $vid:$pid not found"
+  return 1
+fi
+
+echo_info "$action: $devpath (force: $(jq::to-bool $force))"
+
+if [[ -n $force ]]
+then
+  local target=bind # connect
+  if [[ $value == 0 ]]
+  then
+    target=unbind # disconnect
+  fi
+
+  echo -n "${devpath:t}" | sudo tee /sys/bus/usb/drivers/usb/${target} >/dev/null
+  return "$?"
+fi
+
+echo $value | sudo tee "$devpath/authorized" > /dev/null
+
+# vim: set ft=zsh et ts=2 sw=2 :

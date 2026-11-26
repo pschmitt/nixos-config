@@ -1,0 +1,25 @@
+local usage="usage: $0 [--verbose] [--no-callback]"
+local help no_callback verbose
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {n,-no-callback}=no_callback \
+  {v,-verbose}=verbose
+
+if [[ -n $help ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+gnome-keyring::status $verbose && return 0
+
+local password=$(rbw::get "gnome-keyring: $HOST")
+if [[ -z "$password" ]]
+then
+  echo_error "Could not find password for $kr_id"
+  return 1
+fi
+
+gnome-keyring::unlock --nointeractive $no_callback "$password"
+
+# vim: set ft=zsh et ts=2 sw=2 :

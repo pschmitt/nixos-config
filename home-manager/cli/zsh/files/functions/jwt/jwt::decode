@@ -1,0 +1,110 @@
+# jwt token decoder
+local usage
+read -r -d '' usage <<EOF
+usage: $0 [--help] [--raw] [--header|--signature] JWT_TOKEN
+
+Options:
+  --help            Show this help and exit
+  -H, --header      Decode and print the header
+  -S, --signature   Decode and print the signature (hex)
+EOF
+
+local help header sig raw
+zparseopts -D -E -- \
+  {h,-help}=help \
+  {H,-header}=header \
+  {S,-signature}=sig \
+  {r,-raw}=raw
+
+if [[ -n "$help" ]]
+then
+  print -r -- "$usage"
+  return 0
+fi
+
+local part="payload"
+if [[ -n $header ]]
+then
+  part="header"
+elif [[ -n $sig ]]
+then
+  part="signature"
+fi
+
+local token="$1"
+if [[ -z "$token" ]]
+then
+  echo_error "error: missing TOKEN"
+  print -u2 $usage
+  return 2
+fi
+
+local -a parts
+parts=("${(s/./)token}")
+
+local idx
+case "$part" in
+  header)
+    idx=1
+    ;;
+  payload)
+    idx=2
+    ;;
+  signature)
+    idx=3
+    ;;
+esac
+
+if [[ ${#parts[@]} -lt "$idx" ]]
+then
+  echo_error "error: invalid jwt (expected 3 parts)"
+  return 2
+fi
+
+local s
+s=${parts[$idx]}
+
+# base64url -> base64
+s=${s:gs/-/+}
+s=${s:gs/_/\/}
+
+# pad to multiple of 4
+local mod=$(( ${#s} % 4 ))
+if [[ $mod -eq 1 ]]
+then
+  echo_error "error: bad base64url length"
+  return 1
+fi
+
+if [[ $mod -eq 2 ]]
+then
+  s="${s}=="
+elif [[ $mod -eq 3 ]]
+then
+  s="${s}="
+fi
+
+local decoded
+decoded=$(printf '%s' "$s" | base64 -d) || return 1
+
+if [[ "$part" = "signature" ]]
+then
+  printf '%s' "$decoded" | od -An -tx1 | tr -d ' \n'
+  printf '\n'
+  return 0
+fi
+
+printf '%s\n' "$decoded" | jq -e --argjson raw "$(jq::to-bool "$raw")" '
+  import "plib" as p;
+
+  if $raw
+  then
+    .
+  else
+      (if has("exp") then .exp |= p::date_fmt else . end)
+    | (if has("iat") then .iat |= p::date_fmt else . end)
+    | (if has("nbf") then .nbf |= p::date_fmt else . end)
+  end
+'
+
+# vim: set ft=zsh et ts=2 sw=2 :

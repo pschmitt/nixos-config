@@ -1,0 +1,122 @@
+local json="$(sensors -j --no-adapter 2>/dev/null | jq 'del(.[].Adapter)')"
+local keys=($(jq -r 'keys | sort_by(ascii_downcase)[]' <<< "$json"))
+
+local average
+local avg_val
+local filter="tee"  # Default filter. NOP.
+local k
+local max
+local nounits
+local prop
+local sort
+local temp
+local tempkeys
+local temps
+local tk
+local unit="°C"
+local val
+local watch
+
+zparseopts -D -K \
+  a=average -average=average \
+  n=nounits -no-units=nounits \
+  s=sort -sort=sort \
+  m=max -max=max \
+  w::=watch -watch::=watch
+
+if [[ -n "$watch" ]]
+then
+  # FIXME When using the opt::arr zparseopts notation the value of the option
+  # get appended to the array. For instance here it results in watch=( -w2 )
+  # Strip flag name
+  local interval=${${watch[1]##(--watch|-w)}:-1}
+
+  if ! [[ "$interval" =~ ^[0-9]+$ ]]
+  then
+    echo_error "--watch needs to hold an integer value. Got: $interval" >&2
+    return 2
+  fi
+
+  while true
+  do
+    "$0" $average $nounits $max
+    sleep "$interval"
+  done
+
+  return "$?"
+fi
+
+if [[ -z "$nounits" ]]
+then
+  filter="sed 's/$/${unit}/'"
+fi
+
+if [[ -n "$average" ]]
+then
+  local avg_filter
+  avg_filter="awk '{ print \$2 }' | avg"
+
+  if [[ -n "$filter" ]]
+  then
+    filter="$avg_filter | $filter"
+  else
+    filter="$avg_filter"
+  fi
+elif [[ -n "$max" ]]
+then
+  local max_filter
+  max_filter="awk '{ print \$2 }' | max"
+  if [[ -n "$filter" ]]
+  then
+    filter="$max_filter | $filter"
+  else
+    filter="$max_filter"
+  fi
+fi
+
+if [[ -n "$sort" ]]
+then
+  local sort_filter="sort -nk2"
+
+  if [[ -n "$filter" ]]
+  then
+    filter="$filter | $sort_filter"
+  else
+    filter="$sort_filter"
+  fi
+  # echo "$filter"
+fi
+
+for k in $keys
+do
+  temps=()
+  temp=$(jq -e ".[\"${k}\"] | to_entries[]" <<< "$json" 2>/dev/null)
+
+  tempkeys=(
+    $(jq -r ".value | keys[] | select(. | test(\"temp[0-9]+_input\"))" \
+      <<< "$temp")
+  )
+
+  for tk in $tempkeys
+  do
+    val=$(jq -r ".value | to_entries[] | select(.key == \"${tk}\").value" \
+            <<< "$temp")
+
+    # Skip invalid values
+    if [[ -n "$val" ]] && [[ "$val" != "null" ]] && [[ "$val" != "0" ]]
+    then
+      temps+=("$val")
+    fi
+  done
+
+  if [[ -n "$temps" ]]
+  then
+    # compute average temperature (and round to 1 decimal)
+    avg_val=$(avg <<< "$temps")
+    echo -e "${fg[blue]}${k}${fg[default]}\t${avg_val}"
+  fi
+# FIXME column replaces the "°" char with "\xc2\xb0" hence the sed over the
+# output
+done | column -t -s '	' | eval $filter
+
+# vim: set ft=zsh et ts=2 sw=2 :

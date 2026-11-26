@@ -1,0 +1,16 @@
+# https://develop.kde.org/docs/plasma/kwin/#quick-start-desktop-console
+if [[ -n "$1" ]]
+then
+  qdbus \
+    org.kde.plasmashell \
+    /PlasmaShell \
+    org.kde.PlasmaShell.loadScriptInInteractiveConsole \
+    "$(realpath "$1")"
+else
+  qdbus \
+    org.kde.plasmashell \
+    /PlasmaShell \
+    org.kde.PlasmaShell.showInteractiveKWinConsole
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

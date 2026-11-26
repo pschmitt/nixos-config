@@ -1,0 +1,53 @@
+local usage="usage: $0 [-y] PIXELS"
+local y
+zparseopts -D -E -K -- y=y
+
+if [[ -z $1 ]]
+then
+  echo "$usage"
+  return 2
+fi
+
+if [[ "$1" =~ ^(-h|--help)$ ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local px1="$1" px2="$2"
+if [[ ! "$px1" =~ ^([-+]?[0-9]+)$ ]]
+then
+  echo_error "Invalid argument: $px"
+  return 2
+fi
+
+local px_x px_y
+if [[ -n "$px2" ]]
+then
+  if [[ ! "$px2" =~ ^([-+]?[0-9]+)$ ]]
+  then
+    echo_error "Invalid argument: $px2"
+    return 2
+  fi
+
+  px_x="$px1"
+  px_y="$px2"
+else
+  if [[ -n "$y" ]]
+  then
+    px_y="$px1"
+    px_x=0
+  else
+    px_x="$px1"
+    px_y=0
+  fi
+fi
+
+# NOTE dotool somehow expects the coordinates to be 2x the actual position
+px_x=$(( px_x * 2 ))
+px_y=$(( px_y * 2 ))
+
+echo_info "Move mouse by $px_x $px_y pixels"
+dotoolc <<< "mousemove $px_x $px_y"
+
+# vim: set ft=zsh et ts=2 sw=2 :

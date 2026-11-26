@@ -1,0 +1,38 @@
+local ignore
+zparseopts -D -E -K -- \
+  {i,-ignore}:=ignore
+ignore=$ignore[2]
+
+local from="$1"
+local to="$2"
+
+if [[ $# -eq 1 ]]
+then
+  from="$(pulseaudio::get-default-source)"
+  to="$1"
+fi
+
+local targets=("${(@f)$(pw::list-links $from | \
+  jq -er '.[].input_port_info.info.props["port.alias"]' | \
+  grep -v "PulseAudio Volume Control")}")
+# ☝️  Always ignore pavucontrol
+
+# Remove the :input_name suffix
+# ie "Firefox:input_MONO" becomes "Firefox"
+targets=(${(@)targets%:*})
+
+# Remove duplicates
+typeset -U targets
+
+if [[ -n "$ignore" ]]
+then
+  targets=("${(@)targets:#${ignore}}")
+fi
+
+local t
+for t in $targets
+do
+  pw::link $to $t
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,41 @@
+# example usage: terminfo::zsh-bindkey-name '^H'
+local interactive
+zparseopts -D -E -K -- {i,-interactive}=interactive
+local usage="usage: $0 KEY"
+
+local key="$1"
+if [[ -n "$interactive" ]]
+then
+  if ! read -k1 'key?Press key: '
+  then
+    echo
+    return 1
+  fi
+  echo
+fi
+
+echo_info "Looking for key: $key"
+
+if [[ -z "$key" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+# NOTE not all keys are in ${(v)terminfo}!
+# https://stackoverflow.com/a/31393336/1872036
+local keys=("${(@f)$(infocmp -x | sed 's/,/\n/g' | sed -n 's/.*\(k[[:alnum:]]*\)=.*/\1/p')}" ${(v)terminfo})
+
+for tkey in $keys
+do
+  tval=$terminfo[$tkey]
+  if [[ $tval == $key ]] || [[ $(cat -v <<< $tval) == $key ]]
+  then
+    echo $tkey
+    return 0
+  fi
+done
+
+return 1
+
+# vim: set ft=zsh et ts=2 sw=2 :

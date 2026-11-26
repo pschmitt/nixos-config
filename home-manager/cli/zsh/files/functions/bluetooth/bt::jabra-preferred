@@ -1,0 +1,27 @@
+local devs=("Jabra Elite 8 Active" "Jabra Elite 7 Active")
+local dev
+local mac
+
+for dev in "${devs[@]}"
+do
+  if bt::is-connected "$dev"
+  then
+    echo "$dev"
+    return 0
+  fi
+done
+
+# RSSI present in bluetoothctl info means the device is nearby and advertising
+for dev in "${devs[@]}"
+do
+  mac="$(bt::name-to-mac-address "$dev")"
+  if [[ -n "$mac" ]] && bluetoothctl info "$mac" 2>/dev/null | grep -q "RSSI:"
+  then
+    echo "$dev"
+    return 0
+  fi
+done
+
+return 1
+
+# vim: set ft=zsh et ts=2 sw=2 :

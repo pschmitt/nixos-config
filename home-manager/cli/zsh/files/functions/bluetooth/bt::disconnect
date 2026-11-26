@@ -1,0 +1,19 @@
+# Auto disconnect all known headsets
+if [[ -z "$*" ]]
+then
+  local mac
+  for mac in "${(@f)$(bt::list-audio-devices --mac)}"
+  do
+    if bt::is-connected "$mac"
+    then
+      local name="$(bt::mac-address-to-name "$mac")"
+      echo_info "Disconnecting from $name"
+      bluetoothctl disconnect "$mac"
+    fi
+  done
+  return
+fi
+
+bt::connection-action disconnect "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,23 @@
+local output_mac
+zparseopts -D -E -K -- {m,-mac,-mac-address}=output_mac
+output_mac=${${output_mac:+true}:-false}
+
+# 0000110b-0000-1000-8000-00805f9b34fb -> A2DP_SINK_UUID
+# See here for the magic UUID values:
+# https://github.com/bluez/bluez/blob/master/lib/uuid.h
+busctl call org.bluez / org.freedesktop.DBus.ObjectManager GetManagedObjects --json=short | \
+  jq -er --argjson "output_mac" "$output_mac" '
+    .data[0] | to_entries |
+    map(select(.key | test("^/org/bluez/hci[0-9]+/dev_[0-9A-F_]+$"; "i"))) |
+    .[].value["org.bluez.Device1"] | select(
+      .UUIDs.data | index("0000110b-0000-1000-8000-00805f9b34fb")
+    ) |
+    if ($output_mac)
+    then
+      .Address.data
+    else
+      .Name.data
+    end
+  '
+
+# vim: set ft=zsh et ts=2 sw=2 :

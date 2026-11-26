@@ -1,0 +1,3 @@
+v4l2::get-properties --no-header "$1" | awk '{ print $1 }'
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,12 @@
+local ha_cloud
+zparseopts -D -E -K \
+  {H,-ha,-ha-cloud}=ha_cloud
+
+if [[ -n "$ha_cloud" ]]
+then
+  tts::ha-cloud "$@"
+else
+  tts::tiktok "$@"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

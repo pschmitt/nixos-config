@@ -1,0 +1,50 @@
+local package="$1"
+
+if [[ -z $package ]]
+then
+  echo "Usage: $0 REPO/PACKAGE" >&2
+  return 2
+fi
+
+shift
+
+local arch=$(uname -m)
+
+local repo=${package:h}
+local pkg=${package:t}
+
+if [[ -z "$repo" || "$repo" == "." ]]
+then
+  repo="core"
+fi
+
+local mirror="https://mirrors.kernel.org/archlinux/${repo}/os/${arch}/"
+local matches=("${(@f)$(curl -fsSL "$mirror" | \
+  htmlq --attribute href a | grep -E "^${pkg}-.*.zst$")}")
+
+if [[ -z $matches ]]
+then
+  echo_error "No package found for $pkg"
+  echo_error "Are you sure that $pkg is in $repo?"
+  return 1
+fi
+
+if [[ ${#matches} -gt 1 ]]
+then
+  echo_warning "Multiple packages found for $package"
+fi
+
+local tmpdir="$(mktemp -d -t pacman_install_package.XXXXX)"
+trap "rm -rf '$tmpdir'" EXIT INT
+
+echo_info "Fetching $matches[1]"
+if ! curl -fsSL -o "$tmpdir/${matches[1]}" "${mirror}${matches[1]}"
+then
+  echo "Failed to download ${matches[1]}" >&2
+  return 1
+fi
+
+echo_info "Installing ${tmpdir}/${matches[1]}"
+sudo pacman -U $@ "$tmpdir/${matches[1]}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

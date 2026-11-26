@@ -1,0 +1,7 @@
+local name="$(bt::device-alias -i "$1")"
+local mac="$(bt::name-to-mac-address "$name")"
+
+bluetoothctl info "$mac" | \
+  grep -q "Connected: yes"
+
+# vim: set ft=zsh et ts=2 sw=2 :

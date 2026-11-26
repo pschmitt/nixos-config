@@ -1,0 +1,22 @@
+local usage="Usage: $0 PID PARENT_NAME"
+local pid="$1"
+local parent="$2"
+
+if [[ -z "$pid" ]] || [[ -z "$parent" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local real_parent
+real_parent=$(ps::parent -o cmd= "$pid")
+
+if [[ -z "$real_parent" ]]
+then
+  echo_warning "Faield to find PPID of $pid"
+  return 1
+fi
+
+grep -qE "$parent" <<< "$real_parent"
+
+# vim: set ft=zsh et ts=2 sw=2 :

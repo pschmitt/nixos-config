@@ -1,0 +1,22 @@
+local output_mac connected_only
+zparseopts -D -E -K -- \
+  {m,-mac,-mac-address}=output_mac \
+  {c,-connected}=connected_only
+local bt_status=${${connected_only:+Connected}:-Paired}
+local mac
+
+for mac in ${(@f)$(bluetoothctl devices $bt_status | \
+  grep-mac-address -o --color=never)}
+do
+  if bt::is-audio-device "$mac"
+  then
+    if [[ -n "$output_mac" ]]
+    then
+      echo "$mac"
+    else
+      bt::mac-address-to-name "$mac"
+    fi
+  fi
+done | sort
+
+# vim: set ft=zsh et ts=2 sw=2 :

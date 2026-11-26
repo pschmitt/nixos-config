@@ -1,0 +1,45 @@
+local usage="Usage: $0 PLUGIN [VERSION]"
+local help
+
+if [[ -z "$1" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+zparseopts -D -E \
+  h=help -help=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local plugin="$1"
+local version="${2:-$(asdf list "$plugin" 2>/dev/null | \
+  awk 'END { print $NF }')}"
+
+if ! asdf plugin-list | grep -qE "^${plugin}$"
+then
+  echo_err "Unknown plugin: $plugin"
+  echo_info "Available plugins:\n${$(asdf plugin-list):-**N/A**}"
+  return 1
+fi
+
+if [[ -z "$version" ]]
+then
+  echo_err "Failed to determine version for plugin ${plugin}\n" \
+           "Is there even a version installed?\n" \
+           "Please retry with $0 $plugin VERSION"
+  echo_info "Available versions:\n" \
+    "${$(asdf list "$plugin" 2>/dev/null):-**N/A**}"
+  return 1
+fi
+
+fancify -m "Uninstall $plugin ($version)" \
+  asdf uninstall $plugin $version
+fancify -m "Reinstall $plugin ($version)" \
+  asdf install $plugin $version
+
+# vim: set ft=zsh et ts=2 sw=2 :

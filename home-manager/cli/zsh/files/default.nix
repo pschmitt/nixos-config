@@ -1,51 +1,30 @@
+{ lib, ... }:
 let
-  topics = [
-    "awk"
-    "browser"
-    "calc"
-    "cd"
-    "countdown"
-    "datetime"
-    "debug"
-    "diff"
-    "echo"
-    "emoji"
-    "file"
-    "find"
-    "imagemagick"
-    "jq"
-    "nmap"
-    "ntp"
-    "osc8"
-    "pulseaudio"
-    "qrcode"
-    "quote-cmd"
-    "sed"
-    "shebang"
-    "shell"
-    "sleep"
-    "sqlite"
-    "strings"
-    "tsv"
-    "versions"
-    "watch"
-    "whitespace"
-  ];
+  filesIn =
+    directory: destination:
+    lib.concatLists (
+      lib.mapAttrsToList (
+        name: kind:
+        let
+          source = directory + "/${name}";
+          target = "${destination}/${name}";
+        in
+        if kind == "directory" then
+          filesIn source target
+        else if kind == "regular" || kind == "symlink" then
+          [
+            {
+              name = target;
+              value.source = source;
+            }
+          ]
+        else
+          [ ]
+      ) (builtins.readDir directory)
+    );
 in
 {
   xdg.configFile = builtins.listToAttrs (
-    builtins.concatMap (name: [
-      {
-        name = "zsh/functions/${name}";
-        value = {
-          source = ./functions + "/${name}";
-          recursive = true;
-        };
-      }
-      {
-        name = "zsh/plugins/local/${name}.zsh";
-        value.source = ./plugins/local + "/${name}.zsh";
-      }
-    ]) topics
+    filesIn ./functions "zsh/functions" ++ filesIn ./plugins/local "zsh/plugins/local"
   );
 }

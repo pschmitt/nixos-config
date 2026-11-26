@@ -1,0 +1,33 @@
+local usage="usage: $0 [-e events] file cmd"
+local events=(-e modify)
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {e,-events}:=events
+events="${events[2]}"
+
+if [[ -n $help ]]
+then
+  echo $usage
+  return
+fi
+
+local file="$1"
+shift
+local cmd=($@)
+
+if [[ -z $file || -z $cmd ]]
+then
+  echo_error "Missing arguments" >&2
+  echo $usage >&2
+  return
+fi
+
+trap 'echo "Exiting..."; return 1' SIGINT
+
+while true
+do
+  inotifywait -e $events "$file"
+  eval $cmd
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

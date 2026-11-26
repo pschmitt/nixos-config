@@ -1,0 +1,21 @@
+local usage="$0 GROUP"
+local help
+zparseopts -D -E -K {h,-help}=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local group="$1"
+
+if [[ -z "$group" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+getent group "$group" | cut -d ':' -f 4 | tr ',' '\n'
+
+# vim: set ft=zsh et ts=2 sw=2 :

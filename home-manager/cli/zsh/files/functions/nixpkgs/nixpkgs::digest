@@ -1,0 +1,24 @@
+local version_bumps
+zparseopts -D -E -K -- \
+  {b,v,-bump,-version-bumps,-updates}=version_bumps
+
+local extra_args=()
+if [[ -n "$version_bumps" ]]
+then
+  # typically PRs to bump a version are titled like this:
+  # immich: 1.124.2 -> 1.125.2
+  extra_args=(--exact '->')
+fi
+
+local pkgs=(
+  immich
+  mealie
+  netbird
+  tailscale
+  paperless-ngx
+  $@
+)
+
+nixpkgs::pr-list $extra_args $pkgs
+
+# vim: set ft=zsh et ts=2 sw=2 :

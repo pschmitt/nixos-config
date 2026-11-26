@@ -1,0 +1,35 @@
+# list children (pids) of a PID
+local parent=$1
+
+local result=()
+local queue=($(ps --no-headers -o pid --ppid "$parent"))
+
+# Use an associative array to avoid processing the same PID twice.
+local -A visited
+local pid
+for pid in $queue
+do
+  visited[$pid]=1
+done
+
+local children
+while [[ ${#queue[@]} -gt 0 ]]
+do
+  pid=${queue[1]}
+  queue=(${queue[@]:1})
+  result+=($pid)
+
+  children=($(ps --no-headers -o pid --ppid "$pid"))
+  for child in $children
+  do
+    if [[ -z "${visited[$child]}" ]]
+    then
+      visited[$child]=1
+      queue+=($child)
+    fi
+  done
+done
+
+echo ${result[@]}
+
+# vim: set ft=zsh et ts=2 sw=2 :

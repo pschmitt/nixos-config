@@ -1,0 +1,37 @@
+# same as fzf::rg, but the text input is used to filter on filenames
+local pattern="${@[-1]}"
+set -- ${@[1,-2]}
+local rgargs=("$@")
+local data
+
+data=$(rg --json $rg_args -- "$pattern" | jq -r '
+    select(.type == "match") |
+    .data.path.text + " " +
+    (.data.line_number | tostring) + " " + (.data.submatches[0].start | tostring)')
+
+if [[ -z "$data" ]]
+then
+  echo_err "No matches found $PWD"
+  return 1
+fi
+
+local sel
+sel=("${(@f)$(fzf --select-1 --with-nth=1 --preview 'fzf-preview {1}:{2}' <<< "$data")}")
+
+if [[ -z "$sel" ]]
+then
+  return 1
+fi
+
+local m file line col files=()
+for m in $sel
+do
+  read file line col <<< "$m"
+  col=$((col + 1))
+  files+=("${file:A}:${line}:${col}")
+done
+
+echo_info "Editing ${fg[yellow]}${files}${color_reset}"
+$EDITOR $files
+
+# vim: set ft=zsh et ts=2 sw=2 :

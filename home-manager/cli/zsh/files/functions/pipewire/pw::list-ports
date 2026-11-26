@@ -1,0 +1,24 @@
+local inputs
+local outputs
+zparseopts -D -E -K -- \
+  {i,-input,-inputs}=inputs \
+  {o,-output,-outputs}=outputs
+
+local device="${1:-.}"  # default to . to match everything
+local extra_args=()
+
+if [[ -z "${inputs}${outputs}" ]]
+then
+  # Return both if neither -i nor -o is specified
+  extra_args+=(--input --output)
+elif [[ -n "$inputs" ]]
+then
+  extra_args+=(--input)
+elif [[ -n "$outputs" ]]
+then
+  extra_args+=(--output)
+fi
+
+pw-link $extra_args | sort | grep -Ei --color=never "$device"
+
+# vim: set ft=zsh et ts=2 sw=2 :

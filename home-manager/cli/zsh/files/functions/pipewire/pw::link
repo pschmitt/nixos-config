@@ -1,0 +1,59 @@
+local usage="Usage: $0 SOURCE TARGET"
+local source="$1"
+local target="$2"
+
+if [[ -z "$source" || -z "$target" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local source_ports=("${(@f)$(pw::list-ports --output "$source")}")
+local target_ports=("${(@f)$(pw::list-ports --input "$target")}")
+
+if [[ -z "$source_ports" ]]
+then
+  echo_error "No source port found for '$source'"
+  return 1
+elif [[ -z "$target_ports" ]]
+then
+  echo_error "No target port found for '$target'"
+  return 1
+fi
+
+echo_info "Linking $source_ports to $target_ports"
+
+case "${#source_ports}" in
+  1)
+    local p
+    for p in $target_ports
+    do
+      pw-link "$source_ports[1]" $p
+    done
+    ;;
+  2)
+    # NOTE Sorting is important here
+    case "${#target_ports}" in
+      1)
+        # Link FL+FR to MONO
+        pw-link $source_ports[1] $target_ports[1]
+        pw-link $source_ports[2] $target_ports[1]
+        ;;
+      2)
+        pw-link $source_ports[1] $target_ports[1]
+        pw-link $source_ports[2] $target_ports[2]
+        ;;
+      *)
+        echo_warning "PRO Audio sources (${#target_ports}) are not supported yet -> Not implemented!"
+        return 3
+        ;;
+    esac
+    ;;
+  *)
+    # FIXME
+    echo_warning "PRO Audio sources are not supported yet -> Not implemented!"
+    return 3
+    ;;
+esac
+
+# vim: set ft=zsh et ts=2 sw=2 :

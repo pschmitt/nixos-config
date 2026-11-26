@@ -1,0 +1,4 @@
+# kill -SIGUSR1 "$KITTY_PID"
+pkill -USR1 kitty
+
+# vim: set ft=zsh et ts=2 sw=2 :

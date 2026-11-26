@@ -1,0 +1,9 @@
+# Usage: gnome-keyring::item-attribute ATTR CRITERIA..
+local attr="$1"
+shift
+
+secret-tool search $@ 2>&1 | \
+  awk -F' = ' '
+      /attribute.'${attr}'/ {rc = 1; print $2; exit 0}; END { exit !rc }'
+
+# vim: set ft=zsh et ts=2 sw=2 :

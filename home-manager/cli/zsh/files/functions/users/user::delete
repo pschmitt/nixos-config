@@ -1,0 +1,27 @@
+local usage="$0 USER [USER ...]"
+
+local help
+zparseopts -D -E -K {h,-help}=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local users=("$@")
+
+if [[ -z "$users" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local u
+for u in $users
+do
+  echo_warning "Delete user: $u"
+  sudo userdel "$u"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

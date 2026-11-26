@@ -1,0 +1,41 @@
+local xkb
+zparseopts -D -E -K -- {x,-xkb}=xkb
+
+local mapfile="$(mktemp)"
+trap "rm -f $mapfile" EXIT
+
+stdbuf -oL -eL wev -f wl_keyboard:key -M $mapfile | \
+  while IFS= read -r line
+do
+  echo_debug "$line"
+  if grep -q "(pressed)" <<< "$line"
+  then
+    pkill -P $$ wev
+    local keycode=$(sed -nr 's#.*key: ([0-9]+);.*#\1#p' <<< "$line")
+    if [[ -z "$xkb" ]]
+    then
+      if [[ -n "$keycode" ]]
+      then
+        echo "$keycode"
+        return 0
+      fi
+      return 1
+    fi
+
+    local xkb_keycode=$(awk -v code="$keycode" -F'=' '{
+          if ($2 ~ "^[[:space:]]*" code "[[:space:]]*;") {
+              gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1);
+              print $1
+              exit
+          }
+        }' "$mapfile")
+    if [[ -n "$xkb_keycode" ]]
+    then
+      echo "$xkb_keycode"
+      return 0
+    fi
+    return 1
+  fi
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

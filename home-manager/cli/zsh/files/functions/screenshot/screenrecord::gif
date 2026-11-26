@@ -1,0 +1,28 @@
+local output=~/Pictures/Screenshots/$(date -Iseconds).gif
+local region
+
+if ! region=$(slurp)
+then
+  echo_error "slurp aborted. No screen region selected."
+  return 1
+fi
+
+local width=$(sed -nr 's/[0-9]+,[0-9]+ [0-9]+x([0-9]+)/\1/p' <<< "$region")
+
+wf-recorder --geometry "$region" \
+ --file="$output.mp4"
+trap "rm -f \"${output}.mp4\"" EXIT
+
+# Convert from mp4 to gif
+ffmpeg::video2gif "$output.mp4" 10 "$width" &>/dev/null
+mv "$output.mp4.gif" "$output"
+
+# FIXME Below is simpler since it doesn't require conversion but the
+# resulting GIF looks weird
+# wf-recorder --geometry "$region" \
+#   --codec=gif \
+#  --file="$output"
+
+echo_info "Recorded $output"
+
+# vim: set ft=zsh et ts=2 sw=2 :

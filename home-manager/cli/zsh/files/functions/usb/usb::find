@@ -1,0 +1,19 @@
+local vid="$1" pid="$2"
+
+local d
+for d in /sys/bus/usb/devices/*
+do
+  if [[ -f "$d/idVendor" && -f "$d/idProduct" ]]
+  then
+    if [[ "$(cat "$d/idVendor")" == "$vid" ]] && \
+       [[ "$(cat "$d/idProduct")" == "$pid" ]]
+    then
+      echo "$d"
+      return 0
+    fi
+  fi
+done
+
+return 1
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,13 @@
+local usage="usage: $0 [PR_NUMBER]"
+
+local pr_number="${@[-1]}"
+
+if [[ -n "$pr_number" && $pr_number =~ ^[0-9]+$ ]]
+then
+  nixpkgs::pr-view "$@"
+  return "$?"
+fi
+
+nixpkgs::digest "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

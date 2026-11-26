@@ -1,0 +1,15 @@
+local email url
+gravatar::from-email $@ | read -r email url
+echo_info "Gravatar URL: $url"
+
+local extra_args
+if [[ -t 1 ]]
+then
+  local output="${email}.jpg"
+  extra_args=(--output $output)
+  echo_info "Writing Gravatar image to ${output}"
+fi
+
+curl -fsSL $extra_args "$url"
+
+# vim: set ft=zsh et ts=2 sw=2 :

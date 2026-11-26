@@ -1,0 +1,61 @@
+local average nounits min max watch
+local res values
+local unit=GHz
+
+zparseopts -D -K \
+  a=average -average=average \
+  n=nounits -no-units=nounits \
+  m=min -min=min \
+  M=max -max=max \
+  w::=watch -watch::=watch
+
+if [[ -n "$watch" ]]
+then
+  # FIXME When using the opt::arr zparseopts notation the value of the option
+  # get appended to the array. For instance here it results in watch=( -w2 )
+  # Strip flag name
+  local interval=${${watch[1]##(--watch|-w)}:-1}
+
+  if ! [[ "$interval" =~ ^[0-9]+$ ]]
+  then
+    echo_error "--watch needs to hold an integer value. Got: $interval" >&2
+    return 2
+  fi
+
+  while true
+  do
+    "$0" $average $nounits $max $min
+    sleep "$interval"
+  done
+
+  return "$?"
+fi
+
+# Divide by 1000 so that we get values in GHz
+values=($(awk '/MHz/ { printf "%.1f\n", ($NF / 1000.0) }' /proc/cpuinfo))
+# echo_debug "Values: $values"
+
+if [[ -n "$average" ]]
+then
+  res=$(avg <<< "$values")
+elif [[ -n "$min" ]]
+then
+  res=$(min <<< "$values")
+elif [[ -n "$max" ]]
+then
+  res=$(max <<< "$values")
+else
+  res="${(j:\n:)values}"
+fi
+
+if [[ -n "$res" ]]
+then
+  if [[ -n "$nounits" ]]
+  then
+    echo "$res"
+  else
+    echo "$res" | sed "s/\$/ $unit/"
+  fi
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

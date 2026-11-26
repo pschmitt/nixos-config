@@ -1,0 +1,26 @@
+local verbose
+zparseopts -D -E -K -- {v,-verbose}=verbose
+
+local collections=("${(@f)$(busctl -j --user --no-pager \
+  get-property org.freedesktop.secrets /org/freedesktop/secrets \
+  org.freedesktop.Secret.Service Collections | jq -er '.data[]')}")
+
+local coll rc=0 coll_name
+for coll in $collections
+do
+  coll_name=${coll:t}
+
+  if busctl -j --no-pager --user get-property \
+    org.freedesktop.secrets $coll \
+    org.freedesktop.Secret.Collection Locked | jq -er '.data' > /dev/null
+  then
+    echo_warning "$coll_name is locked"
+    rc=1
+  else
+    [[ -n $verbose ]] && echo_info "$coll_name is unlocked"
+  fi
+done
+
+return "$rc"
+
+# vim: set ft=zsh et ts=2 sw=2 :

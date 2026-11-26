@@ -1,0 +1,10 @@
+if [[ -n "$SERVER"  ]]
+then
+  echo_warning "NO! This is $HOST and SERVER=1. Refusing to proceeed."
+  return 1
+fi
+
+local msg="halting in... "
+countdown --prefix "$msg" "${1:-3}" && sudo shutdown -h now
+
+# vim: set ft=zsh et ts=2 sw=2 :

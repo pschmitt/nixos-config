@@ -1,0 +1,19 @@
+local noheader
+zparseopts -D -E -K -- \
+  {n,-no-header,-noheader}=noheader
+
+local name p dev
+{
+  if [[ -z "$noheader" ]]
+  then
+    echo "NAME\tDEVICE"
+  fi
+  for dev in /sys/class/video4linux/*
+  do
+    name=$(cat $dev/name)
+    p=$(basename $dev)
+    echo "$name\t/dev/$p"
+  done | sort -k 2
+} | column -t -s '	'
+
+# vim: set ft=zsh et ts=2 sw=2 :

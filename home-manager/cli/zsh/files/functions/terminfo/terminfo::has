@@ -1,0 +1,12 @@
+local usage="usage: $0 TERM"
+local term="$1"
+
+if [[ -z "$term" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+infocmp "$term" &>/dev/null
+
+# vim: set ft=zsh et ts=2 sw=2 :

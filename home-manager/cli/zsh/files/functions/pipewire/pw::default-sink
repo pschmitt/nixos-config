@@ -1,0 +1,3 @@
+pw::metadata-query "default.audio.sink"
+
+# vim: set ft=zsh et ts=2 sw=2 :

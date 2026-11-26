@@ -1,0 +1,35 @@
+local usage="Usage: $0 UNIT"
+local help
+
+if [[ -z "$1" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+zparseopts -D -E \
+  h=help -help=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local user
+
+zparseopts -D -K -E \
+  -user=user
+
+local unit="$1"
+
+if [[ -z "$unit" ]]
+then
+  echo_err "Missing unit"
+fi
+
+systemctl $user daemon-reload
+systemctl $user restart "$unit"
+journalctl $user -xlf --unit "$unit"
+
+# vim: set ft=zsh et ts=2 sw=2 :

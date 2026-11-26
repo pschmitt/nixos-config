@@ -1,0 +1,43 @@
+local usage="Usage: $0 [--user] [-H HOST|--host=HOST] UNIT PROPERTY"
+
+local help user host
+local host_value
+local unit property
+
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {u,-user}=user \
+  H:=host -host:=host
+user=${user:+--user}
+host_value="${host[2]#=}"
+if [[ -n "$host_value" ]]
+then
+  host_value="$(systemctl::normalize-remote-host "$host_value")"
+fi
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+unit="$1"
+property="$2"
+
+if [[ -z "$unit" || -z "$property" ]]
+then
+  echo_err "Missing unit or property"
+  echo "$usage" >&2
+  return 2
+fi
+
+systemctl \
+  $user \
+  ${host_value:+--host=$host_value} \
+  show \
+  --property="$property" \
+  --value \
+  "$unit" \
+  2>/dev/null
+
+# vim: set ft=zsh et ts=2 sw=2 :

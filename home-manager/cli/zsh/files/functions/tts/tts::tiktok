@@ -1,0 +1,55 @@
+local voice=(--voice en_us_001)
+local keep noplay
+
+zparseopts -D -E -K -- \
+  {V,-voice}:=voice \
+  {k,-keep}=keep \
+  {P,-dnp,-no-play,-noplay,-silent,q}=noplay
+
+# Assume we want to keep the file around if --no-play is set
+[[ -n "$noplay" ]] && keep=1
+
+voice=$voice[2]
+case $voice in
+  en)
+    voice=en_us_001
+    ;;
+  uk)
+    voice=en_uk_001
+    ;;
+  de)
+    voice=de_001
+    ;;
+  fr)
+    voice=fr_001
+    ;;
+esac
+
+if ! [[ $voice =~ [0-9]{3}$ ]]
+then
+  voice="${voice}_001"
+fi
+
+local text=${@[-1]//\"/\\\"}  # escape double quote
+# pop last arg
+[[ "$#" -gt 0 ]] && set -- ${@[1,-2]}
+
+local file=$(mktemp --suffix=.mp3)
+[[ -n "$keep" ]] && echo_info "TTS file: $file"
+[[ -z "$keep" ]] && trap "rm -f '$file'" EXIT
+
+curl -fsSL --compressed -X POST -H 'Content-Type: application/json' \
+  --data-raw '{"text":"'${text}'","voice":"'${voice}'"}' \
+  'https://tiktok-tts.weilnet.workers.dev/api/generation' | \
+  jq -er '.data' | base64 -d >! "$file"
+
+if [[ -z "$noplay" ]]
+then
+  audio::play $@ "$file"
+  return "$?"
+fi
+
+# --no-play is set -> echo filename
+echo "$file"
+
+# vim: set ft=zsh et ts=2 sw=2 :

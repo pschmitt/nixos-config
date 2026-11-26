@@ -1,0 +1,85 @@
+local reconnect silent notify profile
+local dev_alias preferred dev name pid other_pid
+local -a pids next_pids
+zparseopts -D -K -E -- \
+  {r,-reconnect}=reconnect \
+  {s,-silent,q,-quiet}=silent \
+  {n,-notify}=notify
+
+if [[ -z "$1" ]]
+then
+  # Try them all!
+  for dev in $(bt::list-audio-devices)
+  do
+    bt::connect-headset "$dev" &
+  done
+  wait
+  return
+fi
+
+dev_alias="$1"
+
+# Generic jabra alias: try Elite 7 first, fall back to Elite 8
+case "$dev_alias" in
+  jabra|jab|j)
+    preferred="$(bt::jabra-preferred)"
+    if [[ -n "$preferred" ]]
+    then
+      bt::connect-headset $notify $reconnect $silent "$preferred" a2dp-sink
+      return
+    fi
+    pids=()
+    for dev in "Jabra Elite 8 Active" "Jabra Elite 7 Active"
+    do
+      bt::connect-headset $notify $reconnect $silent "$dev" a2dp-sink &
+      pids+=("$!")
+    done
+    while (( ${#pids} > 0 ))
+    do
+      next_pids=()
+      for pid in "${pids[@]}"
+      do
+        if kill -0 "$pid" 2>/dev/null
+        then
+          next_pids+=("$pid")
+          continue
+        fi
+
+        if wait "$pid"
+        then
+          for other_pid in "${pids[@]}"
+          do
+            if [[ "$other_pid" != "$pid" ]]
+            then
+              kill "$other_pid" 2>/dev/null
+              wait "$other_pid" 2>/dev/null
+            fi
+          done
+          return 0
+        fi
+      done
+      pids=("${next_pids[@]}")
+      if (( ${#pids} > 0 ))
+      then
+        sleep 0.1
+      fi
+    done
+    return 1
+    ;;
+esac
+
+name="${$(bt::device-alias "$dev_alias"):-$1}"
+
+case "$name" in
+  Jabra*)
+    profile="a2dp-sink"
+    ;;
+  *)
+    echo_err "Unknown device $1"
+    return 2
+    ;;
+esac
+
+bt::connect-headset $notify $reconnect $silent "$name" "$profile"
+
+# vim: set ft=zsh et ts=2 sw=2 :

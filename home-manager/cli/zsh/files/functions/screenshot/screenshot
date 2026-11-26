@@ -1,0 +1,47 @@
+local notify save
+zparseopts -D -E -K -- \
+  {s,-save}=save \
+  {n,-notify}=notify
+
+local file
+case "$1" in
+  '')
+    if [[ -n "$save" ]]
+    then
+      file=$(mktemp --suffix .png)
+    else
+      file="-" # stdout
+    fi
+    ;;
+  -)
+    if [[ -n "$save" ]]
+    then
+      echo_error "Cannot save to file when using stdout"
+      return 1
+    fi
+    file="-" # stdout
+    ;;
+  *)
+    file=$1
+    ;;
+esac
+
+wayland::export-display
+
+if ! grim "$file"
+then
+  if [[ -n $notify ]]
+  then
+    notify-send "Failed to grab screenshot"
+  fi
+  return 1
+fi
+
+if [[ -n $notify ]]
+then
+  notify-send "📸 Saved screenshot: $file"
+fi
+
+[[ "$file" != "-" ]] && echo "$file"
+
+# vim: set ft=zsh et ts=2 sw=2 :

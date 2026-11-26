@@ -1,0 +1,19 @@
+local f1="$1" f2="$2"
+
+for f in "$f1" "$f2"
+do
+  if [[ -z "$f" ]]
+  then
+    echo "Usage: $0 FILE FILE" >&2
+    return 2
+  fi
+  if [[ ! -f "$f" ]]
+  then
+    echo_error "File not found: $f" >&2
+    return 1
+  fi
+done
+
+diff <(yq 'sortKeys(..)' "$f1") <(yq 'sortKeys(..)' "$f2")
+
+# vim: set ft=zsh et ts=2 sw=2 :

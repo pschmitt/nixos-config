@@ -1,0 +1,22 @@
+local usagbe="usage: $0 [PR_NUMBER]"
+local pr="${1:t}" # tail, in case we passed a URL
+
+if [[ -z $pr ]]
+then
+  echo_error "Missing PR number"
+  echo $usage >&2
+  return 2
+fi
+
+if [[ ! $pr =~ ^[0-9]+ ]]
+then
+  echo_error "Invalid PR number: $pr"
+  return 1
+fi
+
+# local url="https://nixpk.gs/pr-tracker.html?pr=${pr}"
+local url="https://nixpkgs-tracker.ocfox.me/?pr=${pr}"
+
+changedetection-io::watch --tag nix $url
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,36 @@
+local usage="usage: $0 UNIT"
+
+local help follow user
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {f,-follow}=follow \
+  -user=user
+
+if [[ -n "$help" ]]
+then
+  echo $usage
+  return 0
+fi
+
+local unit="$1"
+
+if [[ -z "$unit" ]]
+then
+  echo_err "Missing unit"
+  echo "$usage" >&2
+  return 2
+fi
+
+local last_start=$(systemctl $user show -p ExecMainStartTimestamp --value "$unit")
+
+if [[ -z "$last_start" ]]
+then
+  echo_err "Failed to determine last start time of unit $unit"
+  return 1
+fi
+
+journalctl $user $follow \
+  -u $unit \
+  --since="$last_start"
+
+# vim: set ft=zsh et ts=2 sw=2 :

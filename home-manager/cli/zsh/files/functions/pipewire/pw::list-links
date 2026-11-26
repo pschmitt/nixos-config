@@ -1,0 +1,63 @@
+local usage="Usage: $0 [ITEM]"
+local help
+zparseopts -D -E -K -- \
+  {h,-help}=help
+
+if [[ -n $help ]]
+then
+  echo "$usage"
+  return
+fi
+
+local node="$1"
+
+if [[ -z "$node" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local data="$(pw-dump | jq -er '
+  # Create a dictionary of nodes and ports with their IDs as keys
+  (map(select(.type == "PipeWire:Interface:Node")) | reduce .[] as $item ({}; .[$item.id | tostring] = $item)) as $nodes
+  | (map(select(.type == "PipeWire:Interface:Port")) | reduce .[] as $item ({}; .[$item.id | tostring] = $item)) as $ports
+  # Wrap the entire expression in an array
+  | [ .[]
+    | if .type == "PipeWire:Interface:Link" then
+        . + {
+          output_node_info: $nodes[(.info["output-node-id"] | tostring)],
+          input_node_info: $nodes[(.info["input-node-id"] | tostring)],
+          output_port_info: $ports[(.info["output-port-id"] | tostring)],
+          input_port_info: $ports[(.info["input-port-id"] | tostring)]
+        }
+      else
+        .
+      end
+    ]
+')"
+
+local node_ids="$(jq -er --arg node $node '[.[] |
+    select(
+      .type == "PipeWire:Interface:Node" and
+      (.info.props["node.name"] | test($node))
+    ).id]' <<< "$data")"
+
+# echo_debug "Node ids: $node_ids"
+
+if [[ -z "$node_ids" ]] || [[ "$node_ids" == "[]" ]]
+then
+  echo_error "Failed to determine node id for $node"
+  return 2
+fi
+
+<<<"$data" jq -er --argjson node_ids $node_ids '[.[] |
+    select(
+      .type == "PipeWire:Interface:Link"
+      and (
+        (.info.props["link.input.node"] | inside($node_ids[]))
+        or
+        (.info.props["link.output.node"] | inside($node_ids[]))
+      )
+    )]'
+
+# vim: set ft=zsh et ts=2 sw=2 :

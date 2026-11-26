@@ -1,0 +1,28 @@
+local usage="usage: $0 TERM"
+local resolve
+
+zparseopts -D -E -K {r,-resolve}=resolve
+local term="$1"
+
+if [[ -z "$term" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local res=$(infocmp -U "$term" 2>/dev/null | \
+  awk -F ': *' '/^#.*from file/ { print $2 }')
+
+if [[ -z "$res" ]]
+then
+  return 1
+fi
+
+if [[ -n "$resolve" ]]
+then
+  res=$(readlink -f "$res")
+fi
+
+echo "$res"
+
+# vim: set ft=zsh et ts=2 sw=2 :

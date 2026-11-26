@@ -1,0 +1,42 @@
+local device_name="$1"
+local property="$2"
+local value="$3"
+
+if [[ -z "$1" ]] || [[ -z "$property" ]] || [[ -z "$value" ]]
+then
+  echo_error "Usage: $0 CAMERA_NAME PROPERTY VALUE [PROPERTY VALUE..]"
+  return 2
+fi
+shift 2
+
+local device="$(v4l2::get-device-by-name $device_name)"
+
+if [[ -z "$device" ]]
+then
+  echo_error "No such camera found: $1"
+  return 1
+fi
+
+local args property_name
+while [[ -n "$@" ]]
+do
+  property_name=$(v4l2::guess-property "$device_name" "$property")
+
+  if [[ -z "$property_name" ]]
+  then
+    echo_error "$property No such property found for $device\nTry one of these:"
+    v4l2::list-properties "$device_name"
+    return 1
+  fi
+
+  args+=(--set-ctrl "${property_name}=${value}")
+
+  [[ "$#" -lt 2 ]] && break
+  property="$2"
+  value="$3"
+  shift 2
+done
+
+v4l2-ctl --device "$device" $args
+
+# vim: set ft=zsh et ts=2 sw=2 :

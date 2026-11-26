@@ -1,0 +1,30 @@
+local usage="Usage: $0 LICENSE"
+
+if [[ -z "$1" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+case "$1" in
+  --help|-h)
+    echo "$usage"
+    return
+    ;;
+  gpl)
+    curl -fsSL "https://www.gnu.org/licenses/gpl-3.0.txt"
+    ;;
+  mit)
+    curl -fSsL -H 'Accept: application/vnd.github.v3+json' \
+      https://api.github.com/licenses/mit | \
+        jq -r .body | \
+        sed -e 's/\[year\]/2021/' \
+            -e 's/\[fullname\]/Philipp Schmitt <'${EMAIL}'>/'
+    ;;
+  *)
+    echo_err "Unknown license type: $1"
+    return 2
+    ;;
+esac
+
+# vim: set ft=zsh et ts=2 sw=2 :

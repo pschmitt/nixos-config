@@ -1,0 +1,42 @@
+local help usage="usage: $0 [-n COUNT]"
+local count=(--count 10) json
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {n,-count}:=count \
+  {j,-json}=json
+count=$count[2]
+
+if [[ -n $help ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+{
+  # NOTE it would make sense to do --count $(( count * 2 )) here
+  # but since we dedupe later, it's better to just get more results
+  ps::json --cpu --count $count
+  ps::json --mem --count $count
+} | jq -s -e --argjson count "$count" '
+      # combine both arrays
+      add
+
+      # index by pid to drop duplicates
+      | unique_by(.pid)
+
+      # sort again by cpu for stable ordering
+      | sort_by(.cpu_percent | tonumber? // 0) | reverse
+
+      # slice
+      | .[:$count]
+    ' | {
+    if [[ -n $json ]]
+    then
+      jq -e '.'
+    else
+      jq -e 'map({pid, user, cpu_pct: .cpu_percent, mem_pct: .mem_percent, cmd: .command})' | \
+        tsv::pretty-from-json
+    fi
+  }
+
+# vim: set ft=zsh et ts=2 sw=2 :

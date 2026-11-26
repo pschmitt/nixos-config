@@ -1,0 +1,35 @@
+local usage="Usage: $0 ACTION [--user] [-H HOST|--host=HOST] SERVICE_NAME"
+local action="$1"
+local help user
+local -a host
+local host_value
+local -a opts
+
+shift
+
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {u,-user}=user \
+  H:=host -host:=host
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+if [[ -n "$user" ]]
+then
+  opts+=(--user)
+fi
+
+host_value="${host[2]#=}"
+if [[ -n "$host_value" ]]
+then
+  host_value="$(systemctl::normalize-remote-host "$host_value")"
+  opts+=("--host=$host_value")
+fi
+
+systemctl::action-with-logs "${opts[@]}" "$action" "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

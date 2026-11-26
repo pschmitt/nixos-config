@@ -1,0 +1,81 @@
+local usage="Usage: $0 USER PATH"
+local -a extra_args=()
+local both
+local default
+local permissions=(-p "rwX")
+local verbose
+
+zparseopts -D -E -K -- \
+  {b,-both}=both \
+  {d,-default}=default \
+  {p,-permissions}=permissions \
+  {v,-verbose}=verbose
+
+permissions=${permissions[2]}
+
+if [[ "$#" -lt 2 ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+if [[ -n "$default" ]]
+then
+  extra_args+=(-d)
+fi
+
+local user="$1"
+shift
+
+local -a targets=()
+local t
+
+local rc
+
+for t in $@
+do
+  if ! [[ -e "$t" ]]
+  then
+    echo_err "No such file or directory: $t"
+    return 1
+  fi
+  targets+=("$(realpath "$t")")
+done
+
+if [[ -n "$default" ]] || [[ -n "$both" ]]
+then
+  echo_info "Setting *default* permissions (${permissions}) for user $user on ${targets}"
+  sudo setfacl -R -d -m "u:${user}:${permissions}" "${targets[@]}"
+  rc="$?"
+
+  if [[ -n "$verbose" ]] && [[ -z "$both" ]]
+  then
+    echo_debug "Resulting permissions:"
+    for t in $targets
+    do
+      getfacl "$t"
+    done
+  fi
+
+  [[ "$rc" -ne 0 ]] && return "$rc"
+fi
+
+if [[ -z "$default" ]] || [[ -n "$both" ]]
+then
+  echo_info "Setting permissions (${permissions}) for user $user on ${targets}"
+  sudo setfacl ${extra_args} -R -m "u:${user}:${permissions}" "${targets[@]}"
+  rc="$?"
+
+  if [[ -n "$verbose" ]] && [[ -z "$both" ]]
+  then
+    echo_debug "Resulting permissions:"
+    for t in $targets
+    do
+      getfacl "$t"
+    done
+  fi
+
+  return "$rc"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

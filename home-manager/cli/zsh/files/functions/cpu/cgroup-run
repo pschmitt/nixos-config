@@ -1,0 +1,71 @@
+local usage="$0 [-c CPU_QUOTA] [-w CPU_WEIGHT] [-m MEM_HIGH] [-M MEM_MAX] [-i IO_WEIGHT] COMMAND"
+local default_cpu_quota=50
+local default_cpu_weight=30
+local default_mem_high=6
+local default_mem_max=8
+local default_io_weight=30
+
+local cpu_quota
+local cpu_weight
+local help
+local mem_high
+local mem_max
+local io_weight
+local slay
+
+zparseopts -D -K \
+  h=help -help=help \
+  c:=cpu_quota -cpu:=cpu_quota \
+  w:=cpu_weight -cpu-weight:=cpu_weight \
+  m:=mem_high -mem-high:=mem_high \
+  M:=mem_max -mem-max:=mem_max \
+  i:=io_weight -io-weight:=io_weight \
+  s=slay -slay=slay
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+if [[ -z "$*" ]]
+then
+  echo_error "Missing command"
+  echo "$usage" >&2
+  return 2
+fi
+
+cpu_quota=${cpu_quota[2]:-${default_cpu_quota}}
+cpu_weight=${cpu_weight[2]:-${default_cpu_weight}}
+mem_high=${mem_high[2]:-${default_mem_high}}
+mem_max=${mem_max[2]:-${default_mem_max}}
+io_weight=${io_weight[2]:-${default_io_weight}}
+
+local unit="$(systemd-escape "$*" | cut -c -20)-$RANDOM-$$"
+
+local cmd=(
+  systemd-run --user --uid="${UID:-1000}" --gid="${GID:-1000}" \
+    --scope --unit="${unit}" \
+    --property CPUQuota="${cpu_quota}%" \
+    --property CPUWeight="${cpu_weight}" \
+    --property MemoryHigh="${mem_high}G" \
+    --property MemoryMax="${mem_max}G" \
+    --property IOWeight="${io_weight}" \
+    -- "$@"
+  )
+
+local stop_cmd=(
+  systemctl --user stop --force "${unit}.scope"
+)
+
+$stop_cmd
+
+if [[ -n "$slay" ]]
+then
+  local name="cgrp-run-${cmd[0,30]}"
+  tmux-slay run --exit-command "$stop_cmd" --name "$name" --no-wrap -- ${(qqq)cmd}
+else
+  $cmd
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

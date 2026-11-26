@@ -1,0 +1,452 @@
+# https://stackoverflow.com/a/17790708/1872036
+# examples:
+# ps::attach-to-pid 1234
+# ps::attach-to-pid pytest
+# ps::attach-to-pid python manage.py runserver
+# ps::attach-to-pid -H server1 1234     # attach remotely over SSH
+# ps::attach-to-pid -H server1 pytest   # search & attach remotely
+# ps::attach-to-pid -p pytest           # prefix lines with [pid]
+# ps::attach-to-pid -0 1234             # include stdin monitoring
+# ps::attach-to-pid -1 1234             # stdout only
+# ps::attach-to-pid -2 1234             # stderr only
+# ps::attach-to-pid -i 1234             # interactive: feed stdin + view output
+# ps::attach-to-pid --tail 1234         # fallback to tailing /proc/$pid/fd/1,2
+local usage="usage: $0 [-H|--host HOST] [-0|--stdin] [-1|--stdout] [-2|--stderr] [-i|--interactive] [-p|--prefix] [--strace] [--tail] PID|QUERY..."
+local target_fds=(1 2)
+local show_pid=0
+local use_tail=0
+local raw_strace=0
+local interactive=0
+local explicit_fds=0
+local host=""
+local target_args=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      echo "$usage"
+      return 0
+      ;;
+    -H|--host)
+      if [[ -z "$2" || "$2" =~ ^- ]]; then
+        echo "Option $1 requires an argument" >&2
+        echo "$usage" >&2
+        return 2
+      fi
+      host="$2"
+      shift 2
+      ;;
+    --host=*)
+      host="${1#*=}"
+      shift
+      ;;
+    -0|--stdin)
+      if [[ $explicit_fds -eq 0 ]]; then
+        target_fds=(0 1 2)
+        explicit_fds=1
+      else
+        target_fds+=(0)
+      fi
+      shift
+      ;;
+    -1|--stdout)
+      if [[ $explicit_fds -eq 0 ]]; then
+        target_fds=(1)
+        explicit_fds=1
+      else
+        target_fds+=(1)
+      fi
+      shift
+      ;;
+    -2|--stderr)
+      if [[ $explicit_fds -eq 0 ]]; then
+        target_fds=(2)
+        explicit_fds=1
+      else
+        target_fds+=(2)
+      fi
+      shift
+      ;;
+    -i|--interactive)
+      interactive=1
+      shift
+      ;;
+    -p|--prefix|--show-pid)
+      show_pid=1
+      shift
+      ;;
+    --strace)
+      raw_strace=1
+      shift
+      ;;
+    --tail)
+      use_tail=1
+      shift
+      ;;
+    --)
+      shift
+      target_args+=("$@")
+      break
+      ;;
+    -*)
+      # Check if this flag or remaining arguments match a running process cmdline
+      local chk_pattern="$*"
+      local chk_found=0
+      if [[ -n "$host" ]]; then
+        if ssh -q "$host" "pgrep -af -- ${(qq)chk_pattern} 2>/dev/null | grep -v pgrep | grep -v attach-to-pid" &>/dev/null; then
+          chk_found=1
+        fi
+      else
+        if pgrep -af -- "$chk_pattern" 2>/dev/null | grep -v -E "^($$|$PPID)\b" | grep -v "attach-to-pid" &>/dev/null; then
+          chk_found=1
+        fi
+      fi
+      if [[ $chk_found -eq 1 ]]; then
+        target_args+=("$@")
+        break
+      else
+        echo "Unknown option: $1" >&2
+        echo "$usage" >&2
+        return 2
+      fi
+      ;;
+    *)
+      # Remaining arguments form the PID or command line query
+      target_args+=("$@")
+      break
+      ;;
+  esac
+done
+
+if [[ ${#target_args[@]} -eq 0 ]]; then
+  echo "$usage" >&2
+  return 2
+fi
+
+local pid=""
+
+# Detect if user entered an int (-> pid) or str (-> query)
+if [[ ${#target_args[@]} -eq 1 && "${target_args[1]}" =~ ^[0-9]+$ ]]; then
+  pid="${target_args[1]}"
+  if [[ -n "$host" ]]; then
+    if ! ssh -q "$host" "kill -0 $pid" 2>/dev/null; then
+      echo::error "No such process on $host: $pid"
+      return 1
+    fi
+  else
+    if ! kill -0 "$pid" 2>/dev/null; then
+      echo::error "No such process: $pid"
+      return 1
+    fi
+  fi
+else
+  local query="${(j: :)target_args}"
+  local pgrep_pattern="$query"
+  local matches=""
+
+  if [[ -n "$host" ]]; then
+    matches=$(ssh -q "$host" "pgrep -af -- ${(qq)pgrep_pattern} 2>/dev/null | grep -v 'pgrep' | grep -v 'attach-to-pid'")
+    if [[ -z "$matches" && ${#target_args[@]} -gt 1 ]]; then
+      pgrep_pattern="${(j:.*:)target_args}"
+      matches=$(ssh -q "$host" "pgrep -af -- ${(qq)pgrep_pattern} 2>/dev/null | grep -v 'pgrep' | grep -v 'attach-to-pid'")
+    fi
+  else
+    matches=$(pgrep -af -- "$pgrep_pattern" 2>/dev/null | grep -v -E "^($$|$PPID)\b" | grep -v "attach-to-pid")
+    if [[ -z "$matches" && ${#target_args[@]} -gt 1 ]]; then
+      pgrep_pattern="${(j:.*:)target_args}"
+      matches=$(pgrep -af -- "$pgrep_pattern" 2>/dev/null | grep -v -E "^($$|$PPID)\b" | grep -v "attach-to-pid")
+    fi
+  fi
+
+  if [[ -z "$matches" ]]; then
+    if [[ -n "$host" ]]; then
+      echo::error "Could not find any process on $host matching '$query'"
+    else
+      echo::error "Could not find any process matching '$query'"
+    fi
+    return 1
+  fi
+
+  local match_count=$(echo "$matches" | grep -c '^[0-9]')
+  local selected=""
+
+  if [[ $match_count -eq 1 ]]; then
+    selected="$matches"
+  elif [[ -t 0 && -t 1 ]] && command -v fzf &>/dev/null; then
+    local header_msg="Select process to attach ($query)"
+    [[ -n "$host" ]] && header_msg="Select process on $host to attach ($query)"
+    local preview_b64=$(cat << 'EOF' | base64 | tr -d '\r\n'
+pid=$1
+[ -z "$pid" ] && exit 0
+printf "\033[1;36m━━━ Process Info (%s) ━━━\033[0m\n" "$pid"
+ps u -p "$pid" 2>/dev/null | sed "1s/^/\x1b[1;37m/; 1s/$/\x1b[0m/"
+printf "\n\033[1;35m━━━ Process Tree ━━━\033[0m\n"
+pstree -a -p -s -H "$pid" -C age -U "$pid" 2>/dev/null || pstree -a -p "$pid" 2>/dev/null || ps -ef --forest 2>/dev/null | grep -C 3 "$pid"
+printf "\n\033[1;34m━━━ Open File Descriptors ━━━\033[0m\n"
+{ ls --color=always -l "/proc/$pid/fd" 2>/dev/null || sudo -n ls --color=always -l "/proc/$pid/fd" 2>/dev/null; } | tail -n +2
+EOF
+)
+    local preview_cmd="echo $preview_b64 | base64 -d | sh -s -- {1}"
+    if [[ -n "$host" ]]; then
+      preview_cmd="ssh -q ${(q)host} \"echo $preview_b64 | base64 -d | sh -s -- {1}\""
+    fi
+    selected=$(echo "$matches" | fzf --header="$header_msg:" --reverse --height=~60% --preview="$preview_cmd" --preview-window="right:55%:wrap")
+    if [[ -z "$selected" ]]; then
+      echo::warning "No process selected"
+      return 0
+    fi
+  else
+    echo::warning "Multiple processes found matching '$query':"
+    echo "$matches" >&2
+    selected=$(echo "$matches" | tail -1)
+    echo::info "Selecting latest: $selected"
+  fi
+
+  pid="${selected%% *}"
+fi
+
+local cmd=""
+if [[ -n "$host" ]]; then
+  cmd=$(ssh -q "$host" "ps -o cmd= $pid" 2>/dev/null)
+  echo::info "Attaching to PID $pid on $host ($cmd)"
+else
+  cmd=$(ps -o cmd= "$pid" 2>/dev/null)
+  echo::info "Attaching to PID $pid ($cmd)"
+fi
+
+# Legacy /proc/<pid>/fd/ tailing mode
+if [[ $use_tail -eq 1 ]] || (! [[ -n "$host" ]] && ! command -v strace &>/dev/null); then
+  local fd files=()
+  for fd in ${target_fds[@]}; do
+    files+=(/proc/$pid/fd/$fd)
+  done
+  if [[ -n "$host" ]]; then
+    echo::debug "\$ ssh -t ${(q)host} sudo tail -f ${files[*]}"
+    ssh -t "$host" "sudo tail -f ${files[*]}"
+  else
+    echo::debug "\$ tail -f $files"
+    sudo tail -f $files
+  fi
+  return $?
+fi
+
+# Sort and deduplicate target_fds
+target_fds=(${(u)target_fds})
+local fd_list="${(j:,:)target_fds}"
+
+# Select syscalls to trace based on target_fds
+local trace_calls="write,writev"
+if [[ " ${target_fds[*]} " =~ " 0 " ]]; then
+  trace_calls="read,readv,write,writev"
+fi
+
+local strace_cmd="sudo strace --color=never -p $pid -f -qqq -s 1048576 -e trace=$trace_calls -e trace-fds=$fd_list -e signal=none"
+
+# Raw strace output mode
+if [[ $raw_strace -eq 1 ]] || ! command -v python3 &>/dev/null; then
+  if [[ -n "$host" ]]; then
+    echo::debug "\$ ssh -t ${(q)host} $strace_cmd"
+    ssh -t "$host" "$strace_cmd"
+  else
+    echo::debug "\$ $strace_cmd"
+    eval "$strace_cmd"
+  fi
+  return $?
+fi
+
+# Determine ssh options for streaming
+local ssh_cmd=()
+if [[ -n "$host" ]]; then
+  # Force a pty (-tt): without one, a Ctrl-C (or a dropped connection) never
+  # reaches the remote sudo/strace, which then keeps the tracee attached
+  # forever ("already being traced by pid ...").
+  local ssh_flags=(-tt)
+  ssh_cmd=(ssh "${ssh_flags[@]}" "$host" "$strace_cmd")
+fi
+
+# Stream output through Python decoder
+if [[ -n "$host" ]]; then
+  "${ssh_cmd[@]}" 2>&1
+else
+  sudo strace --color=never -p "$pid" -f -qqq -s 1048576 -e trace="$trace_calls" -e trace-fds="$fd_list" -e signal=none 2>&1
+fi | \
+  HOST="$host" INTERACTIVE="$interactive" TARGET_PID="$pid" SHOW_PID="$show_pid" TARGET_FDS="$fd_list" python3 -u -c '
+import sys, os, re, codecs, stat, subprocess, threading
+
+ansi_re = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+write_re = re.compile(r"^(?:\[pid\s+(\d+)\]\s+)?(write|writev|read|readv)\(([012]),\s+(.*)")
+resumed_re = re.compile(r"^(?:\[pid\s+(\d+)\]\s+)?<\.\.\.\s+(?:write|writev|read|readv)\s+resumed>\s+(.*)")
+str_re = re.compile(r"\"((?:[^\"\\]|\\.)*)\"")
+pending = {}
+show_pid = os.environ.get("SHOW_PID") == "1"
+target_fds = set(os.environ.get("TARGET_FDS", "1,2").split(","))
+interactive = os.environ.get("INTERACTIVE") == "1"
+target_pid = os.environ.get("TARGET_PID", "")
+host = os.environ.get("HOST", "")
+is_tty = sys.stdout.isatty()
+
+def input_forwarder():
+    if not interactive or not target_pid:
+        return
+    if host:
+        try:
+            fd0_link = subprocess.check_output(
+                ["ssh", "-q", host, f"readlink /proc/{target_pid}/fd/0"],
+                text=True, stderr=subprocess.DEVNULL
+            ).strip()
+        except Exception as e:
+            sys.stderr.write(f"[attach] Cannot inspect stdin on {host}: {e}\n")
+            return
+        is_pipe = fd0_link.startswith("pipe:")
+        if is_pipe:
+            sys.stderr.write(f"[attach] Forwarding interactive input to remote pipe on {host} ({fd0_link})\n")
+            try:
+                proc = subprocess.Popen(["ssh", host, f"cat > /proc/{target_pid}/fd/0"], stdin=subprocess.PIPE)
+                with open("/dev/tty", "rb", buffering=0) as tty:
+                    while True:
+                        data = tty.read(1024)
+                        if not data:
+                            break
+                        proc.stdin.write(data)
+                        proc.stdin.flush()
+            except Exception:
+                pass
+            return
+        sys.stderr.write(f"[attach] Remote stdin is a TTY ({fd0_link}). Direct injection is blocked by kernel policy.\n")
+        return
+
+    try:
+        fd0_path = f"/proc/{target_pid}/fd/0"
+        fd0_link = os.readlink(fd0_path)
+        fd0_mode = os.stat(fd0_path).st_mode
+    except Exception as e:
+        sys.stderr.write(f"[attach] Cannot inspect stdin of {target_pid}: {e}\n")
+        return
+
+    is_pipe = stat.S_ISFIFO(fd0_mode) or fd0_link.startswith("pipe:")
+
+    tmux_pane = None
+    if not is_pipe:
+        try:
+            out = subprocess.check_output(
+                ["tmux", "list-panes", "-a", "-F", "#{pane_pid} #{session_name}:#{window_index}.#{pane_index}"],
+                text=True, stderr=subprocess.DEVNULL
+            )
+            pane_map = {int(p.split()[0]): p.split()[1] for p in out.strip().splitlines() if p and len(p.split()) == 2}
+            curr = int(target_pid)
+            while curr > 1:
+                if curr in pane_map:
+                    tmux_pane = pane_map[curr]
+                    break
+                with open(f"/proc/{curr}/stat") as f:
+                    curr = int(f.read().split()[3])
+        except Exception:
+            pass
+
+    if is_pipe:
+        sys.stderr.write(f"[attach] Forwarding interactive input to pipe ({fd0_link})\n")
+        try:
+            target_in = os.open(fd0_path, os.O_WRONLY)
+            with open("/dev/tty", "rb", buffering=0) as tty:
+                while True:
+                    data = tty.read(1024)
+                    if not data:
+                        break
+                    os.write(target_in, data)
+        except Exception:
+            pass
+    elif tmux_pane:
+        sys.stderr.write(f"[attach] Target is inside tmux pane {tmux_pane}. Forwarding input via tmux send-keys\n")
+        try:
+            with open("/dev/tty", "r", buffering=1) as tty:
+                while True:
+                    line = tty.readline()
+                    if not line:
+                        break
+                    subprocess.run(["tmux", "send-keys", "-t", tmux_pane, line[:-1], "Enter"], check=False)
+        except Exception:
+            pass
+    else:
+        sys.stderr.write(
+            f"[attach] Target stdin is a raw TTY ({fd0_link}). Direct injection is blocked by kernel policy (CONFIG_LEGACY_TIOCSTI=n).\n"
+            f"[attach] Tip: Run the command in tmux to allow interactive input, or use -0 to monitor stdin passively.\n"
+        )
+
+if interactive:
+    t = threading.Thread(target=input_forwarder, daemon=True)
+    t.start()
+
+try:
+    while True:
+        line = sys.stdin.readline()
+        if not line:
+            break
+        clean_line = ansi_re.sub("", line).rstrip("\r\n")
+        m = write_re.match(clean_line)
+        if m:
+            pid, op, fd, rest = m.groups()
+            if "<unfinished" in rest:
+                pending[pid] = (op, fd, rest)
+                continue
+        else:
+            m = resumed_re.match(clean_line)
+            if m:
+                pid, rest_resumed = m.groups()
+                op, fd, rest = pending.pop(pid, ("write", "1", ""))
+            else:
+                # Pass through sudo prompts and strace error/info messages
+                if "password for" in clean_line or clean_line.startswith(("[sudo]", "strace:")):
+                    sys.stderr.write(line)
+                    sys.stderr.flush()
+                continue
+
+        if fd not in target_fds:
+            continue
+
+        for s in str_re.findall(rest):
+            data = codecs.escape_decode(s.encode("latin1"))[0]
+            if is_tty:
+                data = data.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+            if fd == "0":
+                p = f"[{pid}:stdin] " if (show_pid and pid) else "[stdin] "
+                if data.endswith(b"\r\n"):
+                    colored = b"\x1b[36m" + p.encode() + data[:-2] + b"\x1b[0m\r\n"
+                elif data.endswith(b"\n"):
+                    colored = b"\x1b[36m" + p.encode() + data[:-1] + b"\x1b[0m\n"
+                else:
+                    colored = b"\x1b[36m" + p.encode() + data + b"\x1b[0m"
+                sys.stderr.buffer.write(colored)
+                sys.stderr.buffer.flush()
+            elif fd == "2":
+                out = sys.stderr.buffer
+                if show_pid and pid:
+                    prefix = f"[{pid}] ".encode("utf-8")
+                    sep = b"\r\n" if is_tty else b"\n"
+                    parts = data.split(sep)
+                    if parts and parts[-1] == b"":
+                        formatted = b"".join(prefix + part + sep for part in parts[:-1])
+                    else:
+                        formatted = sep.join(prefix + part for part in parts)
+                    out.write(formatted)
+                else:
+                    out.write(data)
+                out.flush()
+            else:
+                out = sys.stdout.buffer
+                if show_pid and pid:
+                    prefix = f"[{pid}] ".encode("utf-8")
+                    sep = b"\r\n" if is_tty else b"\n"
+                    parts = data.split(sep)
+                    if parts and parts[-1] == b"":
+                        formatted = b"".join(prefix + part + sep for part in parts[:-1])
+                    else:
+                        formatted = sep.join(prefix + part for part in parts)
+                    out.write(formatted)
+                else:
+                    out.write(data)
+                out.flush()
+except (KeyboardInterrupt, BrokenPipeError):
+    pass
+'
+
+# vim: set ft=zsh et ts=2 sw=2 :

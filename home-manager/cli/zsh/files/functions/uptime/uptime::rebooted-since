@@ -1,0 +1,28 @@
+# check if host has been rebooted since a given date
+#
+# Examples:
+# uptime::rebooted-since "8:00"
+# uptime::rebooted-since "yesterday"
+local offset=(--offset 0)
+zparseopts -D -E -K {o,-offset}:=offset
+offset=${offset[2]}
+
+local since="$1" since_ts="$1"
+
+# If $1 is a number assume it is a timestamp already
+if ! [[ "$since" =~ ^[0-9]+$ ]]
+then
+  since_ts=$(date -d "$1" '+%s')
+
+  if [[ -z "$since_ts" ]]
+  then
+    echo_error "Invalid date provided: $1"
+    return 1
+  fi
+fi
+
+local uptime=$(uptime::timestamp)
+
+[[ "$uptime" -gt $(( since_ts + offset )) ]]
+
+# vim: set ft=zsh et ts=2 sw=2 :

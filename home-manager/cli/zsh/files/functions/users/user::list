@@ -1,0 +1,5 @@
+local filter="$1"
+
+getent passwd | cut -d: -f1 | grep -E "$filter"
+
+# vim: set ft=zsh et ts=2 sw=2 :

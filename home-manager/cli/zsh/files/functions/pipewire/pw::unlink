@@ -1,0 +1,11 @@
+local usage="Usage: $0 NODE"
+local node="$1"
+local data=$(pw::list-links $node)
+
+local l
+for l in $(<<<"$data" jq -er '.[].id')
+do
+  pw-cli destroy "$l"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,151 @@
+emulate -L zsh
+setopt localoptions nonotify nomonitor pipefail
+zmodload zsh/zutil
+
+local help
+local usage="usage: $0 [--branch name ...] [--repo owner/repo] [--json] <PR_NUMBER> [PR_NUMBER ...]"
+local -a branches=(
+  staging-next
+  master
+  nixos-unstable-small
+  nixpkgs-unstable
+  nixos-unstable
+)
+local json repo=(-r NixOS/nixpkgs)
+
+zparseopts -D -K -E -- \
+  {h,-help}=help \
+  {b,-branch}+:=branches \
+  {r,-repo}:=repo \
+  {j,-json}=json
+
+repo=$repo[2]
+local branch_args=(-b --branch)
+branches=(${(u)branches:#$branch_args})
+
+if [[ -n "$help" ]]
+then
+  print $usage
+  return 0
+fi
+
+if [[ -z $* ]]
+then
+  echo_error "Missing PR number(s)"
+  print -u2 $usage
+  return 0
+fi
+
+local prs=("$@")
+local gh_headers=(-H "Accept: application/vnd.github+json")
+
+local tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+local pr
+local -a pr_tmp
+for pr in "${prs[@]}"
+do
+  local tf="${tmpdir}/${pr}.json"
+  pr_tmp+=("$tf")
+
+  {
+    local pr_json title state user merge_sha
+
+    if ! pr_json="$(gh api $gh_headers "/repos/${repo}/pulls/${pr}")"
+    then
+      jq -n --arg pr "$pr" '{pr: ($pr|tonumber), error: "fetch_failed"}' > "$tf"
+      exit 0
+    fi
+
+    IFS=$'\t' read -r title state user merge_sha <<< "$(
+      jq -er '[.title, .state, .user.login, (.merge_commit_sha // "")] | @tsv' <<< "$pr_json"
+    )"
+
+    local br_tf="${tmpdir}/${pr}.branches"
+    : > "$br_tf"
+
+    if [[ -n "$merge_sha" ]]
+    then
+      local b
+      for b in "${branches[@]}"
+      do
+        {
+          local cmp_json pr_status included=false
+          if cmp_json="$(gh api $gh_headers "/repos/${repo}/compare/${merge_sha}...${b}" 2>/dev/null)"
+          then
+            pr_status="$(print -r -- "$cmp_json" | jq -r '.status // ""' 2>/dev/null)"
+            if [[ "$pr_status" == "ahead" || "$pr_status" == "identical" ]]
+            then
+              included=true
+            fi
+          fi
+          printf '%s\t%s\n' "$b" "$included" >> "$br_tf"
+        } &
+      done
+      wait
+    fi
+
+    local merge_json='{}'
+    if [[ -s "$br_tf" ]]
+    then
+      merge_json="$(jq -Rn < "$br_tf" '
+        [inputs | split("\t") | { (.[0]) : (.[1] == "true") }]
+        | add
+      ')"
+    fi
+
+    jq -en \
+      --arg pr "$pr" \
+      --arg title "$title" \
+      --arg state "$state" \
+      --arg user "$user" \
+      --arg merge_commit_sha "$merge_sha" \
+      --argjson merge "$merge_json" '
+        {
+          pr: ($pr | tonumber),
+          title: $title,
+          state: $state,
+          user: $user,
+          merge_commit_sha: (if $merge_commit_sha == "" then null else $merge_commit_sha end),
+          merge: $merge
+        }
+      ' > "$tf"
+  } &
+done
+
+wait
+
+local json_array="$(jq -s '. | sort_by(.pr)' "${pr_tmp[@]}")"
+
+if [[ -n "$json" ]]
+then
+  jq -e <<< "$json_array"
+  return 0
+fi
+
+jq -er <<< "$json_array" \
+  --arg repo "$repo" \
+  --argjson branches "$(jq::array-to-json "${branches[@]}")" \
+  '
+    import "plib" as p;
+
+    map(
+      . as $row
+      | ($row.pr | tostring) as $pr_str
+      | {
+          pr: ("#" + $pr_str),
+          title: p::osc8(
+            $row.title;
+            "https://github.com/" + $repo + "/pull/" + $pr_str
+          ),
+        } + (
+          reduce $branches[] as $b ({}; . + {
+            ($b): ( ($row.merge[$b] // false)
+            | if . then "✅" else "❌" end )
+          })
+        )
+    )
+  ' | tsvtool
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,14 @@
+echo_info "Locking all keyrings/collections"
+local arg_collections=$(busctl --no-pager --user get-property \
+      org.freedesktop.secrets /org/freedesktop/secrets \
+      org.freedesktop.Secret.Service Collections)
+
+# NOTE we need to strip the quotes from the busctl output
+busctl -j --no-pager --user call \
+  org.freedesktop.secrets \
+  /org/freedesktop/secrets \
+  org.freedesktop.Secret.Service\
+  Lock \
+  ${=arg_collections//\"}
+
+# vim: set ft=zsh et ts=2 sw=2 :

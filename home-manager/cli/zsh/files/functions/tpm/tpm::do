@@ -1,0 +1,13 @@
+local op="$1"
+shift
+
+if [[ "$op" == update && -z "$1" ]]
+then
+  # Update all plugins when "update" action is invoked w/o any arg
+  set -- all
+fi
+
+local tpm_bin_dir="${XDG_CONFIG_HOME}/tmux/tpm/bin"
+"${tpm_bin_dir}/${op}_plugins" "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

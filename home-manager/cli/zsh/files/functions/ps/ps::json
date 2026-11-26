@@ -1,0 +1,89 @@
+local usage="usage: ps::json [-n COUNT] [--sort FIELD] [--all] [PS ARGS...]"
+local help
+local sort_by
+local count
+local all
+
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {n,-count}:=count \
+  {s,-sort}:=sort_by \
+  {A,-all}=all \
+  -cpu=sort_by_alias \
+  -mem=sort_by_alias
+
+count=$count[2]
+
+if [[ -n $all ]]
+then
+  unset count
+fi
+
+sort_by=$sort_by[2]
+
+case "$sort_by_alias" in
+  *cpu*)
+    sort_by="cpu"
+    ;;
+  *mem*)
+    sort_by="mem"
+    ;;
+esac
+
+if [[ -n $help ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local -a ps_args=("$@")
+
+# default ps args if none provided
+if (( ${#ps_args[@]} == 0 ))
+then
+  ps_args=(aux)
+fi
+
+# normalize sort aliases → jc keys
+case "$sort_by" in
+  *cpu*)
+    sort_by="cpu_percent"
+    ;;
+  *rss*)
+    sort_by="rss"
+    ;;
+  *mem*)
+    sort_by="mem_percent"
+    ;;
+esac
+
+ps "${ps_args[@]}" \
+  | jc -q --ps \
+  | jq -e \
+      --arg sort_by "$sort_by" \
+      --argjson count "${count:-null}" \
+      --argjson all "$(jq::to-bool "$all")" \
+      '
+        # Remove ourselves
+        map(
+          if $all == false
+          then
+            select(
+              (
+                .command
+                | (startswith("ps ")
+                  or contains(" jc -q --ps")
+                  or contains(" jq "))
+              ) | not
+            )
+          end
+        )
+        | if $sort_by != ""
+          then
+            sort_by(.[$sort_by] | tonumber? // 0)
+          end
+        | reverse
+        | if $count != null then .[:$count] end
+      '
+
+# vim: set ft=zsh et ts=2 sw=2 :

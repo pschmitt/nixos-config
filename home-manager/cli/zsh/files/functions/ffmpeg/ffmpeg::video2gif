@@ -1,0 +1,26 @@
+# https://superuser.com/questions/556029/how-do-i-convert-a-video-to-gif-using-ffmpeg-with-reasonable-quality
+local usage="usage: $0 VIDEO_FILE"
+local file="$1"
+local fps="${2:-10}"
+local scale="${3:-480}"
+
+if [[ -z "$file" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local png_file="${file}.png"
+local gif_file="${file}.gif"
+trap "rm -f $png_file" EXIT
+
+ffmpeg -y -i "${file}" \
+  -vf "fps=${fps},scale=${scale}:-1:flags=lanczos,palettegen" \
+  "${png_file}"
+ffmpeg -i "${file}" -i "${png_file}" \
+  -filter_complex "fps=${fps},scale=${scale}:-1:flags=lanczos[x];[x][1:v]paletteuse" \
+  "${gif_file}"
+
+echo_info "Generated $gif_file"
+
+# vim: set ft=zsh et ts=2 sw=2 :

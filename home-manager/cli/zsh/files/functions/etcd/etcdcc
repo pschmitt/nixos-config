@@ -1,0 +1,15 @@
+case "$1" in
+  health|h|check|status)
+    __etcdctl endpoint health
+    ;;
+  reset)
+    __etcd_ssh_all "sudo systemctl stop etcd && \
+                      sudo rm -rf /srv/etcd/data/member && \
+                      sudo systemctl start etcd"
+    ;;
+  *)
+    __etcdctl "$@"
+    ;;
+esac
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,46 @@
+local average nounits max min watch
+local values
+local unit=RPM
+
+zparseopts -D -K \
+  a=average -average=average \
+  n=nounits -no-units=nounits \
+  m=min -min=min \
+  M=max -max=max \
+  w::=watch -watch::=watch
+
+values=($(sensors -jA 2>/dev/null | \
+  jq -r '.. | objects |
+      with_entries(select(.key | test("fan[0-9]+_input"))) |
+      select(. != {}) |
+      to_entries[] |
+      select(.value > 0).value'))
+
+if [[ -n "$average" ]]
+then
+  # NOTE We use "-f .0" here to skip decimals
+  res=$(avg -f .0 <<< "$values")
+elif [[ -n "$min" ]]
+then
+  res=$(min <<< "$values")
+elif [[ -n "$max" ]]
+then
+  res=$(max <<< "$values")
+else
+  res="${(j:\n:)values}"
+fi
+
+if [[ -z "$res" ]]
+then
+  echo_error "There's nothing to output. Do you even have a fan? And is it supported by lm_sensors?"
+  return 3
+fi
+
+if [[ -n "$nounits" ]]
+then
+  echo "$res"
+else
+  echo "$res" | sed "s/\$/ $unit/"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

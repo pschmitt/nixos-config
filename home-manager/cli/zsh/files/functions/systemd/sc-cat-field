@@ -1,0 +1,90 @@
+# Extract a field value from a systemd service file
+local usage="Usage: $0 [--user] UNIT [FIELD]"
+local help
+local section=(-s Service)
+local user
+
+zparseopts -D -K -E \
+  h=help -help=help \
+  s:=section -section:=section \
+  -user=user
+
+section=$section[2]
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+if [[ -z "$1" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local unit_path
+if [[ -e "$1" ]]
+then
+  unit_path="$1"
+else
+  unit_path="$(sc-unit-path $user "$1")"
+fi
+
+local field="${2:-ExecStart}"
+
+if [[ -z "$unit_path" ]]
+then
+  echo_err "Failed to determine path to unit file $1"
+  return 1
+fi
+
+local unit_name="${unit_path:t}"
+local unit_user_name=root unit_user_uid=0
+
+if [[ -n "$user" ]]
+then
+  unit_user_name="$USER"
+  unit_user_uid="$UID"
+  unit_user_xdg_config_home="${XDG_CONFIG_HOME:-${HOME}/.config}"
+fi
+local unit_user_home="$(getent passwd "$unit_user_name" | cut -d: -f6)"
+
+# print(config["Service"]["ExecStart"].replace("\\\n", ""))
+# NOTE You'll need to adjust the number of spaces accordingly if you ever
+# decide to retab this file
+sed -r 's/^\s{4}//' <<EOF | python3
+    import configparser
+    import re
+
+    c = configparser.ConfigParser(interpolation=None, strict=False)
+    c.read('${unit_path}')
+
+    # Raw value, with '\n' stripped
+    val = c['${section}']['${field}'].replace('\\\\\\n', '')
+    if not val:
+      exit(1)
+
+    # Remove prefixes (such as '-', ':' or '@')
+    # See systemd.unit(1) "Special executable prefixes"
+    cmd = re.sub('^[^/]', '', val)
+    # Replace %n with the unit name, %N with the unit name w/o suffix etc.
+    # See systemd.unit(5) "SPECIFIERS"
+    cmd = cmd.replace("%%", "%")
+    cmd = cmd.replace("%m", "$(cat /etc/machine-id)")
+    cmd = cmd.replace("%n", "${unit_name}")
+    cmd = cmd.replace("%N", "${unit_name//.*}")
+    cmd = cmd.replace("%p", "${${unit//.*}//@*}")
+    cmd = cmd.replace("%H", "${HOSTNAME}")
+    cmd = cmd.replace("%l", "${HOSTNAME//.*}")
+    cmd = cmd.replace("%u", "${unit_user_name}")
+    cmd = cmd.replace("%U", "${unit_user_uid}")
+    cmd = cmd.replace("%h", "${unit_user_home}")
+    cmd = cmd.replace("%E", "${unit_user_xdg_config_home}")
+    cmd = cmd.replace("%o", "$(awk -F= '/^ID=/ { print $2 }' /etc/os-release)")
+    cmd = cmd.replace("%v", "$(uname -r)")
+    # Print result
+    print(cmd)
+EOF
+
+# vim: set ft=zsh et ts=2 sw=2 :

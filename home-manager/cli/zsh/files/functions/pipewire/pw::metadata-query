@@ -1,0 +1,6 @@
+local key="$1"
+pw-dump Metadata | jq -er --arg key "$key" '
+  .[].metadata[] | select(.key == $key).value.name
+'
+
+# vim: set ft=zsh et ts=2 sw=2 :

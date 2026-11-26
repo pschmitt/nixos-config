@@ -1,0 +1,22 @@
+local img="$@[-1]"
+
+if [[ -n "$img" && ! "$img" == -* ]]
+then
+  shift
+elif [[ -p /dev/stdin ]]
+then
+  echo_info "Reading image from pipe"
+  img=$(mktemp -u --suffix=.png)
+  trap "rm -f '$img'" EXIT
+  cat > "$img"
+else
+  echo_info "Grabbing image from clipboard"
+  img=$(mktemp -u --suffix=.jpg)
+  trap "rm -f '$img'" EXIT
+  wl-paste -t image/jpeg > "$img"
+fi
+
+# Docs: https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
+tesseract "$img" - --psm 3 $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

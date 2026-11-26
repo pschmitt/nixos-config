@@ -1,0 +1,13 @@
+local json
+zparseopts -D -E -K -- {j,-json}=json
+
+ps::json --sort cpu "$@" | {
+  if [[ -n $json ]]
+  then
+    jq -e .
+  else
+    tsv::pretty-from-json
+  fi
+}
+
+# vim: set ft=zsh et ts=2 sw=2 :

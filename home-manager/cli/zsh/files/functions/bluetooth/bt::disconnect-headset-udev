@@ -1,0 +1,25 @@
+local name="$@[-1]"
+
+if [[ -z "$name" ]]
+then
+  echo "Empty device name - Exit." >&2
+  return 0
+fi
+
+if ! name=$(bt::device-alias "$name")
+then
+  echo "Unknown device: '$name' - Exit." >&2
+  return 0
+fi
+
+# osd --icon takes a Tabler glyph name, so the summary stays plain text.
+# The notify-send fallback keeps the nerd-font codepoint: it has no
+# equivalent glyph knob and its own icon names are freedesktop, not Tabler.
+if command -v osd &>/dev/null
+then
+  osd -c bluetooth -i bluetooth-off -I error -d "$name" "Bluetooth headset disconnected"
+else
+  notify-send -c bluetooth "󰂲 Bluetooth headset disconnected" "$name"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

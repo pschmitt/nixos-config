@@ -1,0 +1,100 @@
+local usage="usage: $0 [-V VOICE] [-l LANGUAGE] [-k] [-P] TEXT"
+local help
+local voice=(--voice JennyNeural)
+local language=(--language en-US)
+local keep noplay
+
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {V,-voice}:=voice \
+  {l,-language,-lang}:=language \
+  {k,-keep}=keep \
+  {P,-dnp,-no-play,-noplay,-silent,q}=noplay
+
+if [[ -n $help ]]
+then
+  print -- $usage >&2
+  return 0
+fi
+
+[[ -n "$noplay" ]] && keep=1
+
+voice=$voice[2]
+language=$language[2]
+
+# Parse full Azure voice spec (e.g. en-US-JennyNeural → language=en-US, voice=JennyNeural)
+if [[ "$voice" =~ ^([a-z]{2}-[A-Z]{2})-(.+)$ ]]
+then
+  language="${match[1]}"
+  voice="${match[2]}"
+fi
+
+# Short language aliases
+case $language in
+  en)   language=en-US ;;
+  uk)   language=en-GB ;;
+  de)   language=de-DE ;;
+  fr)   language=fr-FR ;;
+  es)   language=es-ES ;;
+  it)   language=it-IT ;;
+  nl)   language=nl-NL ;;
+  pt)   language=pt-PT ;;
+  pl)   language=pl-PL ;;
+  ru)   language=ru-RU ;;
+  zh)   language=zh-CN ;;
+  ja)   language=ja-JP ;;
+esac
+
+local text="${@[-1]//\"/\\\"}"
+[[ "$#" -gt 0 ]] && set -- ${@[1,-2]}
+
+hass::secrets-setup || return 1
+
+local payload
+payload=$(jq --null-input \
+  --arg message "$text" \
+  --arg language "$language" \
+  --arg voice "$voice" \
+  '{
+    platform: "cloud",
+    message: $message,
+    language: $language,
+    options: { voice: $voice }
+  }')
+
+local tts_url
+if ! tts_url=$(curl -fsSL \
+  -X POST \
+  -H "Authorization: Bearer $HASS_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data "$payload" \
+  "${HASS_SERVER}/api/tts_get_url" | \
+  jq -er '.url')
+then
+  echo_error "Failed to get TTS URL from Home Assistant"
+  return 1
+fi
+
+local file
+file=$(mktemp --suffix=.mp3)
+[[ -n "$keep" ]] && echo_info "TTS file: $file"
+[[ -z "$keep" ]] && trap "rm -f '$file'" EXIT
+
+if ! curl -fsSL \
+  -H "Authorization: Bearer $HASS_TOKEN" \
+  "$tts_url" >! "$file"
+then
+  echo_error "Failed to download TTS audio"
+  rm -f "$file"
+  return 1
+fi
+
+if [[ -z "$noplay" ]]
+then
+  audio::play $@ "$file"
+  return "$?"
+fi
+
+echo "$file"
+
+# vim: set ft=zsh et ts=2 sw=2 :

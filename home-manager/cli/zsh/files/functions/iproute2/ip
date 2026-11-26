@@ -1,0 +1,35 @@
+local args=()
+# handle leading options, like -6, as in:
+# ip -6 route get 2001:4860:4860::888
+while [[ "$#" -gt 0 ]]
+do
+  case "$1" in
+    -*)
+      args+=("$1")
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+case "$1" in
+  r|route)
+    case "$2" in
+      g|get)
+        local dst="${@[-1]}"
+        local dst_r=$(dig::resolve "$dst" 2>/dev/null)
+        if [[ -n "$dst_r" && "$dst" != "$dst_r" ]]
+        then
+          echo_info "Resolved ${fg[blue]}${dst}${reset_color} to ${fg[yellow]}${dst_r}${reset_color}"
+          set -- ${@[1,-2]} $dst_r
+        fi
+        ;;
+    esac
+    ;;
+esac
+
+command ip $args "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

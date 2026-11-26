@@ -1,0 +1,11 @@
+local region
+
+if ! region=$(slurp)
+then
+  echo_error "slurp aborted. No screen region selected."
+  return 1
+fi
+
+grim -g "$region" -
+
+# vim: set ft=zsh et ts=2 sw=2 :

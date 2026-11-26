@@ -1,0 +1,20 @@
+local device_name="$1"
+local property="$2"
+
+if [[ -z "$1" ]] || [[ -z "$property" ]]
+then
+  echo_error "Usage: $0 CAMERA_NAME PROPERTY"
+  return 2
+fi
+
+local device="$(v4l2::get-device-by-name $device_name)"
+
+if [[ -z "$device" ]]
+then
+  echo_error "No such camera found: $1"
+  return 1
+fi
+
+v4l2-ctl --device "$device" --get-ctrl "${property}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

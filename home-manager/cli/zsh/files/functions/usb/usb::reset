@@ -1,0 +1,44 @@
+local usage="usage: $0 [USB_DEVICE_DESCRIPTION]"
+local help dryrun
+zparseopts -D -E -K -- {h,-help}=help {k,-dry-run,-dryrun}=dryrun
+
+if [[ -n $help ]]
+then
+  print -- $usage
+  return 0
+fi
+
+local desc="$1"
+
+if [[ -z $desc ]]
+then
+  echo_error "USB device description is required"
+  print -u2 -- "$usage"
+  return 2
+fi
+
+local usb_dev_data
+if ! usb_dev_data=$(lsusb | jc -q --lsusb | \
+  jq -er --arg desc "$desc" '
+    [.[] | select(.description | test($desc; "i"))][0]
+  ') || [[ -z $usb_dev_data ]]
+then
+  echo_error "Failed to find fingerprint device matching '$desc'"
+  return 1
+fi
+
+local usb_dev_id usb_dev_desc
+IFS=$'\t' read -r usb_dev_id usb_dev_desc <<< $(jq -er '
+  [.id, .description] | @tsv
+' <<< "$usb_dev_data")
+
+echo_info "Resetting USB device '$usb_dev_desc' (ID: $usb_dev_id)"
+if [[ -n $dryrun ]]
+then
+  echo_info "Dry run enabled, not performing reset"
+  return 0
+fi
+
+sudo usbreset "$usb_dev_id"
+
+# vim: set ft=zsh et ts=2 sw=2 :

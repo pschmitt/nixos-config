@@ -1,0 +1,31 @@
+local usage="Usage: $0 CAMERA_DEVICE_PATH"
+local help
+
+if [[ -z "$1" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+zparseopts -D -E \
+  h=help -help=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local device=$(basename "$1")
+
+local info=/sys/class/video4linux/${device}/name
+
+if [[ ! -e $info ]]
+then
+  echo_error "There is no info for device $1 (file $info does not exist)"
+  return 1
+fi
+
+cat $info
+
+# vim: set ft=zsh et ts=2 sw=2 :

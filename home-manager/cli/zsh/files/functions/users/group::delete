@@ -1,0 +1,30 @@
+local usage="$0 [--recursive] GROUP"
+local help resursive
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {r,R,-recurse,-recursive}=recursive
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local group="$1"
+
+if [[ -z "$group" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+if [[ -n "$recursive" ]]
+then
+  local members=("${(@f)$(group::member "$group")}")
+  echo_info "Deleting users: $members"
+  [[ -n $members ]] && user::delete $members
+fi
+
+sudo groupdel "$group"
+
+# vim: set ft=zsh et ts=2 sw=2 :

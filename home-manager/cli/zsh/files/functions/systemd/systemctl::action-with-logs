@@ -1,0 +1,127 @@
+local usage="Usage: $0 [--user] [-H HOST|--host=HOST] ACTION SERVICE_NAME"
+
+local help user host
+local host_value
+local previous_invocation invocation_id systemctl_rc
+local journalctl_pid
+local -a journalctl_cmd systemctl_cmd
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {u,-user}=user \
+  H:=host -host:=host
+user=${user:+--user}
+host_value="${host[2]#=}"
+if [[ -n "$host_value" ]]
+then
+  host_value="$(systemctl::normalize-remote-host "$host_value")"
+fi
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local action="$1"
+local service="$2"
+
+if [[ -z $action || -z $service ]]
+then
+  echo_error "Missing action or service name"
+  echo "$usage" >&2
+  return 2
+fi
+
+local systemctl_host
+local -a property_opts
+
+if [[ -n "$host_value" ]]
+then
+  systemctl_host="--host=$host_value"
+  if (( ! $+commands[ssh] ))
+  then
+    echo_error "Missing required command: ssh"
+    return 1
+  fi
+
+  journalctl_cmd=(ssh -q "$host_value" env SYSTEMD_COLORS=1 journalctl)
+  if [[ -n "$user" ]]
+  then
+    journalctl_cmd+=(--user)
+  fi
+  journalctl_cmd+=(-xlf --since now -u "$service")
+
+  systemctl_cmd=(systemctl)
+  if [[ -n "$user" ]]
+  then
+    systemctl_cmd+=(--user)
+  fi
+  systemctl_cmd+=(--no-block "$systemctl_host" "$action" "$service")
+elif [[ -n "$user" ]]
+then
+  journalctl_cmd=(env SYSTEMD_COLORS=1 journalctl --user -xlf --since now -u "$service")
+  systemctl_cmd=(systemctl --user --no-block "$action" "$service")
+else
+  journalctl_cmd=(env SYSTEMD_COLORS=1 journalctl -xlf --since now -u "$service")
+  systemctl_cmd=(sudo systemctl --no-block "$action" "$service")
+fi
+
+if [[ -n "$user" ]]
+then
+  property_opts+=(--user)
+fi
+
+if [[ -n "$host_value" ]]
+then
+  property_opts+=("--host=$host_value")
+fi
+
+if ! systemctl::unit-exists $user $systemctl_host "$service"
+then
+  echo_error "No such service: $service"
+  return 1
+fi
+
+previous_invocation="$(systemctl::unit-property \
+  "${property_opts[@]}" \
+  "$service" \
+  InvocationID)"
+
+echo_info "${fg_bold[yellow]}\$ ${systemctl_cmd[*]}${reset_color}"
+"${systemctl_cmd[@]}"
+systemctl_rc=$?
+echo_info "${fg_bold[yellow]}${systemctl_cmd[*]} completed with rc=${systemctl_rc}${reset_color}"
+
+if (( systemctl_rc != 0 ))
+then
+  return $systemctl_rc
+fi
+
+if ! invocation_id="$(systemctl::wait-for-new-invocation \
+  "${property_opts[@]}" \
+  "$service" \
+  "$previous_invocation")"
+then
+  echo_warning "Failed to determine InvocationID for $service"
+  return 1
+fi
+
+setopt localoptions nonotify nomonitor
+journalctl_cmd+=(--invocation="$invocation_id")
+"${journalctl_cmd[@]}" &
+journalctl_pid=$!
+
+if ! systemctl::wait-for-unit-settle \
+  "${property_opts[@]}" \
+  "$service" \
+  "$invocation_id"
+then
+  echo_warning "Timed out waiting for $service to settle"
+fi
+
+kill "$journalctl_pid" &>/dev/null
+wait "$journalctl_pid" 2>/dev/null
+
+return $systemctl_rc
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,46 @@
+local usage="usage: $0 [--user] [-h] UNIT [JOURNALCTL_OPTIONS...]"
+
+local help user
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  -user=user
+
+if [[ -n "$help" ]]
+then
+  echo $usage
+  return 0
+fi
+
+local unit="$1"
+
+if [[ -z "$unit" ]]
+then
+  echo_err "Missing unit"
+  echo "$usage" >&2
+  return 2
+fi
+shift
+
+local invocation_id
+invocation_id="$(
+  systemctl $user show -p InvocationID --value "$unit" 2>/dev/null
+)"
+
+if [[ -z "$invocation_id" ]]
+then
+  invocation_id="$(
+    journalctl $user -u "$unit" -o json --no-pager 2>/dev/null \
+      | jq -r '.USER_INVOCATION_ID // ._SYSTEMD_INVOCATION_ID // empty' \
+      | tail -n 1
+  )"
+fi
+
+if [[ -z "$invocation_id" ]]
+then
+  echo_err "Failed to determine the last invocation ID for unit $unit"
+  return 1
+fi
+
+journalctl $user "$@" -u "$unit" --invocation="$invocation_id"
+
+# vim: set ft=zsh et ts=2 sw=2 :

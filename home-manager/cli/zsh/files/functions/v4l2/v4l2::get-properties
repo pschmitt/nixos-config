@@ -1,0 +1,28 @@
+local no_header
+zparseopts -D -E -K {n,-no-header,-noheader}=no_header
+
+local device_name="$1"
+
+if [[ -z "$1" ]]
+then
+  echo_error "Usage: $0 CAMERA_NAME"
+  return 2
+fi
+
+local device="$(v4l2::get-device-by-name $device_name)"
+
+if [[ -z "$device" ]]
+then
+  echo_error "No such camera found: $1"
+  return 1
+fi
+
+{
+  [[ -z "${no_header}${NO_HEADER}" ]] && echo "PROPERTY\tVALUE"
+  v4l2-ctl --device "$device" -l | \
+    grep ':' | \
+    sed -nr 's/\s*([^ ]+).*value=([^ ]+).*/\1\t\2/p' | \
+    sort -u
+} | column -t -s $'\t'
+
+# vim: set ft=zsh et ts=2 sw=2 :

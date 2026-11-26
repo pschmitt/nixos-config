@@ -1,0 +1,18 @@
+local query
+zparseopts -D -K -E -- \
+  {q,-query}:=query
+
+local extra_args
+[[ -n "$query[2]" ]] && extra_args=$query
+
+local preview=(
+  kitten icat
+  --clear --transfer-mode=memory --stdin=no
+  --align=center
+  '--place=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}@0x0'
+  {}
+)
+
+fzf --preview="$preview" $extra_args $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

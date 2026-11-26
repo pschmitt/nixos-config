@@ -1,0 +1,13 @@
+local name="$1"
+# FIXME bluetoothctl devices Paired should work too, but it no longer does
+# Fix is en route: https://github.com/NixOS/nixpkgs/pull/513361
+# bluetoothctl "devices Paired" | jc --bluetoothctl | \
+#   jq -er --arg name "$name" '
+#     .[] | select(.name == $name) | .address
+#   '
+bluetoothctl <<< "devices Paired" | grep -E '^Device' | jc -q --bluetoothctl | \
+  jq -er --arg name "$name" '
+    .[] | select(.name == $name) | .address
+  '
+
+# vim: set ft=zsh et ts=2 sw=2 :

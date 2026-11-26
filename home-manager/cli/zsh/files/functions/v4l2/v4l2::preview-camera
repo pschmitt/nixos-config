@@ -1,0 +1,29 @@
+if ! _usage "CAMERA_NAME" $@
+then
+  {
+    echo "\nAvailable devices:"
+    v4l2::list-devices
+  } >&2
+  return 2
+fi
+local webcam_device
+
+if ! webcam_device=$(v4l2::get-device-by-name "$1")
+then
+  echo_error "No such webcam found: $1"
+  return 1
+fi
+
+if (( $+commands[mpv] ))
+then
+  mpv --profile=low-latency --untimed --no-cache av://v4l2:${webcam_device}
+elif (( $+commands[vlc] ))
+then
+  vlc v4l2:${webcam_device}
+else
+  echo_error "No compatible video player found (mpv, vlc)"
+  echo_debug "Camera device: $webcam_device"
+  return 1
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

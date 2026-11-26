@@ -1,0 +1,7 @@
+local mac="$1"
+
+bluetoothctl devices Paired | jc -q --bluetoothctl | \
+  jq -er --arg mac $mac \
+  '.[] | select(.address == $mac) | .name'
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,27 @@
+local pid="$1"
+
+if [[ -z "$pid" ]]
+then
+  echo "Usage: $0 PID" >&2
+  return 2
+fi
+
+if ! [[ $pid =~ ^[0-9]+$ ]]
+then
+  local pid_resolved="$pid"
+  pid_resolved=$(pgrep -f "$pid" | head -1)
+  [[ -n $pid_resolved ]] && pid=$pid_resolved
+fi
+
+if ! kill -0 $pid &>/dev/null
+then
+  echo_error "No such process: $pid"
+  return 1
+fi
+
+local cmd=$(ps -o command= $pid)
+echo_info "Resolved PID: $pid [$cmd]"
+
+pstree -p -s -a
+
+# vim: set ft=zsh et ts=2 sw=2 :

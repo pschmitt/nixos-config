@@ -1,0 +1,4 @@
+local msg="rebooting in... "
+countdown --prefix "$msg" "${1:-3}" && sudo reboot
+
+# vim: set ft=zsh et ts=2 sw=2 :

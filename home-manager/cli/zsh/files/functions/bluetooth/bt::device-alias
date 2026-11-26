@@ -1,0 +1,54 @@
+local ignore_unknown
+zparseopts -D -K -E -- \
+  {i,-ignore-unknown}=ignore_unknown
+
+local name="${(Q)1}"
+local resolved_name
+
+# Check if name is a known device
+if bt::is-paired-device "$name"
+then
+  echo "$name"
+  return 0
+fi
+
+if string::is-mac-address <<< "$name"
+then
+  resolved_name="$(bt::mac-address-to-name "$name")"
+  [[ -z "$resolved_name" ]] && return 1
+  echo "$resolved_name"
+  return 0
+fi
+
+case "$name" in
+  LE-*)
+    resolved_name="$name"
+    ;;
+  *AVRCP*) # eg: Jabra Elite 8 Active (AVRCP)
+    # NOTE AVRCP device names are typically the udev device names
+    # See your custom nixpkg: udev-custom-callback
+    resolved_name="${name%% \(AVRCP\)}"
+    ;;
+  jabra|jab*|j)
+    resolved_name="Jabra Elite 7 Active"
+    ;;
+  jabra8|jab8*|j8|j2)
+    resolved_name="Jabra Elite 8 Active"
+    ;;
+  redmi|buds|mi*)
+    resolved_name="Redmi Buds 3 Lite"
+    ;;
+  *)
+    if [[ -n "$ignore_unknown" ]]
+    then
+      resolved_name="$name"
+    else
+      echo_err "Unknown device $name"
+      return 1
+    fi
+    ;;
+esac
+
+echo "$resolved_name"
+
+# vim: set ft=zsh et ts=2 sw=2 :

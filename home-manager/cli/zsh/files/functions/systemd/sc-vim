@@ -1,0 +1,15 @@
+local unit
+
+if ! unit="$(sc-unit-path $@)"
+then
+  echo_err "Failed to determine path to unit $1"
+  return 1
+elif [[ ! -e "$unit" ]]
+then
+  echo_err "No such file or directory: $unit"
+  return 1
+fi
+
+$EDITOR $unit
+
+# vim: set ft=zsh et ts=2 sw=2 :

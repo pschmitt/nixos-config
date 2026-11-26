@@ -1,0 +1,80 @@
+local usage="$0 [PROMPT]"
+
+local -a extra_args
+local cleartext
+local help
+local nogui="$NO_GUI"
+local pin
+local pinentry_cmd
+local prompt
+local timeout=(-t ${TIMEOUT:-30})
+
+zparseopts -D -K -E -- \
+  {c,-cleartext,-clear-text,i,-insecure}=cleartext \
+  {h,-help}=help \
+  {n,-nogui,-no-gui,-cli}=nogui \
+  {t,-timeout}:=timeout
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+# pinentry only accepts --timeout (there's no short form ie. -t)
+timeout[1]=--timeout
+
+prompt="${1:-PIN:}"
+
+if [[ -z "$SSH_CONNECTION" && -n "${WAYLAND_DISPLAY}${DISPLAY}" && -z "$nogui" ]]
+then
+  case "${XDG_CURRENT_DESKTOP:l}" in
+    *kde*|*plasma*)
+      pinentry_cmd=pinentry-qt
+      ;;
+    *gnome*|*sway*|hyprland)
+      pinentry_cmd=pinentry-gnome3
+      ;;
+    *)
+      pinentry_cmd=pinentry-gtk-2
+      ;;
+  esac
+fi
+
+if [[ -n "$pinentry_cmd" ]]
+then
+  # FIXME The --clear-text flag is ignored here
+  pin=$(echo -e "SETPROMPT ${prompt}\nGETPIN" | \
+    $pinentry_cmd $timeout 2>/dev/null | \
+    sed -nr '0,/^D (.+)/s//\1/p')
+elif (( $+commands[systemd-ask-password] ))
+then
+  if [[ -n "$cleartext" ]]
+  then
+    extra_args+=(--echo)
+  fi
+
+  prompt=$(string::remove-leading-emojis "$prompt")
+  pin=$(systemd-ask-password $timeout $extra_args "$prompt")
+else
+  if [[ -z "$cleartext" ]]
+  then
+    extra_args+=(-s)
+  fi
+
+  read -t ${timeout[2]} $extra_args "pin?${prompt} "
+  # NOTE Emulate CR w/o writing to stdout, we do not want to prepend '\n' to
+  # our pin
+  echo >&2
+fi
+
+
+if [[ -z "$pin" ]]
+then
+  echo_err "Aborted by the user or no input (or timeout)"
+  return 3
+fi
+
+echo -n "$pin"
+
+# vim: set ft=zsh et ts=2 sw=2 :

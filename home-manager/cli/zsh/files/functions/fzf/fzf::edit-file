@@ -1,0 +1,22 @@
+# fzf then open selected file in EDITOR
+local stay
+local filter=(-f .) # default to .
+
+zparseopts -D -K -E -- \
+  {f,-filter}:=filter \
+  {s,-stay}=stay
+
+local fn
+local fdir="$1"
+shift
+
+if ! fn=$(fd --color=always "$filter[2]" "$fdir" | fzf "$*")
+then
+  return 1
+fi
+
+pushd -q "$config_dir"
+[[ -n "$stay" ]] || trap 'popd -q' EXIT
+$EDITOR "$fn"
+
+# vim: set ft=zsh et ts=2 sw=2 :

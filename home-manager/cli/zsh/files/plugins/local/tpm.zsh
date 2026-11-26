@@ -1,0 +1,5 @@
+(( $+commands[tmux] )) || return
+
+TMUX_PLUGIN_MANAGER_PATH="${TMUX_PLUGIN_MANAGER_PATH:-${XDG_DATA_HOME}/tpm}"
+
+zsh::autoload-dir tpm

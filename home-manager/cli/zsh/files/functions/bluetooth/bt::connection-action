@@ -1,0 +1,18 @@
+# connect/disconnect
+local action="$1"
+local name
+local mac
+
+shift
+name="$(bt::device-alias -i "$1")" || return 1
+mac="$(bt::name-to-mac-address "$name")"
+
+if [[ -z "$mac" ]]
+then
+  echo_err "Unknown device: '$name'"
+  return 1
+fi
+
+bluetoothctl $action "$mac"
+
+# vim: set ft=zsh et ts=2 sw=2 :

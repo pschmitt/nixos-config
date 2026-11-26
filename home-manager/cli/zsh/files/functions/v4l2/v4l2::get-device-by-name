@@ -1,0 +1,55 @@
+local usage="Usage: $0 [--by-id] CAMERA_NAME"
+local help
+
+if [[ -z "$1" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local by_id
+zparseopts -D -E \
+  h=help -help=help \
+  i=by_id -by-id=by_id -id=by_id
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local dev
+local webcam_dev
+local webcam_name="$1"
+
+for dev in /sys/class/video4linux/*
+do
+  if grep -qi "$webcam_name" "$dev/name"
+  then
+    webcam_dev="/dev/$(basename $dev)"
+    break
+  fi
+done
+
+if [[ -z "$webcam_dev" ]]
+then
+  return 1
+fi
+
+if [[ -n "$by_id" ]]
+then
+  for dev in /dev/v4l/by-id/*
+  do
+    if [[ $(realpath "$dev") == "$webcam_dev" ]]
+    then
+      echo "$dev"
+      return 0
+    fi
+  done
+
+  echo_warning "Failed to determine by-id path to $webcam_dev"
+fi
+
+echo "$webcam_dev"
+
+# vim: set ft=zsh et ts=2 sw=2 :

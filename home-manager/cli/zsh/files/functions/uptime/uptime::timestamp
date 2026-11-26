@@ -1,0 +1,35 @@
+local ts
+
+# This should be the most "precise" (quick implementation)
+if ts=$(uptime -s 2>/dev/null) && [[ -n "$ts" ]]
+then
+  date -d "$ts" '+%s'
+  return
+fi
+
+# Get the current Unix timestamp. Only get the value once we need it.
+local current_timestamp
+
+# Attempt to get the uptime from /proc
+local uptime_seconds
+if uptime_seconds=$(awk '{ print int($1) }' /proc/uptime) && \
+   [[ -n "$uptime_seconds" ]]
+then
+  current_timestamp=$(date +%s)
+  print $(( current_timestamp - uptime_seconds ))
+  return
+fi
+
+# The following is for legacy uptime implementations, that do not support the
+# -s|--since flag and hosts that lack access to /proc/uptime
+# This by far the least precise implementation
+# It should differ at max from 29 to 60 seconds because the regular
+# uptime output does only show days, hours and minute (ie no seconds)
+
+# Get the uptime output using the `uptime` command and parse it using `jc`
+local uptime_output=$(uptime | jc -q --uptime)
+uptime_seconds=$(jq -er '.uptime_total_seconds' <<< "$uptime_output")
+current_timestamp=$(date +%s)
+print $(( current_timestamp - uptime_seconds ))
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,4 @@
+local click_type="${1:-left}"
+dotoolc <<< "click $click_type"
+
+# vim: set ft=zsh et ts=2 sw=2 :

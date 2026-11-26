@@ -1,0 +1,16 @@
+local host="$1"
+
+if [[ -z "$host" ]]
+then
+  return 1
+fi
+
+if [[ "$host" == *"@"* ]]
+then
+  print -r -- "$host"
+  return 0
+fi
+
+print -r -- "root@$host"
+
+# vim: set ft=zsh et ts=2 sw=2 :

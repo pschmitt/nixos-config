@@ -1,0 +1,90 @@
+local usage="Usage: $0 CMD [ARGS] [QUERY] FILE or echo 'InputString' | $0 CMD [ARGS] [QUERY]"
+
+local file
+local tmpfile
+
+local help
+local query
+zparseopts -D -K -E -- \
+  {h,-help}=help \
+  {q,-query}:=query
+query=$query[2]
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local -a fzf_extra_args
+
+zparseopts -D -K -E -a \
+  fzf_extra_args \
+  -prompt:
+
+if [[ -t 0 ]]
+then
+  # Input from terminal, use provided file
+  file="$@[-1]"
+  # Pop file arg
+  set -- "${(@)@[1,-2]}"
+else
+  tmpfile=$(mktemp)
+  cat >> "$tmpfile"
+  trap "rm -f '$tmpfile'" EXIT
+  file="$tmpfile"
+fi
+
+if [[ ! -r "$file" ]]
+then
+  echo_err "No such file or directory: $file"
+  return 1
+fi
+
+if [[ -n "$@[-1]" ]] && [[ "$#" -gt 1 ]]
+then
+  fzf_extra_args+=(-q "$@[-1]")
+  # Pop fzf query
+  set -- "${(@)@[1,-2]}"
+fi
+
+local cmd="$*"
+
+if [[ -z "$cmd" ]]
+then
+  echo_err "Missing CMD"
+  return 2
+fi
+
+# Set default prompt
+local fzf_prompt_index=${fzf_extra_args[(Ie)--prompt]}
+
+if (( $fzf_prompt_index ))
+then
+  local i=$[fzf_prompt_index + 1]
+  # Remove duplicate space chars from prompt
+  setopt local_options extended_glob
+  fzf_extra_args[$i]=${fzf_extra_args[$i]// ##/ }
+else
+  # Use only first word (space delimited)
+  # fzf_extra_args+=(--prompt "${cmd%% *}> ")
+  # Use full command w/o trailing space (eg: sed -r)
+  fzf_extra_args+=(--prompt "${cmd% }> ")
+fi
+
+fzf_extra_args+=(
+  --no-info
+  --print-query
+  --preview-window up:99%:noborder
+  --preview "${cmd[*]} {q} '${file}'"
+)
+
+if [[ -n "$DEBUG" ]]
+then
+  echo fzf $fzf_extra_args
+  return 0
+fi
+
+fzf -q "$query" $fzf_extra_args <<< ""
+
+# vim: set ft=zsh et ts=2 sw=2 :

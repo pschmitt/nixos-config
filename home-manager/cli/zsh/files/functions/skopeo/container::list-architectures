@@ -1,0 +1,21 @@
+local usage="usage: $0 IMAGE"
+local image="$1"
+
+if [[ -z "$image" ]]
+then
+  echo_error "Missing IMAGE"
+  echo "$usage" >&2
+  return 2
+fi
+
+image="$(container::image-expand "$image")"
+data="$(skopeo inspect --raw "docker://${image}")"
+
+<<< "$data" jq -er '
+  .manifests[].platform |
+  .os + "/" + .architecture + (
+    if .variant? != null then ("-" + .variant) else "" end
+  )
+' | sort -u
+
+# vim: set ft=zsh et ts=2 sw=2 :

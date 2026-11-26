@@ -1,0 +1,4 @@
+bt::disconnect "$@"
+bt::connect "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

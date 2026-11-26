@@ -1,0 +1,72 @@
+local no_callback nointeractive
+zparseopts -D -E -K -- \
+  {n,-no-callback}=no_callback \
+  {N,-nointeractive,-non-interactive,-noninteractive}=nointeractive
+
+if gnome-keyring::status
+then
+  # Nothing to do
+  echo_info "Keyrings/collections are already unlocked"
+  return
+fi
+
+echo_info --notify "Unlocking all keyrings/collections"
+
+# FIXME this is not working since this returns a prompt ID and
+# seems like there is no way to provide the password directly using DBUS
+# local arg_collections=$(busctl --no-pager --user get-property \
+#       org.freedesktop.secrets /org/freedesktop/secrets \
+#       org.freedesktop.Secret.Service Collections)
+# busctl -j --no-pager --user call \
+#   org.freedesktop.secrets \
+#   /org/freedesktop/secrets \
+#   org.freedesktop.Secret.Service \
+#   Unlock \
+#   ${=arg_collections//\"}
+
+local password="$1"
+if [[ -z "$1" ]]
+then
+  if [[ -n $nointeractive ]]
+  then
+    echo_warning "No password provided, but non-interactive mode is enabled"
+    return 1
+  fi
+
+  if ! read -r -s 'password?Password: '
+  then
+    return 1
+  fi
+fi
+
+# NOTE This will only unlock the login keyring
+printf '%s' "$password" | {
+  # https://codeberg.org/umglurf/gnome-keyring-unlock
+  if (( $+commands[gnome-keyring-unlock] ))
+  then
+    gnome-keyring-unlock
+  else
+    # Fall back to replacing the daemon, a bit less elegant.
+    gnome-keyring-daemon --replace --components=pkcs11,secrets,ssh --unlock
+  fi
+}
+
+window-manager::kill-windows --title "Unlock Keyring"
+window-manager::kill-windows gcr-prompter
+
+# Accessing secrets stored in "Default Keyring" should unlock the keyring
+date -Iseconds | secret-tool store --label="$0" app $0 test unlock
+secret-tool clear app "$0" test unlock
+
+if ! gnome-keyring::status
+then
+  echo_error "Failed to unlock keyrings/collections"
+  return 1
+fi
+
+[[ -n $no_callback ]] && return 0
+
+# callback - restart apps that were waiting for the keyring
+ps::restart-app --gui --if-running nextcloud
+
+# vim: set ft=zsh et ts=2 sw=2 :

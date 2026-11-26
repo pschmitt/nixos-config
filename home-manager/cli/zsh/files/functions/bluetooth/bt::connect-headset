@@ -1,0 +1,57 @@
+local reconnect silent notify
+zparseopts -D -K -E -- \
+  {r,-reconnect}=reconnect \
+  {s,-silent,q,-quiet}=silent \
+  {n,-notify}=notify
+
+local name
+local mac
+local profile
+
+if [[ -z "$1" ]]
+then
+  echo_err "No Bluetooth device specified"
+  return 2
+fi
+
+name="$(bt::device-alias -i "$1")" || return 1
+mac="$(bt::name-to-mac-address "$name")"
+if [[ -z "$mac" ]]
+then
+  echo_err "Unknown device: '$name'"
+  return 1
+fi
+profile="$2"
+
+echo_debug "$0: Connect to $name ($mac)"
+
+if bt::is-connected "$name"
+then
+  echo_success "Already connected to $name"
+  if [[ -n "$reconnect" ]]
+  then
+    echo_info "Disconnecting from $name"
+    bluetoothctl disconnect "$mac"
+  else
+    # udev will handle the rest
+    is_nixos && return 0
+    bt::setup-headset $silent "$name" "$profile"
+    return "$?"
+  fi
+fi
+
+if ! trytill --tries 3 bluetoothctl connect "$mac"
+then
+  echo_err "Unable to connect to $name"
+  return 1
+fi
+
+# udev will handle the rest
+if is_nixos
+then
+  return 0
+fi
+
+bt::setup-headset $notify $silent "$name" "$profile"
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,7 @@
+sudo systemctl stop bluetooth
+sudo rfkill unblock bluetooth
+sudo rmmod btusb
+sudo modprobe btusb
+sudo systemctl start bluetooth
+
+# vim: set ft=zsh et ts=2 sw=2 :

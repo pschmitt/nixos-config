@@ -1,0 +1,15 @@
+local is_mac
+zparseopts -D -E -K -- {m,-mac,-mac-address}=is_mac
+bluetoothctl devices Paired | jc -q --bluetoothctl | \
+  {
+    if [[ -n "$is_mac" ]]
+    then
+      local mac="$1"
+      jq -er --arg mac "$mac" '.[] | select(.address == $mac) | length > 0'
+    else
+      local name="$1"
+      jq -er --arg name "$name" '.[] | select(.name == $name) | length > 0'
+    fi
+  } >/dev/null
+
+# vim: set ft=zsh et ts=2 sw=2 :

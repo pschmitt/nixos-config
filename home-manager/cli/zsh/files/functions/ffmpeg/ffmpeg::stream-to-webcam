@@ -1,0 +1,13 @@
+local usage="usage: $0 STREAM_URL [CAMERA_DEVICE]"
+local url="$1"
+local cam_device="${2:-/dev/video20}"
+
+if [[ -z "$url" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+ffmpeg -i "$url" -vcodec rawvideo -pix_fmt yuv420p -threads 0 -f v4l2 "$cam_device"
+
+# vim: set ft=zsh et ts=2 sw=2 :

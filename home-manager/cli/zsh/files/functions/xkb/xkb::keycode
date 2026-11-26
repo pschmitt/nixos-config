@@ -1,0 +1,25 @@
+local usage="usage: $0 KEYCODE"
+local keycode="$1"
+
+if [[ -z "$keycode" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local xkb_prefix="/usr/" # default prefix for non-NixOS systems
+if is_nixos
+then
+  local nix_pkg="xkeyboard_config"
+  xkb_prefix="$(nix::pkg-path ${nix_pkg})"
+  if [[ -z "$xkb_prefix" ]]
+  then
+    echo_error "failed to find $nix_pkg nix store path"
+    return 1
+  fi
+fi
+
+local evdev_path="$xkb_prefix/share/X11/xkb/keycodes/evdev"
+grep -E "= +${keycode};" "$evdev_path"
+
+# vim: set ft=zsh et ts=2 sw=2 :

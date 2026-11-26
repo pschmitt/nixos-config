@@ -1,0 +1,14 @@
+local usage="usage: $0 IMAGE"
+local image="$1"
+
+if [[ -z "$image" ]]
+then
+  echo_error "Missing IMAGE"
+  echo "$usage" >&2
+  return 2
+fi
+
+image="$(container::image-expand "$image")"
+skopeo list-tags docker://${image} | jq -r '.Tags[]' | sort -V
+
+# vim: set ft=zsh et ts=2 sw=2 :

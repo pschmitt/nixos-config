@@ -1,0 +1,17 @@
+local wm=$(window-manager::get-name)
+
+case "$wm" in
+  hyprland)
+    # For some reason, the cursorpos command returns 2x the position of the
+    # mouse
+    # -> we need to divide by 2 (the +1 is just to round up)
+     hyprctl cursorpos -j | \
+       jq -er '"\((.x + 1) / 2 | floor) \((.y + 1) / 2 | floor)"'
+    ;;
+  *)
+    echo_warn "Unknown window manager: $wm"
+    return 1
+    ;;
+esac
+
+# vim: set ft=zsh et ts=2 sw=2 :

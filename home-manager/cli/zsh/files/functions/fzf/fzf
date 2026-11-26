@@ -1,0 +1,44 @@
+# fzf with bat previews
+local file_path preview_file=(-P '{}') query
+
+# NOTE fzf's --query options is annoying as it will fails to start if the
+# query is empty. Here we capture it and pass it as extra_args, if it is not empty
+zparseopts -D -K -E -- \
+  {p,-file-path,-filepath}:=file_path \
+  {P,-pf,-preview-file,-previewfile}:=preview_file \
+  {q,-query}:=query
+file_path=$file_path[2]
+preview_file=$preview_file[2]
+query=$query[2]
+
+local -a extra_args
+[[ -n "$query" ]] && extra_args+=(-q $query)
+
+if [[ -n "$file_path" ]]
+then
+  preview_file="${file_path}/${preview_file}"
+fi
+
+# see also: https://github.com/bigH/auto-sized-fzf
+if [[ $* != *--preview-window* ]]
+then
+  local threshold=80
+  local preview_win_pct=66
+  local preview_spec
+  if (( COLUMNS < threshold ))
+  then
+    preview_spec="up:${preview_win_pct}%,border-none"
+  else
+    preview_spec="right:${preview_win_pct}%,border-none"
+  fi
+
+  echo_debug -d "Setting preview location: $preview_spec"
+
+  extra_args+=(
+    --preview-window "$preview_spec"
+  )
+fi
+
+command fzf --preview "fzf-preview ${preview_file}" $extra_args $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,28 @@
+local usage="$0 [-l USER] HOST"
+
+local interface=eth2
+local remote_username=(-u root)
+
+zparseopts -D -E -K -- \
+  {i,-interface}=interface \
+  {l,-login,u,-username}:=remote_username
+remote_username=$remote_username[2]
+interface=$interface[2]
+
+local remote_host="$1"
+if [[ -z "$remote_host" ]]
+then
+  echo $usage >&2
+  return 1
+fi
+
+wireshark \
+  "-oextcap.sshdump.remoteusername:${remote_username}" \
+  "-oextcap.sshdump.remotehost:${remote_host}" \
+  -i sshdump -k
+
+# ssh -l $remote_username $remote_host \
+#   tcpdump -U -i $interface -w - > /tmp/cap.pcap | \
+#   wireshark -k -i -
+
+# vim: set ft=zsh et ts=2 sw=2 :

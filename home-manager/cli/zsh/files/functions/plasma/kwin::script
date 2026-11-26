@@ -1,0 +1,81 @@
+# https://github.com/esjeon/krohnkite/blob/master/bin/load-script.sh
+local usage=(
+  "Usage: $(basename "$0") ACTION SCRIPT [NAME]"
+  "Actions: "
+  "  - load"
+  "  - unload"
+  "  - run"
+  "  - status"
+)
+
+case "$1" in
+  help|h|-h|--help)
+    echo_array $usage
+    return
+    ;;
+esac
+
+if [[ "$#" -lt 2 ]]
+then
+  echo_array $usage >&2
+  return 2
+fi
+
+local action=run
+case "$1" in
+  load|import)
+    action=load
+    ;;
+  unload|delete|stop)
+    action=unload
+    ;;
+  run|start)
+    action=run
+    ;;
+  check|status)
+    action=status
+    ;;
+  help)
+    echo_array $usage
+    return
+    ;;
+  *)
+    echo_err "Unknown action: $1"
+    echo_array $usage >&2
+    return 2
+    ;;
+esac
+shift
+
+local script_path="$(realpath "${1}")"
+local script_name="${2:-zsh-${0}}"
+
+local script_tmp=$(mktemp --suffix .js)
+
+cp -vf "$script_path" "$script_tmp"
+trap "{ rm -vf ${script_tmp}; }" EXIT
+
+case "$action" in
+  status)
+    kwin::_script isScriptLoaded "$script_name"
+    ;;
+  load)
+    kwin::_script loadScript "$script_tmp"
+    # What's the difference between loadScript and loadDeclarativeScript?
+    # kwin::_script loadDeclarativeScript "$script_tmp" "$script_name"
+    ;;
+  unload)
+    kwin::_script unloadScript "$script_tmp"
+    ;;
+  run)
+    kwin::_script loadScript "$script_tmp"
+    kwin::_script start
+    # What's the difference between loadScript and loadDeclarativeScript?
+    # kwin::_script loadDeclarativeScript "$script_tmp" "$script_name"
+    # kwin::_script start
+    ;;
+esac
+
+rm -f "$script_tmp"
+
+# vim: set ft=zsh et ts=2 sw=2 :

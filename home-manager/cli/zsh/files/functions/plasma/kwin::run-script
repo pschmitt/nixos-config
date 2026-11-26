@@ -1,0 +1,42 @@
+local usage="Usage: $(basename "$0") SCRIPT"
+
+case "$1" in
+  help|h|-h|--help)
+    echo "$usage"
+    return
+    ;;
+esac
+
+if [[ -z "$1" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+# local script="$(realpath "${1:-${PWD}/contents/code/main.js}")"
+local script="$(realpath "${1}")"
+
+if [[ ! -r "$script" ]]
+then
+  echo_err "$script does not seem to exist."
+  echo_err -E "Please verify the provided path"
+  return 1
+fi
+
+# https://unix.stackexchange.com/a/517690/101415
+local num=$(dbus-send --print-reply \
+  --dest=org.kde.KWin \
+  /Scripting org.kde.kwin.Scripting.loadScript \
+  string:"$script" | \
+    awk 'END {print $2}')
+
+if [[ -z "$num" ]]
+then
+  echo "Failed to determine Plasma session ID"
+  return 3
+fi
+
+dbus-send --print-reply --dest=org.kde.KWin "/${num}" \
+    org.kde.kwin.Scripting.run
+
+# vim: set ft=zsh et ts=2 sw=2 :

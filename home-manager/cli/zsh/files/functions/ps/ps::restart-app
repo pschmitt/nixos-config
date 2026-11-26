@@ -1,0 +1,53 @@
+local usge="usage: $0 [--force] [--if-running] [--gui] [--full] CMD [ARGS]"
+local force full if_running gui_app background
+
+zparseopts -D -E -K \
+  f:=force \
+  {F,-full}=full \
+  {g,-gui}=gui_app \
+  {i,-if-running}=if_running \
+  {b,-background}=background
+
+force=${force:+-9}
+full=${full:+--full}
+
+local app="$1"
+local args=("${@:2}")
+
+if [[ -z "$app" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local running
+pgrep $full "$app" >&2 && running=1
+
+if [[ -z "$running" ]]
+then
+  echo_warning "$app is not running."
+  [[ -n "$if_running" ]] && return 1
+else
+  echo_info "cmd $app is running. killing it."
+  pkill $full $force "$app"
+fi
+
+if [[ -n "$gui_app" ]]
+then
+  echo_info "Starting $app in background using WM"
+  window-manager::exec "$@"
+  return $?
+fi
+
+if [[ -n "$background" ]]
+then
+  echo_info "Starting $app in background"
+  "$@" &
+  disown
+  return 0
+fi
+
+# Normal execution (foreground)
+$@
+
+# vim: set ft=zsh et ts=2 sw=2 :

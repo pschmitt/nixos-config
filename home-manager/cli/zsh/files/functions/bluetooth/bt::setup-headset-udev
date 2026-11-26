@@ -1,0 +1,19 @@
+# udev is a bit particular in regards to exit codes
+# returning != 0 seems to break bt mice setup
+local name="$@[-1]"
+
+if [[ -z "$name" ]]
+then
+  echo "Empty device name - Exit." >&2
+  return 0
+fi
+
+if ! bt::device-alias "$name" &>/dev/null
+then
+  echo "Unknown device: '$name' - Exit." >&2
+  return 0
+fi
+
+bt::setup-headset $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

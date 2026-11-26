@@ -1,0 +1,30 @@
+local usage="usage: $0 IMAGE"
+local image="$1"
+
+if [[ -z "$image" ]]
+then
+  echo_error "Missing IMAGE"
+  echo "$usage" >&2
+  return 2
+fi
+
+case "$image" in
+  *.*/*)
+    # has dots and slashes, assume it's a full image name
+    # e.g. docker.io/library/alpine
+    ;;
+  */*)
+    # has a slash, assume it's a full image name
+    # we then prepend docker.io as a default registry
+    # e.g. netbird-io/netbird
+    image="docker.io/${image}"
+    ;;
+  *)
+    # no slash, assume it's a library image
+    image="docker.io/library/${image}"
+    ;;
+esac
+
+echo "$image"
+
+# vim: set ft=zsh et ts=2 sw=2 :

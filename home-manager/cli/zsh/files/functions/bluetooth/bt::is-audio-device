@@ -1,0 +1,8 @@
+local i="$1"
+if ! string::is-mac-address <<< "$i"
+then
+  i="$(bt::name-to-mac-address "$i")"
+fi
+bluetoothctl info "$i" | grep -qE 'Sink|Headset'
+
+# vim: set ft=zsh et ts=2 sw=2 :

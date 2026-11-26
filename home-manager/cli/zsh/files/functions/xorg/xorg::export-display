@@ -1,0 +1,3 @@
+export DISPLAY=${DISPLAY:-:0} XAUTHORITY=${XAUTHORITY:-${HOME}/.Xauthority}
+
+# vim: set ft=zsh et ts=2 sw=2 :
