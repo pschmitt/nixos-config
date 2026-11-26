@@ -226,13 +226,7 @@ in
               // {
                 key = "HOME";
                 display = "Home";
-              }
-            )
-            (
-              arrow
-              // {
-                key = "UP";
-                popup = {
+                double-tap = {
                   key = "PGUP";
                   display = "PgUp";
                 };
@@ -240,10 +234,21 @@ in
               }
             )
             (
+              arrow
+              // {
+                key = "UP";
+              }
+            )
+            (
               keycap
               // {
                 key = "END";
                 display = "End";
+                double-tap = {
+                  key = "PGDN";
+                  display = "PgDn";
+                };
+                hint = "PgDn";
               }
             )
             (
@@ -292,11 +297,6 @@ in
               arrow
               // {
                 key = "DOWN";
-                fling-down = {
-                  key = "PGDN";
-                  display = "PgDn";
-                };
-                hint = "PgDn";
               }
             )
             (
