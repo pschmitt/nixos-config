@@ -196,19 +196,15 @@ in
       };
     };
     extra-keys = {
+      # The Rounded theme supplies Gboard's dark palette: letter keys, function-key tint for
+      # Esc and the arrows, and the keyboard background.
       theme = "rounded";
-      background-color = "#1C1F20";
       keys =
         let
           keycap = {
-            background-color = "#37393B";
-            text-color = "#E3E5E5";
             inset = 2;
           };
-          arrow = keycap // {
-            background-color = "#3D454B";
-            text-color = "#D5E2EC";
-          };
+          arrow = keycap;
         in
         [
           [
@@ -328,10 +324,6 @@ in
             )
           ]
         ];
-      active = {
-        text-color = "#F0F2F2";
-        background-color = "#50565A";
-      };
       corner-radius = 7;
       # Extra keys row: finger to the right = previous session, to the left =
       # next session (the default), further to the right = new session.
