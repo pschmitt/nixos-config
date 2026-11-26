@@ -65,7 +65,7 @@ let
   networkName = "endurain";
 
   # renovate: datasource=docker depName=ghcr.io/endurain-project/endurain
-  endurainVersion = "v0.20.2";
+  endurainVersion = "v0.21.0";
 
   runtimePkg =
     if containerBackend == "docker" then
@@ -124,7 +124,14 @@ in
 
     services = {
       "${containerBackend}-endurain-postgres".preStart = ensureNetworkScript;
-      "${containerBackend}-endurain".preStart = ensureNetworkScript;
+      "${containerBackend}-endurain" = {
+        serviceConfig.RuntimeDirectory = "endurain-proxy";
+        preStart = ensureNetworkScript + ''
+          set -o pipefail
+          gateway="$(${runtimeBin} network inspect ${networkName} | ${lib.getExe pkgs.jq} -er '.[0] | .IPAM.Config[0].Gateway // .subnets[0].gateway | select(type == "string" and length > 0)')"
+          printf 'TRUSTED_PROXIES=%s\n' "$gateway" > /run/endurain-proxy/env
+        '';
+      };
 
       endurain-ingest = {
         description = "Upload synced Gadgetbridge activities to Endurain";
@@ -225,6 +232,7 @@ in
       };
       environmentFiles = [
         config.sops.secrets."endurain/env".path
+        "/run/endurain-proxy/env"
       ];
       volumes = [
         "${endurainDataDir}:/app/backend/data"
