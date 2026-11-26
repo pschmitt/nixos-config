@@ -1,6 +1,4 @@
 # systemd
-(( $+commands[systemctl] )) || return
-
 # completions
 if [[ -z "$NO_COMPLETIONS" ]]
 then

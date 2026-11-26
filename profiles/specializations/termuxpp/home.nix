@@ -149,6 +149,16 @@ in
     fi
   '';
   dotfiles.zsh.nixShell.default = true;
+  # No systemd or NixOS system on the phones: do not ship these local zsh
+  # plugins and functions (they need systemctl, journalctl, bootctl,
+  # udevadm and nixos-rebuild).
+  programs.zsh.localConfig.excludeTopics = [
+    "bootctl"
+    "journald"
+    "nixos"
+    "systemd"
+    "udev"
+  ];
   xdg = {
     enable = true;
     configFile."zsh/completions/_nixpp".source = "${nixpp}/share/zsh/site-functions/_nixpp";

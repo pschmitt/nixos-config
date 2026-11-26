@@ -12,10 +12,12 @@ in
     pkgs.fzf-preview
   ];
 
+  # The options are exported before the bindings load: fzf's zsh widgets
+  # read FZF_CTRL_T_COMMAND & co. (an empty one disables its binding).
   programs.zsh.initContent = lib.mkOrder 700 ''
     if [[ -o interactive ]]
     then
-      source ${fzfInitFile}/init.zsh
+      export FZF_DEFAULT_COMMAND='fd --type f --hidden -E "**/.git/" --color=always'
       # Input at the bottom, preview above the list on narrow (portrait) terminals.
       export FZF_DEFAULT_OPTS='
         --ansi
@@ -31,6 +33,19 @@ in
         --bind "alt-k:change-preview-window(up|right)"
         --bind "alt-0:transform:fzf-preview --next-mode"
       '
+      export FZF_ALT_C_COMMAND='fd -H -E "**/.git/" -t d --color=always'
+      export FZF_ALT_C_OPTS='--header "Change directory" --preview "tree -C -- {}"'
+      export FZF_CTRL_T_COMMAND='fd -H -E "**/.git/" -t f --color=always'
+      export FZF_CTRL_T_OPTS='--preview "bat --style=numbers --color=always -- {}"'
+      # FIXME The ctrl-y shortcut doesn't work
+      export FZF_CTRL_R_OPTS="
+        --preview 'echo {}' --preview-window up:3:hidden:wrap
+        --bind 'ctrl-/:toggle-preview'
+        --bind 'ctrl-y:execute-silent(echo -n {2..} | wl-copy)+abort'
+        --color header:italic
+        --header 'Press CTRL-Y to copy command into clipboard'"
+
+      source ${fzfInitFile}/init.zsh
     fi
   '';
 }

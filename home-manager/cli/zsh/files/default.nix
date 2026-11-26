@@ -15,6 +15,12 @@ let
   pluginRoots = [ ./plugins/local ] ++ cfg.pluginDirs;
   functionRoots = [ ./functions ] ++ cfg.functionDirs;
 
+  # Topics a host does not ship: their plugin (<topic>.zsh) and function
+  # directory (<topic>/) are neither linked nor loaded.
+  excluded = name: builtins.elem name cfg.excludeTopics;
+  # zsh/functions/<topic>/... or zsh/plugins/local/<topic>.zsh
+  excludedFile = f: excluded (lib.removeSuffix ".zsh" (lib.head (lib.splitString "/" f.rel)));
+
   # Files below a directory: [ { rel = "a/b"; source = <path>; } ]
   filesBelow =
     directory: prefix:
@@ -39,7 +45,7 @@ let
   linkTree =
     target: roots:
     let
-      files = lib.concatMap (root: filesBelow root "") roots;
+      files = lib.filter (f: !excludedFile f) (lib.concatMap (root: filesBelow root "") roots);
       duplicates = lib.attrNames (
         lib.filterAttrs (_: n: n > 1) (
           lib.foldl' (acc: f: acc // { ${f.rel} = (acc.${f.rel} or 0) + 1; }) { } files
@@ -51,7 +57,9 @@ let
     ) "zsh: ${target} files defined in several roots: ${toString duplicates}";
     lib.listToAttrs (map (f: lib.nameValuePair "${target}/${f.rel}" { inherit (f) source; }) files);
 
-  functionFiles = lib.concatMap (root: filesBelow root "") functionRoots;
+  functionFiles = lib.filter (f: !excludedFile f) (
+    lib.concatMap (root: filesBelow root "") functionRoots
+  );
 
   # Plugins in load order: the root, work/ and 99-after/, each sorted by name
   # across all roots. Each becomes a function zpl::<group::>name in the digest.
@@ -75,9 +83,10 @@ let
               source = directory + "/${name}";
             })
             (
-              lib.filterAttrs (name: kind: kind != "directory" && lib.hasSuffix ".zsh" name) (
-                builtins.readDir directory
-              )
+              lib.filterAttrs (
+                name: kind:
+                kind != "directory" && lib.hasSuffix ".zsh" name && !excluded (lib.removeSuffix ".zsh" name)
+              ) (builtins.readDir directory)
             )
         );
     in
@@ -154,6 +163,17 @@ in
       type = lib.types.listOf lib.types.path;
       default = [ ];
       description = "Extra autoloaded function roots (<topic>/<function> files).";
+    };
+    excludeTopics = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "systemd" ];
+      description = ''
+        Topics this host does not ship: neither the plugin <topic>.zsh nor the
+        functions in <topic>/ are installed or loaded. For hosts that lack a
+        tool the plugin needs (the TermuxPP phones have no systemd), instead
+        of a runtime `(( $+commands[tool] )) || return` guard.
+      '';
     };
     completionDirs = lib.mkOption {
       type = lib.types.listOf lib.types.path;

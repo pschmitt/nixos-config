@@ -46,7 +46,14 @@ When adding a function, edit or create its function file rather than defining it
 
 - Functions use `namespace::verb` style, e.g. `http::serve`, `files::delete-sync-artifacts`
 - Aliases are defined directly (no namespace required)
-- Guard capability checks with `(( $+commands[tool] )) || return`, except for tools Nix installs on every host (coreutils, git, tmux, fzf, ...)
+- Guard capability checks with `(( $+commands[tool] )) || return` only for tools that some hosts have and others do not
+  (NetworkManager, fprintd, ...). No guard for tools Nix installs on every host (coreutils, git, tmux, fzf, ...).
+- A plugin that only makes sense on NixOS hosts (systemd, journald, bootctl, udev, nixos) has no guard either: the
+  TermuxPP phones do not ship it at all through `programs.zsh.localConfig.excludeTopics`
+  (`profiles/specializations/termuxpp/home.nix`), which drops `<topic>.zsh` and `functions/<topic>/`. Add a topic there
+  rather than a guard.
+- Environment for Nix-managed tools (`FZF_DEFAULT_OPTS`, ...) belongs in their Nix module
+  (`home-manager/cli/zsh/fzf.nix`), not in a plugin: plugins load later and would override it.
 
 ## Code style
 
@@ -120,3 +127,21 @@ filtering automatically.
 - After a switch, reload the full plugin set with `zsrclocal` or `exec zsh`.
 - For autoload function changes, use `zsh::reload-file ~/.config/zsh/functions/<topic>/<function-name>` in an interactive shell, or
   restart the shell with `exec zsh`.
+- Measure with `ZSH_PLUGIN_TIMINGS=1 ZSH_SYNC_LOCAL_PLUGINS=1 zsh -i -c exit` (per-plugin ms on stderr). A plugin runs in
+  every new shell: no subshells, forks or network calls at load time; cache expensive results (see
+  `kubectl::context-colors`).
+
+## Checking a change before deploying
+
+For changes to the loader, ordering or many plugins at once, compare the full shell state of the current and the new
+config without switching:
+
+1. Build the host's `home-manager-files` on a build host (nix skill, `remote-sync.sh`), copy it back with
+   `nix copy --from ssh-ng://<build-host> <path>`, then `cp -a <path>/.config/zsh ./newzsh && chmod -R u+w ./newzsh`.
+2. Dump both states (`scripts/` is next to this file): `scripts/zsh-state.zsh old.txt` and
+   `scripts/with-zsh-config.sh ./newzsh -- scripts/zsh-state.zsh new.txt` (bind-mounts the new tree over
+   `~/.config/zsh` in a user namespace, no root needed).
+3. `scripts/zsh-state-diff.py old.txt new.txt` lists changed or missing functions, aliases, key bindings, zstyles,
+   options, completions and parameters. Explain every difference before committing.
+4. For the interactive (deferred) path, drive `scripts/with-zsh-config.sh ./newzsh -- zsh -i` through `script -qfc` and
+   check `~/.cache/zsh/local-plugins.log` stays empty.

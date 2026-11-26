@@ -1,6 +1,4 @@
 # journalctl
-(( $+commands[journalctl] )) || return
-
 alias jxf="sudo journalctl -xfl"
 alias jb="sudo journalctl -bl"
 alias jerr="sudo journalctl -b -p err" # Only show errors since last boot
