@@ -32,5 +32,18 @@
         pkgs.nix-your-shell
       ];
     };
+
+    # nix-your-shell's nix/nix-shell wrappers (keep zsh in `nix shell` and
+    # `nix develop`), generated at build time instead of in every shell.
+    programs.zsh.initContent = lib.mkOrder 700 ''
+      if [[ -o interactive ]]
+      then
+        source ${
+          pkgs.runCommand "nix-your-shell-init.zsh" { } ''
+            ${lib.getExe pkgs.nix-your-shell} zsh > $out
+          ''
+        }
+      fi
+    '';
   };
 }

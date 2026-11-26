@@ -8,7 +8,6 @@
     ./diff-so-fancy.nix
     ./emoji-fzf.nix
     ./extract.nix
-    ./gpg-agent.nix
     ./history-substring-search.nix
     ./manydots.nix
     ./powerlevel10k.nix
