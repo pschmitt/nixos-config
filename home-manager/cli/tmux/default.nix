@@ -2,6 +2,7 @@
 # ~/.config/tmux, so runtime state (e.g. resurrect/) can still live there.
 # Plugins replace tpm, see ./plugins.nix.
 {
+  config,
   inputs,
   lib,
   pkgs,
@@ -25,6 +26,15 @@ in
         source = ./config;
         recursive = true;
       };
+      # Host color and alias for the status line (config/bin/tmux-status.sh)
+      "tmux/host.sh".text = ''
+        host_color=${lib.escapeShellArg config.dotfiles.promptColor}
+        host_alias=${
+          lib.escapeShellArg (
+            if config.dotfiles.promptHostAlias != null then config.dotfiles.promptHostAlias else ""
+          )
+        }
+      '';
       "tmux/plugins-nix.conf".text = lib.concatMapStrings (p: ''
         run-shell ${lib.escapeShellArg "${pluginDir}/${p.name}/${baseNameOf p.plugin.rtp}"}
       '') plugins;

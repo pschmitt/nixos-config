@@ -24,8 +24,10 @@ in
     enableZshIntegration = false;
   };
 
-  xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
-    # vivid
-    source ${vividInitFile}
+  programs.zsh.initContent = lib.mkOrder 700 ''
+    if [[ -o interactive ]]
+    then
+      source ${vividInitFile}
+    fi
   '';
 }

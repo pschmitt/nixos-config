@@ -70,7 +70,6 @@ in
     ../../../home-manager/cli/zsh/config/core.nix
     ../../../home-manager/cli/zsh/config/zhj.nix
     ../../../home-manager/cli/zsh/config/portable.nix
-    ../../../home-manager/cli/zsh/config/source-me.nix
     ../../../home-manager/cli/git.nix
     ../../../home-manager/cli/tmux
     ../../../home-manager/cli/zsh/config/runtime.nix
@@ -449,7 +448,6 @@ in
       '';
       initContent = lib.mkMerge [
         (lib.mkOrder 600 ''
-          source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
           for completion_dir in \
             "${config.home.profileDirectory}/share/zsh/site-functions" \
             /run/current-system/sw/share/zsh/site-functions

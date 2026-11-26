@@ -12,18 +12,19 @@ in
     enable = true;
     nix-direnv.enable = true;
     silent = true;
-    # The hook is generated at build time and sourced from system.zsh.
+    # The hook is generated at build time and sourced from initContent.
     enableZshIntegration = false;
   };
 
-  xdg.configFile = {
-    "zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
-      # direnv
+  programs.zsh.initContent = lib.mkOrder 700 ''
+    if [[ -o interactive ]]
+    then
       source ${direnvInitFile}/init.zsh
-    '';
-  }
+    fi
+  '';
+
   # Our stdlib helpers (use sops, layout uv, *_password ...), formerly in yadm
-  // lib.mapAttrs' (
+  xdg.configFile = lib.mapAttrs' (
     name: _: lib.nameValuePair "direnv/lib/${name}" { source = ./direnv-lib + "/${name}"; }
   ) (builtins.readDir ./direnv-lib);
 }

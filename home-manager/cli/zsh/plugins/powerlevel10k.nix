@@ -28,13 +28,15 @@
         zsh::source-plugin ${lib.escapeShellArg "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"}
       fi
     '')
-    # The shared prompt config (./p10k.zsh);
-    # The host color comes from dotfiles.promptColor, overriding any
-    # custom/hosts/<host>/zprompt value; p10k.zsh expands it while loading.
+    # The shared prompt config (./p10k.zsh); it expands the host color and
+    # alias (dotfiles.promptColor, dotfiles.promptHostAlias) while loading.
     (lib.mkOrder 891 ''
       if zsh::prompt-plugins-enabled && [[ -r "${config.xdg.configHome}/zsh/p10k.zsh" ]]
       then
         typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
+        ${lib.optionalString (
+          config.dotfiles.promptHostAlias != null
+        ) "typeset -g host_alias=${lib.escapeShellArg config.dotfiles.promptHostAlias}"}
         zsh::source-plugin "${config.xdg.configHome}/zsh/p10k.zsh"
       fi
     '')

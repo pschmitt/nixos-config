@@ -54,33 +54,11 @@
         export ZHJ_MODE=eval
       fi
     '';
-    initContent = lib.mkMerge [
-      # OS and per-host overlays from the custom/ dir. Overrides such as
-      # custom/hosts/<host>/zprompt (host_color) must precede p10k.zsh.
-      (lib.mkOrder 700 ''
-        () {
-          setopt localoptions nullglob extendedglob
-          local custom_dir="${config.xdg.configHome}/zsh/custom"
-
-          is_nixos && multisrc "$custom_dir/os/nixos"/*(-.)
-          multisrc "$custom_dir/hosts/$HOST"/*(-.)
-
-          # A cd<name> alias for every named
-          # directory, including the host overlays' `hash -d` entries.
-          local name
-          for name in ''${(k)nameddirs}
-          do
-            (( $+aliases[cd$name] )) || alias "cd$name=cd ''${(q)nameddirs[$name]}"
-          done
-        }
-      '')
-      (lib.mkOrder 1400 ''
-        if [[ -o interactive && -z "$NO_PLUGINS" ]]
-        then
-          zsh::load-local-plugins
-        fi
-      '')
-    ];
+    initContent = lib.mkOrder 1400 ''
+      if [[ -o interactive && -z "$NO_PLUGINS" ]]
+      then
+        zsh::load-local-plugins
+      fi
+    '';
   };
-
 }

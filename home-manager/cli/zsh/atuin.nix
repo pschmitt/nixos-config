@@ -31,9 +31,10 @@ in
     inherit settings;
   };
 
-  xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
-    # atuin
-    source ${atuinInitFile}/init.zsh
-    # bindkey '^[r' _atuin_search_widget
+  programs.zsh.initContent = lib.mkOrder 700 ''
+    if [[ -o interactive ]]
+    then
+      source ${atuinInitFile}/init.zsh
+    fi
   '';
 }

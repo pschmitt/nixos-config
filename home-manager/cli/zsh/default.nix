@@ -7,7 +7,6 @@
 {
   imports = [
     ./atuin.nix
-    ./config/source-me.nix
     ./direnv.nix
     ./fzf.nix
     ./vivid.nix
@@ -32,16 +31,6 @@
         pkgs.gitstatus # used by p10k
         pkgs.nix-your-shell
       ];
-    };
-
-    xdg.configFile = {
-      "zsh/custom/os/home-manager/system.zsh".text = ''
-        [[ -o interactive ]] || return
-      '';
-
-      "zsh/custom/os/nixos/system.zsh".text = ''
-        source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
-      '';
     };
   };
 }

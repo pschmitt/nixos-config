@@ -60,7 +60,7 @@ in
       # home config.
       inherit (config) mainUser domains;
       dotfiles = {
-        promptColor = config.dotfiles.promptColor;
+        inherit (config.dotfiles) promptColor promptHostAlias;
         inherit (config.dotfiles) desktop;
         zsh.nixShell.default = config.dotfiles.zsh.nixShell.default;
       };

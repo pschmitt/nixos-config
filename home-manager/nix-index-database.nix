@@ -9,10 +9,13 @@
 
   programs.nix-index-database.comma.enable = true;
 
-  xdg.configFile."zsh/custom/os/nixos/system.zsh".text = lib.mkAfter ''
-    # command-not-found integration
-    source ${
-      inputs.nix-index-database.packages.${pkgs.stdenv.hostPlatform.system}.nix-index-with-db
-    }/etc/profile.d/command-not-found.sh
+  # command-not-found integration
+  programs.zsh.initContent = lib.mkOrder 710 ''
+    if [[ -o interactive ]]
+    then
+      source ${
+        inputs.nix-index-database.packages.${pkgs.stdenv.hostPlatform.system}.nix-index-with-db
+      }/etc/profile.d/command-not-found.sh
+    fi
   '';
 }

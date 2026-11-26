@@ -12,12 +12,10 @@ in
     pkgs.fzf-preview
   ];
 
-  xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter (
-    ''
-      # fzf
+  programs.zsh.initContent = lib.mkOrder 700 ''
+    if [[ -o interactive ]]
+    then
       source ${fzfInitFile}/init.zsh
-    ''
-    + ''
       # Input at the bottom, preview above the list on narrow (portrait) terminals.
       export FZF_DEFAULT_OPTS='
         --ansi
@@ -33,6 +31,6 @@ in
         --bind "alt-k:change-preview-window(up|right)"
         --bind "alt-0:transform:fzf-preview --next-mode"
       '
-    ''
-  );
+    fi
+  '';
 }
