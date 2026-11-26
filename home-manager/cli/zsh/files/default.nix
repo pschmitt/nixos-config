@@ -22,9 +22,39 @@ let
           [ ]
       ) (builtins.readDir directory)
     );
+  functions =
+    directory:
+    lib.concatLists (
+      lib.mapAttrsToList (
+        name: kind:
+        let
+          source = directory + "/${name}";
+          target = "zsh/functions/${name}";
+        in
+        if kind != "directory" then
+          [ ]
+        else if
+          builtins.elem name [
+            "pulseaudio"
+            "strings"
+          ]
+        then
+          filesIn source target
+        else
+          [
+            {
+              name = target;
+              value = {
+                inherit source;
+                recursive = true;
+              };
+            }
+          ]
+      ) (builtins.readDir directory)
+    );
 in
 {
   xdg.configFile = builtins.listToAttrs (
-    filesIn ./functions "zsh/functions" ++ filesIn ./plugins/local "zsh/plugins/local"
+    functions ./functions ++ filesIn ./plugins/local "zsh/plugins/local"
   );
 }

@@ -23,7 +23,11 @@ in
 
         local result origin=nix
         local -F 3 started elapsed_ms
-        [[ "$source_file" == "${localPluginDir}/"* ]] && origin=local
+        if [[ "$source_file" == "${localPluginDir}/"* ||
+              "$source_file" == "${config.xdg.configHome}/zsh/static/"* ]]
+        then
+          origin=local
+        fi
         started=$EPOCHREALTIME
         ${sourcePlugin}
         result=$?
@@ -33,7 +37,7 @@ in
       }
     '')
     (lib.mkOrder 1350 ''
-      # The yadm-managed local plugins (~350 files) dominate startup. Load them
+      # The local plugins (~350 files) dominate startup. Load them
       # synchronously for scripts (eval mode, zhj, reloads) and asynchronously,
       # one file per idle zle tick, in interactive shells (see below).
       # Functions to run once the local plugins are loaded (sync or async).
@@ -116,6 +120,14 @@ in
           builtin alias -- cxs=codex-sol
         fi
         typeset -g ZSH_LOCAL_PLUGINS_LOADED=1
+
+        # Writable yadm-managed overrides run last, after the managed plugins
+        # and their overrides, in both synchronous and deferred shells.
+        local static_file
+        for static_file in "${config.xdg.configHome}/zsh/static/"*.zsh(N)
+        do
+          zsh::source-plugin "$static_file"
+        done
       }
 
       # yadm/zinit name for reloading the local plugins

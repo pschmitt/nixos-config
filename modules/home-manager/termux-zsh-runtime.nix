@@ -79,7 +79,8 @@
           local restore_warn_create_global=0
           local result
 
-          if [[ "$source_file" == "''${XDG_CONFIG_HOME:-$HOME/.config}/zsh/plugins/local/"* &&
+          if [[ ( "$source_file" == "''${XDG_CONFIG_HOME:-$HOME/.config}/zsh/plugins/local/"* ||
+                  "$source_file" == "''${XDG_CONFIG_HOME:-$HOME/.config}/zsh/static/"* ) &&
                 -o warncreateglobal ]]
           then
             unsetopt warncreateglobal
