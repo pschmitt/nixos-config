@@ -8,7 +8,7 @@ let
   inherit (lib) mkOption types;
   cfg = config.services.ha-mcp;
   # renovate: datasource=docker depName=ghcr.io/homeassistant-ai/ha-mcp
-  version = "9.2.0";
+  version = "9.3.0";
   # ha-mcp supplies a Uvicorn logging config that ignores FASTMCP_LOG_LEVEL.
   # Its access log otherwise records the secret MCP path on every request.
   serverEntrypoint = pkgs.writeText "ha-mcp-web.py" ''
