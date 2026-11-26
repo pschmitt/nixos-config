@@ -52,17 +52,6 @@ in
     };
   }
   {
-    name = "tmux-cpu";
-    plugin = pinned {
-      owner = "pschmitt";
-      repo = "tmux-cpu";
-      rev = "97321b0a9925068664546d28076f879f988b11ce";
-      hash = "sha256-XC+Le+IqPlemEHTdJhbGmk1TrOUkA/vOBPsdrxontys=";
-      date = "2026-09-06";
-      rtpFilePath = "cpu.tmux";
-    };
-  }
-  {
     name = "tmux-forsaken";
     plugin = pinned {
       owner = "pschmitt";
@@ -113,10 +102,6 @@ in
   {
     name = "tmux-prefix-highlight";
     plugin = pkgs.tmuxPlugins.prefix-highlight;
-  }
-  {
-    name = "tmux-sensible";
-    plugin = pkgs.tmuxPlugins.sensible;
   }
   # Reports the windows to TermuxPP terminals (the phones' sidebar and window
   # picker) and lets them switch windows; other terminals ignore it.

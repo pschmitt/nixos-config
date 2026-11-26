@@ -24,7 +24,8 @@ _tmux_has_popup() {
   then
     return 1
   fi
-  zhj tmux::version-at-least 3.2
+  # Popups need tmux 3.2, which Nix always provides
+  return 0
 }
 
 _tmux_get_client_size() {
