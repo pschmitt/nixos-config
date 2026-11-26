@@ -28,15 +28,29 @@
       ];
       icon = "";
     }
+    # Nerd Fonts codicons (3.5+): cod-claude, cod-openai, cod-copilot
     {
       commands = [
         "claude"
-        "codex"
+        "claude-work"
+        "claude-auto"
+      ];
+      icon = "";
+    }
+    {
+      commands = [ "codex" ];
+      icon = "";
+    }
+    {
+      commands = [ "copilot" ];
+      icon = "";
+    }
+    {
+      commands = [
         "opencode"
         "mimo"
         "aider"
         "gemini"
-        "copilot"
         "agy"
       ];
       icon = "󰚩";
