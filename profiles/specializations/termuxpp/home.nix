@@ -222,7 +222,7 @@ in
           "TAB"
           {
             key = "CTRL";
-            popup = "SHIFT";
+            hold = "SHIFT";
           }
           "ALT"
           {
