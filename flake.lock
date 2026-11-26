@@ -880,11 +880,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795628356,
-        "narHash": "sha256-0s6kFV9MGr6PI5r49UMiU6fguDYGEKaupvsFsMRwDN0=",
+        "lastModified": 1795691653,
+        "narHash": "sha256-84D/zuCPvh0p7G5uMWpZoK4dB6jjoI1e6l5YnzpisuY=",
         "owner": "pschmitt",
         "repo": "homeassistant-hrworks",
-        "rev": "34b2415bf7d7d57813c7d19d37eee6fba7542ed0",
+        "rev": "589b3835820b271da9aad357f2cec3a29a550e46",
         "type": "github"
       },
       "original": {
