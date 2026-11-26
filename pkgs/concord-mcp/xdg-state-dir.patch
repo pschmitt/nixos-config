@@ -113,10 +113,10 @@ diff -ru orig/src/install/adapters/index.ts src/src/install/adapters/index.ts
    try {
      mkdirSync(dirname(statePath), { recursive: true });
      writeFileSync(statePath, `${JSON.stringify({ version: 1, adapters: report }, null, 2)}\n`, {
-@@ -928,7 +929,7 @@
-   }
+@@ -881,6 +882,6 @@
    uninstallDevinMcpConfig(env);
    removeDevinUserHooks(env);
+   uninstallKiroUserConfigs(env);
 -  const statePath = join(userHome(env), '.concord', 'adapters.json');
 +  const statePath = join(userConcordDir(env), 'adapters.json');
    if (existsSync(statePath)) rmSync(statePath);
