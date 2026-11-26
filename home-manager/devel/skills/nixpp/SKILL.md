@@ -67,6 +67,9 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
      `github:…/main` resolves to for about an hour (`--rworker` upgrades
      refresh it); pass
      `--flake github:pschmitt/nixos-config/<sha>` for an exact commit.
+     `<sha>` must be the full 40-character hash (`git rev-parse`): the
+     `github:` fetcher takes a short one for a branch name and fails with
+     `HTTP error 422` from `api.github.com/.../commits/<short>`.
      For native ARM builds after a nixpp source change, see
      [Build the Android runtime prerequisite](#build-the-android-runtime-prerequisite).
    - **Built elsewhere (an rworker, by hand):** push the closure with
