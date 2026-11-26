@@ -1,0 +1,46 @@
+local usage="Usage: $0 [--all] COMMAND"
+
+if [[ "$#" -eq 0 ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local help all ignore
+zparseopts -D -K -- \
+  {h,-help}=help \
+  {a,-all}=all \
+  {i,-ignore}+:=ignore
+
+# remove opt names and join with '|'
+local ign=${(j:|:)${(@)ignore:#(--ignore|-i)}}
+# ensure that echo::fancy is part of the ign filter
+if [[ -z "$ign" ]]
+then
+  ign='^\+echo::fancy'
+else
+  [[ "$ign" != *echo::fancy* ]] && ign="$ign|^\\+_echo::fancy"
+fi
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local cmd="${aliases[$1]:-$1}"
+shift
+echo_debug "Running DEBUG=1 $cmd $*"
+
+trap 'unsetopt xtrace' INT EXIT
+
+if [[ -n "$all" ]]
+then
+  setopt localoptions xtrace
+  DEBUG=1 ${=cmd} $@
+else
+  setopt localoptions xtrace
+  DEBUG=1 ${=cmd} $@ 2> >(grep -vE "$ign")
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

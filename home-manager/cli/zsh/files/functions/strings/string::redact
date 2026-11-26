@@ -1,0 +1,9 @@
+sed -E \
+  -e 's,([a-z0-9]+://[^@/[:space:]]+):[^@/[:space:]]+([[:space:]]*@[^/[:space:]?]+),\1:**redacted**\2,Ig' \
+  -e 's,([a-z][a-z0-9+.-]*://)[^@/:[:space:]]+(@\S+),\1**redacted**\2,Ig' \
+  -e '/StrictHostKeyChecking/!s/((key|key_id|password|token)"*[:=]*[[:space:]]*)[^&[:space:]\'\''"]+/\1**redacted**/Ig' \
+  -e "s/(Authorization:[[:space:]]*Bearer[[:space:]]*)[^[:space:]'\"]+/\1**redacted**/Ig" \
+  -e "s/(^|[[:space:]])(--user|-u)([=[:space:]]*)(['\"]?)([^'\":[:space:]]+:)([^'\"[:space:]]*)(\4)?/\1\2\3\4\5**redacted**\7/g" \
+  -e "s/(Authorization:[[:space:]]*Basic[[:space:]]*)[^[:space:]'\"]+/\1**redacted**/Ig"
+
+# vim: set ft=zsh et ts=2 sw=2 :

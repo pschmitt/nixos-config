@@ -1,0 +1,15 @@
+# Inspired by termux-fix-shebang
+# https://github.com/termux/termux-tools/blob/master/scripts/termux-fix-shebang.in
+local usage="usage: $0 FILE [FILE..]"
+if [[ $# -eq 0 || "$1" =~ ^--?h(elp)?$ ]]
+then
+  return 2
+fi
+
+local file
+for file in "$@"
+do
+  sed -i -E "1 s@^#\!(.*)/[sx]?bin/(.*)@#\!/usr/bin/env \2@" "${file:A}"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

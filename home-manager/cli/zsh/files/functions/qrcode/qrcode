@@ -1,0 +1,11 @@
+local usage="Usage: $0 [FILE]"
+
+local tmpfile=$(mktemp --suffix .png)
+trap "rm -f '$tmpfile'" EXIT
+
+qrencode -o "$tmpfile" $1
+
+img::cat "$tmpfile"
+rm -f "$tmpfile"
+
+# vim: set ft=zsh et ts=2 sw=2 :

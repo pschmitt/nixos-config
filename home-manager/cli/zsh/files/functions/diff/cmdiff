@@ -1,0 +1,19 @@
+local interval
+zparseopts -K -D i:=interval
+
+if [[ -z "$*" ]]
+then
+  echo "Usage: $0 CMD"
+  return 2
+fi
+
+if [[ -n "$interval" ]]
+then
+  interval=${interval[2]}
+else
+  interval=3
+fi
+
+diff <($@) <(sleep "$interval" && $@)
+
+# vim: set ft=zsh et ts=2 sw=2 :

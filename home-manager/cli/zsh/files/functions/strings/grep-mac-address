@@ -1,0 +1,10 @@
+# https://stackoverflow.com/a/245925
+local extra_pattern
+
+zparseopts -D -K -E \
+  p:=extra_pattern -pattern:=extra_pattern
+
+grep --color=yes -Ei \
+  "([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}${extra_pattern[2]}" $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

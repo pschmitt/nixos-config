@@ -1,0 +1,5 @@
+# Extract a specific word
+local n="${1:-0}"  # default to the whole line ($0)
+awk "{ print \$${n} }"
+
+# vim: set ft=zsh et ts=2 sw=2 :

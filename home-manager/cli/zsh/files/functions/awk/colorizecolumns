@@ -1,0 +1,101 @@
+local ignore_first_line ignore_last_line
+zparseopts -D -E -K -- \
+  {H,i,-ignore-first-line,-ignore-header}=ignore_first_line \
+  {T,I,-ignore-last-line,-ignore-footer}=ignore_last_line
+
+if [[ -n "$ignore_first_line" ]]
+then
+  ignore_first_line=true
+else
+  ignore_first_line=false
+fi
+
+if [[ -n "$ignore_last_line" ]]
+then
+  ignore_last_line=true
+else
+  ignore_last_line=false
+fi
+
+if [[ -n "$NO_COLOR" ]]
+then
+  cat "$@"
+  return "$?"
+fi
+
+awk -v ignore_first_line="$ignore_first_line" \
+    -v ignore_last_line="$ignore_last_line" \
+    -F'\t' '
+    BEGIN {
+      # Define colors
+      colors[0] = "\033[36m" # Cyan
+      colors[1] = "\033[32m" # Green
+      colors[2] = "\033[35m" # Magenta
+      colors[3] = "\033[37m" # White
+      colors[4] = "\033[33m" # Yellow
+      colors[5] = "\033[34m" # Blue
+      colors[6] = "\033[38m" # Gray
+      colors[7] = "\033[31m" # Red
+      reset = "\033[0m"
+
+      prev_line = ""
+      lines_printed = 0
+    }
+
+    {
+      # If we have a previously stored line, print it now.
+      if (prev_line != "") {
+        # If this is the first line we print:
+        if (lines_printed == 0 && ignore_first_line == "true") {
+          # Print uncolored
+          print prev_line
+        } else {
+          # Print colored
+          print_colored(prev_line)
+        }
+        lines_printed++
+      }
+      prev_line = $0
+    }
+
+    END {
+      # Handle the last line
+      if (prev_line != "") {
+        # If we have not printed anything yet, this is both first and last line.
+        if (lines_printed == 0) {
+          # If ignoring first or last line, print uncolored; else colored
+          if (ignore_first_line == "true" || ignore_last_line == "true") {
+            print prev_line
+          } else {
+            print_colored(prev_line)
+          }
+        } else {
+          # This is not the first line printed, just the last line.
+          if (ignore_last_line == "true") {
+            # Print uncolored
+            print prev_line
+          } else {
+            # Print colored
+            print_colored(prev_line)
+          }
+        }
+        lines_printed++
+      }
+    }
+
+    function print_colored(line) {
+      split(line, fields, FS)
+      colored_line = ""
+      for (i = 1; i <= length(fields); i++) {
+        color = colors[(i-1) % length(colors)]
+        colored_field = color fields[i] reset
+        colored_line = colored_line colored_field
+        if (i < length(fields)) {
+          colored_line = colored_line "\t"
+        }
+      }
+      print colored_line
+    }
+  ' "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

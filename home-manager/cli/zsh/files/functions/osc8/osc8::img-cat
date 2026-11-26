@@ -1,0 +1,50 @@
+local help usage="usage: $0 HYPERLINK [IMG] [IMGCAT_ARGS]"
+
+zparseopts -D -E -K -- \
+  {h,-help}=help
+
+if [[ -n $help ]]
+then
+  print $usage
+  return 0
+fi
+
+local hyperlink="$1"
+local img="$2"
+
+if [[ -z $hyperlink ]]
+then
+  echo_error "Missing hyperlink"
+  print -u2 "$usage"
+  return 2
+fi
+
+shift
+# check if imag is a file, if not, unset it - it's img::cat args
+if [[ -n $img && -f $img ]]
+then
+  shift
+else
+  unset img
+fi
+
+if ! osc8::is-supported
+then
+  # unsupported terminal, fallback to just printing the image and hyperlink
+  img::cat $img
+  printf '%s\n' "$hyperlink"
+  return 0
+fi
+
+# start osc8 sequence
+printf '\033]8;;%s\033\\' "$hyperlink"
+
+img::cat $@ $img
+
+# end osc8 sequence
+printf '\033]8;;\033\\'
+
+# nl
+printf '\n'
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,4 @@
+# FIXME This excludes special chars which I guess are still valid email addrs
+grep -o -E '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+' $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

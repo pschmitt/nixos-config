@@ -1,0 +1,29 @@
+local usage="Usage: $0 FILE"
+local res
+
+case "$1" in
+  --help|-h)
+    echo "$usage"
+    return
+    ;;
+esac
+
+if [[ "$#" -lt 1 ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local fn="${1:A}"
+
+if ! [[ -e "$fn" ]]
+then
+  # echo_err "No such file or directory: $fn"
+  return 1
+fi
+
+res="$(file::mimetype "$fn")"
+
+! [[ "$res" =~ "text/.+\$" ]]
+
+# vim: set ft=zsh et ts=2 sw=2 :

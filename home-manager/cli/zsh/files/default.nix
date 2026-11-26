@@ -1,19 +1,46 @@
+let
+  topics = [
+    "awk"
+    "calc"
+    "cd"
+    "countdown"
+    "datetime"
+    "debug"
+    "diff"
+    "echo"
+    "emoji"
+    "file"
+    "find"
+    "ntp"
+    "osc8"
+    "qrcode"
+    "quote-cmd"
+    "sed"
+    "shebang"
+    "shell"
+    "sleep"
+    "sqlite"
+    "strings"
+    "tsv"
+    "versions"
+    "watch"
+    "whitespace"
+  ];
+in
 {
-  xdg.configFile = {
-    "zsh/plugins/local/calc.zsh".source = ./plugins/local/calc.zsh;
-    "zsh/plugins/local/datetime.zsh".source = ./plugins/local/datetime.zsh;
-    "zsh/plugins/local/echo.zsh".source = ./plugins/local/echo.zsh;
-    "zsh/functions/calc" = {
-      source = ./functions/calc;
-      recursive = true;
-    };
-    "zsh/functions/datetime" = {
-      source = ./functions/datetime;
-      recursive = true;
-    };
-    "zsh/functions/echo" = {
-      source = ./functions/echo;
-      recursive = true;
-    };
-  };
+  xdg.configFile = builtins.listToAttrs (
+    builtins.concatMap (name: [
+      {
+        name = "zsh/functions/${name}";
+        value = {
+          source = ./functions + "/${name}";
+          recursive = true;
+        };
+      }
+      {
+        name = "zsh/plugins/local/${name}.zsh";
+        value.source = ./plugins/local + "/${name}.zsh";
+      }
+    ]) topics
+  );
 }

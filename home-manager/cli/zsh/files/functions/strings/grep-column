@@ -1,0 +1,5 @@
+local cols=($@)
+
+jc -q --asciitable | jq -er ".[] | .${(j: + " " + .:)${cols:l}}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

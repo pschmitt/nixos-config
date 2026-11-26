@@ -1,0 +1,10 @@
+local col_num="$1"
+local color="${2:-31}"  # default to red
+local GREP_COLORS
+# NOTE Below awk command will swallow some whitespace
+# awk -v col=$col_num -v color=$color '$col = "\033[1;"color"m"$col"\033[0m"'
+GREP_COLORS="mt=1;$color" grep \
+  --color=always \
+  -P "^(\S+\s+){$(( $col_num - 1 ))}\K\S+"
+
+# vim: set ft=zsh et ts=2 sw=2 :

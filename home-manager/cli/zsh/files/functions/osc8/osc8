@@ -1,0 +1,44 @@
+# shellcheck shell=bash
+# see https://github.com/Alhadis/OSC8-Adoption
+local usage="usage: $0 TEXT HYPERLINK"
+local help nonewline
+zparseopts -D -E -K -- \
+  {n,-nonewline,-no-newline}=nonewline \
+  {h,-help}=help
+
+if [[ -n $help ]]
+then
+  printf '%s\n' "$usage"
+  return 0
+fi
+
+local text="$1"
+local hyperlink="$2"
+
+if [[ -z $text ]]
+then
+  echo_error "Missing text"
+  printf '%s\n' "$usage" >&2
+  return 2
+fi
+
+if [[ -z $hyperlink ]]
+then
+  echo_error "Missing hyperlink"
+  printf '%s\n' "$usage" >&2
+  return 2
+fi
+
+local esc=$'\033'
+
+local sequence
+sequence="${esc}]8;;${hyperlink}${esc}\\${text}${esc}]8;;${esc}\\"
+
+if [[ -z $nonewline ]]
+then
+  sequence+=$'\n'
+fi
+
+printf '%s' "$sequence"
+
+# vim: set ft=zsh et ts=2 sw=2 :

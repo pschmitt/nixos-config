@@ -1,0 +1,38 @@
+awk -v property="$*" '
+  $0 ~ property {
+    # Remove the property from the line
+    gsub(property ": *", "");
+
+    # Split the line by spaces into the items array
+    n = split($0, items, /[ ]+/);
+
+    for (i = 1; i <= n; i++) {
+      # Check if item is not empty before printing
+      if (items[i]) {
+        print items[i];
+      }
+    }
+    found=1;
+    next
+  }
+
+  # This block will process lines only if the property has been
+  # found previously
+  found && NF {
+    # Split the line by spaces into the items array
+    n = split($0, items, /[ ]+/);
+    for (i = 1; i <= n; i++) {
+      # Check if item is not empty before printing
+      if (items[i]) {
+        print items[i];
+      }
+    }
+  }
+
+  # If we find an empty line after having found our property, reset the flag
+  found && !NF {
+    exit;
+  }
+'
+
+# vim: set ft=zsh et ts=2 sw=2 :

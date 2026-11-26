@@ -1,0 +1,15 @@
+if (( $+commands[diff-so-fancy] ))
+then
+  # FIXME This will not retain the retrn code of diff!
+  diff -u $@ | diff-so-fancy
+  return
+fi
+
+if (( $+commands[delta] ))
+then
+  delta $@
+fi
+
+diff $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

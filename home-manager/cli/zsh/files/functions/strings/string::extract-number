@@ -1,0 +1,3 @@
+grep --color=auto --color=never -o -E '[0-9]+'
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,9 @@
+local extra_pattern
+
+zparseopts -D -K -E \
+  p:=extra_pattern -pattern:=extra_pattern
+
+grep --color=yes -Ei \
+  "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b${extra_pattern[2]}" $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

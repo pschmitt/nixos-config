@@ -1,0 +1,6 @@
+# NOTE the optional \uFE0F part is for emoji with variation selectors
+# without it, the emoji might be altered
+# ie: 🛠️ would become 🛠
+rg --color=never -o '\p{Emoji}(\uFE0F)?'
+
+# vim: set ft=zsh et ts=2 sw=2 :

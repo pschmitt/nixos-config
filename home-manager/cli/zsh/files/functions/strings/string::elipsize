@@ -1,0 +1,30 @@
+local position=(-p "middle")
+zparseopts -D -K -E \
+  {p,-position}:=position
+position="${position[2]}"
+
+local max_length="${1:-20}"
+
+local text
+text="$(cat)"
+
+if [[ ${#text} -le $max_length ]]
+then
+  echo -n "$text"
+  return
+fi
+
+case "$position" in
+  start)
+    echo -n "…${text: -$max_length}"
+    ;;
+  middle)
+    local half_length=$(( $max_length / 2 - 1 ))
+    echo -n "${text:0:$half_length}…${text: -$half_length}"
+    ;;
+  *)
+    echo -n "${text:0:$max_length}…"
+    ;;
+esac
+
+# vim: set ft=zsh et ts=2 sw=2 :

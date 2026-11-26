@@ -1,0 +1,22 @@
+local args sqlite_args
+
+while [[ $# -gt 0 ]]
+do
+  case "$1" in
+    -*)
+      sqlite_args+=($1)
+      ;;
+    *)
+      args+=($1)
+      ;;
+  esac
+  shift
+done
+
+set -- $args
+
+local db="$1"
+local cmd="${@[2,-1]}"
+sqlite3 $sqlite_args $db -cmd $cmd ".exit"
+
+# vim: set ft=zsh et ts=2 sw=2 :

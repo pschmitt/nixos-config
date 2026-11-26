@@ -1,0 +1,24 @@
+local text
+local count=2  # indent by 2 by default
+
+if [[ -t 0 ]]
+then
+  if [[ -n "$1" ]]
+  then
+    count="$1"
+    shift
+  fi
+  text="$*"
+else
+  count="${1:-2}"
+  text="$(cat)"
+fi
+
+# FIXME detect whether we should use tabs (urgh!)
+python3 -c \
+  "import sys, textwrap; \
+     text = sys.stdin.read(); \
+     prefix = ' ' * ${count}; \
+     sys.stdout.write(textwrap.indent(text, prefix))" <<< "$text"
+
+# vim: set ft=zsh et ts=2 sw=2 :

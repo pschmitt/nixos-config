@@ -1,0 +1,16 @@
+local cmd="$1"
+shift
+
+if [[ ! -r "$cmd" ]]
+then
+  cmd=$(command -v $cmd)
+  if [[ -z "$cmd" ]]
+  then
+    echo_error "Unable to find command or file '$cmd'"
+    return 1
+  fi
+fi
+
+bash -x $cmd $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

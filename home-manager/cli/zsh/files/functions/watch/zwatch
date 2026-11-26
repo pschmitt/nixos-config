@@ -1,0 +1,14 @@
+local diff interval
+zparseopts -D -E -K -- \
+  {d,-diff}=diff \
+  {n,-interval}:=interval
+
+local extra_args=($interval)
+if [[ -n $diff ]]
+then
+  extra_args+=(-d watch)
+fi
+
+hwatch --no-title $extra_args --color -s 'zsh -c' FORCE_COLOR=1 $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

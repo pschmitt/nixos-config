@@ -1,0 +1,4 @@
+local v="$1"
+awk -F. '{OFS="."; $NF+=1; print $0}' <<< $v
+
+# vim: set ft=zsh et ts=2 sw=2 :

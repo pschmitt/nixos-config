@@ -1,0 +1,39 @@
+local verbose countdown
+zparseopts -D -E -K -- \
+  {v,-verbose}=verbose \
+  {c,-countdown}=countdown
+
+if [[ -n "$countdown" ]]
+then
+  countdown "$@"
+  return "$?"
+fi
+
+local duration=${@[-1]}
+local unit_short=${duration:0,-1}
+local unit_long
+
+case "$unit_short" in
+  s)
+    unit_long=seconds
+    ;;
+  m)
+    unit_long=minutes
+    ;;
+  d)
+    unit_long=days
+    ;;
+  *)
+    unit_long=seconds
+    ;;
+esac
+
+if [[ -n "$verbose" ]]
+then
+  local end="$(date -d "+${duration%$unit_short}${unit_long}")"
+  echo_info "Sleeping until $end"
+fi
+
+command sleep "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

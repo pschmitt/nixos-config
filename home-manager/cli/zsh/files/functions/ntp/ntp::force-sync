@@ -1,0 +1,120 @@
+local usage="usage: $0 [NTP_SERVER]"
+local help
+
+zparseopts -D -E -K -- \
+  {h,-help}=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local ntp_server="${1:-pool.ntp.org}"
+local sync_ok
+local sync_rc=0
+
+if (( $+commands[ntpdate] ))
+then
+  echo_info "Forcing time sync via ntpdate (${ntp_server})"
+  sudo ntpdate -ub "${ntp_server}"
+  sync_rc=$?
+  [[ "$sync_rc" -eq 0 ]] && sync_ok=1
+elif (( $+commands[sntp] ))
+then
+  echo_info "Forcing time sync via sntp (${ntp_server})"
+  sudo sntp -S "${ntp_server}"
+  sync_rc=$?
+  [[ "$sync_rc" -eq 0 ]] && sync_ok=1
+elif (( $+commands[chronyc] ))
+then
+  echo_info "Forcing time sync via chrony (${ntp_server})"
+  sudo chronyc -a "server ${ntp_server} iburst"
+  sync_rc=$?
+  if [[ "$sync_rc" -eq 0 ]]
+  then
+    sudo chronyc -a makestep
+    sync_rc=$?
+    [[ "$sync_rc" -eq 0 ]] && sync_ok=1
+  fi
+elif (( $+commands[ntpd] ))
+then
+  echo_info "Forcing time sync via ntpd (${ntp_server})"
+  if (( $+commands[timeout] ))
+  then
+    timeout 20s sudo ntpd -gq -p "${ntp_server}" </dev/null
+  else
+    sudo ntpd -gq -p "${ntp_server}" </dev/null
+  fi
+  sync_rc=$?
+  if [[ "$sync_rc" -eq 124 ]]
+  then
+    echo_error "ntpd timed out while waiting for a sync from ${ntp_server}"
+    return 1
+  fi
+  [[ "$sync_rc" -eq 0 ]] && sync_ok=1
+elif (( $+commands[timedatectl] )) && (( $+commands[systemctl] ))
+then
+  if [[ "$ntp_server" != "pool.ntp.org" ]]
+  then
+    echo_warning "systemd-timesyncd fallback ignores the custom server argument (${ntp_server})"
+  fi
+
+  echo_info "Forcing time sync via systemd-timesyncd"
+  sudo timedatectl set-ntp false &&
+    sudo systemctl restart systemd-timesyncd &&
+    sudo timedatectl set-ntp true
+  sync_rc=$?
+
+  if [[ "$sync_rc" -eq 0 ]]
+  then
+    local synced
+    local tries=0
+
+    while (( tries < 10 ))
+    do
+      synced=$(timedatectl show --property=NTPSynchronized --value 2>/dev/null)
+      if [[ "$synced" == "yes" ]]
+      then
+        break
+      fi
+      sleep 1
+      tries=$(( tries + 1 ))
+    done
+
+    if [[ "$synced" != "yes" ]]
+    then
+      echo_error "Time sync was triggered, but timedatectl did not report NTPSynchronized=yes within 10s"
+      return 1
+    fi
+
+    sync_ok=1
+  fi
+else
+  echo_error "No supported NTP client found (tried: ntpdate, sntp, chronyc, ntpd, timedatectl/systemctl)"
+  return 1
+fi
+
+if [[ "$sync_rc" -ne 0 || -z "$sync_ok" ]]
+then
+  echo_error "Failed to sync system time from ${ntp_server}"
+  return "$sync_rc"
+fi
+
+if (( $+commands[hwclock] ))
+then
+  echo_info "Writing system time to hardware clock"
+  sudo hwclock --systohc
+  sync_rc=$?
+  if [[ "$sync_rc" -ne 0 ]]
+  then
+    echo_error "Failed to update hardware clock"
+    return "$sync_rc"
+  fi
+else
+  echo_warning "hwclock is not installed; skipped hardware clock update"
+fi
+
+date
+
+# vim: set ft=zsh et ts=2 sw=2 :

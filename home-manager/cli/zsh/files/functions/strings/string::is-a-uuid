@@ -1,0 +1,4 @@
+local re='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+[[ ${1:-$(cat)} =~ $re ]]
+
+# vim: set ft=zsh et ts=2 sw=2 :

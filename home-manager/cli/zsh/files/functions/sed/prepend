@@ -1,0 +1,26 @@
+# Prepend text to file or stdin
+local usage="Usage: $0 CONTENT [FILE]"
+local -a extra_args=()
+
+case "$1" in
+  help|h|-h|--help)
+    echo "$usage"
+    return
+    ;;
+esac
+
+# Accept a single opt if getting piped into
+if [[ -t 0 ]]  # input from terminal
+then
+  if [[ "$#" -lt 2 ]]
+  then
+    echo "$usage" >&2
+    return 2
+  fi
+
+  extra_args+=(--in-place)
+fi
+
+sed ${extra_args[@]} "1i $1" $2
+
+# vim: set ft=zsh et ts=2 sw=2 :

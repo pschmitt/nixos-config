@@ -1,0 +1,61 @@
+local usage="usage: $0 [--dry-run] [-d DIR] FROM TO"
+local dir=(--directory "$PWD")
+local dryrun
+local help
+
+zparseopts -D -K -E \
+  {h,-help}=help \
+  {d,-dir,-directory}=:dir \
+  {k,-dryrun,-dry-run}=dryrun
+
+if [[ -n "$help" ]]
+then
+  echo $usage
+  return 0
+fi
+
+dir="$dir[2]"
+
+local from="$1"
+local to="$2"
+local delimiter='/'
+
+if [[ -z "$from" ]]
+then
+  echo_error "Missing FROM"
+  return 2
+fi
+
+if [[ -z "$to" ]]
+then
+  echo_error "Missing TO"
+  return 2
+fi
+
+if grep -q "$delimiter" <<< "${from}${to}"
+then
+  local candidate
+  for candidate in . , : \; \# \! \? \* \^ \$
+  do
+    if ! grep -q "\\$candidate" <<< "${from}${to}"
+    then
+      delimiter="$candidate"
+      break
+    fi
+  done
+fi
+
+local sed_cmd="s${delimiter}${from}${delimiter}${to}${delimiter}g"
+
+for file in $(rg --hidden --files-with-matches -- "$from")
+do
+  if [[ -n "$dryrun" ]]
+  then
+    echo_debug "DRYRUN: \$ sed -i '$sed_cmd' '$file'"
+    continue
+  fi
+
+  sed -i "$sed_cmd" $file
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

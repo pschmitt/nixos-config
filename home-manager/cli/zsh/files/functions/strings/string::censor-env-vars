@@ -1,0 +1,25 @@
+local input="${*:-$(cat)}"
+local var value
+
+for var in ${(k)parameters}
+do
+  case "${var:l}" in
+    keytimeout) # KEYTIMEOUT
+      continue
+      ;;
+    *pass*|*key*)
+      value="${(P)var}"
+
+      # Replace the variable value in the string with its name
+      if [[ $#value -gt 2 ]]
+      then
+        # echo "DEBUG: replace '$value' with '\$$var'"
+        input="${input//$value/\$$var}"
+      fi
+      ;;
+  esac
+done
+
+echo "$input"
+
+# vim: set ft=zsh et ts=2 sw=2 :

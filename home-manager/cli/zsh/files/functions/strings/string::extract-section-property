@@ -1,0 +1,8 @@
+local section="$1"
+shift
+local property="$*"
+
+string::extract-section "$section" | \
+  string::extract-property "$property"
+
+# vim: set ft=zsh et ts=2 sw=2 :

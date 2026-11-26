@@ -1,0 +1,49 @@
+local usage="usage: $0 [-w WHERE_QUERY] DB_FILE TABLE"
+
+local where_query
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {w,-where}:=where_query
+where_query=$where_query[2]
+
+if [[ -n "$help" ]]
+then
+  echo $usage
+  return 0
+fi
+
+local db="$1"
+
+if [[ -z "$db" ]]
+then
+  echo_error "Missing db file path"
+  echo $usage >&2
+  return 2
+fi
+
+if [[ ! -r $db ]]
+then
+  echo_error "No such file or directory: $db"
+  return 1
+fi
+
+local table="$2"
+
+if [[ -z "$table" ]]
+then
+  echo_error "Missing db table name"
+  echo $usage >&2
+  echo_info "Available tables:"
+  sqlite::exec $db '.table'
+  return 2
+fi
+
+local query="SELECT * FROM ${table}"
+if [[ -n "$where_query" ]]
+then
+  query="${query} WHERE ${where_query}"
+fi
+
+sqlite::exec-json $db "${query};"
+
+# vim: set ft=zsh et ts=2 sw=2 :

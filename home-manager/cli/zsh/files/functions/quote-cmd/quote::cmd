@@ -1,0 +1,59 @@
+local -a in out
+in=("$@")
+
+local i=1 n=$#in
+while (( i <= n ))
+do
+  local w=${in[i]}
+
+  if [[ $w == --*=* ]]
+  then
+    local flag=${w%%=*}
+    local val=${w#*=}
+    if [[ $val == *\$* || $val == *\`* ]]
+    then
+      out+="$flag='${val//\'/'"'"'}'"
+    elif [[ $val == [A-Za-z0-9_./:@%+-]## ]]
+    then
+      out+="$flag=$val"
+    else
+      val=${val//\\/\\\\}
+      val=${val//\"/\\\"}
+      out+="$flag=\"$val\""
+    fi
+  elif [[ $w == --* && i -lt n && ${in[i+1]} != -* ]]
+  then
+    local val=${in[i+1]}
+    if [[ $val == *\$* || $val == *\`* ]]
+    then
+      out+="$w='${val//\'/'"'"'}'"
+    elif [[ $val == [A-Za-z0-9_./:@%+-]## ]]
+    then
+      out+="$w=$val"
+    else
+      val=${val//\\/\\\\}
+      val=${val//\"/\\\"}
+      out+="$w=\"$val\""
+    fi
+    (( i+=2 ))
+    continue
+  else
+    if [[ $w == [A-Za-z0-9_./:@%+-]## ]]
+    then
+      out+=("$w")
+    elif [[ $w == *\$* || $w == *\`* ]]
+    then
+      out+=("'${w//\'/'"'"'}'")
+    else
+      w=${w//\\/\\\\}
+      w=${w//\"/\\\"}
+      out+=("\"$w\"")
+    fi
+  fi
+
+  (( i++ ))
+done
+
+print -r -- "${(j: :)out}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -22,7 +22,7 @@ else
 fi
 
 # https://tldp.org/HOWTO/Bash-Prompt-HOWTO/x405.html
-# https://unix.stackexchange.com/a/360199/101415
+# https://unix.stackexchange.com/a/360199
 # Save cursor position
 tput sc
 

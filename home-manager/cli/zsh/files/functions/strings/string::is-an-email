@@ -1,0 +1,3 @@
+grep --color=never -qE "[[:graph:]]\+@[[:graph:]]\+" $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

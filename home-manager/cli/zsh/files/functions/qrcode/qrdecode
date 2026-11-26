@@ -1,0 +1,10 @@
+# zbar
+if (( ! $+commands[zbarimg] ))
+then
+  echo::error "Required command not found: zbarimg"
+  return 127
+fi
+
+zbarimg --raw -q <(screenshot::freeform)
+
+# vim: set ft=zsh et ts=2 sw=2 :

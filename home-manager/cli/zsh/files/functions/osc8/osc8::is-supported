@@ -1,0 +1,9 @@
+case $TERM in
+  xterm-kitty|wezterm|alacritty|iTerm2*|gnome-terminal-*)
+    return 0
+  ;;
+esac
+
+return 1
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,30 @@
+local str
+local unique
+zparseopts -D -E {u,-unique}=unique
+
+str="$1"
+
+if [[ -z "$str" ]]
+then
+  echo "Error: empty string"
+  return 2
+fi
+
+# Convert to lowercase
+str="${str:l}"
+
+# Replace spaces with dashes
+str="${str// /-}"
+
+# Remove special characters
+str="${str//[^a-zA-Z0-9\-]/}"
+
+if [[ -n "$unique" ]]
+then
+  # Append current timestamp
+  str="${str}-$(date '+%s')"
+fi
+
+echo "$str"
+
+# vim: set ft=zsh et ts=2 sw=2 :

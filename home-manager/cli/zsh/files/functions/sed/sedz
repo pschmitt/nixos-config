@@ -1,0 +1,9 @@
+local -a extra_args
+
+zparseopts -D -K -E -a extra_args \
+  n -quiet -silent \
+  E r --regexp-extended
+
+fzf::interactive-cmd "sed ${extra_args}" $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

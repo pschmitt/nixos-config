@@ -1,0 +1,20 @@
+# https://stackoverflow.com/a/5760420
+# Usage: emoji-to-unicode 🤣 -> \xF0\x9F\xA4\xA3
+# echo -e '\xF0\x9F\xA4\xA3' -> 🤣
+local usage="Usage: $0 EMOJI"
+local emoji="$1"
+
+if [[ -z "$emoji" ]]
+then
+  echo "$usage" >&2
+  return 2
+elif [[ "$emoji" =~ ^(-h|--help) ]]
+then
+  echo "$usage"
+  return
+fi
+
+printf "\\\x%s" $(printf "$emoji" | xxd -p -c1 -u)
+echo
+
+# vim: set ft=zsh et ts=2 sw=2 :

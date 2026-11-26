@@ -1,0 +1,4 @@
+# Check if first char is an emoji
+string::contains-emoji "${1[1]}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

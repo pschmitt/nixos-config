@@ -1,0 +1,59 @@
+local help
+local usage="Usage: $0 [DIR] FILENAME"
+local git
+local ftype
+
+zparseopts -D -E -K \
+  h=help -help=help \
+  t:=ftype -type:=ftype \
+  g=git -git=git
+
+local cwd="$PWD"
+local res
+local fname
+
+ftype=${ftype[2]:-f}
+local gitroot=$(git rev-parse --show-toplevel 2>/dev/null)
+local gitrepopath
+
+if [[ -n "$gitroot" ]]
+then
+  gitrepopath=$(realpath "${gitroot}/..")
+fi
+
+case "$#" in
+  0)
+    echo "$usage" >&2
+    return 2
+    ;;
+  1)
+    fname="$1"
+    ;;
+  *)
+    cwd="$1"
+    fname="$2"
+    ;;
+esac
+
+# Stop if reached root, or the dir where the current git repo is in
+while [[ "$cwd" != / ]] && [[ "$cwd" != "$gitrepopath" ]]
+do
+  if ! res=$(find "${cwd}/" -maxdepth 1 \
+    -type "$ftype" -name "$fname")
+then
+    echo_error "Something went wrong"
+    return "$?"
+  fi
+
+  if grep -q . <<< "$res"  # found a match
+  then
+    echo "$res"
+    return
+  else
+    cwd=$(realpath "${cwd}/..")
+  fi
+done
+
+return 1
+
+# vim: set ft=zsh et ts=2 sw=2 :

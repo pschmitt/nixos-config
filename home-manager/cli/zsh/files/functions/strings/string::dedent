@@ -1,0 +1,5 @@
+python3 -c \
+  "import sys, textwrap; \
+     sys.stdout.write(textwrap.dedent(sys.stdin.read()))"
+
+# vim: set ft=zsh et ts=2 sw=2 :

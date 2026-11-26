@@ -1,0 +1,7 @@
+local extra_pattern
+
+# https://superuser.com/a/1813287
+grep --color=yes -Ei \
+  "(::)?[0-9a-fA-F]{1,4}(::?[0-9a-fA-F]{1,4}){1,7}(::)?" $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

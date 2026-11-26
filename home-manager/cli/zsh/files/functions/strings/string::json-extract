@@ -1,0 +1,47 @@
+local input=$(cat)
+
+local len=${#input}
+local json_start_index=0
+local json_end_index=0
+
+# Find first occurrence of { or [
+local i c
+for (( i=1; i<=len; i++ ))
+do
+  c=${input:$((i-1)):1}
+  if [[ "$c" == "{" || "$c" == "[" ]]
+  then
+    json_start_index=$i
+    break
+  fi
+done
+
+if [[ $json_start_index -eq 0 ]]
+then
+  echo_error "No JSON found in input"
+  return 1
+fi
+
+# Find last occurrence of } or ]
+for (( i=len; i>=1; i-- ))
+do
+  c=${input:$((i-1)):1}
+  if [[ "$c" == "}" || "$c" == "]" ]]
+  then
+    json_end_index=$i
+    break
+  fi
+done
+
+if [[ $json_end_index -eq 0 || $json_end_index -lt $json_start_index ]]
+then
+  echo_error "No JSON found in input"
+  return 1
+fi
+
+local json_length=$(( json_end_index - json_start_index + 1 ))
+local json_raw=${input:$((json_start_index - 1)):$((json_length))}
+
+jq -e <<< "$json_raw"
+
+# vim: set ft=zsh et ts=2 sw=2 :

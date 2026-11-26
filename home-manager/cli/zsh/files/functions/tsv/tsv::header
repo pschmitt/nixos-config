@@ -1,0 +1,6 @@
+local bold
+zparseopts -D -K -- {b,-bold}=bold
+local uppercased=("${(U)@}")
+echo -e "${bold:+\e[1m}${(j:\t:)uppercased}${bold:+${reset_color}}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

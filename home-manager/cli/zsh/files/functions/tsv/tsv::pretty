@@ -1,0 +1,153 @@
+local NO_COLOR="${NO_COLOR:-}"
+local no_header=${NO_HEADER}
+local no_footer=${NO_FOOTER}
+local no_convert=${NO_CONVERT}
+local no_emoji=$NO_EMOJI
+local headers=(${(s:,:)HEADERS})
+local keep_escape_sequences=$KEEP_ESCAPE_SEQUENCES
+local allow_empty_cols=$ALLOW_EMPTY
+local empty_msg=(-e "${EMPTY_MSG:-No data to display}")
+local zebra=$ZEBRA
+
+zparseopts -D -E -K -- \
+  {-header,-headers}+:=headers \
+  {-n,-no-color,-nocolor}=NO_COLOR \
+  {H,-no-header}=no_header \
+  {F,-no-footer}=no_footer \
+  {N,-no-convert,-noconvert}=no_convert \
+  {-no-emoji,-noemoji}=no_emoji \
+  {e,-empty,-empty-msg}:=empty_msg \
+  {k,-keep,-keep-escape-sequences}=keep_escape_sequences \
+  {-E,-allow-empty,-allow-empty-cols}=allow_empty_cols \
+  {z,-zebra}=zebra
+empty_msg=$empty_msg[2]
+headers=(${headers:#--header})
+headers=(${headers:#--headers})
+# split headers on "," if they were provided like this: --headers a,b,c
+headers=(${(s:,:)${(j:,:)headers}})
+
+local data=$(cat)
+# First, remove escape sequences (ie. existing colors)
+if [[ -z "$keep_escape_sequences" ]]
+then
+  data=$(string::remove-escape-sequences <<< "$data")
+fi
+if [[ -n $no_emoji ]]
+then
+  data=$(string::remove-emojis <<< "$data")
+fi
+local len=$(wc -l <<< "$data")
+
+if [[ ! -t 1 ]] && [[ -z "$FORCE_COLOR" ]]
+then
+  NO_COLOR=1
+elif [[ $data != *$'\t'* && -z "$no_convert" ]] # implies && [[ -t 1 ]]
+then
+  # convert spaces to tabs
+  data=$(tr -s '[:blank:]' '\t' <<< "$data")
+fi
+
+local header footer
+local colorize_columns_args=()
+if [[ -z $no_header ]]
+then
+  if [[ -n $headers ]]
+  then
+    # Use user-provided header cols
+    header=$(tsv::header $headers)
+  else
+    header=$(head -n 1 <<< "$data")
+    data=$(tail -n +2 <<< "$data")
+    len=$((len - 1))
+  fi
+  colorize_columns_args+=(--ignore-header)
+fi
+
+if [[ -z $no_footer ]]
+then
+  if [[ "$len" -gt 10 ]]
+  then
+    # footer=$(tail -n 1 <<< "$data")
+    # data=$(head -n -1 <<< "$data")
+    # len=$((len - 1))
+    footer=$header
+    colorize_columns_args+=(--ignore-footer)
+  fi
+fi
+
+# Highlight some terms
+local italic=$(printf '\033[3m')
+local terms_hl_na=("N/A" "None" "null" "undefined" "-" "[]")
+[[ -n $VERBATIM ]] && terms_hl_na=()
+if [[ -z "$allow_empty_cols" ]]
+then
+  terms_hl_na+=("") # Highlight empty cells (-> N/A)
+fi
+local red_terms=("false" "FALSE" "CrashLoopBackOff" "ImagePullBackOff")
+data=$(<<<"$data" awk -F'\t' \
+  -v terms_hl_na="${(j:,:)terms_hl_na}" \
+  -v red_terms="${(j:,:)red_terms}" \
+  -v style_na="$italic" \
+  -v style_red="$fg_bold[red]" \
+  -v style_reset="$reset_color" '
+    BEGIN {
+      OFS="\t";
+
+      n = split(tolower(terms_hl_na), term_array, ",")
+      for (i = 1; i <= n; i++) {
+        terms_na[term_array[i]] = 1
+      }
+
+      n = split(tolower(red_terms), term_array, ",")
+      for (i = 1; i <= n; i++) {
+        terms_red[term_array[i]] = 1
+      }
+    }
+    {
+      for (i = 1; i <= NF; i++) {
+        il = tolower($i)
+        if (il in terms_na) {
+          # show the original value in italic
+          # $i = style_na $i style_reset
+          # always show "N/A" instead of the OG value
+          $i = style_na "N/A" style_reset
+        } else if (il in terms_red) {
+          $i = style_red $i style_reset
+        }
+      }
+      print
+    }
+  ')
+
+{
+  if [[ -n $header ]]
+  then
+    # Make the header bold
+    [[ -z "$NO_COLOR" ]] && header="${fg_bold[default]}${header}${reset_color}"
+    echo "$header"
+  fi
+
+  printf "%b\n" "$data"
+
+  if [[ -n $footer ]]
+  then
+    # Make the footer bold
+    [[ -z "$NO_COLOR" ]] && footer="${fg_bold[default]}${footer}${reset_color}"
+    echo "$footer"
+  fi
+} | colorizecolumns $colorize_columns_args | pycolumn | { # column -t -s $'\t'
+  if [[ -n $zebra && -z $NO_COLOR ]]
+  then
+    zebra ${header:+--ignore-header} ${footer:+--ignore-footer}
+  else
+    cat
+  fi
+}
+
+if [[ -z "$data" && -n "$empty_msg" ]]
+then
+  [[ -z "$NO_COLOR" ]] && empty_msg="${fg_bold[yellow]}${empty_msg}${reset_color}"
+  echo -e "$empty_msg"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

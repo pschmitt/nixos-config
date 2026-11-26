@@ -1,0 +1,7 @@
+local delim=(-s ',')
+zparseopts -D -E -K -- {s,-separator,d,-delimiter}=delim
+# FIXME We gotta check if the *values* contain the delimiter (,) and choose
+# a different one if that's the case
+tr '\t' "${delim[2]}" | jc -q --csv --pretty
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,17 @@
+local result
+
+(( $+commands[find] && $+commands[sort] && $+commands[head] )) || return 127
+
+IFS= read -r -d $'\0' result < <(
+  find "$HOME/Pictures/Screenshots" -type f \
+    \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \
+    -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.bmp' \
+    -o -iname '*.tif' -o -iname '*.tiff' -o -iname '*.avif' \
+    -o -iname '*.heic' -o -iname '*.heif' -o -iname '*.jxl' \) \
+    -printf '%T@ %p\0' | sort -z -nr | head -z -n 1
+)
+
+[[ -n "$result" ]] || return 1
+print -r -- "${result#* }"
+
+# vim: set ft=zsh et ts=2 sw=2 :

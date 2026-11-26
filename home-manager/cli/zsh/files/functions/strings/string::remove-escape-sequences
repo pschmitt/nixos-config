@@ -1,0 +1,4 @@
+# https://stackoverflow.com/a/51141872
+sed 's/\x1B[@A-Z\\\]^_]\|\x1B\[[0-9:;<=>?]*[-!"#$%&'"'"'()*+,.\/]*[][\\@A-Z^_`a-z{|}~]//g'
+
+# vim: set ft=zsh et ts=2 sw=2 :

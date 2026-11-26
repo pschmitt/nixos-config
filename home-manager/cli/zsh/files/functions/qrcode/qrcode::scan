@@ -1,0 +1,62 @@
+local usage="Usage: qrcode::scan [-h|--help] [CAMERA_NAME|DEVICE_PATH]"
+local help camera camera_device result zbarcam_status
+local -a zbarcam_args
+
+zparseopts -D -E -K -- {h,-help}=help
+
+if [[ -n "$help" ]]
+then
+  echo::info "$usage"
+  return 0
+fi
+
+if (( $# > 1 ))
+then
+  echo::error "$usage"
+  return 2
+fi
+
+if (( ! $+commands[zbarcam] ))
+then
+  echo::error "Required command not found: zbarcam"
+  return 127
+fi
+
+if (( ! $+commands[yq] ))
+then
+  echo::error "Required command not found: yq"
+  return 127
+fi
+
+camera="$1"
+if [[ -n "$camera" && "$camera" != /* ]]
+then
+  if (( ! $+functions[v4l2::get-device-by-name] ))
+  then
+    echo::error "v4l2::get-device-by-name is unavailable; pass a device path instead"
+    return 1
+  fi
+
+  if ! camera_device=$(v4l2::get-device-by-name "$camera")
+  then
+    echo::error "No such webcam found: $camera"
+    return 1
+  fi
+elif [[ -n "$camera" ]]
+then
+  camera_device="$camera"
+fi
+
+zbarcam_args=(--xml --quiet --nodisplay --oneshot)
+if [[ -n "$camera_device" ]]
+then
+  zbarcam_args+=("$camera_device")
+fi
+
+result=$(zbarcam "${zbarcam_args[@]}")
+zbarcam_status=$?
+(( zbarcam_status == 0 )) || return "$zbarcam_status"
+
+print -rn -- "$result" | yq -p=xml -o=json
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,16 @@
+local str
+[[ ! -t 0 ]] && str=$(cat) || str="$*"
+perl -CSD -pe '
+  s/^
+    (?:
+      # match a single emoji with an optional variation selector
+      (?: \p{Extended_Pictographic} \x{FE0F}? )
+      # match optional ZWJ sequences
+      (?: \x{200D} \p{Extended_Pictographic} \x{FE0F}? )*
+    )+
+    # remove any trailing whitespace after the emoji sequence(s)
+    \s*
+  //x
+' <<< "$str"
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,4 @@
+# Remove all translated fields (eg: Name[de]=Firefox)
+grep -vE '^\w+\[.+\]=' $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -27,7 +27,11 @@ the current directory). Moving one tool's config to Home Manager:
 4. **Verify on a worker.** Build the host's
    `home-manager.users.<user>.home-files`, check every migrated path is there
    (and executable where needed), and smoke-test the tool against the built
-   files with `HOME`/`XDG_CONFIG_HOME` pointing into a temp dir.
+   files with `HOME`/`XDG_CONFIG_HOME` pointing into a temp dir. For Zsh
+   autoloaded functions, also test a fresh noninteractive shell: Home Manager
+   installs individual symlinks, so a Zsh glob that selects regular files must
+   follow symlinks (for example `*(N-.)`, not `*(N.)`). A link-existence check
+   alone does not show whether the autoloader discovers the functions.
 5. **Order of the rollout.** Commit and push nixos-config-private, `bump my
    privates`, commit and push nixos-config. Then untrack in yadm with
    `yadm rm -r --cached <paths>` (files stay on this host until the switch)

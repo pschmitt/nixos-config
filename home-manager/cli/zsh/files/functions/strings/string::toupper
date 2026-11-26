@@ -1,0 +1,8 @@
+if [[ "$#" -gt 0 ]]
+then
+  tr '[:lower:]' '[:upper:]' <<< "$*"
+else
+  tr '[:lower:]' '[:upper:]'
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,51 @@
+setopt localoptions pipefail
+
+local usage="usage: $0 [--no-header]"
+local help no_header empty_msg
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {H,-no-header}=no_header \
+  {e,-empty,-empty-msg}:=empty_msg
+empty_msg=$empty_msg[2]
+
+# flags we pass along verbatim to tsv::from-json
+local -a tsv_from_json_opts
+zparseopts -D -E -a tsv_from_json_opts -- \
+  {i,k,-ignore,-ignore-key}+: \
+  {m,-max-length,-max-len}: \
+  {M,-object-max-length,-obj-max-len}:
+
+local -a tsv_pretty_opts
+zparseopts -D -E -a tsv_pretty_opts -- \
+  {N,-no-convert,-noconvert} \
+  {-E,-allow-empty,-allow-empty-cols} \
+  {z,-zebra}
+
+if [[ -n $help ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local data=$(cat)
+
+case "$data" in
+  '[]'|'{}'|'null'|'')
+    if [[ -n $empty_msg ]]
+    then
+      [[ -z "$NO_COLOR" ]] && empty_msg="${fg_bold[yellow]}${empty_msg}${reset_color}"
+      echo -e "$empty_msg"
+      return 0
+    fi
+
+    echo_warning -a "$0: empty data received -> '${fg_bold[red]}${data}${reset_color}'" \
+      "Consider using --empty-msg to display a custom message"
+    return 1
+    ;;
+esac
+
+tsv::from-json $no_header $tsv_from_json_opts <<< "$data" | \
+  tsv::pretty --keep-escape-sequences \
+    $no_header ${no_header:+--no-footer} $tsv_pretty_opts "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

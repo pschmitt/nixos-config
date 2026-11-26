@@ -1,0 +1,30 @@
+# NOTE grep-color requires 'autoload -U colors && colors'
+local usage="Usage: $0 COLOR"
+
+if [[ -z "$1" ]]
+then
+  echo_error "Missing color"
+  echo "$usage" >&2
+  return 2
+fi
+
+zparseopts -D -K -- {h,-help}=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local grep_color="$colour[$1]"
+
+if [[ -z "$grep_color" ]]
+then
+  echo_error "Unknown color: $1"
+  return 2
+fi
+
+local search='\x1b\['${grep_color}'m'
+awk "/$search/"
+
+# vim: set ft=zsh et ts=2 sw=2 :

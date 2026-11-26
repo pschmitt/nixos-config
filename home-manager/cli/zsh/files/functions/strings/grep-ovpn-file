@@ -1,0 +1,7 @@
+# Remove everyting between <ca></ca>, <cert></cert> etc.
+sed -e '/<key\>/,/<\/key>/d' \
+    -e '/<cert\>/,/<\/cert>/d' \
+    -e '/<ca\>/,/<\/ca>/d' \
+  $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,18 @@
+local result
+
+(( $+commands[find] && $+commands[sort] && $+commands[head] )) || return 127
+
+if (( $# != 1 )) || [[ ! -d "$1" ]]
+then
+  echo_error "Usage: find::most-recent DIR"
+  return 2
+fi
+
+IFS= read -r -d $'\0' result < <(
+  find "$1" -type f -printf '%T@ %p\0' | sort -z -nr | head -z -n 1
+)
+
+[[ -n "$result" ]] || return 1
+print -r -- "${result#* }"
+
+# vim: set ft=zsh et ts=2 sw=2 :

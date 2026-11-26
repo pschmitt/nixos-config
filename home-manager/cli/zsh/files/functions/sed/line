@@ -1,0 +1,32 @@
+# output a specific line of a file
+# $1: line number ; $2: file
+local usage="Usage: $0 LINE[,LINE] FILE"
+
+case "$1" in
+  help|h|-h|--help)
+    echo "$usage"
+    return
+    ;;
+esac
+
+# Accept a single opt if getting piped into
+if [[ "$#" -lt 2 ]] && [[ -t 0 ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+local line_query="$1"
+
+# Rewrite query to LINE,999999999 to allow
+# "line 10," to return all lines from line 10 to the end of the file
+if [[ "$line_query" =~ ^[0-9]+,$ ]]
+then
+  line_query+=9999999999
+fi
+
+# echo_debug "line query: $line_query"
+
+sed -n "${line_query}p" $2
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,4 @@
+grep-ipv4 -p "|$" --line-buffered $@ | \
+  GREP_COLORS='ms=01;34' grep-mac-address -p "|$"
+
+# vim: set ft=zsh et ts=2 sw=2 :

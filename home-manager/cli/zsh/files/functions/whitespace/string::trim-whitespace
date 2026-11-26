@@ -1,0 +1,173 @@
+# Trim trailing whitespace across files found by `fd` (respects .gitignore)
+# Options:
+#   --dry-run        : list files that would change
+#   --fix-eof        : also collapse trailing blank lines and ensure exactly one newline at EOF
+#   --ext "sh,py"    : only these extensions (comma-separated)
+#   --include "<pat>": fd search pattern (defaults to ".")
+#   --exclude "<pat>": fd exclude pattern (repeatable)
+#   --backup ".bak"  : keep backups (sed -i.bak)
+#   --hidden         : include dotfiles (adds fd --hidden)
+#   --no-ignore      : ignore .gitignore (adds fd -I)
+#   -h|--help        : show usage
+local usage
+read -r -d '' usage <<EOF
+$0 [options]
+
+Options:
+  --dry-run          List files that would change (no modifications)
+  --fix-eof          Collapse trailing blank lines and ensure one newline at EOF
+  --ext "sh,py,md"   Limit to these extensions (comma-separated)
+  --include "<pat>"  fd search pattern (default: ".")
+  --exclude "<pat>"  fd exclude pattern (repeatable)
+  --backup ".bak"    Keep backups with given suffix (e.g., ".bak")
+  --hidden           Include dotfiles (pass --hidden to fd)
+  --no-ignore        Do not respect ignore files (pass -I to fd)
+  -h, --help         Show this help
+
+Examples:
+  $0 --ext "sh,py" --exclude vendor
+  $0 --dry-run
+  $0 --fix-eof --backup ".bak"
+EOF
+
+local dry fix_eof backup ext include hidden no_ignore
+local -a exclude
+local -a fd_args
+local -a files
+
+zparseopts -D -K -E -- \
+  {h,-help}=help \
+  {-H,-hidden}=hidden \
+  {-N,-no-ignore}=no_ignore \
+  -dry-run=dry \
+  -fix-eof=fix_eof \
+  -backup:=backup \
+  -ext:=ext \
+  -include:=include \
+  -exclude:=exclude
+
+if [[ -n $help ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+if [[ $# -gt 0 ]]
+then
+  echo "$usage"
+  return 2
+fi
+
+backup="${backup[2]}"
+ext="${ext[2]}"
+include="${include[2]}"
+
+fd_args=( -t f -0 )
+if [[ -n $hidden ]]
+then
+  fd_args+=( --hidden )
+fi
+if [[ -n $no_ignore ]]
+then
+  fd_args+=( -I )
+fi
+
+if [[ -n $ext ]]
+then
+  local IFS=,
+  local e
+  for e in ${(s:,:)ext}
+  do
+    fd_args+=( -e "$e" )
+  done
+fi
+
+if (( ${#exclude[@]} > 0 ))
+then
+  local ex
+  for ex in "${exclude[@]}"
+  do
+    fd_args+=( -E "${ex#*=}" )
+  done
+fi
+
+if [[ -n $include ]]
+then
+  fd_args+=( -- "$include" )
+else
+  fd_args+=( -- . )
+fi
+
+files=("${(@0f)$(fd "${fd_args[@]}")}")
+
+if (( ${#files} == 0 ))
+then
+  echo "No matching files."
+  return 0
+fi
+
+if [[ -n $dry ]]
+then
+  # List files that would change:
+  #  - lines ending with whitespace
+  #  - OR (when --fix-eof) missing final newline or trailing blank lines
+  local f changed
+  for f in "${files[@]}"
+  do
+    changed=
+    grep -Iq . "$f" || continue
+
+    if grep -qE '[[:space:]]+$' "$f"
+    then
+      changed=1
+    fi
+
+    if [[ -n $fix_eof ]]
+    then
+      # Missing trailing newline?
+      if [[ -s "$f" ]]
+      then
+        if [ "$(tail -c1 -- "$f" | od -An -t x1 | tr -d ' \n')" != "0a" ]
+        then
+          changed=1
+        fi
+      fi
+      # Trailing blank lines?
+      awk 'NF{last=NR} END{exit (last<NR)?0:1}' "$f" >/dev/null 2>&1 && changed=1
+    fi
+
+    if [[ -n $changed ]]
+    then
+      echo "$f"
+    fi
+  done | sort -u
+  return 0
+fi
+
+# In-place edits with sed (no perl)
+# 1) Trim trailing whitespace on every line
+# 2) If --fix-eof: delete trailing blank lines to ensure exactly one newline at EOF
+#    (sed will output a single newline at end)
+local sed_i
+if [[ -n $backup ]]
+then
+  sed_i=(-i"$backup")
+else
+  sed_i=(-i)
+fi
+
+if [[ -n $fix_eof ]]
+then
+  # Two sed passes: trim per line, then collapse trailing blank block
+  noglob fd "${fd_args[@]}" | xargs -0 -r -n1 sh -c '
+    f="$1"
+    sed -i$2 -e "s/[[:space:]]*$//" "$f"
+    # Delete trailing blank lines using a classic sed loop
+    # :a; /(^|\n)[[:space:]]*$/{$d;N;ba}
+    sed -i$2 -e ":a" -e "/^[[:space:]]*$/{$ d; N; b a}" "$f"
+  ' sh '{}' "${backup:-}"
+else
+  noglob fd "${fd_args[@]}" | xargs -0 -r sed "${sed_i[@]}" -e 's/[[:space:]]*$//'
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

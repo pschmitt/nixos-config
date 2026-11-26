@@ -1,0 +1,112 @@
+local keys_ign
+local NO_ELLIPSIS=${VERBATIM:-${WIDE:-$NO_ELLIPSIS}}
+local no_header=$NO_HEADER
+local no_strip_nl=${VERBATIM:-$NO_STRIP_NL}
+local max_length=(-m ${MAX_LENGTH:-80})
+local obj_max_length=(-M ${OBJ_MAX_LENGTH:-40})
+zparseopts -D -E -K -- \
+  {i,k,-ignore,-ignore-key}+:=keys_ign \
+  {w,-wide}=NO_ELLIPSIS \
+  {n,H,-noheader,-no-header}=no_header \
+  {m,-max-length,-max-len}:=max_length \
+  {M,-object-max-length,-obj-max-len}:=obj_max_length \
+  {N,-no-strip-nl,-no-strip-newlines}=no_strip_nl
+
+keys_ign=("${(@)keys_ign:#-*}")
+local keys_ign_json=$(jq::array-to-json $keys_ign)
+max_length=${max_length[2]}
+obj_max_length=${obj_max_length[2]}
+
+local data=$(cat)
+local keys
+# TODO It might make more sense to grab the "common" keys:
+# jq '
+#   reduce .[] as $item (
+#     null;
+#     if . == null
+#     then ($item | keys_unsorted)
+#     else ([ .[] | select(($item|keys_unsorted) | index(.) != null) ])
+#     end
+#   )
+# '
+keys=("${(@f)$(jq -er --argjson ign "$keys_ign_json" <<< "$data" '
+  (
+    if type == "array"
+    then
+      .[0]
+    elif type == "object"
+    then
+      .
+    else
+      empty
+    end
+  )
+  | with_entries(select(.key as $k | $ign | index($k) | not))
+  | keys_unsorted[]
+')}")
+
+if [[ -z $keys ]]
+then
+  echo_error "Failed to extract keys from JSON data: '$data'"
+  return 1
+fi
+
+local tsv
+tsv=$(jq -er <<< "$data" \
+  --argjson keys "$(jq::array-to-json $keys)" \
+  --argjson NO_ELLIPSIS "${${NO_ELLIPSIS:+true}:-false}" \
+  --argjson max_length "$max_length" \
+  --argjson obj_max_length "$obj_max_length" \
+  --argjson strip_nl "${${no_strip_nl:-true}:-false}" \
+  '
+    import "plib" as p;
+
+    # Accept top-level array *or* object
+    (
+      if type == "array"
+      then
+        .[]
+      elif type == "object"
+        then
+          .
+      else
+        empty
+      end
+    )
+
+    | [
+      $keys[] as $key
+      | (
+        .[$key]
+        | if type == "string"
+          then
+            p::ellipsize($max_length)
+          elif type == "array"
+          then
+            join(", ") | p::ellipsize($obj_max_length; "middle")
+          # type == "object"
+          elif (. == {})
+          then
+            empty
+          else
+            (tojson | p::ellipsize($obj_max_length; "middle"))
+          end
+        | if $strip_nl
+          then
+            gsub("\n"; " ")
+          else
+            .
+          end
+      )
+    ] | @tsv
+  '
+)
+
+if [[ -z $no_header ]]
+then
+  tsv::header $keys
+fi
+
+printf '%s\n' "$tsv"
+
+# vim: set ft=zsh et ts=2 sw=2 :

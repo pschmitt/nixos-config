@@ -1,0 +1,4 @@
+# Return only uncommented and non-empty lines from a file
+grep -vE '(^\s*#)|^\s*$' $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

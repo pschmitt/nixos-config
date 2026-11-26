@@ -1,0 +1,13 @@
+local n="$1"
+local min=1024
+local max=65535
+
+local t9_val=$(string::t9 "$n")
+while (( t9_val > max ))
+do
+  t9_val=${t9_val[1,-2]}  # Remove last digit
+done
+
+echo "$t9_val"
+
+# vim: set ft=zsh et ts=2 sw=2 :

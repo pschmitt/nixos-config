@@ -1,0 +1,125 @@
+local usage="Usage: $0 [--lame] [--quiet] [--suffix SUFFIX] SECONDS"
+local abort
+local abort2
+local help
+local lame
+local last_will=(-w "Timed out.")
+local msg
+local prefix
+local quiet
+local suffix=(-s "")
+local verbose
+
+# NOTE countdown -q is just sleep with extra flags
+zparseopts -D -E -K -- \
+  {l,-lame}=lame \
+  {h,-help}=help \
+  {p,-prefix}:=prefix \
+  {q,-quiet}=quiet \
+  {s,-suffix}:=suffix \
+  {w,-last-will}:=last_will \
+  {v,-verbose}=verbose
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local arg="$1"
+local duration=${arg//[^0-9]/}
+local unit=${arg//[0-9]/}
+local ctime
+local date_unit
+
+case "$unit" in
+  d|day*)
+    ctime=$(( duration * 86400 ))
+    date_unit=days
+    ;;
+  m|min*)
+    ctime=$(( duration * 60 ))
+    date_unit=minutes
+    ;;
+  *)
+    ctime=$duration
+    date_unit=seconds
+    ;;
+esac
+
+if [[ -z "$ctime" ]] || [[ "$ctime" -lt 0 ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+if [[ -n "$verbose" ]]
+then
+  local end="$(date -d "+${duration}${date_unit}")"
+  echo_info "Countdown will end on $end"
+fi
+
+# Ensure TERM is set
+if [[ -z "$TERM" ]]
+then
+  local TERM=xterm-256color
+fi
+
+# Hide cursor
+tput civis
+
+trap 'echo "${msg} ^C"; tput cnorm; return 130;' INT
+
+local i
+
+for (( i=${ctime}; i > 0; i-- ))
+do
+  msg="${prefix[2]}${i}${suffix[2]}"
+  read -r -k 1 -t 1 -s abort
+  read -r -k 2 -t 0.0001 -s abort2
+
+  if [[ -n "$abort" ]]
+  then
+    if [[ $(wc -l <<< "$abort") -gt 1 ]]
+    then
+      # User hit Enter -> Abort and return 0
+      last_will[2]="Proceeding right away, sir!"
+      break
+    fi
+    # User input something
+    # Re-echo message (stdout gets cleared otherwise)
+    if [[ -z "$quiet" ]]
+    then
+      echo "${msg} Aborted!"
+    fi
+
+    tput cnorm
+    return 130
+  fi
+
+  if [[ -z "$quiet" ]]
+  then
+    if [[ -n "$lame" ]]
+    then
+      echo "${msg}"
+    else
+      echo -ne "${msg}\r"
+    fi
+  fi
+done
+
+# Show cursor
+tput cnorm
+
+if [[ -z "$quiet" ]]
+then
+  if [[ -z "$lame" ]]
+  then
+    ceol=$(tput el)
+    echo -e "${ceol}${msg} ${last_will[2]}"
+  else
+    echo "${last_will[2]}"
+  fi
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

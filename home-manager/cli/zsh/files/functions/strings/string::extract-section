@@ -1,0 +1,8 @@
+awk -v s="$*" '
+  BEGIN { inside=0 }
+  $0 ~ s { inside=1 }
+  inside && /^Link [0-9]+ / && !($0 ~ s) { exit }
+  inside { print }
+'
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,4 @@
+# [[ $string =~ [$'\u200D'$'\uFE0F'] ]]
+rg -q --pcre2 '\x{200D}|\x{FE0F}'
+
+# vim: set ft=zsh et ts=2 sw=2 :
