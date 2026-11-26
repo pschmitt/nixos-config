@@ -20,7 +20,6 @@
     consumerBuildRepositories = [
       "pschmitt/anika-blue"
       "pschmitt/browser-daemon"
-      "pschmitt/bruvtab"
       "pschmitt/circus"
       "pschmitt/jellysync"
       "pschmitt/luks-ssh-unlock"
