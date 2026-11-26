@@ -214,16 +214,12 @@ in
         in
         [
           [
-            (
-              keycap
-              // {
-                key = "ESC";
-                display = "Esc";
-                background-color = "#A3C7FD";
-                text-color = "#142943";
-                popup = "DEL";
-              }
-            )
+            {
+              key = "ESC";
+              display = "Esc";
+              inset = 2;
+              popup = "DEL";
+            }
             (
               keycap
               // {
