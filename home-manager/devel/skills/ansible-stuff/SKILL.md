@@ -37,6 +37,10 @@ nix develop
 nix develop --command ansible-lint
 ```
 
+For this repository, the user permits running the dev shell and routine Ansible
+commands locally. Use an `rworker` for heavy builds and flake checks as below;
+do not create a worker solely to run a normal Ansible playbook.
+
 ## Workflow
 
 1. Inspect `AGENTS.md`, `flake.nix`, and the relevant playbook or role before
