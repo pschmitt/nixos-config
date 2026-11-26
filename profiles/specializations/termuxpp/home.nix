@@ -198,16 +198,18 @@ in
       };
     };
     extra-keys = {
+      theme = "rounded";
+      background-color = "#1C1F20";
       keys =
         let
           keycap = {
-            background-color = "#26252B";
-            text-color = "#E0DCE5";
+            background-color = "#37393B";
+            text-color = "#E3E5E5";
             inset = 2;
           };
-          navigation = keycap // {
-            background-color = "#1D2A34";
-            text-color = "#BCD0E4";
+          arrow = keycap // {
+            background-color = "#3D454B";
+            text-color = "#D5E2EC";
           };
         in
         [
@@ -217,27 +219,30 @@ in
               // {
                 key = "ESC";
                 display = "Esc";
-                background-color = "#514268";
-                text-color = "#EBDDFF";
+                background-color = "#A3C7FD";
+                text-color = "#142943";
                 popup = "DEL";
               }
             )
             (
               keycap
               // {
-                key = "-";
+                key = "ALT";
+                display = "Alt";
+                popup = "-";
+                hint = "-";
                 hold = "_";
               }
             )
             (
-              navigation
+              keycap
               // {
                 key = "HOME";
                 display = "Home";
               }
             )
             (
-              navigation
+              arrow
               // {
                 key = "UP";
                 popup = {
@@ -248,7 +253,7 @@ in
               }
             )
             (
-              navigation
+              keycap
               // {
                 key = "END";
                 display = "End";
@@ -261,8 +266,6 @@ in
               keycap
               // {
                 key = "TAB";
-                hold = "ALT";
-                hold-display = "Alt";
                 popup = "BKSP";
                 hint = "⌫";
               }
@@ -277,7 +280,7 @@ in
               }
             )
             (
-              navigation
+              arrow
               // {
                 key = "LEFT";
                 popup = {
@@ -287,7 +290,7 @@ in
               }
             )
             (
-              navigation
+              arrow
               // {
                 key = "DOWN";
                 popup = {
@@ -298,7 +301,7 @@ in
               }
             )
             (
-              navigation
+              arrow
               // {
                 key = "RIGHT";
                 popup = {
@@ -319,10 +322,10 @@ in
           ]
         ];
       active = {
-        text-color = "#291B45";
-        background-color = "#BEA8E6";
+        text-color = "#142943";
+        background-color = "#A3C7FD";
       };
-      corner-radius = 12;
+      corner-radius = 7;
       # Extra keys row: finger to the right = previous session, to the left =
       # next session (the default), further to the right = new session.
       swipe = {
