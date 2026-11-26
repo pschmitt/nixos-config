@@ -283,6 +283,7 @@ in
               arrow
               // {
                 key = "LEFT";
+                fling-left = "HOME";
                 popup = {
                   key = "HOME";
                   display = "Home";
@@ -304,6 +305,7 @@ in
               arrow
               // {
                 key = "RIGHT";
+                fling-right = "END";
                 popup = {
                   key = "END";
                   display = "End";
