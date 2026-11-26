@@ -329,8 +329,8 @@ in
           ]
         ];
       active = {
-        text-color = "#142943";
-        background-color = "#A3C7FD";
+        text-color = "#F0F2F2";
+        background-color = "#50565A";
       };
       corner-radius = 7;
       # Extra keys row: finger to the right = previous session, to the left =
