@@ -294,7 +294,7 @@ in
               arrow
               // {
                 key = "DOWN";
-                popup = {
+                fling-down = {
                   key = "PGDN";
                   display = "PgDn";
                 };
