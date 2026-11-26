@@ -1,0 +1,3 @@
+[[ -n $(noisetorch::get-device-name) ]]
+
+# vim: set ft=zsh et ts=2 sw=2 :

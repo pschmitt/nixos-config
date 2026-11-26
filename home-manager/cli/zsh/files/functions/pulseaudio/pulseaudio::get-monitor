@@ -1,0 +1,15 @@
+local object_type=$1
+local name=$2
+
+if [[ -z "$name" ]]
+then
+  echo_err "Missing device name"
+  return 2
+fi
+
+# FIXME There's gotta be a way to do this in one command
+pactl list "$object_type" | \
+  sed -nr "/Name:\s*/,\${p;/Monitor of.*:\s+${name}/q}" | \
+  tac | awk '/Name:/ {print $NF; exit}'
+
+# vim: set ft=zsh et ts=2 sw=2 :

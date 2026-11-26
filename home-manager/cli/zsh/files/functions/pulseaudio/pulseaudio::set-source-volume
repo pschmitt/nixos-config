@@ -1,0 +1,14 @@
+local name=$1
+local volume_percent="${2:-100}"
+local source=$(pulseaudio::list sources $name)
+
+if [[ -z "$source" ]]
+then
+  echo_err "Failed to determine source name of $name"
+  return 1
+fi
+
+echo_info "Setting source volume of $name to ${volume_percent}%"
+pactl set-source-volume "$source" "${volume_percent}%"
+
+# vim: set ft=zsh et ts=2 sw=2 :

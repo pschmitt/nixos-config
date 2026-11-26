@@ -1,0 +1,8 @@
+# From config
+sed -nr 's/^LastUsedInput *= *"([^"]*)"?/\1/p' ${XDG_CONFIG_HOME}/noisetorch/config.toml
+
+# From systemd service
+# local service=$(noisetorch::system-service)
+# systemctl --user cat $service | sed -rn 's/Environment=DEVICEID=(.*)/\1/p'
+
+# vim: set ft=zsh et ts=2 sw=2 :

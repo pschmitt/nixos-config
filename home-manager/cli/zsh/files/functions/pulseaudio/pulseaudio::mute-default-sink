@@ -1,0 +1,4 @@
+echo_info "Muting default sink ($(pulseaudio::get-default-sink -f))"
+pactl set-sink-mute @DEFAULT_SINK@ true
+
+# vim: set ft=zsh et ts=2 sw=2 :

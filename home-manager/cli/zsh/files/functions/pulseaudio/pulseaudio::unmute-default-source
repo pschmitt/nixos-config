@@ -1,0 +1,23 @@
+echo_info "Unmuting default source ($(pulseaudio::get-default-source -f))"
+pactl set-source-mute @DEFAULT_SOURCE@ false
+
+# Check if noisetorch is running, if yes: unmute noisetorch's device
+if noisetorch::is-running
+then
+  noisetorch::unmute
+fi
+
+# Check if easyeffects is running, if yes: unmute easyeffects's device
+if easyeffects::is-running
+then
+  easyeffects::unmute
+fi
+
+# Check if the soundboard source is available and unmute it as
+# well as the linked backing source
+if pulseaudio::has source "$SOUNDBOARD_SOURCE"
+then
+  pulseaudio::unmute source "$SOUNDBOARD_SOURCE"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

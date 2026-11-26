@@ -1,0 +1,5 @@
+# FIXME This a bit wonky since we use the default preset and not whatever
+# might be in use
+jq -er .device $XDG_CONFIG_HOME/easyeffects/autoload/input/*.json
+
+# vim: set ft=zsh et ts=2 sw=2 :

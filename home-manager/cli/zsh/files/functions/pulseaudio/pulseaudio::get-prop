@@ -1,0 +1,8 @@
+local object_type=$1
+local name=$2
+local prop=$3
+
+pulseaudio::get-device "$object_type" "$name" | \
+  jq -er ".${prop}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

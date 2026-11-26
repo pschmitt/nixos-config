@@ -1,0 +1,3 @@
+pulseaudio::mute-unmute "$1" "$2" mute
+
+# vim: set ft=zsh et ts=2 sw=2 :

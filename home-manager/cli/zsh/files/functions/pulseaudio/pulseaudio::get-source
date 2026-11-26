@@ -1,0 +1,3 @@
+pulseaudio::get-device "sources" "$1"
+
+# vim: set ft=zsh et ts=2 sw=2 :

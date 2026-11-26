@@ -1,0 +1,3 @@
+pulseaudio::list source | grep --color=never -i easyeffects
+
+# vim: set ft=zsh et ts=2 sw=2 :

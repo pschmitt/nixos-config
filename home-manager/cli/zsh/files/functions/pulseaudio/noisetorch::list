@@ -1,0 +1,7 @@
+local device_type="${1:-sources}"
+local noisetorch_device_prefix="NoiseTorch"  # Pipewire only!
+
+pulseaudio::list --monitor "$device_type" | \
+  awk "/^${noisetorch_device_prefix}/"
+
+# vim: set ft=zsh et ts=2 sw=2 :

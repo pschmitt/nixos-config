@@ -1,0 +1,4 @@
+systemctl --user list-unit-files '*noisetorch*' --state enabled --output json | \
+  jq -er '.[0].unit_file'
+
+# vim: set ft=zsh et ts=2 sw=2 :

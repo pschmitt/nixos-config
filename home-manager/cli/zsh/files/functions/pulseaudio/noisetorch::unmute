@@ -1,0 +1,13 @@
+local device_type
+for device_type in sinks sources
+do
+  for device_name in $(noisetorch::list "$device_type")
+  do
+    pulseaudio::unmute "$device_type" "$device_name"
+  done
+done
+
+local backend_device=$(noisetorch::get-backend-device)
+pulseaudio::unmute-source "$backend_device"
+
+# vim: set ft=zsh et ts=2 sw=2 :

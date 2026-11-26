@@ -1,0 +1,13 @@
+local name=$1
+local source=$(pulseaudio::list sources $name)
+
+if [[ -z "$source" ]]
+then
+  echo_err "Failed to determine source name of $name"
+  return 1
+fi
+
+echo_info "Setting default source to $source"
+pactl set-default-source "$source"
+
+# vim: set ft=zsh et ts=2 sw=2 :

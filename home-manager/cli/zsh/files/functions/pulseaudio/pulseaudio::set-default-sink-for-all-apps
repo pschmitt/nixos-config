@@ -1,0 +1,14 @@
+local sink="$(pulseaudio::get-default-sink)"
+local index
+# NOTE We ignore pavucontrol since it will only lead to "Invalid argument"
+# errors
+for index in $(pactl -f json list sink-inputs | jq -er '
+  .[] |
+  select(.properties["application.id"] != "org.PulseAudio.pavucontrol") |
+  .index
+')
+do
+  pactl move-sink-input "$index" "$sink"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

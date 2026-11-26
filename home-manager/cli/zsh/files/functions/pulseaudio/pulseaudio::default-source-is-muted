@@ -1,0 +1,6 @@
+# Check if a given source is muted, if no source name is provided, it defaults
+# to checking the default source
+local src=${1:-$(pulseaudio::get-default-source)}
+pulseaudio::get-prop sources "$src" mute | grep -iq "true"
+
+# vim: set ft=zsh et ts=2 sw=2 :

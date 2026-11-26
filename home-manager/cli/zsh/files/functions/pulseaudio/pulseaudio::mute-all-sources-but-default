@@ -1,0 +1,4 @@
+local default=$(pulseaudio::get-default-source)
+pulseaudio::mute-all-sources-but "$default"
+
+# vim: set ft=zsh et ts=2 sw=2 :

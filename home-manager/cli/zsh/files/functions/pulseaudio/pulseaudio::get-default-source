@@ -1,0 +1,3 @@
+pulseaudio::get-default source "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :

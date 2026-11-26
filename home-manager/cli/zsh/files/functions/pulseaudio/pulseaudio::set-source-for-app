@@ -1,0 +1,28 @@
+local usage="usage: $0 APP [SOURCE]"
+local app="$1"
+local source="$2"
+
+if [[ -z "$app" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+if [[ -z "$source" ]]
+then
+  source="$(pulseaudio::get-default-source)"
+fi
+
+local index=$(pactl -f json list source-outputs | \
+  jq -er --arg app $app \
+    '.[] | select(.properties["application.name"] == $app).index')
+
+if [[ -z "$index" ]]
+then
+  echo_err "Failed to determine index of $app"
+  return 2
+fi
+
+pactl move-source-output "$index" "$source"
+
+# vim: set ft=zsh et ts=2 sw=2 :

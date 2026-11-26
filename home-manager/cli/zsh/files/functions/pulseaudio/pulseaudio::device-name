@@ -1,0 +1,9 @@
+# Get device name from friendly name
+local object_type=$1
+local val=$2
+
+pactl -f json list "$object_type" | \
+  jq -er --arg n "$val" \
+    '[.[] | select(.description | test($n; "i"))][0].name // empty'
+
+# vim: set ft=zsh et ts=2 sw=2 :

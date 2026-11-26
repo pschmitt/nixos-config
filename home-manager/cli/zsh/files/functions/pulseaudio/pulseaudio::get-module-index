@@ -1,0 +1,23 @@
+local name="$1"
+local type
+
+zparseopts -D -E -K -- {t,-type}:=type
+type=${type[2]}
+
+local data=$(pactl list short modules)
+
+if [[ -n "$type" ]]
+then
+  data="$(grep "$type" <<< "$data")"
+fi
+
+local res=$(awk "/=${name}/ {print \$1}" <<< "$data" | head -1)
+
+if ! [[ "$res" =~ ^[0-9]+$ ]]
+then
+  return 1
+fi
+
+echo "$res"
+
+# vim: set ft=zsh et ts=2 sw=2 :

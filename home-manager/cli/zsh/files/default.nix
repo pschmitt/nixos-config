@@ -13,6 +13,7 @@ let
     "find"
     "ntp"
     "osc8"
+    "pulseaudio"
     "qrcode"
     "quote-cmd"
     "sed"

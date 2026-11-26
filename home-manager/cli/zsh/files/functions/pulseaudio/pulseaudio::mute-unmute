@@ -1,0 +1,32 @@
+local device_type="$1"
+local device_name="$2"
+local action="${3:-mute}"
+
+local cmd
+case "$action" in
+  mute|m)
+    action=mute
+    ;;
+  unmute|u)
+    action=unmute
+    ;;
+  *)
+    echo_err "Unknown action: $action (Allowed values: mute|unmute)"
+    return 2
+    ;;
+esac
+
+case "$device_type" in
+  sink*|output*)
+    pulseaudio::${action}-sink "$device_name"
+    ;;
+  source*|input*)
+    pulseaudio::${action}-source "$device_name"
+    ;;
+  *)
+    echo_err "Unknown device type: $device_type"
+    return 2
+    ;;
+esac
+
+# vim: set ft=zsh et ts=2 sw=2 :

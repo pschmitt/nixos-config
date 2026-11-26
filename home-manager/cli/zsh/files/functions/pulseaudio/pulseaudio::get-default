@@ -1,0 +1,21 @@
+local friendly_name
+zparseopts -D -K -E \
+  f=friendly_name -friendly-name=friendly_name
+
+local object_type=${1%s}  # remove trailing "s"
+local res=$(pulseaudio::info-extract "default_${object_type}_name")
+
+if [[ -z "$res" ]]
+then
+  echo_err "Failed to determine default $object_type"
+  return 1
+fi
+
+if [[ -n "$friendly_name" ]]
+then
+  pulseaudio::friendly-name "${object_type}s" "$res"
+else
+  echo "$res"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

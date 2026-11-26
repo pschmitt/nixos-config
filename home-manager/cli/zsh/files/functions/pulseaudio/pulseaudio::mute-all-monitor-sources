@@ -1,0 +1,8 @@
+local src
+# NOTE Ignore the soundboard monitor interface
+for src in $(pulseaudio::list -m sources --monitor-only -v soundboard --ignore-missing)
+do
+  pulseaudio::mute-source "$src"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

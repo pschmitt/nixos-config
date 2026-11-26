@@ -1,0 +1,4 @@
+local sink=${1:-$(pulseaudio::get-default-sink)}
+pulseaudio::get-prop sinks "$sink" mute | grep -iq "true"
+
+# vim: set ft=zsh et ts=2 sw=2 :

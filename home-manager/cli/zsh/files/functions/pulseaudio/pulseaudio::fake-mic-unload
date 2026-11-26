@@ -1,0 +1,14 @@
+# FIXME
+# local name
+# for name in fake-source fake-sink-no-feedback fake-sink fake-sink-no-feedback.monitor fake-sink.monitor
+# do
+#   pulseaudio::unload-module "$name"
+# done
+
+local index
+for index in $(pactl list short modules | awk '/fake-sink/ { print $1 }' | tac)
+do
+  pactl unload-module "$index"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

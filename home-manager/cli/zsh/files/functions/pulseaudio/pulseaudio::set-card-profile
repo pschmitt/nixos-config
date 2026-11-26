@@ -1,0 +1,14 @@
+local name=$1
+local profile=$2
+local card=$(pulseaudio::list cards $name)
+
+if [[ -z "$card" ]]
+then
+  echo_err "Failed to determine card name of $name"
+  return 1
+fi
+
+echo_info "Setting profile of $name to $profile"
+pactl set-card-profile "$card" "$profile"
+
+# vim: set ft=zsh et ts=2 sw=2 :

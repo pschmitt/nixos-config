@@ -1,0 +1,19 @@
+# Check if called with module index, if yes proceed by directly removing it
+if [[ "$1" =~ ^[0-9]+$ ]]
+then
+  pactl unload-module "$1"
+  return "$?"
+fi
+
+local object_name="$1"
+local module_index="$(pulseaudio::get-module-index "$object_name")"
+if [[ -z "$module_index" ]]
+then
+  echo_err "Failed to determine module index of $object_name"
+  return 1
+fi
+
+echo_info "Module index of $object_name is $module_index"
+pactl unload-module "$module_index"
+
+# vim: set ft=zsh et ts=2 sw=2 :

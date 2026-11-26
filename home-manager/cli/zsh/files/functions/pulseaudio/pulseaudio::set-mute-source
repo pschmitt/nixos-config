@@ -1,0 +1,14 @@
+local name="$1"
+local action="${2:-toggle}"
+local source=$(pulseaudio::list -m sources $name)
+
+if [[ -z "$source" ]]
+then
+  echo_err "Failed to determine source name of $name"
+  return 1
+fi
+
+echo_info "Setting mute state for $name (-> $action)"
+pactl set-source-mute "$source" "$action"
+
+# vim: set ft=zsh et ts=2 sw=2 :

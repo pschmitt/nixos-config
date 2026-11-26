@@ -1,0 +1,4 @@
+echo_info "Muting default source ($(pulseaudio::get-default-source -f))"
+pactl set-source-mute @DEFAULT_SOURCE@ true
+
+# vim: set ft=zsh et ts=2 sw=2 :

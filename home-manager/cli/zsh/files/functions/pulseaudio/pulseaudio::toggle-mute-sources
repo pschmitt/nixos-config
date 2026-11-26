@@ -1,0 +1,8 @@
+if pulseaudio::default-source-is-muted
+then
+  pulseaudio::mute-all-sources-but-default && echo "unmuted"
+else
+  pulseaudio::mute-all-sources && echo "muted"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

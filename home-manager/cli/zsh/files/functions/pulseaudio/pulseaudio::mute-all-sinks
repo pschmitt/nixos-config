@@ -1,0 +1,11 @@
+local sinks=($(pulseaudio::list sinks))
+
+echo_info "Muting all sinks"
+
+local s
+for s in ${sinks[@]}
+do
+  pulseaudio::set-mute-sink "$s" true
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

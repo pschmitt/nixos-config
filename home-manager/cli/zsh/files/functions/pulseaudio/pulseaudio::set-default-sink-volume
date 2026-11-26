@@ -1,0 +1,3 @@
+pactl set-sink-volume @DEFAULT_SINK@ ${1}%
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,35 @@
+local name=$1
+local source_unmute=$(pulseaudio::list sources $name)
+local sources=($(pulseaudio::list -v sources $name))
+
+echo_info "Muting all sources except $source_unmute"
+
+local s
+for s in ${sources[@]}
+do
+  pulseaudio::set-mute-source "$s" true
+done
+
+pulseaudio::set-mute-source "$source_unmute" false
+
+# Check if noisetorch is running, if yes: unmute noisetorch's device and its backend device
+local noisetorch_device=$(noisetorch::get-device-name)
+if [[ -n "$noisetorch_device" ]]
+then
+  local noisetorch_backend_device=$(noisetorch::get-backend-device)
+
+  pulseaudio::set-mute-source "$noisetorch_device" false
+  pulseaudio::set-mute-source "$noisetorch_backend_device" false
+fi
+
+# Check if easyeffects is running, if yes: unmute easyeffects's device and its backend device
+local easyeffects_device=$(easyeffects::get-device-name)
+if [[ -n "$easyeffects_device" ]]
+then
+  local easyeffects_backend_device=$(easyeffects::get-backend-device)
+
+  pulseaudio::set-mute-source "$easyeffects_device" false
+  pulseaudio::set-mute-source "$easyeffects_backend_device" false
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

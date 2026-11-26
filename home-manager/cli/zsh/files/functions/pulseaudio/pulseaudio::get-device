@@ -1,0 +1,15 @@
+local object_type=$1
+
+pactl -f json list "$object_type" | \
+  {
+    if [[ "$2" =~ ^[0-9]+$ ]]
+    then
+      local id=$2
+      jq -er --argjson id "$id" '[.[] | select(.index == $id)] | first'
+    else
+      local name=$2
+      jq -er --arg n "$name" '[.[] | select(.name == $n)] | first'
+    fi
+  }
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,7 @@
+local device_type="${1:-sources}"
+local easyeffects_device_prefix="easyeffects"  # Pipewire only!
+
+pulseaudio::list --monitor "$device_type" | \
+  awk "/^${easyeffects_device_prefix}/"
+
+# vim: set ft=zsh et ts=2 sw=2 :

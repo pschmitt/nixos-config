@@ -1,0 +1,89 @@
+local invert
+local friendly_name
+local monitor
+local monitor_only
+local ignore_missing
+
+zparseopts -D -K -E \
+  {v,-invert-match}=invert \
+  {f,-friendly-name}=friendly_name \
+  {m,-monitor}=monitor \
+  {M,-monitor-only}=monitor_only \
+  {i,-ignore-missing}=ignore_missing
+
+local object_type="$1"
+local name="$2"
+
+if [[ ! "$object_type" =~ s$ ]]
+then
+  object_type="${object_type}s" # append "s"
+fi
+local res=$(pactl list short "$object_type")
+
+if [[ -n "$monitor_only" ]]
+then
+  res=$(grep monitor <<< "$res")
+# Skip monitors by default (unless -m|--monitor is set)
+elif [[ -z "$monitor" ]]
+then
+  res=$(grep -v monitor <<< "$res")
+fi
+
+# Check for direct matches (in case $2 is an actual device/sink/source name)
+if ! grep -qE "\s+${name}" <<< "$res"
+then
+  # Replace non-alphanumeric chars with _
+  name="${2//[^[:alnum:]]/_}"
+fi
+
+if [[ -n "$name" ]]
+then
+  local match=$(awk -v 'IGNORECASE=1' -F '	' \
+    '/'${name}'/ { print $2; exit }' <<< "$res")
+
+  if [[ -z "$match" ]]
+  then
+    echo_warning "No match found for \"$name\" in $object_type"
+    if [[ -z "$ignore_missing" ]]
+    then
+      return 1
+    fi
+  fi
+
+  local r
+  # Only return names matching $2
+  if [[ -n "$invert" ]]
+  then
+    res=("${(@f)$(awk -v 'IGNORECASE=1' -F '	' '!/'${name}'/ { print $2 }' <<< "$res")}")
+    for r in ${res}
+    do
+      if [[ -n "$friendly_name" ]]
+      then
+        pulseaudio::friendly-name "$object_type" "$r"
+      else
+        echo "$r"
+      fi
+    done
+  else
+    if [[ -n "$friendly_name" ]]
+    then
+      pulseaudio::friendly-name "$object_type" "$match"
+    else
+      echo "$match"
+    fi
+  fi
+else
+  # Return all names
+  res=("${(@f)$(awk -F '	' '{ print $2 }' <<< "$res")}")
+  for r in ${res}
+  do
+    if [[ -n "$friendly_name" ]]
+    then
+      pulseaudio::friendly-name "$object_type" "$r"
+    else
+      echo "$r"
+    fi
+  done
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

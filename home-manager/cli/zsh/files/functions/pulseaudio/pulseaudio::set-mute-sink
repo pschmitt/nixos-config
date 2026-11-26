@@ -1,0 +1,14 @@
+local name=$1
+local action="${2:-toggle}"
+local sink=$(pulseaudio::list -m sinks $name)
+
+if [[ -z "$sink" ]]
+then
+  echo_err "Failed to determine sink name of $name"
+  return 1
+fi
+
+echo_info "Setting mute state for $name (-> $action)"
+pactl set-sink-mute "$sink" "$action"
+
+# vim: set ft=zsh et ts=2 sw=2 :

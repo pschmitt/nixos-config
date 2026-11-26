@@ -1,0 +1,11 @@
+local sources=($(pulseaudio::list sources))
+
+echo_info "Muting all sources"
+
+local s
+for s in ${sources[@]}
+do
+  pulseaudio::set-mute-source "$s" true
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

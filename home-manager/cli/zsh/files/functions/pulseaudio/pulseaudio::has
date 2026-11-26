@@ -1,0 +1,6 @@
+local object_type="$1"
+local name="$2"
+
+pulseaudio::list "$object_type" "$name" &>/dev/null
+
+# vim: set ft=zsh et ts=2 sw=2 :

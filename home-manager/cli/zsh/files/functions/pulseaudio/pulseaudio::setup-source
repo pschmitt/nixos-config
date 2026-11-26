@@ -1,0 +1,51 @@
+local default
+local mute_others
+
+zparseopts -D -K -E -- \
+  {d,-default}=default \
+  {M,-mute-others}=mute_others
+
+local name="$1"
+shift
+local volume
+local profile
+
+while [[ "$#" -gt 0 ]]
+do
+  if [[ "$1" =~ [0-9]+ ]]
+  then
+    volume="$1"
+  else
+    profile="$1"
+  fi
+  shift
+
+  if [[ -n "$volume" ]] && [[ -n "$profile" ]]
+  then
+    break
+  fi
+done
+
+if [[ -n "$profile" ]]
+then
+  pulseaudio::set-card-profile "$name" "$profile"
+fi
+
+if [[ -n "$default" ]]
+then
+  pulseaudio::set-default-source "$name"
+fi
+
+if [[ -n "$volume" ]]
+then
+  pulseaudio::set-source-volume "$name" "$volume"
+fi
+
+if [[ -n "$mute_others" ]]
+then
+  pulseaudio::mute-all-sources-but "$name"
+fi
+
+# TODO Switch existing stream? like zoom for eg
+
+# vim: set ft=zsh et ts=2 sw=2 :

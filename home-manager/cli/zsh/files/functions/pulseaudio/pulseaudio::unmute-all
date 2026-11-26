@@ -1,0 +1,4 @@
+pulseaudio::unmute-all-sources
+pulseaudio::unmute-all-sinks
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,14 @@
+local source="$(pulseaudio::get-default-source)"
+local index
+# NOTE We ignore pavucontrol since it will only lead to "Invalid argument"
+# errors
+for index in $(pactl -f json list source-outputs | jq -er '
+  .[] |
+  select(.properties["application.id"] != "org.PulseAudio.pavucontrol") |
+  .index
+')
+do
+  pactl move-source-output "$index" "$source"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :
