@@ -10,13 +10,13 @@ let
   androidSkillsSrc = fetchFromGitHub {
     owner = "android";
     repo = "skills";
-    rev = "c72942584fff970dac86ced78b367fce0c441e52";
-    hash = "sha256-Syj3TJoQkTbWncuKyIzmQfQL2jhwcBo/DHHdHCbivaY=";
+    rev = "7f7b21730a605d112ca9f79b6e40105ce7b670ee";
+    hash = "sha256-5/DrDLJpOmP9VJubDebj1hnFASfRX4yzuONAeGT7BOM=";
   };
 in
 stdenvNoCC.mkDerivation {
   pname = "android-skills";
-  version = "1.0.23";
+  version = "1.0.24";
 
   src = androidSkillsSrc;
 
