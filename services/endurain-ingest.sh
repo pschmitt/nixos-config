@@ -127,7 +127,7 @@ login() {
   code="$(
     curl -sS -o "$resp" -w '%{http_code}' \
       -H 'X-Client-Type: mobile' \
-      -H "X-Device-Id: $device_id" \
+      -H @<(printf 'X-Device-Id: %s\n' "$device_id") \
       --data-urlencode "username@$dir/username" \
       --data-urlencode "password@$dir/password" \
       --data-urlencode "code_challenge=$challenge" \
@@ -162,7 +162,7 @@ login() {
       PKCE_VERIFIER="$verifier" jq -cn '{code_verifier: env.PKCE_VERIFIER}' |
         curl -sS -o "$resp" -w '%{http_code}' \
           -H 'X-Client-Type: mobile' \
-          -H "X-Device-Id: $device_id" \
+          -H @<(printf 'X-Device-Id: %s\n' "$device_id") \
           -H 'Content-Type: application/json' --data-binary @- \
           "https://$host/api/v1/auth/sessions/$session_id/tokens"
     )" || code='000'
