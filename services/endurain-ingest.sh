@@ -114,61 +114,86 @@ collect_todo() {
 
 login() {
   local host="$1"
-  local resp
-  local code
-  local token
+  local dir resp code token verifier challenge next_step session_id device_id
 
-  resp="$(mktemp)"
+  dir="$(mktemp -d)"
+  resp="$dir/response"
+  printf '%s' "$ENDURAIN_USERNAME" >"$dir/username"
+  printf '%s' "$ENDURAIN_PASSWORD" >"$dir/password"
+  verifier="$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')"
+  challenge="$(printf '%s' "$verifier" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=\n')"
+  device_id="$(cat "$ENDURAIN_STATE_DIR/device-id" 2>/dev/null || true)"
+
   code="$(
     curl -sS -o "$resp" -w '%{http_code}' \
       -H 'X-Client-Type: mobile' \
-      -H 'Content-Type: application/x-www-form-urlencoded' \
-      --data-urlencode "username=$ENDURAIN_USERNAME" \
-      --data-urlencode "password=$ENDURAIN_PASSWORD" \
+      -H "X-Device-Id: $device_id" \
+      --data-urlencode "username@$dir/username" \
+      --data-urlencode "password@$dir/password" \
+      --data-urlencode "code_challenge=$challenge" \
+      --data-urlencode 'code_challenge_method=S256' \
       "https://$host/api/v1/auth/login"
   )" || code='000'
 
   if [[ "$code" != '200' ]]
   then
     err "login failed (HTTP $code)"
-    rm -f "$resp"
+    rm -rf "$dir"
     return 1
   fi
 
-  if [[ "$(jq -r '.mfa_required // false' <"$resp")" == 'true' ]]
+  next_step="$(jq -r '.next_step // empty' <"$resp")"
+  if [[ "$(jq -r '.mfa_required // false' <"$resp")" == 'true' ]] || [[ "$next_step" == 'mfa' ]]
   then
     err 'login requires MFA; unattended ingest cannot proceed'
-    rm -f "$resp"
+    rm -rf "$dir"
     return 1
   fi
 
-  if ! token="$(jq -er '.access_token' <"$resp")"
+  if [[ "$next_step" == 'exchange' ]]
   then
-    rm -f "$resp"
-    return 1
+    session_id="$(jq -er '.session_id | strings | select(test("^[0-9a-fA-F-]+$"))' <"$resp")" || {
+      err 'login returned an invalid session id'
+      rm -rf "$dir"
+      return 1
+    }
+    device_id="$(jq -r '.device_id // empty' <"$resp")"
+    code="$(
+      PKCE_VERIFIER="$verifier" jq -cn '{code_verifier: env.PKCE_VERIFIER}' |
+        curl -sS -o "$resp" -w '%{http_code}' \
+          -H 'X-Client-Type: mobile' \
+          -H "X-Device-Id: $device_id" \
+          -H 'Content-Type: application/json' --data-binary @- \
+          "https://$host/api/v1/auth/sessions/$session_id/tokens"
+    )" || code='000'
+    if [[ "$code" != '200' ]]
+    then
+      err "token exchange failed (HTTP $code)"
+      rm -rf "$dir"
+      return 1
+    fi
+    next_step="$(jq -r '.next_step // empty' <"$resp")"
   fi
 
-  rm -f "$resp"
+  if [[ -n "$next_step" ]] && [[ "$next_step" != 'tokens' ]]
+  then
+    err "unsupported sign-in step: $next_step"
+    rm -rf "$dir"
+    return 1
+  fi
+  token="$(jq -er '.access_token | strings | select(length > 0)' <"$resp")" || {
+    err 'login returned no access token'
+    rm -rf "$dir"
+    return 1
+  }
+  device_id="$(jq -r '.device_id // empty' <"$resp")"
+  if [[ -n "$device_id" ]]
+  then
+    umask 077
+    printf '%s' "$device_id" >"$ENDURAIN_STATE_DIR/device-id"
+  fi
+  rm -rf "$dir"
   printf '%s\n' "$token"
-}
-
-# Extract the "sub" claim (our own user id) from the access token's JWT
-# payload, without verifying the signature - we already trust the connection
-# to our own server, and the result is only used to scope a read-only lookup
-# of our own recent activities.
-jwt_sub() {
-  local token="$1"
-  local payload
-
-  payload="$(cut -d. -f2 <<<"$token")"
-  payload="${payload//-/+}"
-  payload="${payload//_//}"
-  case $(( ${#payload} % 4 )) in
-    2) payload+='==' ;;
-    3) payload+='=' ;;
-  esac
-
-  base64 -d <<<"$payload" 2>/dev/null | jq -r '.sub // empty'
 }
 
 # Print the start_time of our DEDUP_LOOKBACK most recent activities, one per
@@ -178,19 +203,13 @@ jwt_sub() {
 recent_start_times() {
   local host="$1"
   local token="$2"
-  local user_id="$3"
   local resp
   local code
-
-  if [[ -z "$user_id" ]]
-  then
-    return 0
-  fi
 
   resp="$(mktemp)"
   code="$(
     curl -sS -o "$resp" -w '%{http_code}' \
-      -H "Authorization: Bearer $token" \
+      -H @<(printf 'Authorization: Bearer %s\n' "$token") \
       -H 'X-Client-Type: mobile' \
       "https://$host/api/v1/activities?page_number=1&num_records=$DEDUP_LOOKBACK&sort_by=start_time&sort_order=desc"
   )" || code='000'
@@ -225,7 +244,6 @@ check_duplicate() {
   local f="$1"
   local host="$2"
   local token="$3"
-  local user_id="$4"
   local gpx_time
   local epoch
   local existing_start
@@ -260,7 +278,7 @@ check_duplicate() {
       is_duplicate=1
       return 0
     fi
-  done < <(recent_start_times "$host" "$token" "$user_id")
+  done < <(recent_start_times "$host" "$token")
 }
 
 # Rewrite an unrecognised GPX <type> onto Endurain's vocabulary, on a scratch
@@ -344,16 +362,25 @@ poll_upload() {
   local status
   local error_code
   local attempt
+  local job_route="jobs"
 
   for (( attempt = 1; attempt <= UPLOAD_POLL_ATTEMPTS; attempt++ ))
   do
     resp="$(mktemp)"
     code="$(
       curl -sS -o "$resp" -w '%{http_code}' \
-        -H "Authorization: Bearer $token" \
+        -H @<(printf 'Authorization: Bearer %s\n' "$token") \
         -H 'X-Client-Type: mobile' \
-        "https://$host/api/v1/activities/ingestion-jobs/$job_id"
+        "https://$host/api/v1/$job_route/$job_id"
     )" || code='000'
+
+    if [[ "$code" == '404' ]] && [[ "$job_route" == 'jobs' ]]
+    then
+      job_route='activities/ingestion-jobs'
+      rm -f "$resp"
+      attempt=$((attempt - 1))
+      continue
+    fi
 
     if [[ "$code" != '200' ]]
     then
@@ -368,19 +395,27 @@ poll_upload() {
     rm -f "$resp"
 
     case "$status" in
-      completed)
+      completed | succeeded)
         : >"$marker"
         log "uploaded: $base"
         upload_outcome='uploaded'
         return 0
         ;;
       failed)
-        printf 'rejected: Endurain ingestion job failed (%s)\n' "${error_code:-unknown}" >"$marker"
-        err "REJECTED (ingestion job failed: ${error_code:-unknown}): $base"
-        upload_outcome='rejected'
+        case "$error_code" in
+          unsupported_format | invalid_file | no_activities_found)
+            printf 'rejected: Endurain ingestion job failed (%s)\n' "$error_code" >"$marker"
+            err "REJECTED (ingestion job failed: $error_code): $base"
+            upload_outcome='rejected'
+            ;;
+          *)
+            err "TRANSIENT (ingestion job failed: ${error_code:-unknown}; check the server job before retrying): $base"
+            upload_outcome='transient'
+            ;;
+        esac
         return 0
         ;;
-      pending | processing)
+      pending | processing | queued | running)
         sleep "$UPLOAD_POLL_SECONDS"
         ;;
       *)
@@ -409,7 +444,7 @@ upload_file() {
   resp="$(mktemp)"
   code="$(
     curl -sS -o "$resp" -w '%{http_code}' \
-      -H "Authorization: Bearer $token" \
+      -H @<(printf 'Authorization: Bearer %s\n' "$token") \
       -H 'X-Client-Type: mobile' \
       -H "Idempotency-Key: ${marker##*/}" \
       -F "file=@$upload_path;filename=$base" \
@@ -452,7 +487,6 @@ main() {
   local watch_dir="${ENDURAIN_WATCH_DIR:?}"
   local state_dir="${ENDURAIN_STATE_DIR:?}"
   local token
-  local user_id
   local f
   local base
   local marker
@@ -483,14 +517,13 @@ main() {
   fi
 
   token="$(login "$host")"
-  user_id="$(jwt_sub "$token")"
 
   for f in "${todo[@]}"
   do
     base="$(basename "$f")"
     marker="$state_dir/${todo_hash[$f]}"
 
-    check_duplicate "$f" "$host" "$token" "$user_id"
+    check_duplicate "$f" "$host" "$token"
     if [[ -n "$is_duplicate" ]]
     then
       printf 'duplicate: activity within %ss of an existing one\n' "$DEDUP_WINDOW_SECONDS" >"$marker"

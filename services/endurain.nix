@@ -48,6 +48,7 @@ let
       jq
       coreutils
       gnused
+      openssl
       fixGpxSpikes
     ];
     text = builtins.readFile ./endurain-ingest.sh;
