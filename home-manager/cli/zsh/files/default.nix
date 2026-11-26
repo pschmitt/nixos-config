@@ -54,7 +54,9 @@ let
     );
 in
 {
-  xdg.configFile = builtins.listToAttrs (
-    functions ./functions ++ filesIn ./plugins/local "zsh/plugins/local"
-  );
+  xdg.configFile =
+    builtins.listToAttrs (functions ./functions ++ filesIn ./plugins/local "zsh/plugins/local")
+    // {
+      "zsh/static/README.md".source = ./static/README.md;
+    };
 }
