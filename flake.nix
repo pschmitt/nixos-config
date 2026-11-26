@@ -112,6 +112,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # `...` -> ../.. in zsh (Home Manager and the servers' NixOS-level zsh);
+    # follows main, flake.lock pins the revision.
+    zsh-manydots-magic = {
+      url = "github:knu/zsh-manydots-magic";
+      flake = false;
+    };
+
     teams-auth-source = {
       url = "github:pschmitt/homeassistant-msteams";
       flake = false;

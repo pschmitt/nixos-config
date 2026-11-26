@@ -2521,7 +2521,8 @@
         "vpn-confinement": "vpn-confinement",
         "zen-browser": "zen-browser",
         "zsh-completions": "zsh-completions",
-        "zsh-diff-so-fancy": "zsh-diff-so-fancy"
+        "zsh-diff-so-fancy": "zsh-diff-so-fancy",
+        "zsh-manydots-magic": "zsh-manydots-magic"
       }
     },
     "ruamel-fmt": {
@@ -3399,6 +3400,22 @@
       "original": {
         "owner": "z-shell",
         "repo": "zsh-diff-so-fancy",
+        "type": "github"
+      }
+    },
+    "zsh-manydots-magic": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1497855400,
+        "narHash": "sha256-lv7e7+KBR/nxC43H0uvphLcI7fALPvxPSGEmBn0g8HQ=",
+        "owner": "knu",
+        "repo": "zsh-manydots-magic",
+        "rev": "4372de0718714046f0c7ef87b43fc0a598896af6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "knu",
+        "repo": "zsh-manydots-magic",
         "type": "github"
       }
     }

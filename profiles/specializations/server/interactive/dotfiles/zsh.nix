@@ -1,13 +1,4 @@
-{ pkgs, ... }:
-let
-  # ... -> ../..
-  manydots-magic = pkgs.fetchFromGitHub {
-    owner = "knu";
-    repo = "zsh-manydots-magic";
-    rev = "main";
-    hash = "sha256-lv7e7+KBR/nxC43H0uvphLcI7fALPvxPSGEmBn0g8HQ=";
-  };
-in
+{ inputs, ... }:
 {
   programs.zsh = {
     enable = true;
@@ -29,7 +20,7 @@ in
       # enable colors (exposes $fg etc)
       autoload -U colors && colors
 
-      fpath=(${manydots-magic} $fpath)
+      fpath=(${inputs.zsh-manydots-magic} $fpath)
       autoload -Uz manydots-magic
       manydots-magic
 

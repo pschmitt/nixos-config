@@ -1,22 +1,14 @@
 {
   lib,
-  pkgs,
+  inputs,
   ...
 }:
-let
-  manydots = pkgs.fetchFromGitHub {
-    owner = "knu";
-    repo = "zsh-manydots-magic";
-    rev = "4372de0718714046f0c7ef87b43fc0a598896af6";
-    hash = "sha256-lv7e7+KBR/nxC43H0uvphLcI7fALPvxPSGEmBn0g8HQ=";
-  };
-in
 {
   programs.zsh.initContent = lib.mkOrder 946 ''
     if zsh::prompt-plugins-enabled && not_in_vt
     then
       zsh::load-manydots() {
-        zsh::source-plugin ${lib.escapeShellArg "${manydots}/manydots-magic"}
+        zsh::source-plugin ${lib.escapeShellArg "${inputs.zsh-manydots-magic}/manydots-magic"}
       }
       zsh::defer zsh::load-manydots
     fi
