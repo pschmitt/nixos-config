@@ -9,16 +9,19 @@
   programs.zsh.initContent = lib.mkOrder 1560 ''
     if zsh::prompt-plugins-enabled && not_in_vt
     then
-      zsh::source-plugin ${lib.escapeShellArg "${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh"}
-      export HISTORY_SUBSTRING_SEARCH_FUZZY=1
-    fi
+      zsh::load-history-substring-search() {
+        zsh::source-plugin ${lib.escapeShellArg "${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh"}
+        export HISTORY_SUBSTRING_SEARCH_FUZZY=1
 
-    if (( $+widgets[history-substring-search-up] && $+widgets[history-substring-search-down] ))
-    then
-      [[ -n $terminfo[kcuu1] ]] && bindkey -- "$terminfo[kcuu1]" history-substring-search-up
-      [[ -n $terminfo[kcud1] ]] && bindkey -- "$terminfo[kcud1]" history-substring-search-down
-      bindkey -- '^[[A' history-substring-search-up
-      bindkey -- '^[[B' history-substring-search-down
+        if (( $+widgets[history-substring-search-up] && $+widgets[history-substring-search-down] ))
+        then
+          [[ -n $terminfo[kcuu1] ]] && bindkey -- "$terminfo[kcuu1]" history-substring-search-up
+          [[ -n $terminfo[kcud1] ]] && bindkey -- "$terminfo[kcud1]" history-substring-search-down
+          bindkey -- '^[[A' history-substring-search-up
+          bindkey -- '^[[B' history-substring-search-down
+        fi
+      }
+      zsh::defer zsh::load-history-substring-search
     fi
   '';
 }

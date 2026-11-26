@@ -1,4 +1,3 @@
-zsh::autoload-dir nmap
 
 # nmap
 if (( ! $+commands[nmap] ))

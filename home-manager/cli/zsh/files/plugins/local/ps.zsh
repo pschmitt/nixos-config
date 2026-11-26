@@ -5,6 +5,4 @@ then
   CUSTOM_COMPS[pstree::find]="kill -0"
 fi
 
-zsh::autoload-dir ps
-
 alias cmd::restart="ps::restart-app"

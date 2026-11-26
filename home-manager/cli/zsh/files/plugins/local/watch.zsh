@@ -1,7 +1,5 @@
 (( $+commands[hwatch] )) || return
 
-zsh::autoload-dir watch
-
 # Aliases
 alias zw="zwatch"
 alias watch="watch --color"

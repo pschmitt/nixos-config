@@ -1,8 +1,7 @@
-zsh::autoload-dir vcard
 
 () {
   local func
-  for func in ${(kM)functions:#vcard::*} ${(kM)aliases:#vcard::*}
+  for func in ${(k)functions[(I)vcard::*]} ${(k)aliases[(I)vcard::*]}
   do
     alias ${func//vcard::/vcf::}=${func}
   done

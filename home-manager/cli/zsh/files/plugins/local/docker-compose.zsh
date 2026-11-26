@@ -25,6 +25,4 @@ alias drupd="docker compose down; docker compose up -d --remove-orphans"
 alias dup="docker compose up"
 alias dupd="docker compose up -d"
 
-zsh::autoload-dir docker-compose
-
 # vim: set ft=zsh et ts=2 sw=2 :

@@ -6,4 +6,3 @@ fi
 
 alias temps="sensors::temps"
 
-zsh::autoload-dir sensors

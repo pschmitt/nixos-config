@@ -1,4 +1,3 @@
-zsh::autoload-dir screenshot
 
 alias screenshot::active-window=screenshot::current-window
 

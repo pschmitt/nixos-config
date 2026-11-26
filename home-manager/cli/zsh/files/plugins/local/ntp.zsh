@@ -1,4 +1,3 @@
-zsh::autoload-dir ntp
 
 alias ntp-force-sync="ntp::force-sync"
 

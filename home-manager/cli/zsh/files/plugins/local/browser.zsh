@@ -1,4 +1,3 @@
-zsh::autoload-dir browser
 
 alias browser::browsers="browser::clients"
 

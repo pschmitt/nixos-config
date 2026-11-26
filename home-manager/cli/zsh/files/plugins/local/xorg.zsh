@@ -3,7 +3,6 @@
 # Wake screen and disable screensaver
 # alias son="xdspv; xdotool key ctrl; xset dpms force on; xset -dpms; xset s off"
 
-zsh::autoload-dir xorg
 alias xdspv="xorg::export-display"
 
 # xsel magic

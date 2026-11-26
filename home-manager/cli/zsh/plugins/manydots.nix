@@ -15,7 +15,10 @@ in
   programs.zsh.initContent = lib.mkOrder 946 ''
     if zsh::prompt-plugins-enabled && not_in_vt
     then
-      zsh::source-plugin ${lib.escapeShellArg "${manydots}/manydots-magic"}
+      zsh::load-manydots() {
+        zsh::source-plugin ${lib.escapeShellArg "${manydots}/manydots-magic"}
+      }
+      zsh::defer zsh::load-manydots
     fi
   '';
 }

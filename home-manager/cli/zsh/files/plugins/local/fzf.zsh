@@ -1,9 +1,4 @@
 # FZF
-if (( ! $+commands[fzf] ))
-then
-  return
-fi
-
 export FZF_DEFAULT_COMMAND='fd --type f --hidden -E "**/.git/" --color=always'
 export FZF_DEFAULT_OPTS='
   --ansi
@@ -34,8 +29,6 @@ export FZF_CTRL_R_OPTS="
 alias cdf="fzf::cd"
 alias rgv="fzf::rg-files"
 alias vimrg="fzf::rg-files"
-
-zsh::autoload-dir fzf
 
 # https://junegunn.github.io/fzf/tips/ripgrep-integration/
 vim::rg() (

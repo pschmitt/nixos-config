@@ -4,8 +4,6 @@ then
   return
 fi
 
-zsh::autoload-dir pulseaudio
-
 alias mute="pulseaudio::mute-all"
 # alias unmute="pulseaudio::set-mute-sources-all; pulseaudio::set-mute-sinks-all"
 alias unmute="pulseaudio::unmute-default"

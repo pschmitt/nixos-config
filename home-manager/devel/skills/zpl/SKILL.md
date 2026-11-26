@@ -24,23 +24,29 @@ plugins/local/
   99-after/         # alias files that load after everything else
 ```
 
-Every `.zsh` file in the root, `work/` and `99-after/` is sourced on shell startup (asynchronously in interactive shells) — no registration step needed. New files appear after the next Home Manager switch.
+Every `.zsh` file in the root, `work/` and `99-after/` of both trees is loaded on shell startup, in that order and sorted by
+name. Home Manager bundles them at build time into one zcompiled file (`~/.config/zsh/plugins/local.zsh`, built by
+`home-manager/cli/zsh/files/default.nix`) in which each plugin is a function `zpl::<name>`; interactive shells run them after
+the first prompt. New or changed files take effect after the next Home Manager switch (`zsrclocal` reloads the bundle in a
+running shell). For an uncommitted experiment, put the code in `~/.config/zsh/static/*.zsh` instead.
+
+Because each plugin runs as a function: `(( $+commands[tool] )) || return` skips the rest of that plugin, `typeset`/`local`
+without `-g` stay local to it, and aliases are not expanded in its code (write commands out).
 
 ## Autoloaded functions
 
-Many plugins register a topic with `zsh::autoload-dir <topic>`. Functions for that topic live in `$ZSH_FUNCTIONS_DIR/<topic>/`,
-normally `~/.config/zsh/functions/<topic>/`, with one file per function named exactly after the function. Each file contains the
-function body only, without a `name() { ... }` wrapper. Plugin files keep guards, aliases, completions, and setup, and register
-the topic after any capability guards.
+Every function file is autoloaded: functions live in `$ZSH_FUNCTIONS_DIR/<topic>/`, normally `~/.config/zsh/functions/<topic>/`,
+with one file per function named exactly after the function. Each file contains the function body only, without a
+`name() { ... }` wrapper. Home Manager generates the registrations for all topics, so a new topic needs no plugin file; plugin
+files only hold guards, aliases, completions and setup.
 
-When adding a function to an autoloaded topic, edit or create its function file rather than defining it in the plugin file. Keep
-the plugin file's loader registration only when the topic is new or not already registered.
+When adding a function, edit or create its function file rather than defining it in the plugin file.
 
 ## Naming conventions
 
 - Functions use `namespace::verb` style, e.g. `http::serve`, `files::delete-sync-artifacts`
 - Aliases are defined directly (no namespace required)
-- Guard capability checks with `(( $+commands[tool] )) || return`
+- Guard capability checks with `(( $+commands[tool] )) || return`, except for tools Nix installs on every host (coreutils, git, tmux, fzf, ...)
 
 ## Code style
 

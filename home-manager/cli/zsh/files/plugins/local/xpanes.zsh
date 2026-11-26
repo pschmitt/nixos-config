@@ -1,4 +1,3 @@
-zsh::autoload-dir xpanes
 
 alias zhjb="zhj-bulk main --"
 alias ylf-bulk="zhjb ylf"

@@ -29,4 +29,3 @@ then
   CUSTOM_COMPS[journalctl::last-run]="systemctl cat"
 fi
 
-zsh::autoload-dir journald

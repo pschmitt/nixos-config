@@ -46,8 +46,6 @@ typeset -Ag ECHO_LEVELS=(
 
 export ECHO_LEVEL="${ECHO_LEVELS[${ECHO_LEVEL:-debug}]}"
 
-zsh::autoload-dir echo
-
 # function aliases
 () {
   local al
@@ -79,7 +77,7 @@ zsh::autoload-dir echo
 # alias echo::* to echo_*
 () {
   local func func_new
-  for func in ${(kM)functions:#echo::*}
+  for func in ${(k)functions[(I)echo::*]}
   do
     func_new=${func//echo::/echo_}
     (( ${+functions[$func_new]} )) && continue

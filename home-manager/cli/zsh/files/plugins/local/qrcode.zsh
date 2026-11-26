@@ -1,8 +1,6 @@
 # qrencode
 (( $+commands[qrencode] )) || return
 
-zsh::autoload-dir qrcode
-
 alias qrcode::encode=qrcode
 alias qrcode::create=qrcode
 

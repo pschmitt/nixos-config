@@ -38,8 +38,6 @@ alias scu-ls-enabled="systemctl list-unit-files --user | \
 alias sc-ls-failed="sudo systemctl --failed"
 alias scu-ls-failed="sudo systemctl --failed --user"
 
-zsh::autoload-dir systemd
-
 () {
   for action in start stop restart
   do

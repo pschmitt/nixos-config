@@ -1,8 +1,6 @@
 # ImageMagick
 (( $+commands[magick] )) || return 0
 
-zsh::autoload-dir imagemagick
-
 alias img::open="img::cat"
 alias img::display="img::cat"
 

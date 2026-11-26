@@ -1,4 +1,3 @@
-zsh::autoload-dir strings
 alias tolower="string::tolower"
 
 alias toupper="string::toupper"

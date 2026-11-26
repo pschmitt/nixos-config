@@ -3,8 +3,6 @@
 
 alias jqz="jq::interactive"
 
-zsh::autoload-dir jq
-
 # Alternative implementation, without plib.jq
 # Output the json paths for all objects (+ the value)
 # https://news.ycombinator.com/item?id=20246957

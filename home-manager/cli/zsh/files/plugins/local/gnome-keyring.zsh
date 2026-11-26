@@ -4,12 +4,10 @@ then
   return
 fi
 
-zsh::autoload-dir gnome-keyring
-
 # Alias gnome-keyring:: functions to gkr::
 () {
   local func
-  for func in ${(kM)functions:#gnome-keyring::*}
+  for func in ${(k)functions[(I)gnome-keyring::*]}
   do
     alias ${func//gnome-keyring/gcr}=${func}
     alias ${func//gnome-keyring/gkr}=${func}
