@@ -1,9 +1,3 @@
-
-if (( ! $+commands[pw-cli] ))
-then
-  return
-fi
-
 # NOTE Here we explicitly set LC_ALL to en_US so that we can use dot
 # instead for a comma decimals
 

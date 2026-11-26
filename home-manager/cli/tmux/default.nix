@@ -20,6 +20,15 @@ let
   );
 in
 {
+  # Mouse scrolling in less, man and bat inside tmux
+  programs.zsh.initContent = lib.mkOrder 1450 ''
+    if [[ -n "$TMUX" ]]
+    then
+      export PAGER="less --RAW-CONTROL-CHARS --quit-if-one-screen --mouse"
+      export BAT_PAGER="$PAGER" MANPAGER="$PAGER"
+    fi
+  '';
+
   xdg = {
     configFile = {
       "tmux" = {

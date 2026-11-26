@@ -6,6 +6,7 @@
   config,
   lib,
   pkgs,
+  guiEnable ? false,
   ...
 }:
 let
@@ -115,19 +116,43 @@ let
   # One file that defines a function per plugin (__zpl_manifest lists them in
   # load order), zcompiled next to it so sourcing it loads wordcode. As
   # functions, the plugins keep their `|| return` guards.
-  bundleSources = [
-    {
-      function = "__zpl_autoload_functions";
-      source = registerFunctions;
-    }
-  ]
-  ++ map (p: {
+  pluginSources = map (p: {
     inherit (p) function;
     source = builtins.path {
       path = p.source;
       name = "zsh-plugin";
     };
   }) plugins;
+
+  # programs.zsh.localConfig.prefixAliases, expanded at build time from the
+  # names the function files and plugins define (./prefix-aliases.py).
+  prefixAliases =
+    pkgs.runCommand "zsh-prefix-aliases.zsh"
+      {
+        nativeBuildInputs = [ pkgs.python3 ];
+        spec = builtins.toJSON cfg.prefixAliases;
+        functionNames = lib.concatMapStrings (f: baseNameOf f.rel + "\n") functionFiles;
+        passAsFile = [
+          "spec"
+          "functionNames"
+        ];
+      }
+      ''
+        python3 ${./prefix-aliases.py} "$specPath" "$functionNamesPath" \
+          ${lib.concatMapStringsSep " " (p: "${p.source}") pluginSources} > $out
+      '';
+
+  bundleSources = [
+    {
+      function = "__zpl_autoload_functions";
+      source = registerFunctions;
+    }
+  ]
+  ++ pluginSources
+  ++ lib.optional (cfg.prefixAliases != [ ]) {
+    function = "zpl::99-after::zz-prefix-aliases";
+    source = prefixAliases;
+  };
 
   # zcompile parses at build time, so it needs the lexer options of the
   # interactive shell (config/base.nix): plugins rely on RC_QUOTES ('').
@@ -175,12 +200,81 @@ in
         of a runtime `(( $+commands[tool] )) || return` guard.
       '';
     };
+    prefixAliases = lib.mkOption {
+      type = lib.types.listOf (
+        lib.types.submodule {
+          options = {
+            from = lib.mkOption {
+              type = lib.types.str;
+              example = "network::";
+              description = "Prefix of the existing function and alias names.";
+            };
+            to = lib.mkOption {
+              type = lib.types.str;
+              example = "net::";
+              description = "Prefix that replaces it in the new names.";
+            };
+            kind = lib.mkOption {
+              type = lib.types.enum [
+                "alias"
+                "function"
+              ];
+              default = "alias";
+              description = ''
+                An alias, or a wrapper function (works in scripts and other
+                functions; not created when that name is already a function).
+              '';
+            };
+            env = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              example = "OPENSTACK_BIN=openstack-fec";
+              description = "Assignments a wrapper function puts before the call.";
+            };
+          };
+        }
+      );
+      default = [ ];
+      description = ''
+        Name aliases generated at build time, after all local plugins: for
+        every function or alias FROM<rest> that a function file or plugin
+        defines, TO<rest> calls it.
+      '';
+    };
     completionDirs = lib.mkOption {
       type = lib.types.listOf lib.types.path;
       default = [ ];
       description = "Directories of completion functions for ~/.config/zsh/completions.";
     };
   };
+
+  # Desktop session tools (Hyprland, Wayland, X, audio, ...) only exist on
+  # GUI hosts: servers and the phones do not ship these topics.
+  config.programs.zsh.localConfig.excludeTopics = lib.mkIf (!guiEnable) [
+    "display-manager"
+    "dms"
+    "hyprland"
+    "imv"
+    "kde-plasma"
+    "kde-plasma-browser-integration"
+    "lockscreen"
+    "mako"
+    "mouse"
+    "noctalia"
+    "obs"
+    "pipewire"
+    "plasma"
+    "pulseaudio"
+    "screenshot"
+    "sway"
+    "waybar"
+    "wayland"
+    "wayvnc"
+    "window-manager"
+    "xkb"
+    "xorg"
+    "ydotool"
+  ];
 
   config.xdg.configFile =
     linkTree "zsh/functions" functionRoots

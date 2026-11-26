@@ -51,7 +51,12 @@ When adding a function, edit or create its function file rather than defining it
 - A plugin that only makes sense on NixOS hosts (systemd, journald, bootctl, udev, nixos) has no guard either: the
   TermuxPP phones do not ship it at all through `programs.zsh.localConfig.excludeTopics`
   (`profiles/specializations/termuxpp/home.nix`), which drops `<topic>.zsh` and `functions/<topic>/`. Add a topic there
-  rather than a guard.
+  rather than a guard. Desktop-session topics (Hyprland, Wayland, X, audio, ...) are excluded the same way on every host
+  without a GUI (`home-manager/cli/zsh/files/default.nix`); `profiles/specializations/termuxpp/tests.nix` checks both.
+- Short names for a whole function family (`net::` for `network::`, `k::` for `kubectl::`) are not plugin loops: add a
+  `programs.zsh.localConfig.prefixAliases` entry (private: `hm/zsh/files.nix`). They are generated at build time from the
+  function files and the names plugins define; a family a plugin creates at runtime (`eval` in a loop) has to add its
+  short names in that loop.
 - Environment for Nix-managed tools (`FZF_DEFAULT_OPTS`, ...) belongs in their Nix module
   (`home-manager/cli/zsh/fzf.nix`), not in a plugin: plugins load later and would override it.
 

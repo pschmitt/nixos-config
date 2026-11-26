@@ -6,13 +6,6 @@ then
   docker-compose() { docker compose $@ }
 fi
 
-# Fix WARNING: The HOSTNAME variable is not set. Defaulting to a blank string.
-# https://github.com/docker/compose/issues/4282
-if ! printenv HOSTNAME &>/dev/null && [[ -n "$HOST" ]]
-then
-  export HOSTNAME="$HOST"
-fi
-
 alias dcp="docker compose"
 alias ddwn="docker compose down"
 alias dexec="docker compose exec"
