@@ -265,8 +265,6 @@ in
               keycap
               // {
                 key = "|";
-                popup = "-";
-                hint = "-";
                 # Long press opens a Gboard-style menu; slide to an item and lift.
                 menu = [
                   "~"
