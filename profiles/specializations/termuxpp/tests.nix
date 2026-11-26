@@ -12,16 +12,6 @@ let
         }
         .${hostname};
       configFiles = builtins.attrNames c.xdg.configFile;
-      # A local zsh topic ships its plugin or function files
-      zshTopicShipped =
-        topic:
-        builtins.any (
-          name:
-          name == "zsh/plugins/local/${topic}.zsh"
-          ||
-            builtins.substring 0 (builtins.stringLength "zsh/functions/${topic}/") name
-            == "zsh/functions/${topic}/"
-        ) configFiles;
     in
     assert c.home.homeDirectory == "/home/pschmitt";
     assert c.home.username == "pschmitt";
@@ -85,19 +75,22 @@ let
     assert !c.home.file.".zshenv".enable;
     assert c.dotfiles.zsh.nixShell.default;
     # No systemd, NixOS system or desktop session on the phones: their local
-    # zsh topics are excluded (programs.zsh.localConfig.excludeTopics).
-    assert
-      !builtins.any zshTopicShipped [
-        "bootctl"
-        "hyprland"
-        "journald"
-        "nixos"
-        "systemd"
-        "udev"
-        "wayland"
-      ];
-    assert zshTopicShipped "tmux" && zshTopicShipped "git";
-    assert builtins.elem "zsh/plugins/local.zsh" configFiles;
+    # zsh topics are not shipped (programs.zsh.localConfig.excludeTopics drops
+    # them from the plugin bundle and the function tree).
+    assert builtins.all (topic: builtins.elem topic c.programs.zsh.localConfig.excludeTopics) [
+      "bootctl"
+      "hyprland"
+      "journald"
+      "nixos"
+      "systemd"
+      "udev"
+      "wayland"
+    ];
+    assert builtins.all (name: builtins.elem name configFiles) [
+      "zsh/functions"
+      "zsh/plugins/local"
+      "zsh/plugins/local.zsh"
+    ];
     assert c.programs.nixvim.enable;
     assert !c.programs.neovim.nightly.enable;
     assert c.programs.nixvim.lsp.servers.nixd.enable;

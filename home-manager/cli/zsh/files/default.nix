@@ -1,6 +1,7 @@
 # Local plugins and autoloaded functions of the Zsh config. The public trees
 # here and any extra roots (programs.zsh.localConfig, set by the private repo)
-# are linked file by file into ~/.config/zsh and the plugins are bundled into
+# are merged into one store tree each (~/.config/zsh/{functions,plugins/local}),
+# the functions are compiled into one digest and the plugins are bundled into
 # one zcompiled file that config/runtime.nix loads.
 {
   config,
@@ -41,12 +42,26 @@ let
       ) (builtins.readDir directory)
     );
 
-  # The roots share their targets (zsh/functions/strings comes from both
-  # repos), so link every file on its own. A file in several roots is an error.
-  linkTree =
+  # The files of several roots for one target, without excluded topics. The
+  # roots share directories (functions/strings comes from both repos); a file
+  # in several roots is an error.
+  treeFiles =
     target: roots:
     let
-      files = lib.filter (f: !excludedFile f) (lib.concatMap (root: filesBelow root "") roots);
+      files = lib.filter (f: !excludedFile f) (
+        lib.concatMap (
+          root:
+          let
+            # One store copy per root (file names like a::b are no valid
+            # store path names on their own)
+            copy = builtins.path {
+              path = root;
+              name = "zsh-tree";
+            };
+          in
+          map (f: f // { stored = "${copy}/${f.rel}"; }) (filesBelow root "")
+        ) roots
+      );
       duplicates = lib.attrNames (
         lib.filterAttrs (_: n: n > 1) (
           lib.foldl' (acc: f: acc // { ${f.rel} = (acc.${f.rel} or 0) + 1; }) { } files
@@ -56,11 +71,40 @@ let
     assert lib.assertMsg (
       duplicates == [ ]
     ) "zsh: ${target} files defined in several roots: ${toString duplicates}";
-    lib.listToAttrs (map (f: lib.nameValuePair "${target}/${f.rel}" { inherit (f) source; }) files);
+    files;
 
-  functionFiles = lib.filter (f: !excludedFile f) (
-    lib.concatMap (root: filesBelow root "") functionRoots
-  );
+  # File by file, for directories other modules add files to (completions)
+  linkTree =
+    target: roots:
+    lib.listToAttrs (
+      map (f: lib.nameValuePair "${target}/${f.rel}" { inherit (f) source; }) (treeFiles target roots)
+    );
+
+  # All files of the roots in one store directory: one home link instead of
+  # one per file
+  linkScript =
+    files:
+    lib.concatMapStrings (f: ''
+      mkdir -p "$out/tree/"${lib.escapeShellArg (dirOf f.rel)}
+      ln -s ${lib.escapeShellArg f.stored} "$out/tree/"${lib.escapeShellArg f.rel}
+    '') files;
+
+  functionFiles = treeFiles "zsh/functions" functionRoots;
+
+  # The function tree (~/.config/zsh/functions) and its zcompiled digest:
+  # fpath gets the empty directory fpath/, whose sibling fpath.zwc holds every
+  # function, so `autoload -w` registers them all at once and they load as
+  # wordcode. Compiled with the interactive lexer options, as the bundle.
+  functions = pkgs.runCommand "zsh-functions" { nativeBuildInputs = [ zsh ]; } ''
+    mkdir -p $out/fpath
+    ${linkScript functionFiles}
+    zsh -fc 'setopt EXTENDED_GLOB INTERACTIVE_COMMENTS RC_QUOTES; zcompile -Uz "$1" "$2"/**/*(-.)' \
+      zsh $out/fpath.zwc $out/tree
+  '';
+
+  pluginTree = pkgs.runCommand "zsh-local-plugins-tree" { } ''
+    ${linkScript (treeFiles "zsh/plugins/local" pluginRoots)}
+  '';
 
   # Plugins in load order: the root, work/ and 99-after/, each sorted by name
   # across all roots. Each becomes a function zpl::<group::>name in the digest.
@@ -97,20 +141,18 @@ let
     }) (lib.sort (a: b: a.name < b.name) (lib.concatMap inGroup pluginRoots));
   plugins = lib.concatMap pluginsIn pluginGroups;
 
-  functionsDir = "${config.xdg.configHome}/zsh/functions";
-
-  # Autoload every function file (one function per file, named after it).
+  # Register every function (one per file, named after it) from the digest.
   # Names that are already defined (by the rc, or by an earlier load when the
   # plugins are reloaded) would otherwise keep their old definition.
   registerFunctions = pkgs.writeText "zpl-functions.zsh" ''
-    local -a files=(
-      ${lib.concatMapStringsSep "\n  " (f: lib.escapeShellArg f.rel) functionFiles}
+    local -a names=(
+      ${lib.concatMapStringsSep "\n  " (f: lib.escapeShellArg (baseNameOf f.rel)) functionFiles}
     )
-    files=(${lib.escapeShellArg functionsDir}/''${^files})
-    local -a names=(''${files:t}) defined=(''${(k)functions})
+    local -a defined=(''${(k)functions})
     defined=(''${names:*defined})
     (( ''${#defined} )) && unfunction -- $defined
-    builtin autoload -Uz -- $files
+    fpath=(${functions}/fpath ''${fpath:#*-zsh-functions/fpath})
+    builtin autoload -Uz -w -- ${functions}/fpath.zwc
   '';
 
   # One file that defines a function per plugin (__zpl_manifest lists them in
@@ -273,13 +315,11 @@ in
     "ydotool"
   ];
 
-  config.xdg.configFile =
-    linkTree "zsh/functions" functionRoots
-    // linkTree "zsh/plugins/local" pluginRoots
-    // linkTree "zsh/completions" cfg.completionDirs
-    // {
-      "zsh/plugins/local.zsh".source = "${bundle}/local.zsh";
-      "zsh/plugins/local.zsh.zwc".source = "${bundle}/local.zsh.zwc";
-      "zsh/static/README.md".source = ./static/README.md;
-    };
+  config.xdg.configFile = linkTree "zsh/completions" cfg.completionDirs // {
+    "zsh/functions".source = "${functions}/tree";
+    "zsh/plugins/local".source = "${pluginTree}/tree";
+    "zsh/plugins/local.zsh".source = "${bundle}/local.zsh";
+    "zsh/plugins/local.zsh.zwc".source = "${bundle}/local.zsh.zwc";
+    "zsh/static/README.md".source = ./static/README.md;
+  };
 }

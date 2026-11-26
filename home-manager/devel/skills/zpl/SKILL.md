@@ -5,8 +5,8 @@ description: Edit local zsh plugins at ~/.config/zsh/plugins/local. Use when the
 
 # Local Zsh Plugins (zpl)
 
-Installed at `~/.config/zsh/plugins/local` (functions in
-`~/.config/zsh/functions`) as read-only Home Manager links. Edit the sources:
+Installed read-only: `~/.config/zsh/plugins/local` and `~/.config/zsh/functions` are each one link to a merged
+store tree of both repos. Edit the sources:
 
 - public: `nixos-config.git/home-manager/cli/zsh/files/{plugins/local,functions}`
 - private (work, personal, anything sensitive):
@@ -36,7 +36,8 @@ without `-g` stay local to it, and aliases are not expanded in its code (write c
 ## Autoloaded functions
 
 Every function file is autoloaded: functions live in `$ZSH_FUNCTIONS_DIR/<topic>/`, normally `~/.config/zsh/functions/<topic>/`,
-with one file per function named exactly after the function. Each file contains the function body only, without a
+with one file per function named exactly after the function. They are compiled at build time into one digest (an `fpath`
+entry `…-zsh-functions/fpath` with `fpath.zwc` next to it) and registered with a single `autoload -w`. Each file contains the function body only, without a
 `name() { ... }` wrapper. Home Manager generates the registrations for all topics, so a new topic needs no plugin file; plugin
 files only hold guards, aliases, completions and setup.
 

@@ -1,0 +1,29 @@
+# https://junegunn.github.io/fzf/tips/ripgrep-integration/
+(
+  local cmd_reload='
+    rg --column --color=always --smart-case {q} |
+    # only show filenames:line:column, we already have a previe window
+    awk -F'':'' ''{ print $1 ":" $2 ":" $3 }'' || :
+  '
+  local cmd_open='
+    if [[ $FZF_SELECT_COUNT -eq 0 ]]
+    then
+      # No selection. Open the current line in $EDITOR.
+      $EDITOR {1} +{2}
+    else
+      # Build quickfix list for the selected items.
+      $EDITOR +cw -q {+f}
+    fi
+  '
+
+  fzf --disabled --ansi --multi \
+    --bind "start:reload:$cmd_reload" \
+    --bind "change:reload:$cmd_reload" \
+    --bind "enter:become:$cmd_open" \
+    --bind "ctrl-o:execute:$cmd_open" \
+    --delimiter : \
+    --preview 'fzf-preview {1}:{2}' \
+    --query "$*"
+)
+
+# vim: set ft=zsh et ts=2 sw=2 :
