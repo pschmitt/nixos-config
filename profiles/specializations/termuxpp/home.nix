@@ -229,8 +229,6 @@ in
               // {
                 key = "ALT";
                 display = "Alt";
-                popup = "-";
-                hint = "-";
                 hold = "_";
               }
             )
@@ -259,7 +257,14 @@ in
                 display = "End";
               }
             )
-            (keycap // { key = "|"; })
+            (
+              keycap
+              // {
+                key = "|";
+                popup = "-";
+                hint = "-";
+              }
+            )
           ]
           [
             (
