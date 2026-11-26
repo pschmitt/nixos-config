@@ -28,6 +28,7 @@ let
       pkgs.coreutils
     ];
     text = ''
+      export RWORKER_JOBS_DIR=${config.rworker.worker.jobsDirectory}
       export RWORKER_JOBS_SCRIPT=${inputs.rworker}/src/jobs.sh
       ${builtins.readFile ./scripts/register-agent-log.sh}
     '';
@@ -130,16 +131,16 @@ in
       description = "Expose the Circus agent journal through rworker logs";
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
-        User = "agent";
-        Group = "users";
+        User = config.rworker.worker.user;
+        Group = config.rworker.worker.user;
         SupplementaryGroups = [ "systemd-journal" ];
         LogsDirectory = "rworker-circus";
         LogsDirectoryMode = "0750";
         UMask = "0027";
         ExecStartPre = [
           "${pkgs.coreutils}/bin/touch ${agentLog}"
+          # One job in the shared job directory, for every account that reads it.
           (lib.getExe registerAgentLog)
-          "+${pkgs.util-linux}/bin/runuser -u ${config.mainUser.username} -- ${lib.getExe registerAgentLog}"
         ];
         ExecStart = lib.getExe followAgentLog;
         Restart = "on-failure";

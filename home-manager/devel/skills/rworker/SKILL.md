@@ -15,7 +15,7 @@ been idle for 1 h, never past its maximum lifetime. At
 most 10 exist at a time, sharing a quota with nixbot's own build pool.
 
 OpenStack workers are reached over NetBird or Tailscale (both joined; the client uses whichever answers). You log in as
-`agent` with your own SSH key (handed over at creation); the worker's host
+`rworker` (every worker kind; older ones `agent`/`rworker-build`) with your own SSH key; jobs live in `/var/lib/rworker/jobs` (`RWORKER_JOBS_DIR`, group `rworker`); the worker's host
 key is pinned on creation, never trusted on first use.
 
 ## GitHub-hosted runners
@@ -99,7 +99,7 @@ rworker down "$w"
   `exec [up options] [--sync SRC[:DEST]]
   [--fetch REMOTE[:LOCAL]] -- CMD` is a one-shot worker: create, copy, run,
   fetch, delete (also on failure; `--keep-on-failure` to debug).
-  The command runs from `/home/agent`, and `--sync SRC:DEST` puts the
+  The command runs from `/home/rworker`, and `--sync SRC:DEST` puts the
   *contents* of SRC in `~/DEST`. `exec` and `ssh` join their arguments with
   spaces before the remote shell parses them, so
   `-- bash -lc 'cd x && make'` runs `bash -lc cd` and then `make` in the home
@@ -122,7 +122,7 @@ rworker down "$w"
   `exec` do both by default as far as your host has something to give
   (`--no-nix-cache` / `--no-nix-auth`, MCP `up(nix_cache=false,
   nix_auth=false)` skip one). Everything goes over SSH into `/run/rworker-nix`
-  (tmpfs, agent-owned, 0700); nothing else of `nix.conf` is copied. The
+  (tmpfs, owned by the login account, 0700); nothing else of `nix.conf` is copied. The
   worker's nix-daemon restarts on its own. It puts credentials on the worker,
   which anyone with a shell there can read; the worker is private and
   temporary, so the host's own profile is acceptable. Re-run it after a key

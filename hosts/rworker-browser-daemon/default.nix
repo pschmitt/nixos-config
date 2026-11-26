@@ -33,7 +33,9 @@ in
   # /run is tmpfs and, unlike /dev/shm, survives the last SSH logout. The
   # worker owner atomically installs the secret to trigger the service.
   systemd = {
-    tmpfiles.rules = [ "d /run/browser-worker 0700 agent users -" ];
+    tmpfiles.rules = [
+      "d /run/browser-worker 0700 ${config.rworker.worker.user} ${config.rworker.worker.user} -"
+    ];
     paths.browser-worker = {
       wantedBy = [ "multi-user.target" ];
       pathConfig.PathExists = "/run/browser-worker/secret";
@@ -51,8 +53,8 @@ in
         pkgs.xdotool
       ];
       serviceConfig = {
-        User = "agent";
-        Group = "users";
+        User = config.rworker.worker.user;
+        Group = config.rworker.worker.user;
         UMask = "0077";
         Restart = "on-failure";
         RestartSec = 2;
@@ -65,8 +67,8 @@ in
             --node-name "$(</proc/sys/kernel/hostname)" \
           --allowed-host "$ip:3001" --ephemeral-node --max-sessions 1 --display-mode per-session \
           --firefox ${lib.getExe pkgs.firefox} \
-          --profile-dir /home/agent/browser-daemon/profiles \
-          --recordings-dir /home/agent/browser-daemon/recordings \
+          --profile-dir /home/${config.rworker.worker.user}/browser-daemon/profiles \
+          --recordings-dir /home/${config.rworker.worker.user}/browser-daemon/recordings \
           --cluster-secret-file /run/browser-worker/secret
       '';
     };

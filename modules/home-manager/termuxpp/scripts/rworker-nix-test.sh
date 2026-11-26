@@ -70,7 +70,7 @@ case "$action" in
     if [[ "$FAKE_SCENARIO" == hosted ]]
     then
       jq -n --arg key "$key" '{
-        builder: ("ssh-ng://rworker-build@ghci-12345678?remote-program=/home/rworker-build/.local/bin/rworker-nix-daemon aarch64-linux /home/u/.ssh/id_ed25519 1 1 - - " + $key),
+        builder: ("ssh-ng://rworker@ghci-12345678?remote-program=/home/rworker/.local/bin/rworker-nix-daemon aarch64-linux /home/u/.ssh/id_ed25519 1 1 - - " + $key),
         ssh_config: "Host ghci-12345678\n  ProxyCommand ssh -q -W 127.0.0.1:12345 ctl\n"
       }'
       exit 0
@@ -82,7 +82,7 @@ case "$action" in
     [[ "$FAKE_SCENARIO" != builder-wrong-key ]] || key=$(printf 'ssh-ed25519 AAAAevil\n' | base64 -w0)
     sys=x86_64-linux
     [[ "$FAKE_SCENARIO" != native ]] || sys=aarch64-linux
-    jq -n --arg line "ssh-ng://agent@$ip $sys /home/u/.ssh/id_ed25519 16 1 nixos-test,benchmark,big-parallel,kvm - $key" \
+    jq -n --arg line "ssh-ng://rworker@$ip $sys /home/u/.ssh/id_ed25519 16 1 nixos-test,benchmark,big-parallel,kvm - $key" \
       '{builder: $line}'
     ;;
   ssh)
@@ -291,7 +291,7 @@ test_success_emulated() {
     && expect_trace "$n" 'rworker up --json --ttl 1h --topic nixpp rworker-nix build rwn-' \
     && expect_trace "$n" '--arch aarch64 --queue-timeout 120' \
     && expect_err "$n" 'No native aarch64 worker available. Trying the controller default.' \
-    && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://agent@100.64.0.7 aarch64-linux ' \
+    && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://rworker@100.64.0.7 aarch64-linux ' \
     && expect_trace "$n" '--option builders-use-substitutes true .#hello --print-out-paths' \
     && expect_trace "$n" 'NIX_SSHOPTS=-o StrictHostKeyChecking=yes' \
     && expect_trace "$n" 'head -n 1 /proc/sys/fs/binfmt_misc/aarch64-linux 2>/dev/null || head -n 1 /proc/sys/fs/binfmt_misc/qemu-aarch64 2>/dev/null' \
@@ -308,7 +308,7 @@ test_default_system_and_options() {
     && expect_trace "$n" 'rworker up --json --ttl 30m --topic nixpp rworker-nix eza rwn-' \
     && expect_trace "$n" '--profile standard --disk 80' \
     && expect_no_trace "$n" '--arch' \
-    && expect_trace "$n" 'nix shell --max-jobs 0 --builders ssh-ng://agent@100.64.0.7 aarch64-linux ' \
+    && expect_trace "$n" 'nix shell --max-jobs 0 --builders ssh-ng://rworker@100.64.0.7 aarch64-linux ' \
     && pass "$n"
 }
 
@@ -324,7 +324,7 @@ test_native_worker() {
   local n=native-worker
   run_scenario native build '.#x'
   expect_rc "$n" 0 \
-    && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://agent@100.64.0.7 aarch64-linux ' \
+    && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://rworker@100.64.0.7 aarch64-linux ' \
     && pass "$n"
 }
 
@@ -334,7 +334,7 @@ test_hosted_native_worker() {
   expect_rc "$n" 0 \
     && expect_trace "$n" '--arch aarch64 --queue-timeout 120' \
     && expect_trace "$n" 'NIX_SSHOPTS=-F /tmp/rworker-nix-ssh.' \
-    && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://rworker-build@ghci-12345678?remote-program=' \
+    && expect_trace "$n" 'nix build --max-jobs 0 --builders ssh-ng://rworker@ghci-12345678?remote-program=' \
     && expect_trace "$n" 'rworker down ghci-12345678' \
     && expect_no_trace "$n" 'rworker ls' \
     && pass "$n"
@@ -592,7 +592,7 @@ test_bad_inputs() {
 
 test_remote_build() {
   local n=remote-build store
-  store='ssh-ng://agent@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
+  store='ssh-ng://rworker@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
   # Default (--upload-inputs auto): the worker fetches the github flake and inputs
   # itself; only the path input that exists here only is uploaded.
   run_scenario ok remote-build --refresh --no-link --print-out-paths \
@@ -626,7 +626,7 @@ test_remote_build() {
 
 test_remote_build_upload() {
   local n=remote-upload-all store
-  store='ssh-ng://agent@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
+  store='ssh-ng://rworker@100.64.0.7?ssh-key=/home/u/.ssh/id_ed25519&base64-ssh-public-host-key='
   # --upload-inputs all: the old behaviour, everything is fetched here and uploaded.
   run_scenario ok --upload-inputs all remote-build --refresh --no-link --print-out-paths 'github:o/cfg#x'
   expect_rc "$n" 0 \

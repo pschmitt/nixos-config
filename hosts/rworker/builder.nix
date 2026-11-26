@@ -23,9 +23,10 @@
   users = {
     mutableUsers = false;
     # No passwords anywhere; logins by SSH key only, and the main user's keys
-    # work for every account. nix-remote-builder serves nixbot; agent is for
-    # ad-hoc workers (rworker) and also takes the creator's key from the
-    # user-data (netbird.nix); the main user (with sudo) is for debugging.
+    # work for every account. nix-remote-builder serves nixbot; rworker, the
+    # login of every rworker worker (rworker's nixosModules.workerImage), also
+    # takes the creator's key from the user-data (netbird.nix); the main user
+    # (with sudo) is for debugging and reads and writes the jobs too.
     allowNoPasswordLogin = true;
     groups.nix-remote-builder = { };
     users = {
@@ -35,10 +36,9 @@
         shell = pkgs.bash;
         openssh.authorizedKeys.keys = config.mainUser.authorizedKeys;
       };
-      agent = {
-        isNormalUser = true;
-        home = "/home/agent";
-        shell = pkgs.bash;
+      # The account itself (group, shell, job directory) comes from rworker's
+      # worker module.
+      rworker = {
         # Plus the creator's keys from the user-data (netbird.nix).
         openssh.authorizedKeys.keys = config.mainUser.authorizedKeys;
         packages = [
@@ -76,7 +76,7 @@
       PermitRootLogin = "no";
       AllowUsers = [
         "nix-remote-builder"
-        "agent"
+        config.rworker.worker.user
         config.mainUser.username
       ];
     };
@@ -97,12 +97,10 @@
       "nix-command"
       "flakes"
     ];
-    # agent: ad-hoc workers belong to one user and are thrown away, so it
-    # may use the worker as a remote builder (rworker builder).
-    trusted-users = [
-      "nix-remote-builder"
-      "agent"
-    ];
+    # The rworker account is trusted too (rworker's worker module): ad-hoc
+    # workers belong to one user and are thrown away, so it may use the worker
+    # as a remote builder (rworker builder).
+    trusted-users = [ "nix-remote-builder" ];
     system-features = [
       "nixos-test"
       "benchmark"
@@ -133,7 +131,7 @@
         AWS_SHARED_CREDENTIALS_FILE = "/run/rworker-nix/aws-credentials";
         NIX_USER_CONF_FILES = "/run/rworker-nix/nix.conf";
       };
-      # nix-daemon reads its configuration only at start. agent has no sudo,
+      # nix-daemon reads its configuration only at start. rworker has no sudo,
       # so a path unit (root) restarts the daemon when the client replaces
       # nix.conf. The client pushes the credentials first, nix.conf last.
       rworker-nix-config = {
@@ -193,21 +191,25 @@
         "/home" = "home";
         "/tmp" = "tmp";
         "/var/tmp" = "var-tmp";
+        # The jobs and their logs (rworker.worker.jobsDirectory).
+        "/var/lib/rworker" = "var-lib-rworker";
       };
+  rworker.worker.jobMembers = [ config.mainUser.username ];
   systemd.tmpfiles.rules = [
-    "d /home/agent/.config 0700 agent users -"
-    "d /home/agent/.config/nix 0700 agent users -"
-    "L /home/agent/.config/nix/nix.conf - - - - /run/rworker-nix/nix.conf"
+    "d /home/rworker/.config 0700 rworker rworker -"
+    "d /home/rworker/.config/nix 0700 rworker rworker -"
+    "L /home/rworker/.config/nix/nix.conf - - - - /run/rworker-nix/nix.conf"
     "d /root/.config 0700 root root -"
     "d /root/.config/nix 0700 root root -"
     "L /root/.config/nix/nix.conf - - - - /run/rworker-nix/nix.conf"
     "d /nix/.rw-store/home 0755 root root -"
     "d /nix/.rw-store/tmp 1777 root root -"
     "d /nix/.rw-store/var-tmp 1777 root root -"
-    "d /run/rworker-nix 0700 agent users -"
+    "d /nix/.rw-store/var-lib-rworker 0755 root root -"
+    "d /run/rworker-nix 0700 rworker rworker -"
     # rworker's control host writes the worker's own niks3 push token here
-    # (as nix-remote-builder); agent reads it.
-    "d /run/rworker-niks3 2750 nix-remote-builder users -"
+    # (as nix-remote-builder); the rworker account reads it.
+    "d /run/rworker-niks3 2750 nix-remote-builder rworker -"
   ];
 
   # The main user's sudo; there are no passwords to ask for.

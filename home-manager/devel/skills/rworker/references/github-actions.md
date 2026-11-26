@@ -21,7 +21,7 @@ and keep secrets out of the transferred files.
 
 `rworker up --profile gh-aarch64 --ssh --topic "Native ARM64 session"` opens an
 interactive shell. GitHub workers appear as `gha-…`. They use the
-`rworker-build` account, pinned SSH keys, and the controller relay. Use
+`rworker` account (`rworker-build` on older leases), pinned SSH keys, and the controller relay. Use
 `rworker sync`, `rworker cp`, and `rworker down` as usual. The lease defaults
 to 30 minutes, including queue time, and can be set to at most two hours.
 Running `down` cancels the GitHub workflow. Use `rworker logs WORKER --cached`

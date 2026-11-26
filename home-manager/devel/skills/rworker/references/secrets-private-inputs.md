@@ -19,7 +19,7 @@ short-lived credential is nicer when it is cheap to get, but it is not
 required. Prefer sending just the file or entry the job needs over a whole
 credentials directory or the SSH agent.
 
-The worker may remove an agent user's `/dev/shm` files when its last SSH login
+The worker may remove the login account's `/dev/shm` files when its last SSH login
 ends. If the next command needs the file, keep one SSH session open through
 the transfer and consumption, or send it on stdin to the consuming command in
 the same SSH session. For a locally prepared mode-0600 `secret_file`:

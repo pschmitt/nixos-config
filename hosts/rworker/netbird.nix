@@ -20,6 +20,7 @@ let
       pkgs.coreutils
     ];
     text = ''
+      export RWORKER_JOBS_DIR=${config.rworker.worker.jobsDirectory}
       export RWORKER_JOBS_SCRIPT=${inputs.rworker}/src/jobs.sh
       export RWORKER_LOG_EXPORT_SCRIPT=${inputs.rworker}/src/job-log-export.sh
       ${builtins.readFile ./scripts/log-reader.sh}
@@ -105,10 +106,11 @@ in
       user_data=$RUNTIME_DIRECTORY/user-data
       fetch user_data > "$user_data"
 
-      # Optional SSH keys for the agent user (ad-hoc workers).
+      # Optional SSH keys for the rworker login (ad-hoc workers). The
+      # user-data field keeps its name from when the account was "agent".
       install -d -m 0755 /run/ssh-authorized-keys
       jq -r '.agent_authorized_keys // [] | .[]' "$user_data" \
-        > /run/ssh-authorized-keys/agent
+        > /run/ssh-authorized-keys/${config.rworker.worker.user}
       log_collector=$(jq -r '.log_collector_key // ""' "$user_data")
       if [[ -n "$log_collector" ]]
       then
@@ -118,9 +120,9 @@ in
           exit 1
         fi
         printf 'restrict,command="%s" ssh-ed25519 %s rworker-log-collector\n' \
-          "${lib.getExe logReader}" "$log_collector" >> /run/ssh-authorized-keys/agent
+          "${lib.getExe logReader}" "$log_collector" >> /run/ssh-authorized-keys/${config.rworker.worker.user}
       fi
-      chmod 0644 /run/ssh-authorized-keys/agent
+      chmod 0644 /run/ssh-authorized-keys/${config.rworker.worker.user}
 
       key=$RUNTIME_DIRECTORY/setup-key
       # The controller enrolls the worker with Tailscale alone when it

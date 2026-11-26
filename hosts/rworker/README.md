@@ -87,9 +87,10 @@ only in the kernel's device-mapper table. Check it on a worker with
   main user's keys (`mainUser.authorizedKeys`) work for all three:
   - the main user (with passwordless sudo), for debugging;
   - `nix-remote-builder` (nixbot's pool, plus the shared builder key);
-  - `agent` (ad-hoc workers): additionally the creator's keys from
+  - `rworker` (the login of every rworker worker, from rworker's
+    `nixosModules.workerImage`; `agent` before): additionally the creator's keys from
     `agent_authorized_keys` in the user-data, written to
-    `/run/ssh-authorized-keys/agent`. Its home is on the encrypted partition;
+    `/run/ssh-authorized-keys/rworker`. Its home is on the encrypted partition;
     it is a trusted Nix user so it can serve as a remote builder.
 - Users of ad-hoc workers: see the `rworker` skill.
 - The SSH host key is printed to the serial console as
@@ -122,14 +123,17 @@ new host key.
 Ad-hoc workers can substitute from the private S3 Nix cache. The image
 only provides the hooks, so a worker nobody pushed to holds nothing:
 
-- `/run/rworker-nix` (tmpfs, `agent`, 0700) is created at boot (tmpfiles).
+- `/run/rworker-nix` (tmpfs, `rworker`, 0700) is created at boot (tmpfiles).
+- `/var/lib/rworker/jobs` (`RWORKER_JOBS_DIR`, `rworker:rworker`, setgid 2770)
+  holds the jobs, on the encrypted partition like `/home`; the main user is in
+  the `rworker` group and reads and writes them too.
 - `nix.conf` ends with `!include /run/rworker-nix/nix.conf`, ignored while the
   file does not exist.
 - `nix-daemon` runs with `AWS_SHARED_CREDENTIALS_FILE` pointing at
   `/run/rworker-nix/aws-credentials`, because the daemon does the substituting.
 - `rworker-nix-config.path` watches `nix.conf` and runs
   `rworker-nix-config.service`, which restarts `nix-daemon` (it reads its
-  configuration only at start, and `agent` has no sudo).
+  configuration only at start, and `rworker` has no sudo).
 
 `rworker nix-cache NAME` runs on the client, and `up`/`exec` do the same by
 default when the client has an `s3://` substituter (`--no-nix-cache` skips
@@ -142,7 +146,7 @@ readable on the worker), not through the control host, and never in argv.
 The client then checks that the worker reaches the bucket and that the daemon
 restarted.
 
-The key must be read-only: the `agent` user can read it. The cache's
+The key must be read-only: the `rworker` user can read it. The cache's
 read-only identity is a separate project whose S3 tenant only the bucket
 policy lets read (see the private repository's niks3 notes). Nothing on a
 worker needs write access: nixbot pushes finished builds through the niks3
@@ -152,7 +156,7 @@ Pushing from a worker is the exception that goes through the API, with the
 worker's own token: unless `--no-niks3-token` was given (or the profile opts
 out), `rworker up` has the control host sign a short-lived niks3 token that
 expires with the worker and install it in `/run/rworker-niks3` (tmpfs,
-written by `nix-remote-builder`, readable by `agent`). Every `extend`
+written by `nix-remote-builder`, readable by `rworker`). Every `extend`
 replaces it with one for the new lifetime. The `niks3` command on the worker
 picks the token and server URL up from there, so `niks3 push PATH` just
 works. The token only lets the worker write `rworker-*` pins. Workers from

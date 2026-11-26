@@ -363,13 +363,19 @@ build_builder_line() {
   fi
   if [[ $(jq -r .provider <<< "$info") == github ]]
   then
-    if [[ "${f[0]}" == "ssh-ng://rworker-build@$name?remote-program=/home/rworker-build/.local/bin/rworker-nix-daemon" ]]
-    then
-      known_ip=1
-    fi
-  elif [[ "${f[0]}" == ssh-ng://agent@* ]]
+    # The lease's login account: rworker, rworker-build on older leases.
+    local user
+    for user in rworker rworker-build
+    do
+      if [[ "${f[0]}" == "ssh-ng://$user@$name?remote-program=/home/$user/.local/bin/rworker-nix-daemon" ]]
+      then
+        known_ip=1
+      fi
+    done
+  elif [[ "${f[0]}" =~ ^ssh-ng://(rworker|agent)@ ]]
   then
-    addr="${f[0]#ssh-ng://agent@}"
+    # rworker, agent on workers from older images.
+    addr="${f[0]#ssh-ng://*@}"
     while IFS= read -r ip
     do
       [[ "$ip" != "$addr" ]] || known_ip=1

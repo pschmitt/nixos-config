@@ -39,6 +39,9 @@ in
   config.rworker.image.glanceProperties = {
     rworker_icon = cfg.icon;
     rworker_label = cfg.label;
+    # The account clients log into (rworker's worker module); the controller
+    # records it for each worker booted from this image.
+    rworker_login_user = config.rworker.worker.user;
   }
   // lib.optionalAttrs (cfg.pool != null) { rworker_pool = cfg.pool; };
 }
