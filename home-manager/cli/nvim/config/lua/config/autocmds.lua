@@ -99,3 +99,6 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.diagnostic.enable(false, { bufnr = vim.api.nvim_get_current_buf() })
   end,
 })
+
+-- Offer near matches when opening a file that does not exist
+require("did-you-mean").setup()
