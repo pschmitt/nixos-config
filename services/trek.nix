@@ -9,7 +9,7 @@ let
   dataDir = "/mnt/data/srv/trek";
   containerBackend = config.virtualisation.oci-containers.backend;
   # renovate: datasource=docker depName=mauriceboe/trek
-  trekVersion = "5.1.4";
+  trekVersion = "5.2.1";
 in
 {
   systemd.services."${containerBackend}-trek" = {
