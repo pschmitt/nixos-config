@@ -47,6 +47,16 @@ in
     fi
   '';
 
+  # Running tmux servers keep their old status formats and bindings, which
+  # may call scripts the switch just removed: reload them.
+  home.activation.reloadTmux = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    for socket in "''${TMUX_TMPDIR:-/tmp}/tmux-$(id -u)"/* "''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/tmux-$(id -u)"/*
+    do
+      [[ -S "$socket" ]] || continue
+      run ${lib.getExe pkgs.tmux} -S "$socket" source-file ${lib.escapeShellArg "${config.xdg.configHome}/tmux/tmux.conf"} 2>/dev/null || true
+    done
+  '';
+
   xdg = {
     configFile = {
       "tmux" = {
