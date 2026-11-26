@@ -103,6 +103,9 @@ in
       config.nix.package
       termuxpp.termuxpp-rish
       termuxpp.termuxpp-storage
+      # wl-copy/wl-paste on the Android clipboard, and the helper the app runs
+      # when an image is pasted into a session
+      termuxpp.termuxpp-clipboard
     ]
     ++ builtins.attrValues {
       inherit (pkgs) iputils;
