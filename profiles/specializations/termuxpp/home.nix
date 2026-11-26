@@ -220,7 +220,7 @@ in
           }
           {
             key = "UP";
-            background-color = "#303030";
+            text-color = "#A0A0A0";
             popup = {
               key = "PGUP";
               display = "PgUp";
@@ -237,10 +237,7 @@ in
           "|"
         ]
         [
-          {
-            key = "TAB";
-            display = "Tab";
-          }
+          "TAB"
           {
             key = "CTRL";
             display = "Ctrl";
@@ -253,7 +250,7 @@ in
           }
           {
             key = "LEFT";
-            background-color = "#303030";
+            text-color = "#A0A0A0";
             popup = {
               key = "HOME";
               display = "Home";
@@ -261,7 +258,7 @@ in
           }
           {
             key = "DOWN";
-            background-color = "#303030";
+            text-color = "#A0A0A0";
             popup = {
               key = "PGDN";
               display = "PgDn";
@@ -269,7 +266,7 @@ in
           }
           {
             key = "RIGHT";
-            background-color = "#303030";
+            text-color = "#A0A0A0";
             popup = {
               key = "END";
               display = "End";
@@ -281,7 +278,6 @@ in
           }
           {
             key = "BKSP";
-            display = "Bksp";
             popup = {
               key = "DEL";
               display = "Del";
