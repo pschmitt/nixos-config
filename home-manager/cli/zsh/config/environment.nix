@@ -19,7 +19,9 @@ let
         "5.4"
       ]
   );
-  shellSessionVariables = {
+  # Every program's environment: login shells (hm-session-vars.sh), the
+  # systemd user manager and what it starts (environment.d), and zsh (below).
+  sessionVariables = {
     BROWSER =
       if (config.programs.ssh-client-browser.enable or false) then
         lib.getExe config.programs.ssh-client-browser.package
@@ -30,20 +32,12 @@ let
     SYSTEMD_EDITOR = "nvim";
     PAGER = "less";
     MANPAGER = "less";
-    DOMAIN = config.domains.main;
-    # Plugins use this at load time (aliases).
-    EMAIL = config.mainUser.email.personal or null;
-    REPORTTIME = 10;
-    KEYTIMEOUT = 1;
-    CARGO_HOME = "${config.xdg.dataHome}/cargo";
-    GOPATH = "${config.xdg.dataHome}/go";
     RUSTUP_HOME = "${config.xdg.dataHome}/rustup";
     XDG_BIN_HOME = "${config.home.homeDirectory}/.local/bin";
     ANSIBLE_HOME = "${config.xdg.cacheHome}/ansible";
     ANSIBLE_GALAXY_CACHE_DIR = "${config.xdg.cacheHome}/ansible/galaxy";
     ASSH_CONFIG = "${config.xdg.configHome}/assh/assh.yml";
     DOCKER_CONFIG = "${config.xdg.configHome}/docker";
-    GNUPGHOME = "${config.xdg.configHome}/gnupg";
     KREW_ROOT = "${config.xdg.dataHome}/krew";
     HTTPIE_CONFIG_DIR = "${config.xdg.configHome}/httpie";
     IPYTHONDIR = "${config.xdg.configHome}/ipython";
@@ -66,36 +60,37 @@ let
     LUAROCKS_CONFIG = "${config.xdg.configHome}/luarocks/config.lua";
     WORKON_HOME = "${config.xdg.dataHome}/virtualenvs";
     VIMDOTDIR = "${config.xdg.configHome}/nvim";
-    ZSH_COMPDUMP = "${config.xdg.cacheHome}/zsh/zcompdump-${hostname}-${pkgs.zsh.version}";
-    GTK2_RC_FILES = "${config.home.homeDirectory}/.gtkrc-2.0";
   }
   // luarocksConfig;
-  sessionVariableInit = lib.concatStringsSep "\n" (
-    lib.mapAttrsToList (name: value: ''
-      zsh::xdg-export ${lib.escapeShellArg name} ${lib.escapeShellArg (toString value)}
-    '') (lib.filterAttrs (_: value: value != null) shellSessionVariables)
-  );
+
+  # Only for zsh and what it starts
+  zshSessionVariables = {
+    DOMAIN = config.domains.main;
+    # Plugins use this at load time (aliases).
+    EMAIL = config.mainUser.email.personal or null;
+    REPORTTIME = 10;
+    KEYTIMEOUT = 1;
+    ZSH_COMPDUMP = "${config.xdg.cacheHome}/zsh/zcompdump-${hostname}-${pkgs.zsh.version}";
+  };
 in
 {
   imports = [ ../../../../modules/home-manager/ssh-client-browser.nix ];
 
-  programs.zsh = {
-    shellAliases = {
-      tmux = "tmux -f $XDG_CONFIG_HOME/tmux/tmux.conf";
-    };
+  home.sessionVariables = sessionVariables;
+  systemd.user.sessionVariables = sessionVariables;
 
-    envExtra = lib.mkBefore ''
-      zsh::xdg-export() {
-        local name="$1" value="$2"
-        if [[ -n "''${NO_XDG_ENV_OVERRIDE:-}" && -n "''${(P)name}" ]]
-        then
-          return 0
-        fi
-        export "$name=$value"
-      }
-      ${sessionVariableInit}
-      unfunction zsh::xdg-export
-    '';
+  programs.zsh = {
+    sessionVariables = lib.filterAttrs (_: value: value != null) zshSessionVariables;
+    # hm-session-vars.sh only runs once per session (__HM_SESS_VARS_SOURCED is
+    # inherited): fill in what is missing, e.g. in a tmux server started before
+    # a variable was added, without overriding inherited values.
+    envExtra = lib.mkBefore (
+      lib.concatStrings (
+        lib.mapAttrsToList (name: value: ''
+          [[ -n "''${${name}-}" ]] || export ${name}=${lib.escapeShellArg (toString value)}
+        '') sessionVariables
+      )
+    );
   };
 
   home.sessionPath = [
