@@ -129,26 +129,17 @@ index 0000000..1188b03
 +      process.stdout.write(`${message}\n`);
 +    });
 +}
-diff --git a/src/cli/index.ts b/src/cli/index.ts
-index 33f870f..efa838f 100644
---- a/src/cli/index.ts
-+++ b/src/cli/index.ts
-@@ -16,6 +16,7 @@ import { registerHandoffCommand } from './commands/handoff.js';
- import { registerHookCommand } from './commands/hook.js';
- import { registerInboxCommand } from './commands/inbox.js';
- import { registerMessagesCommand } from './commands/messages.js';
-+import { registerReleaseCommand } from './commands/release.js';
- import { registerReviewPacketCommand } from './commands/review-packet.js';
- import { registerSetupCommand } from './commands/setup.js';
- import { registerStatus } from './commands/status.js';
-@@ -88,6 +89,7 @@ registerWatchCommand(program);
- registerHookCommand(program, telemetry);
- registerInboxCommand(program, telemetry);
- registerHandoffCommand(program);
-+registerReleaseCommand(program);
- registerReviewPacketCommand(program);
- registerExportCommand(program);
- registerDoctorCommand(program);
+diff --git a/src/cli/run.ts b/src/cli/run.ts
+--- a/src/cli/run.ts
++++ b/src/cli/run.ts
+@@ -102,6 +102,7 @@
+     },
+   ],
+   ['handoff', async () => (await import('./commands/handoff.js')).registerHandoffCommand],
++  ['release', async () => (await import('./commands/release.js')).registerReleaseCommand],
+   [
+     'work',
+     async () => {
 diff --git a/src/tools/task-lifecycle.ts b/src/tools/task-lifecycle.ts
 index f2afa1a..12b2c4d 100644
 --- a/src/tools/task-lifecycle.ts
