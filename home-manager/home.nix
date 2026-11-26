@@ -17,6 +17,7 @@
       inputs.browser-daemon.homeManagerModules.default
       ./sops.nix
       ./ssh.nix
+      inputs.nixos-config-private.homeManagerModules.kubeconfigSnapshot
       inputs.nixos-config-private.homeManagerModules.sshClient
       inputs.nixos-config-private.homeManagerModules.zshFiles
       ./ssh-clipboard.nix

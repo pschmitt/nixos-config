@@ -60,6 +60,7 @@ in
     ../../../home-manager/cli/ripgrep.nix
     ../../../home-manager/cli/nvim
     ../../../home-manager/cli/ssh-tools.nix
+    inputs.nixos-config-private.homeManagerModules.kubeconfigSnapshot
     inputs.nixos-config-private.homeManagerModules.sshClient
     inputs.nixos-config-private.homeManagerModules.zshFiles
     ../../../home-manager/cli/zsh/atuin.nix
