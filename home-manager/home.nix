@@ -18,6 +18,7 @@
       ./sops.nix
       ./ssh.nix
       inputs.nixos-config-private.homeManagerModules.sshClient
+      inputs.nixos-config-private.homeManagerModules.zshFiles
       ./ssh-clipboard.nix
       ./work
       ./yadm.nix

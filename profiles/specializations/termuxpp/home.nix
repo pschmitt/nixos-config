@@ -61,6 +61,7 @@ in
     ../../../home-manager/cli/nvim
     ../../../home-manager/cli/ssh-tools.nix
     inputs.nixos-config-private.homeManagerModules.sshClient
+    inputs.nixos-config-private.homeManagerModules.zshFiles
     ../../../home-manager/cli/zsh/atuin.nix
     ../../../home-manager/cli/zsh/direnv.nix
     ../../../home-manager/cli/zsh/vivid.nix
