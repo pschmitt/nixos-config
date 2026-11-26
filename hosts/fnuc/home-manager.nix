@@ -20,5 +20,6 @@
     ];
 
     services.terminal-browser-headless.enable = true;
+    programs.kubeconfigSnapshot.automatic.enable = true;
   };
 }
