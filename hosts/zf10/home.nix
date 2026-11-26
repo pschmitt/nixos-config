@@ -18,5 +18,5 @@
   };
 
   # A double tap on the terminal opens the session sidebar.
-  nixpp.properties.terminal-double-tap-action = "open-sidebar";
+  nixpp.settings.gestures.tap.double.action = "open-sidebar";
 }

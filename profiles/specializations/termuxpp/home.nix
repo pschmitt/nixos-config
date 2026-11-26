@@ -13,17 +13,18 @@ let
   readTripleTapCommand =
     pkgs.writers.writePython3 "termuxpp-triple-tap-command"
       {
-        libraries = [ pkgs.python3Packages.javaproperties ];
+        libraries = [ pkgs.python3Packages.pyyaml ];
       }
       ''
         import sys
 
-        import javaproperties
+        import yaml
 
         with open(sys.argv[1], encoding="utf-8") as source:
-            props = javaproperties.load(source)
-        if props.get("terminal-triple-tap-action", "").casefold() == "send-keys":
-            sys.stdout.write(props.get("terminal-triple-tap-command", ""))
+            config = yaml.safe_load(source) or {}
+        triple = config.get("gestures", {}).get("tap", {}).get("triple", {})
+        if str(triple.get("action", "")).casefold() == "send-keys":
+            sys.stdout.write(str(triple.get("command", "")))
       '';
 in
 {
@@ -156,48 +157,111 @@ in
       set -g default-shell ${pkgs.zsh}/bin/zsh
     '';
   };
-  # The TermuxPP app's termuxpp.properties (formerly in yadm). The whole file
-  # is written on activation; the app's properties editor does not persist.
-  nixpp.properties = {
-    extra-keys = lib.concatStrings [
-      "[ ['ESC', {key: '/', popup: BACKSLASH}, {key: -, popup: _}, 'HOME', "
-      "{key: UP, popup: PGUP}, 'END', 'PGUP', '|'], "
-      "['TAB', {key: CTRL, popup: SHIFT}, 'ALT', {key: LEFT, popup: HOME}, "
-      "{key: DOWN, popup: PGDN}, {key: RIGHT, popup: END}, 'PGDN', {key: BKSP, popup: DEL}] ]"
-    ];
-    allow-external-apps = true;
-    use-black-ui = true;
-    bell-character = "vibrate";
-    back-key = "back";
-    "shortcut.create-session" = "disabled";
-    "shortcut.previous-session" = "ctrl + 1";
-    "shortcut.next-session" = "ctrl + 2";
-    "shortcut.rename-session" = "ctrl + 3";
-    # Latched modifiers and pressed keys in the logo palette.
-    extra-keys-button-active-text-color = "#D8B4FE";
-    extra-keys-button-active-background-color = "#3B1D6A";
-    extra-keys-button-corner-radius = 8;
-    # Extra keys row: finger to the right = previous session, to the left = next
-    # session (the default), further to the right = new session.
-    extra-keys-swipe-left-action = "previous-session";
-    extra-keys-long-swipe-left-action = "new-session";
-    # Focus an existing fnuc tmux client before asking the local zsh prompt to attach.
-    terminal-triple-tap-focus-title = "^(!?t:fnuc([.]lan)?:|tmux(:[^@ ]+)?@fnuc([.]lan)?( |$))";
-    terminal-triple-tap-action = "send-keys";
-    terminal-triple-tap-keys = "CTRL SHIFT F12";
-    terminal-triple-tap-command = "ssh::tmux f";
+  # The TermuxPP app's config.yaml (formerly termuxpp.properties in yadm),
+  # in its grouped layout. The whole file is written on activation; edits in
+  # the app's settings do not persist.
+  nixpp.settings = {
+    appearance = {
+      # Dark theme (formerly use-black-ui).
+      night-mode = "true";
+      toast-position = "top-right";
+    };
+    terminal = {
+      bell = "vibrate";
+      open-url-on-click = true;
+    };
+    sessions = {
+      create-on-single-session-switch = true;
+      # The session and tmux window pickers open in the middle of the
+      # terminal, above the keyboard while it is shown.
+      picker-position = "terminal";
+    };
     # The active tmux window as a filled accent pill.
-    terminal-tmux-sidebar-style = "rounded";
-    # The session and tmux window pickers open in the middle of the terminal,
-    # above the keyboard while it is shown.
-    terminal-picker-position = "terminal";
-    # Swiping right with two fingers opens the session sidebar.
-    terminal-2-finger-swipe-right-action = "open-sidebar";
-    terminal-onclick-url-open = true;
-    create-session-on-single-session-switch = true;
-    terminal-toast-position = "top-right";
-    # Gesture feedback pills in the middle of the screen.
-    gesture-feedback-position = "center";
+    tmux.sidebar.style = "rounded";
+    keyboard = {
+      back-key = "back";
+      shortcuts = {
+        create-session = "disabled";
+        previous-session = "ctrl + 1";
+        next-session = "ctrl + 2";
+        rename-session = "ctrl + 3";
+      };
+    };
+    extra-keys = {
+      keys = [
+        [
+          "ESC"
+          {
+            key = "/";
+            popup = "BACKSLASH";
+          }
+          {
+            key = "-";
+            popup = "_";
+          }
+          "HOME"
+          {
+            key = "UP";
+            popup = "PGUP";
+          }
+          "END"
+          "PGUP"
+          "|"
+        ]
+        [
+          "TAB"
+          {
+            key = "CTRL";
+            popup = "SHIFT";
+          }
+          "ALT"
+          {
+            key = "LEFT";
+            popup = "HOME";
+          }
+          {
+            key = "DOWN";
+            popup = "PGDN";
+          }
+          {
+            key = "RIGHT";
+            popup = "END";
+          }
+          "PGDN"
+          {
+            key = "BKSP";
+            popup = "DEL";
+          }
+        ]
+      ];
+      # Latched modifiers and pressed keys in the logo palette.
+      active = {
+        text-color = "#D8B4FE";
+        background-color = "#3B1D6A";
+      };
+      corner-radius = 8;
+      # Extra keys row: finger to the right = previous session, to the left =
+      # next session (the default), further to the right = new session.
+      swipe = {
+        left.action = "previous-session";
+        long-left.action = "new-session";
+      };
+    };
+    gestures = {
+      # Gesture feedback pills in the middle of the screen.
+      feedback.position = "center";
+      # Focus an existing fnuc tmux client before asking the local zsh prompt
+      # to attach.
+      tap.triple = {
+        focus-title = "^(!?t:fnuc([.]lan)?:|tmux(:[^@ ]+)?@fnuc([.]lan)?( |$))";
+        action = "send-keys";
+        keys = "CTRL SHIFT F12";
+        command = "ssh::tmux f";
+      };
+      # Swiping right with two fingers opens the session sidebar.
+      swipe.two-finger.right.action = "open-sidebar";
+    };
+    integrations.allow-external-apps = true;
   };
   # The scripts the app runs for shared files and URLs (formerly in yadm), and a
   # README. The app reads ~/.config/termuxpp outside the guest, so install real
@@ -335,7 +399,7 @@ in
           then
             function _termuxpp_triple_tap_command() {
               [[ -z "$BUFFER" ]] || return 0
-              local properties="${config.xdg.configHome}/termuxpp/termuxpp.properties"
+              local properties="${config.xdg.configHome}/termuxpp/config.yaml"
               [[ -r "$properties" ]] || return 0
               local command
               command=$(${readTripleTapCommand} "$properties") || return 0

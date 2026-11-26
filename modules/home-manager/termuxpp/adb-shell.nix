@@ -29,7 +29,7 @@ in
     '';
   };
 
-  # properties.nix writes the list into termuxpp.properties.
+  # properties.nix writes the list into config.yaml.
   config = {
     assertions = [
       {
