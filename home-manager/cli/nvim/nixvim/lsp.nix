@@ -51,8 +51,30 @@
     };
   };
 
-  # JSON and YAML schemas for jsonls/yamlls
-  plugins.schemastore.enable = true;
+  # JSON and YAML schemas for jsonls/yamlls, read when one of them starts:
+  # require("schemastore") in their settings cost ~7 ms of every start.
+  plugins.schemastore = {
+    enable = true;
+    json.enable = false;
+    yaml.enable = false;
+  };
+  lsp.servers.jsonls.config.before_init = lib.nixvim.mkRaw ''
+    function(_, config)
+      config.settings = vim.tbl_deep_extend("force", config.settings or {}, {
+        json = { schemas = require("schemastore").json.schemas(), validate = { enable = true } },
+      })
+    end
+  '';
+  lsp.servers.yamlls.config.before_init = lib.nixvim.mkRaw ''
+    function(_, config)
+      config.settings = vim.tbl_deep_extend("force", config.settings or {}, {
+        yaml = {
+          schemaStore = { enable = false, url = "" },
+          schemas = require("schemastore").yaml.schemas(),
+        },
+      })
+    end
+  '';
 
   extraPackages = with pkgs; [
     # used by the language servers above

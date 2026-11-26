@@ -45,16 +45,23 @@ in
     cmp-nerdfont
     pkgs.vimPlugins.cmp-digraphs
     pkgs.vimPlugins.cmp-tmux
+    # On the runtimepath for luasnip's VSCode loader (below)
+    pkgs.vimPlugins.friendly-snippets
   ];
 
   plugins = {
     blink-compat.enable = true;
     blink-emoji.enable = true;
-    friendly-snippets.enable = true;
+    # Loads luasnip and its snippets on demand (~20 ms of every start)
+    lz-n.enable = true;
     # friendly-snippets and ../config/snippets (package.json on the runtimepath)
     luasnip = {
       enable = true;
       fromVscode = [ { } ];
+      lazyLoad.settings.event = [
+        "InsertEnter"
+        "CmdlineEnter"
+      ];
     };
 
     blink-cmp = {
