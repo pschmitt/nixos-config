@@ -1,0 +1,19 @@
+# Usage: echo "1 3 6" | avg
+# Usage: echo "1 3 6" | avg -f .3
+local format=(-f .1)
+local input
+
+zparseopts -D -K -E f:=format -format:=format
+
+if [[ -t 0 ]]
+then
+  input=("$@")
+else
+  # Read from pipe
+  input=$(cat)
+fi
+
+tr ' ' '\n' <<< "$input"| LC_NUMERIC=C \
+  awk '{ count++; sum+=$NF } END { printf "%'${format[2]}'f\n", (sum / count) }'
+
+# vim: set ft=zsh et ts=2 sw=2 :

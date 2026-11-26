@@ -1,0 +1,14 @@
+# Usage: echo "1 3 6" | max
+local input
+
+if [[ -t 0 ]]
+then
+  input=("$@")
+else
+  # Read from pipe
+  input=$(cat)
+fi
+
+tr ' ' '\n' <<< "$input" | sort | tail -1
+
+# vim: set ft=zsh et ts=2 sw=2 :

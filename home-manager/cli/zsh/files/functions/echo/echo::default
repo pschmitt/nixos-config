@@ -1,0 +1,10 @@
+# usage: echo $var_that_might_by_empty | echo::default "N/A"
+local in=$(cat)
+if [[ -n $in ]]
+then
+  echo "$in"
+else
+  echo -e "$*"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

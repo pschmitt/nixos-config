@@ -1,0 +1,23 @@
+# like typeset array, but in worse
+local noexpand
+local sep=(-s "\n")
+
+zparseopts -D -K -- \
+  {s,-sep,-separator}:=sep \
+  {n,-no-ex,-no-expand,-noexpand}=noexpand
+
+sep=$sep[2]
+
+# FIXME How should we deal with echo::array "$array"?
+if [[ -z "$noexpand" ]] && [[ $# -eq 1 ]]
+then
+  set -- ${=@}
+fi
+
+local args=("$@")
+setopt local_options
+unsetopt nomatch
+# https://unix.stackexchange.com/a/572404
+echo "${(pj:$sep:)args}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

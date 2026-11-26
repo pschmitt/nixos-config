@@ -8,6 +8,7 @@
     ./portable.nix
     ./runtime.nix
     ./zhj.nix
+    ../files
     ../plugins
     ../tools/cli.nix
   ];

@@ -1,0 +1,29 @@
+local noemoji
+local query_emoji=(--query-emoji "${fg_bold[blue]}${reset_color}")
+zparseopts -K -D -E \
+  {E,-no-emoji,-noemoji}=noemoji \
+  {e,-query-emoji}:=query_emoji
+query_emoji=$query_emoji[2]
+
+if [[ -n "$noemoji" ]]
+then
+  query_emoji=""
+elif [[ -n "$query_emoji" ]]
+then
+  query_emoji="${query_emoji} "
+fi
+
+local query=${*:-"Continue?"}
+query+=" (y|N)"
+
+# interpret '\n' etc in query
+query=$(printf '%b' "$query")
+
+local REPLY
+read -q "?${query_emoji}${query}${color_reset} "
+local rc="$?"
+
+echo # FIXME Don't add a new line if the user just pressed enter
+return "$rc"
+
+# vim: set ft=zsh et ts=2 sw=2 :

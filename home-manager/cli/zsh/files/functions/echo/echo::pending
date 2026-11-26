@@ -1,0 +1,3 @@
+echo::fancy -t pending "$@" >&2
+
+# vim: set ft=zsh et ts=2 sw=2 :

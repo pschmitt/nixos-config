@@ -1,0 +1,12 @@
+local debug_only=${DEBUG_ONLY:-}
+zparseopts -D -K -- {d,-debug,-debog,-debug-only,q,-quiet}=debug_only
+
+# When invoked with --debug: skip debug messages, unless DEBUG is set
+if [[ -n "$debug_only" && -z "$DEBUG" ]]
+then
+  return 0
+fi
+
+echo::fancy -t debug "$@" >&2
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,139 @@
+if [[ -n "$ECHO_SILENCE" ]]
+then
+  return
+fi
+
+local align
+local extra_args=()
+local msg_type=(-t default)
+local nocolor
+local noemoji
+local noreset
+local notify
+local sep
+
+zparseopts -K -D -- \
+  n=extra_args \
+  {a,-align}=align \
+  {s,-sep,-separator}:=sep \
+  {t,-type}:=msg_type \
+  {E,-noemoji}=noemoji \
+  {C,-nocolor}=nocolor \
+  {N,-nocolorreset}=noreset \
+  -notify=notify
+
+msg_type="$msg_type[2]"
+sep="$sep[2]"
+
+# Resolve ECHO_LEVEL
+if [[ -n "$ECHO_LEVEL" ]] && ! [[ "$ECHO_LEVEL" =~ ^[0-9]+$ ]]
+then
+  ECHO_LEVEL="${ECHO_LEVELS[${ECHO_LEVEL:-debug}]}"
+fi
+
+# Check if we should skip the display of the current message depending on
+# the current ECHO_LEVEL
+if [[ -n "$ECHO_LEVEL" ]] && [[ -n "${ECHO_LEVELS[${msg_type}]}" ]] && \
+   [[ $ECHO_LEVEL -gt ${ECHO_LEVELS[${msg_type}]} ]]
+then
+  return
+fi
+
+local emoji
+if [[ -z "$noemoji" ]] && [[ -z "$ECHO_NO_EMOJI" ]] && \
+   [[ -n "${MSG_EMOJI[${msg_type}]}" ]]
+then
+  emoji="${MSG_EMOJI[${msg_type}]} "
+fi
+
+local color
+local color_reset
+if [[ -z "$nocolor" ]] && [[ -z "$ECHO_NO_COLOR" ]]
+then
+  color=${MSG_COLORS[${msg_type}]}
+  color_reset=${fg[default]}
+fi
+
+local prefix="${MSG_PREFIX[${msg_type}]}"
+local msg_prefix
+if [[ -n "$prefix" ]]
+then
+  msg_prefix="\e[1m${prefix}\e[0m "
+fi
+
+# Only align if requested (-a),
+# if there is more than one msg arg,
+# separator is newline or the first arg ends with newline and there's
+# an emoji to be displayed
+if [[ -n "$align" && "$#" -gt 1 ]]
+then
+  sep=${sep:-'\n'}
+  local indent=$(printf "%*s" $(( ${#prefix} + 1 )) "")
+  local arg args=($1)
+  shift # we don't want to prepend spaces to the 1st arg, since it already
+  # gets the msg_prefix
+  for arg in $@
+  do
+    args+=("${indent}${arg}")
+  done
+
+  set -- "${args[@]}"
+fi
+
+# NOTE We need to join with an (empty string by default) here since otherwise
+# the following will result in a space char being prepended to the second
+# line:
+# $ echo::fancy "line1\n" "line2"
+# line1
+#  line2
+# ^-- we don't want that
+
+# TODO make the template configurable via an env var
+# local text=${emoji}${color}${(pj:$sep:)@}
+local text=${color}${msg_prefix}${color_reset}${(pj:$sep:)@}
+
+if [[ -z "$noreset" ]]
+then
+  text="${text}${color_reset}"
+fi
+
+echo $extra_args -e "$text"
+
+if [[ -n $notify ]]
+then
+  # NOTE for the icons, these were generate using the materialdesign svgs and:
+  # img::svg-change-color -r 64 '#F3BD6A' alert.svg ./mako/warning.png
+  local body=$(printf '%b' "$*") # interpret '\n' etc in body
+
+  # funcstack[-1] would be name of the func calling echo::fancy
+  local app_name=$funcstack[-1]
+
+  local icon_name="dialog-information"
+  case "$msg_type" in
+    success)
+      icon_name="dialog-ok-apply"
+      ;;
+    error)
+      icon_name="dialog-error"
+      ;;
+    warning)
+      icon_name="dialog-warning"
+      ;;
+    pending)
+      icon_name="process-working"
+      ;;
+    debug)
+      icon_name="utilities-terminal"
+      ;;
+    dryrun)
+      icon_name="system-run"
+      ;;
+  esac
+
+  notify-send --app-name "$app_name" \
+    --category "${msg_type:l}" \
+    --icon="$icon_name" \
+    "$body"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

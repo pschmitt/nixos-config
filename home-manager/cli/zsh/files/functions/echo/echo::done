@@ -1,0 +1,3 @@
+echo::success "${1:-Done!}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

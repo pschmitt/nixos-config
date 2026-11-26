@@ -1,0 +1,58 @@
+local usage="usage: $0 [--format DATE_FMT] START_DATE PROGRESS_PCT"
+
+local help date_fmt=(-f '%Y-%m-%d %H:%M:%S')
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {f,-format,-date-format}:=date_fmt
+date_fmt=$date_fmt[-1]
+
+if [[ -n $help ]]
+then
+  echo $usage
+  return 0
+fi
+
+if [[ $# -ne 2 ]]
+then
+  echo $usage >&2
+  return 1
+fi
+
+local start_date="$1"
+local progress="$2"
+
+# Convert the provided start date into a Unix timestamp.
+local start_ts
+if ! start_ts=$(date -d "$start_date" '+%s') || [[ -z "$start_ts" ]]
+then
+  echo_error "Invalid start date format."
+  return 1
+fi
+
+# Get the current Unix timestamp.
+local now_ts=$(date '+%s')
+
+# Calculate elapsed time (in seconds) since start.
+local elapsed=$(( now_ts - start_ts ))
+
+# Check for valid progress (should be > 0 and < 100).
+if [[ "$progress" -le 0 || "$progress" -ge 100 ]]
+then
+  echo_error "Invalid progress percentage: $progress"
+  return 1
+fi
+
+# Calculate the total time needed assuming a constant rate.
+# total_time = elapsed * (100 / progress)
+local total_time=$(bc -l <<< "$elapsed * 100 / $progress")
+
+# Calculate remaining time.
+local remaining=$(bc -l <<< "$total_time - $elapsed")
+
+# Calculate the finish time timestamp.
+local finish_ts=$(echo "$now_ts + $remaining" | bc -l | cut -d'.' -f1)
+
+# Format the finish timestamp into a human-readable date.
+date -d "@$finish_ts" "+${date_fmt}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

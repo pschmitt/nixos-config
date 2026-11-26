@@ -75,6 +75,7 @@ in
     ../../../home-manager/cli/git.nix
     ../../../home-manager/cli/tmux
     ../../../home-manager/cli/zsh/config/runtime.nix
+    ../../../home-manager/cli/zsh/files
     ../../../home-manager/cli/zsh/plugins
     ../../../home-manager/cli/workstation-tools.nix
     ../../../home-manager/cli/zsh/tools/termux/home-assistant-cli.nix

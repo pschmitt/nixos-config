@@ -1,0 +1,59 @@
+local -a error_msg=(-e "FAILED")
+local -a success_msg=(-s "Done!")
+local msg
+local noemoji
+local quiet
+
+zparseopts -K -D -- \
+  {m,-message}:=msg \
+  {s,o,-success-msg,-success-message}:=success_msg \
+  {e,-error,-error-msg,-error-message,f,-fail,-error-msg,-error-message}:=error_msg \
+  {E,-noemoji}=noemoji \
+  {q,-quiet}=quiet
+
+local cmd=("$@")
+local cmd_output
+
+if [[ -n "$msg" ]]
+then
+  msg="$msg[2]"
+else
+  msg="Executing '$cmd'..."
+fi
+
+# https://tldp.org/HOWTO/Bash-Prompt-HOWTO/x405.html
+# https://unix.stackexchange.com/a/360199/101415
+# Save cursor position
+tput sc
+
+echo::pending $noemoji "${msg} "
+
+if [[ -n "$quiet" ]]
+then
+  ${cmd} &>/dev/null
+else
+  cmd_output=$(${cmd} 2>&1)
+fi
+
+local rc="$?"
+
+# Clear to end of line
+tput el
+# Restore cursor position
+tput rc
+
+if [[ "$rc" -ne 0 ]]
+then
+  echo::error $noemoji "${msg} ${error_msg[2]}"
+
+  if [[ -z "$quiet" ]]
+  then
+    echo::debug -E "👇 Debug output below 👇\n${fg[default]}$cmd_output"
+  fi
+else
+  echo::success $noemoji "${msg} ${success_msg[2]}"
+fi
+
+return "$rc"
+
+# vim: set ft=zsh et ts=2 sw=2 :

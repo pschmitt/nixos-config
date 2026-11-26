@@ -1,0 +1,13 @@
+local ts="$1"
+
+if [[ -t 0 ]]
+then
+  ts="$1"
+  shift
+else
+  ts=$(cat)
+fi
+
+date -d "@${ts}"
+
+# vim: set ft=zsh et ts=2 sw=2 :
