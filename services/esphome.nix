@@ -6,7 +6,7 @@
 }:
 let
   # renovate: datasource=docker depName=esphome/esphome
-  esphomeVersion = "2026.11.0";
+  esphomeVersion = "2026.11.1";
   dataDir = "/srv/esphome";
   # 6052 = device-builder dashboard (HTTP), 6055 = peer-link (remote compile)
   exposedPorts = [
