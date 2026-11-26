@@ -200,47 +200,92 @@ in
     extra-keys = {
       keys = [
         [
-          "ESC"
+          {
+            key = "ESC";
+            display = "Esc";
+            background-color = "#502D3A";
+          }
           {
             key = "/";
             popup = "BACKSLASH";
           }
           {
             key = "-";
+            hold = "_";
             popup = "_";
           }
-          "HOME"
+          {
+            key = "HOME";
+            display = "Home";
+          }
           {
             key = "UP";
-            popup = "PGUP";
+            background-color = "#303030";
+            popup = {
+              key = "PGUP";
+              display = "PgUp";
+            };
           }
-          "END"
-          "PGUP"
+          {
+            key = "END";
+            display = "End";
+          }
+          {
+            key = "PGUP";
+            display = "PgUp";
+          }
           "|"
         ]
         [
-          "TAB"
+          {
+            key = "TAB";
+            display = "Tab";
+          }
           {
             key = "CTRL";
+            display = "Ctrl";
             hold = "SHIFT";
+            hold-display = "Shift";
           }
-          "ALT"
+          {
+            key = "ALT";
+            display = "Alt";
+          }
           {
             key = "LEFT";
-            popup = "HOME";
+            background-color = "#303030";
+            popup = {
+              key = "HOME";
+              display = "Home";
+            };
           }
           {
             key = "DOWN";
-            popup = "PGDN";
+            background-color = "#303030";
+            popup = {
+              key = "PGDN";
+              display = "PgDn";
+            };
           }
           {
             key = "RIGHT";
-            popup = "END";
+            background-color = "#303030";
+            popup = {
+              key = "END";
+              display = "End";
+            };
           }
-          "PGDN"
+          {
+            key = "PGDN";
+            display = "PgDn";
+          }
           {
             key = "BKSP";
-            popup = "DEL";
+            display = "Bksp";
+            popup = {
+              key = "DEL";
+              display = "Del";
+            };
           }
         ]
       ];
