@@ -182,6 +182,12 @@ in
     # The active tmux window as a filled accent pill.
     tmux.sidebar.style = "rounded";
     tmux.sidebar.right = true;
+    sidebar.left = {
+      show-sessions = true;
+      show-tmux-windows = false;
+      show-new-session = false;
+      show-keyboard-button = false;
+    };
     keyboard = {
       back-key = "back";
       shortcuts = {
