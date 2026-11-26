@@ -1,0 +1,12 @@
+local usage="usage: $0 TAB_ID"
+local tab_id="$1"
+
+if [[ -z "$tab_id" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+browser::tabs --json --filter ".id == \"${tab_id}\"" | jq -er '.[].url'
+
+# vim: set ft=zsh et ts=2 sw=2 :

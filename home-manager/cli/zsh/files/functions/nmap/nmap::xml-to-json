@@ -1,0 +1,19 @@
+yq -p xml -o json '.nmaprun' | \
+  jq -e '[
+    if (.host | type == "array")
+    then
+      .host[]
+    else
+      .host
+    end |
+    .ports.port = (
+      if (.ports.port | type != "array")
+      then
+        [.ports.port]
+      else
+        .ports.port
+      end
+    )
+  ]'
+
+# vim: set ft=zsh et ts=2 sw=2 :

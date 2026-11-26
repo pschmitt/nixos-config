@@ -1,6 +1,7 @@
 let
   topics = [
     "awk"
+    "browser"
     "calc"
     "cd"
     "countdown"
@@ -11,6 +12,9 @@ let
     "emoji"
     "file"
     "find"
+    "imagemagick"
+    "jq"
+    "nmap"
     "ntp"
     "osc8"
     "pulseaudio"

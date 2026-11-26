@@ -1,0 +1,41 @@
+local height_px="$1"
+
+if [[ -z $height_px ]]
+then
+  echo_error "height is required"
+  return 2
+fi
+
+local window_info
+if ! window_info=$(kitty +kitten icat --print-window-size 2>/dev/null)
+then
+  echo_error "failed to get kitty window size"
+  return 1
+fi
+
+local width_cells=$(awk -F': *' '$1 == "width" {print $2}' <<< "$window_info" | head -n1)
+
+local cell_height=$(awk -F': *' '$1 == "cell_height" {print $2}' <<< "$window_info" | head -n1)
+
+if [[ -z $width_cells || -z $cell_height ]]
+then
+  echo_error "failed to parse kitty window size"
+  return 1
+fi
+
+if ! [[ $width_cells =~ ^[0-9]+$ && $cell_height =~ ^[0-9]+$ ]]
+then
+  echno_error "invalid kitty window size"
+  return 1
+fi
+
+local height_cells=$(( (height_px + cell_height - 1) / cell_height ))
+
+if (( height_cells < 1 ))
+then
+  height_cells=1
+fi
+
+printf '%sx%s@0x0\n' "$width_cells" "$height_cells"
+
+# vim: set ft=zsh et ts=2 sw=2 :

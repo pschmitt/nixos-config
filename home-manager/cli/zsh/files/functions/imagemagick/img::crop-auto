@@ -1,0 +1,69 @@
+local usage="usage: $0 [--inplace] [--background COLOR] [--fuzz PERCENT] [--padding PX|PERCENT] [INPUT] [OUTPUT]"
+local help inplace background=(--background none) fuzz=(--fuzz 8%) padding=(--padding 2%)
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {i,-in-place,-inplace}=inplace \
+  {b,-bg,-background}:=background \
+  {f,-fuzz}:=fuzz \
+  {p,-pad,-padding}:=padding
+
+if [[ -n "$help" ]]
+then
+  echo "$usage" >&2
+  return 0
+fi
+
+background=$background[2]
+fuzz=$fuzz[2]
+padding=$padding[2]
+
+local input="${1:--}"
+local output="${2:-png:-}"
+local padding_px
+
+if [[ -n "$inplace" ]]
+then
+  if [[ "$input" == "-" ]]
+  then
+    echo_error "Sorry, can't do that (--inplace with stdin)"
+    return 1
+  fi
+  output="$input"
+fi
+
+if [[ "$padding" == *% ]]
+then
+  local padding_percent="${padding%%%}"
+  if [[ ! "$padding_percent" =~ '^[0-9]+$' ]]
+  then
+    echo_error "Padding percentage must be a non-negative integer"
+    echo "$usage" >&2
+    return 2
+  fi
+
+  local width height longest_side
+  width=$(img::size --width "$input") || return 1
+  height=$(img::size --height "$input") || return 1
+  (( longest_side = width > height ? width : height ))
+  (( padding_px = (longest_side * padding_percent + 99) / 100 ))
+elif [[ "$padding" =~ '^[0-9]+$' ]]
+then
+  padding_px="$padding"
+else
+  echo_error "Padding must be a non-negative integer or percentage"
+  echo "$usage" >&2
+  return 2
+fi
+
+magick "$input" \
+  -bordercolor "$background" \
+  -border 1 \
+  -fuzz "$fuzz" \
+  -trim \
+  +repage \
+  -shave 1x1 \
+  -bordercolor "$background" \
+  -border "${padding_px}x${padding_px}" \
+  "$output"
+
+# vim: set ft=zsh et ts=2 sw=2 :

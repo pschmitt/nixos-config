@@ -1,0 +1,11 @@
+# The active tab of the focused window (else of the first window, when no
+# browser window has the focus): id, title and URL, tab-separated.
+browser-daemon tabs --local --active --json | jq -er '
+  (map(select(.focused_window)) | if length > 0 then . else null end) as $focused
+  | ($focused // .)
+  | first
+  | [.id, .title, .url]
+  | @tsv
+'
+
+# vim: set ft=zsh et ts=2 sw=2 :

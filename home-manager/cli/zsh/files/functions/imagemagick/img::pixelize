@@ -1,0 +1,15 @@
+local usage="usage: $0 FILE"
+local help
+zparseopts -D -E -K -- {h,-help}=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local input="${1:--}"
+local output="${2:-png:-}"
+magick "$input" -scale 10% -scale 1000% "$output"
+
+# vim: set ft=zsh et ts=2 sw=2 :

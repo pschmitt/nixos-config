@@ -1,0 +1,4 @@
+local network="$1"
+grc nmap -sn -oG - "$network" | awk -v IGNORECASE=1 '/Status: Up/ {print $2}'
+
+# vim: set ft=zsh et ts=2 sw=2 :

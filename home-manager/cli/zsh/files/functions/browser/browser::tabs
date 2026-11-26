@@ -1,0 +1,157 @@
+local help
+local usage="usage: $0 [--compact] [--filter FILTER] [--json] [--urlmatch] [--title] [--exact] [--output FIELD] [--field FIELD] [SEARCH_TERM]"
+local urlmatch titlematch exact output json compact field show_ids
+local filter=(--filter true)
+
+zparseopts -D -K -E -- \
+  {h,-help}=help \
+  {i,-id,-ids}=show_ids \
+  {f,-flat,c,-compact}=compact \
+  {F,-filter}:=filter \
+  {j,-json}=json \
+  {u,-url,-urlmatch}=urlmatch \
+  {t,-title}=titlematch \
+  {e,-exact}=exact \
+  {o,-output}:=output \
+  -field:=field
+
+if [[ -n $help ]]
+then
+  print "$usage"
+  return
+fi
+
+filter=$filter[2]
+output=${output[2]:-${field[2]}}
+
+# Handle --output json equivalence to --json
+if [[ "$output" == "json" ]]
+then
+  json=1
+  unset output
+fi
+
+# Handle positional parameter for simple search
+local search_term="$1"
+
+# Prepare jq arguments
+local jq_args=(
+  --exit-status
+  --arg search_term "$search_term"
+  --argjson has_search_term "$(jq::to-bool "${search_term:+1}")"
+  --argjson exact_match "$(jq::to-bool "$exact")"
+  --argjson search_url "$(jq::to-bool "$urlmatch")"
+  --argjson search_title "$(jq::to-bool "$titlematch")"
+)
+
+# Add color output if terminal
+if [[ -t 1 ]]
+then
+  jq_args+=(--color-output)
+fi
+
+# Add compact output for JSON if requested
+if [[ -n "$compact" && -n $json ]]
+then
+  jq_args+=(--compact-output)
+fi
+
+# First stage: this machine's tabs from browser-daemon's local tab API
+# (~1 ms, no network), then the search filter
+local intermediate_res=$(browser-daemon tabs --local --json |
+  jq "${jq_args[@]}" '
+    map({id, title, url, browser: .client, active, audible, window, focused_window})
+
+    # Apply search filter if search term provided
+    | if $has_search_term then
+        map(select(
+          # Determine what fields to search
+          if ($search_url and ($search_title | not)) then
+            # URL only
+            if $exact_match then
+              (.url // "") == $search_term
+            else
+              (.url // "") | test($search_term; "i")
+            end
+          elif ($search_title and ($search_url | not)) then
+            # Title only
+            if $exact_match then
+              (.title // "") == $search_term
+            else
+              (.title // "") | test($search_term; "i")
+            end
+          else
+            # Both title and URL (default)
+            if $exact_match then
+              ((.title // "") == $search_term) or ((.url // "") == $search_term)
+            else
+              ((.title // "") | test($search_term; "i")) or ((.url // "") | test($search_term; "i"))
+            end
+          end
+        ))
+      else
+        .
+      end
+  ')
+
+# Second stage: apply user filter and flatten if needed
+local filter_expr="map(select($filter))"
+if [[ -n "$compact" ]]
+then
+  filter_expr+=" | .[]"
+fi
+
+local res
+if [[ "$filter" == "true" ]]
+then
+  # No user filter, just handle compact mode
+  if [[ -n "$compact" ]]
+  then
+    res=$(jq -er '.[]' <<< "$intermediate_res")
+  else
+    res="$intermediate_res"
+  fi
+else
+  # Apply user filter
+  res=$(jq -er "$filter_expr" <<< "$intermediate_res")
+fi
+
+local res_nocolor=$(nocolor <<< "$res")
+
+# Handle specific field output
+if [[ -n "$output" ]]
+then
+  if [[ -n $json ]]
+  then
+    # JSON output with specific field(s) as array
+    printf '%s' "$res_nocolor" | jq -e --arg field "$output" 'map(.[$field])'
+  else
+    # Raw field values
+    jq -er --arg field "$output" '.[] | .[$field] // ""' <<< "$res_nocolor"
+  fi
+  return
+fi
+
+# Handle JSON output mode
+if [[ -n $json ]]
+then
+  if [[ -z "$res" ]] || [[ $filter != "true" && $res_nocolor == "[]" ]]
+  then
+    # no matching tabs
+    return 1
+  fi
+
+  printf '%s' "$res"
+  return 0
+fi
+
+# Default: pretty table output
+local tsv_args=()
+if [[ -z $show_ids ]]
+then
+  tsv_args+=(-i id)
+fi
+jq -er '[.[] | {id, browser, title, url}]' <<< "$res_nocolor" | \
+  tsv::pretty-from-json $tsv_args
+
+# vim: set ft=zsh et ts=2 sw=2 :

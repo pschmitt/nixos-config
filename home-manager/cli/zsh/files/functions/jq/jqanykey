@@ -1,0 +1,8 @@
+# Recursive jq search for key (has to be an exact match!)
+# https://stackoverflow.com/a/47592887
+# https://stedolan.github.io/jq/manual/#RecursiveDescent:..
+local search_key="$1"
+shift
+jq --arg search "$search_key" '.. | .[$search]? | select(. != null)' $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

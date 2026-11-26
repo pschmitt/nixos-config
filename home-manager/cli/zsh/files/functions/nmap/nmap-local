@@ -1,0 +1,85 @@
+# NMAP local network
+local dev_type=(-d wifi)
+local wired
+local wireless
+zparseopts -D -K \
+  d:=dev_type -device-type:=dev_type \
+  -wireless=wireless -wired=wired \
+  w=wired
+
+if [[ "${#dev_type}" -gt 1 ]]
+then
+  dev_type=${dev_type[2]}
+elif [[ -n "$wireless" ]]
+then
+  dev_type=wifi
+elif [[ -n "$wired" ]]
+then
+  dev_type=ethernet
+fi
+
+local default_devices=($(default_gw_dev))
+local dev
+
+case "${#default_devices}" in
+  0)
+    echo_failure "Unable to determine default NIC (gw)"
+    return 1
+    ;;
+  1)
+    dev=${default_devices[1]}
+    ;;
+  *)
+    local i
+
+    case "$dev_type" in
+      first|auto)
+        i=1
+        ;;
+      wlan|wifi|wireless|w)
+        echo_info "Using first wireless nic"
+        i=${default_devices[(i)w*]}
+        ;;
+      ethernet|eth|wired|e)
+        echo_info "Using first wired nic"
+        i=${default_devices[(i)e*]}
+        ;;
+      *)
+        echo_info "Using device ${dev_type}*"
+        i=${default_devices[(i)${dev_type}*]}
+        ;;
+    esac
+
+    if [[ $i -gt ${#default_devices} ]]
+    then
+      echo_failure "Could not find device matching ${dev_type}*"
+      return 2
+    fi
+
+    dev=${default_devices[$i]}
+    ;;
+esac
+
+echo_debug "Resolved device to $dev"
+
+local dev_info=$(ip -j addr show "$dev" | \
+  jq '.[].addr_info[] | select(.family == "inet")')
+local lan_nw=$(jq -r \
+  '(.local | sub("\\.[0-9]+$"; ".0")) + "/" + (.prefixlen | tostring)' \
+  <<< "$dev_info")
+
+echo_info -E "👀 Scanning ${lan_nw}"
+
+local extra_args=(-e "$dev")
+
+if [[ -n "$*" ]]
+then
+  extra_args+=($@)
+else
+  extra_args+=(-sn)
+fi
+
+echo_debug "$ nmap ${extra_args} \"${lan_nw}\""
+sudo nmap ${extra_args[@]} "$lan_nw"
+
+# vim: set ft=zsh et ts=2 sw=2 :

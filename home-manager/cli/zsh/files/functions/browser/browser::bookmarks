@@ -1,0 +1,5 @@
+local query="SELECT i.title, u.url FROM items i JOIN urls u ON i.urlId = u.id"
+browser::sqlite --db weave/bookmarks.sqlite $query | \
+  sort -k 1 | column -t -s $'\t'
+
+# vim: set ft=zsh et ts=2 sw=2 :

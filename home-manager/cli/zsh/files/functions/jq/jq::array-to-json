@@ -1,0 +1,15 @@
+# NOTE jq::array-to-json -n return null instead of an empty array if -n is
+# provided
+local null
+zparseopts -D -E -- {n,-null}=null
+
+if (( $# == 0 ))
+then
+  local val=[]
+  [[ -n "$null" ]] && val=null
+  printf '%s\n' $val
+  return 0
+fi
+printf '%s\n' "$@" | jq -cRn '[inputs]'
+
+# vim: set ft=zsh et ts=2 sw=2 :

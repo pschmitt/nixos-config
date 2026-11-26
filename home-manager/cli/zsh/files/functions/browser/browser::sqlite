@@ -1,0 +1,13 @@
+local db=(--database weave/bookmarks.sqlite)
+local sep=(--separator $'\t')
+
+zparseopts -D -E -K -- \
+  {d,-db,-db-name,-database}:=db \
+  {s,-sep,-separator}:=sep
+
+local query="$*"
+local file=~ffx/${db[2]}  # expands ffx
+
+sqlite3 -separator "$sep[2]" "file:${file}?immutable=1" "${query}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

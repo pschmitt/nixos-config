@@ -1,0 +1,13 @@
+local ip_addr
+if network::is-at-home
+then
+  ip_addr=$(network::default-lan-ip)
+else
+  ip_addr=$(network::public-ip)
+fi
+
+local nmap_host=home
+echo_info "nmap'ing $ip_addr from ${nmap_host}"
+ssh ${nmap_host} nmap $@ $ip_addr
+
+# vim: set ft=zsh et ts=2 sw=2 :

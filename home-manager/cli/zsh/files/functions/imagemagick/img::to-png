@@ -1,0 +1,70 @@
+local usage="usage: $0 [-w WIDTH] [INPUT] [OUTPUT]"
+local help width background=(-b none)
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {w,-width,s,-size,r,-resize}:=width \
+  {b,-bg,-background}:=background
+background=$background[2]
+width=$width[2]
+
+local input="${1:--}"
+local output="${2:--}"
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+# If a width is specified, compute a suitable density.
+# Default base density: 72 (common baseline for vectors).
+# We'll load the image at 72 DPI and identify its width.
+# Then compute a density scaling factor so that we have enough pixels for the requested width.
+#
+# For example, if original_width=200px at 72 DPI, and requested width=500,
+# new_density = (500 / 200) * 72 = 180 DPI
+#
+# We then load the image at that density and finally apply -resize for crisp final scaling.
+
+local extra_args=()
+if [[ -z "$width" ]]
+then
+  # No width specified, just convert as-is
+  magick \
+    -background ${background} \
+    "$input" \
+    png:"${output}"
+  return "$?"
+fi
+
+# gotta copy the input to a temp file if it's stdin
+# b/c we need to read it a few times to determine the size and res
+if [[ "$input" == "-" ]]
+then
+  local tmpfile
+  tmpfile=$(mktemp -t img.XXXXXX)
+  trap "rm -f '$tmpfile'" EXIT
+  cat >! $tmpfile
+  input="$tmpfile"
+fi
+
+local default_density=${$(img::size -n --density "$input"):-96}
+local original_width=$(magick identify -density $default_density \
+  -format '%w' "$input")
+
+local density="$default_density"
+if [[ -n "$original_width" && "$original_width" -gt 0 ]]
+then
+  density=$(( (width * default_density) / original_width ))
+  # Ensure density is at least $default_density
+  (( density < default_density )) && density=$default_density
+fi
+
+magick \
+  -density "$density" \
+  -background "$background" \
+  "$input" \
+  -resize "${width}" \
+  png:"${output}"
+
+# vim: set ft=zsh et ts=2 sw=2 :

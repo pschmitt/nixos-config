@@ -1,0 +1,19 @@
+local usage="usage: $0 [--resize WxH] FILE TARGET_FILESIZE [OUTPUT]"
+local help resize
+zparseopts -D -E -K -- {h,-help}=help {r,-resize}:=resize
+resize=${resize[2]}
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local input="${1:--}"
+local target="$2"
+local output="${3:-jpg:-}"
+
+magick "$input" ${resize:+-resize $resize} \
+  -define "jpeg:extent=$target" "$output"
+
+# vim: set ft=zsh et ts=2 sw=2 :

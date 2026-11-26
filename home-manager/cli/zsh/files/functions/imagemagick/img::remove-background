@@ -1,0 +1,71 @@
+local usage="usage: $0 [--inplace] [--no-crop] [INPUT] [OUTPUT]"
+local help inplace no_crop
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {i,-in-place,-inplace}=inplace \
+  {-no-crop}=no_crop
+
+if [[ -n "$help" ]]
+then
+  echo "$usage" >&2
+  return 0
+fi
+
+local input="${1:--}"
+local output="${2:-png:-}"
+
+if [[ -n $inplace ]]
+then
+  if [[ "$input" == "-" ]]
+  then
+    echo_error "Sorry, can't do that (--inplace with stdin)"
+    return 1
+  fi
+  output="$input"
+fi
+
+local tmpdir
+tmpdir=$(mktemp -d)
+trap "rm -rf '$tmpdir'" EXIT
+
+local real_input="$input"
+if [[ "$input" == "-" ]]
+then
+  local tmpfile="$tmpdir/input"
+  cat >! "$tmpfile"
+
+  local ext
+  ext=$(img::type "$tmpfile")
+  if [[ -n "$ext" ]]
+  then
+    real_input="$tmpfile.$ext"
+    mv "$tmpfile" "$real_input"
+  else
+    real_input="$tmpfile"
+  fi
+fi
+
+local real_output="$output"
+local cat_output=
+if [[ "$output" == "png:-" || $output == "-" ]]
+then
+  real_output="$tmpdir/output.png"
+  cat_output=1
+fi
+
+backgroundremover -i "$real_input" -o "$real_output" >&2 || return 1
+# withoutbg "$real_input" -o "$real_output" >&2 || return 1
+
+if [[ -z "$no_crop" ]]
+then
+  img::crop-auto --inplace --background none "$real_output" || return 1
+fi
+
+img::cat "$real_output"
+
+if [[ -n "$cat_output" ]]
+then
+  cat "$real_output"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

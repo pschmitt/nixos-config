@@ -1,0 +1,55 @@
+local usage="usage: $0 [--resize WIDTH] COLOR [INPUT] [OUTPUT]"
+local help resize
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {w,-width,s,-size,r,-resize}:=resize
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+fi
+
+local color="$1"
+
+if [[ -z "$color" ]]
+then
+  echo_error "Color is required"
+  echo "$usage" >&2
+  return 2
+fi
+
+local input="$2"
+local output="$3"
+
+{
+  if [[ -n "$input" && "$input" != "-" ]]
+  then
+    cat "$input"
+  else
+    cat
+  fi
+} | {
+  sed -e 's/\(<path[^>]*\)fill="[^"]*"/\1/g' \
+      -e "s/<path /<path fill=\"${color}\" /g"
+} | {
+  # to stdout
+  if [[ -z "$output" ]]
+  then
+    cat
+    return
+  fi
+
+  echo_info "Writing to $output"
+  case "$output" in
+    *.png)
+      img::to-png $resize - "$output"
+      ;;
+    *)
+      # just write
+      cat > "$output"
+      ;;
+  esac
+}
+
+# vim: set ft=zsh et ts=2 sw=2 :

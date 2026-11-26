@@ -1,0 +1,5 @@
+local filter="import \"plib\" as p; ${@[-1]}"
+set -- ${@[1,-2]}  # pop last arg
+jq -L "${XDG_CONFIG_HOME}/jq" $@ $filter
+
+# vim: set ft=zsh et ts=2 sw=2 :

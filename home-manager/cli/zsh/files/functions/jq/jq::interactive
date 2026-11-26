@@ -1,0 +1,15 @@
+local -a extra_args
+zparseopts -D -K -E -a -- \
+  extra_args \
+  {r,-raw,-raw-output}
+
+local query=${@[-1]:-.} # default query: '.'
+set -- ${@[1,-2]}
+
+fzf::interactive-cmd \
+  --prompt "jq ${extra_args}> " \
+  --query "$query" \
+  "jq --color-output ${extra_args}" \
+  $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

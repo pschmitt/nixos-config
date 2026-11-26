@@ -1,0 +1,19 @@
+# Try to focus tab (works only if tab id provided)
+if browser-daemon tabs --local activate "$1" &>/dev/null
+then
+  return 0
+fi
+
+# Search for target tab
+local crit="$1"
+local tab_id
+
+if ! tab_id=$(browser::tabs --field id $@ | head -1) || [[ -z $tab_id ]]
+then
+  echo_warning "No matching tab found."
+  return 1
+fi
+
+browser-daemon tabs --local activate "$tab_id"
+
+# vim: set ft=zsh et ts=2 sw=2 :

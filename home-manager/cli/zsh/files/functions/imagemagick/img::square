@@ -1,0 +1,80 @@
+local usage="usage: $0 [-s SIZE] [--crop | --color FILL_COLOR] [INPUT] [OUTPUT]"
+local help size fill_color=(-f white) crop
+
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {C,-crop}=crop \
+  {c,f,-fill,-fill-color}:=fill_color \
+  {s,-size}:=size
+
+fill_color=$fill_color[2]
+size=$size[2]
+
+local input="${1:--}"
+local output="${2:-png:-}"
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+if [[ $input == "-" ]]
+then
+  # In case the input is read from stdin, save it to a temporary file first.
+  # This is required since we will access the file up to 2 times (once to
+  # determine the size and again to actually produce the output)
+  local tmpfile=$(mktemp -t img.XXXXXX)
+  cat >! "$tmpfile"
+  trap "rm -f '$tmpfile'" EXIT
+  input=$tmpfile
+fi
+
+# Determine size if not provided
+if [[ -z "$size" ]]
+then
+  local fmt='%[fx:max(w,h)]'
+  [[ -n "$crop" ]] && fmt="%[fx:min(w,h)]"
+  size=$(identify -format "$fmt" "$input")
+
+  if [[ -z "$size" ]]
+  then
+    echo_error "Could not determine size of image"
+    return 1
+  fi
+fi
+
+if [[ -n "$crop" ]]
+then
+  # Crop the image to a square
+  magick "$input" \
+    -gravity center \
+    -crop "${size}x${size}+0+0" \
+    +repage \
+    "$output"
+  return "$?"
+fi
+
+# Handle blur as a special fill color
+if [[ "$fill_color" == "blur" ]]
+then
+  magick "$input" \
+    \( -clone 0 -resize "${size}x${size}!" -blur 0x8 \) \
+    \( -clone 0 -resize "${size}x${size}" \) \
+    -delete 0 \
+    -gravity center \
+    -compose over \
+    -composite \
+    "$output"
+  return "$?"
+fi
+
+# Fill with color
+magick "$input" \
+  -resize "${size}x${size}" \
+  -background "$fill_color" \
+  -gravity center \
+  -extent "${size}x${size}" \
+  "$output"
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,16 @@
+local usage="usage: $0 [-r RADIUS] FILE [OUTPUT]"
+local help radius=(-r 8)
+zparseopts -D -E -K -- {h,-help}=help {r,-radius}:=radius
+radius=$radius[2]
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+local input="${1:--}"
+local output="${2:-png:-}"
+magick "$input" -blur 0x$radius "$output"
+
+# vim: set ft=zsh et ts=2 sw=2 :

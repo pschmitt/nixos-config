@@ -1,0 +1,82 @@
+(( $+commands[jc] )) || return
+(( $+commands[jq] )) || return
+
+local profile_name="$1"
+local root
+local profiles_ini
+local profiles_json
+local profile_path
+local available_profiles
+
+for root in \
+  "${HOME}/.mozilla/firefox" \
+  "${XDG_CONFIG_HOME:-${HOME}/.config}/mozilla/firefox"
+do
+  profiles_ini="${root}/profiles.ini"
+  [[ -r "${profiles_ini}" ]] || continue
+
+  if ! profiles_json="$(jc -q --ini < "${profiles_ini}")"
+  then
+    continue
+  fi
+
+  if profile_path="$(jq -er --arg profile_name "${profile_name}" '
+        to_entries
+        | map(select(.key | test("^Profile[0-9]+$")))
+        | map(.value)
+        | if $profile_name != "" then
+            map(select(.Name == $profile_name))
+          else
+            map(select(.Default == "1"))
+          end
+        | .[0].Path
+      ' <<< "${profiles_json}")"
+  then
+    if [[ "${profile_path}" = /* ]]
+    then
+      print -r -- "${profile_path}"
+    else
+      print -r -- "${root}/${profile_path}"
+    fi
+    return 0
+  fi
+
+  available_profiles="$(jq -er --arg root "${root}" '
+    to_entries
+    | map(select(.key | test("^Profile[0-9]+$")))
+    | map(.value)
+    | map(
+        [
+          (.Name // "<unnamed>"),
+          (
+            if (.Path // "") | startswith("/") then
+              .Path
+            else
+              $root + "/" + (.Path // "")
+            end
+          )
+        ] | @tsv
+      )
+    | .[]
+  ' <<< "${profiles_json}" 2>/dev/null)"
+
+  if [[ -n "${profile_name}" ]]
+  then
+    echo_error "Failed to determine Firefox profile path for profile '${profile_name}'"
+  else
+    echo_error "Failed to determine default Firefox profile path"
+  fi
+
+  if [[ -n "${available_profiles}" ]]
+  then
+    echo_error "Available Firefox profiles:"
+    print -r -- "${available_profiles}" >&2
+  fi
+
+  return 1
+done
+
+echo_error "Failed to determine Firefox profiles directory"
+return 1
+
+# vim: set ft=zsh et ts=2 sw=2 :

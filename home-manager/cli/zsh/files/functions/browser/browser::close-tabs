@@ -1,0 +1,61 @@
+local help dry_run urlmatch
+local usage="usage: $0 [--dry-run] [--url] TITLE"
+
+zparseopts -D -K -E -- \
+  {h,help}=help \
+  {k,-dry-run,-dryrun}=dry_run \
+  {u,-url}=urlmatch
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return
+elif [[ -z "$*" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+# Get the search results as a JSON array
+local search_result=$(browser::tabs --json $urlmatch $*)
+
+if [[ -z "$search_result" || "$search_result" == "[]" ]]
+then
+  echo_warning "No matching tabs found."
+  return 1
+fi
+
+# Process each tab from the JSON array
+local tabs_data
+tabs_data=$(jq -er '.[] | .id + "\t" + (.title // "")' <<< "$search_result")
+
+if [[ -z "$tabs_data" ]]
+then
+  echo_warning "No matching tabs found."
+  return 1
+fi
+
+local id title
+while IFS=$'\t' read -r id title
+do
+  # Validate that we have a proper tab ID
+  if [[ -z "$id" ]]
+  then
+    echo_warning "Empty tab ID found, skipping"
+    continue
+  fi
+
+  if [[ -n "$dry_run" ]]
+  then
+    echo_info "DRY RUN: Would close tab '$title' (ID: $id)"
+    continue
+  fi
+
+  echo_info "Closing tab '$title' (ID: $id)"
+  if ! browser-daemon tabs --local close "$id" 2>/dev/null
+  then
+    echo_error "Failed to close tab '$title' (ID: $id)"
+  fi
+done <<< "$tabs_data"
+
+# vim: set ft=zsh et ts=2 sw=2 :

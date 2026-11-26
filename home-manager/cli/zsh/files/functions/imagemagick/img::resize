@@ -1,0 +1,33 @@
+local usage="usage: $0 [--inplace] [-s SIZE] FILE"
+local help size inplace
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {s,-size}:=size \
+  {i,-in-place,-inplace}=inplace
+size=$size[2]
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+if [[ -z "$size" ]]
+then
+  echo_error "Size is required"
+  echo "$usage" >&2
+  return 2
+fi
+
+local input="${1:--}"
+local output="${2:-png:-}"
+
+if [[ -n $inplace ]]
+then
+  output="$input"
+fi
+
+# NOTE the trailing '>' is a resize-only-if-larger flag.
+magick "$input" -resize ${size}x${size}\> $output
+
+# vim: set ft=zsh et ts=2 sw=2 :

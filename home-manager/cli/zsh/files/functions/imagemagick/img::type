@@ -1,0 +1,10 @@
+local img_type
+
+if ! img_type=$(magick identify -format '%m\n' -- "$@" 2>/dev/null)
+then
+  return 1
+fi
+
+string::tolower "$img_type"
+
+# vim: set ft=zsh et ts=2 sw=2 :

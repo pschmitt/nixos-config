@@ -1,0 +1,29 @@
+# Find path to key=value in json
+local ignore_case
+zparseopts -D -K -E -- \
+  {i,-ignore-case,-ignorecase}=ignore_case
+
+local -a awk_args
+if [[ -n "$ignore_case" ]]
+then
+  awk_args=(-v IGNORECASE=1)
+fi
+
+local key="$1"
+local value="$2"
+shift 2
+
+# Explanation of the substitution:
+# Given the string: "CentOS Linux 7 (Core)"
+# (q) quotes -> "CentOS\ Linux\ 7\ \(Core\)"
+# Then we remove the '\ ' again since awk outputs an error otherwise:
+# awk: cmd. line:1: warning: regexp escape sequence `\ ' is not a known regexp operator
+# -> We end up with "CentOS Linux 7 \(Core\)"
+# NOTE Since we use "? we cannot differentiate between str, int etc.
+jqpaths --values $@ | \
+  awk $awk_args "/${key} = \"?${${(q)value}//\\ / }\"?/ { print \$1 }"
+
+# TODO We could try to verify if the returned path value is correct by using
+# jq again with the path
+
+# vim: set ft=zsh et ts=2 sw=2 :

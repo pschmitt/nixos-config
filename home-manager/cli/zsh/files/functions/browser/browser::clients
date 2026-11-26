@@ -1,0 +1,26 @@
+# The browsers on this machine connected to browser-daemon's local tab API
+# (browser nodes).
+local help json_output
+local usage="usage: $0 [--json]"
+zparseopts -D -K -E -- \
+  {h,-help}=help \
+  {j,-json}=json_output
+
+if [[ -n $help ]]
+then
+  print "$usage"
+  return
+fi
+
+local res
+res=$(browser-daemon nodes --local --json) || return
+
+if [[ -n $json_output ]]
+then
+  jq -e '.browsers' <<< "$res"
+else
+  jq -e '.browsers | map({name, browser, tabs, version})' <<< "$res" | \
+    tsv::pretty-from-json
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

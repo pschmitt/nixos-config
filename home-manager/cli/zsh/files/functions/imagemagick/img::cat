@@ -1,0 +1,210 @@
+local usage="usage: $0 [--height PX] [--align ALIGN] [-p PIXELATION] [FILE]
+
+PIXELATION: k(itty) | s(ixel) | i(term2) | h(alf) | q(uarter), like timg -p
+(default: \$IMG_PIXELATION)"
+
+local help gui height_opt align=(-a left)
+zparseopts -D -E -K -- \
+  {h,-help}=help \
+  {g,-gui}=gui \
+  {H,-height}:=height \
+  {A,-align}:=align \
+  {p,-pixelation}:=pixelation
+
+align=$align[2] # left|right|center
+height=$height[2]
+# -p wins over $IMG_PIXELATION, which wins over timg's own $TIMG_PIXELATION
+pixelation=${pixelation[2]:-${IMG_PIXELATION:-$TIMG_PIXELATION}}
+
+# normalize the pixelation name to timg's single-letter form
+if [[ -n $pixelation ]]
+then
+  case "$pixelation" in
+    k|kitty) pixelation=k ;;
+    s|sixel|sixels) pixelation=s ;;
+    i|iterm|iterm2) pixelation=i ;;
+    h|half) pixelation=h ;;
+    q|quarter) pixelation=q ;;
+    *)
+      print -u2 "invalid pixelation: $pixelation (use k, s, i, h or q)"
+      return 2
+      ;;
+  esac
+fi
+
+if [[ -n $help ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+if [[ -n $height ]]
+then
+  case "$height" in
+    *px)
+      height="${height%px}"
+      ;;
+  esac
+
+  if [[ ! $height =~ ^[0-9]+$ ]]
+  then
+    print -u2 "invalid height: $height"
+    return 2
+  fi
+fi
+
+if [[ ! -t 1 ]]
+then
+  if [[ "$#" -gt 0 && "$1" != "-" ]]
+  then
+    cat -- "$1"
+    return "$?"
+  fi
+
+  cat
+  return "$?"
+fi
+
+local -a viewer
+local delay_deletion
+local ext mime_type tmp_target tmpfile
+
+if [[ -n $VIEWER ]]
+then
+  viewer=($=VIEWER)
+elif [[ -n $gui ]]
+then
+  if is_termux
+  then
+    viewer=(termux-open)
+    delay_deletion=1
+  else
+    viewer=(eog)
+  fi
+elif [[ -n $pixelation ]]
+then
+  # Pick a tool that can speak the requested protocol: timg handles all of
+  # them, chafa all but kitty-in-tmux, kitten icat only the kitty protocol.
+  if (( $+commands[timg] ))
+  then
+    viewer=(timg -p$pixelation)
+  elif [[ $pixelation == k ]] && (( $+commands[kitten] ))
+  then
+    viewer=(kitten icat --transfer-mode file --align $align)
+  elif [[ $pixelation == k ]] && (( $+commands[kitty] ))
+  then
+    viewer=(kitty +kitten icat --transfer-mode file --align $align)
+  elif (( $+commands[chafa] ))
+  then
+    case "$pixelation" in
+      k) viewer=(chafa -f kitty) ;;
+      s) viewer=(chafa -f sixels) ;;
+      i) viewer=(chafa -f iterm) ;;
+      *) viewer=(chafa -f symbols) ;;
+    esac
+  fi
+# TODO handle the case where SSH_CONNECTION is set
+elif is_termux
+then
+  viewer=(timg)
+elif (( $+commands[timg] ))
+then
+  viewer=(timg)
+elif [[ -n $KITTY_WINDOW_ID ]]
+then
+  viewer=(kitty +kitten icat --transfer-mode file --align $align)
+
+  if [[ -n $height ]]
+  then
+    local kitty_place
+    if kitty_place=$(img::kitty-place-from-height "$height")
+    then
+      viewer+=(--place "$kitty_place")
+      unset height
+    fi
+  fi
+fi
+
+
+if (( ${#viewer[@]} == 0 ))
+then
+  echo_warning "No viewer found. Please set the VIEWER environment variable."
+  return 127
+fi
+
+if [[ -t 0 ]]
+then
+  "${viewer[@]}" "$@"
+  return "$?"
+fi
+
+case "${viewer[1]}" in
+  termux-open|eog)
+    # These viewers are non-blocking, so we need to delay deletion of the
+    # temporary file.
+    delay_deletion=1
+    ;;
+esac
+
+tmpfile=$(mktemp -t img.XXXXXX)
+
+# delete the file after the viewer is closed and/or a fixed delay
+trap "${delay_deletion:+sleep 5;} rm -f '$tmpfile'*" EXIT
+
+cat >! "$tmpfile"
+
+if [[ ! -s "$tmpfile" ]]
+then
+  echo_error "No image data received on stdin"
+  return 1
+fi
+
+if ! ext=$(img::type "$tmpfile")
+then
+  ext=""
+fi
+
+if [[ -z $ext ]] && (( $+commands[file] ))
+then
+  mime_type=$(file --brief --mime-type "$tmpfile" 2>/dev/null)
+  case "$mime_type" in
+    image/png)
+      ext="png"
+      ;;
+    image/jpeg)
+      ext="jpeg"
+      ;;
+    image/gif)
+      ext="gif"
+      ;;
+    image/webp)
+      ext="webp"
+      ;;
+    image/avif)
+      ext="avif"
+      ;;
+    image/svg+xml)
+      ext="svg"
+      ;;
+  esac
+fi
+
+if [[ -n $ext ]]
+then
+  tmp_target="$tmpfile.$ext"
+  mv "$tmpfile" "$tmp_target"
+else
+  tmp_target="$tmpfile"
+fi
+
+if [[ -n $height ]]
+then
+  if ! img::resize --inplace -s "x${height}" "$tmp_target"
+  then
+    echo_warning "failed to resize image to height=${height}px"
+  fi
+fi
+
+"${viewer[@]}" "$tmp_target"
+
+# vim: set ft=zsh et ts=2 sw=2 :

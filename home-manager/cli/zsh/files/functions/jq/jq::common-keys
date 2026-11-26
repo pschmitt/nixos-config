@@ -1,0 +1,3 @@
+jqp 'p::common_first_level_keys' $@
+
+# vim: set ft=zsh et ts=2 sw=2 :

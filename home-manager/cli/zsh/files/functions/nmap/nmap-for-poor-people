@@ -1,0 +1,24 @@
+local host="$1"
+shift
+local ports=("$@")
+
+if [[ -z "$host" ]] || [[ -z "$ports" ]]
+then
+  echo "Usage: HOST PORT [PORT...]" >&2
+  return 2
+fi
+
+local msg port
+for port in ${ports}
+do
+  msg="${host}:${port}"
+
+  if bash -c "echo > /dev/tcp/${host}/${port}" 2>/dev/null
+  then
+    echo_success "$msg open"
+  else
+    echo_error "$msg CLOSED"
+  fi
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,12 @@
+local ip_addr=$(network::default-lan-ip)
+
+if [[ -z "$ip_addr" ]]
+then
+  echo_error "Could not determine default LAN IP"
+  return 1
+fi
+
+echo_info "nmap'ing $ip_addr"
+grc nmap $@ $ip_addr
+
+# vim: set ft=zsh et ts=2 sw=2 :

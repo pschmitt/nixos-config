@@ -1,0 +1,30 @@
+local usage="Usage: $0 CRITERIA [CRITERIA...]"
+local help
+zparseopts -D -E -K -- {h,-help}=help
+
+if [[ -n "$help" ]]
+then
+  echo "$usage"
+  return 0
+fi
+
+if [[ -z "$1" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
+
+jq -erc 'if . | type == "array" then .[] else . end' | \
+awk -v IGNORECASE=1 -v patterns="${(j:,:)@}" '
+  BEGIN { split(patterns, patt, ",") }
+  {
+    for (i in patt) {
+      if ($0 ~ patt[i]) {
+        print $0
+        break
+      }
+    }
+  }
+' | jq -es
+
+# vim: set ft=zsh et ts=2 sw=2 :

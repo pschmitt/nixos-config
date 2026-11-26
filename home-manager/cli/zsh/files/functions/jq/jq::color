@@ -1,0 +1,22 @@
+local help no_color=$NO_COLOR
+zparseopts -D -E -- \
+  {h,-help}=help \
+  {-no-color,-nocolor}=no_color
+
+if [[ -n "$help" ]]
+then
+  jq $help "$@"
+  return
+fi
+
+local filter="import \"colors\" as c; ${@[-1]}"
+set -- ${@[1,-2]}  # pop last arg
+
+if [[ -n "$no_color" ]]
+then
+  jq -C -L "${XDG_CONFIG_HOME}/jq" $@ $filter | nocolor
+else
+  jq -L "${XDG_CONFIG_HOME}/jq" $@ $filter
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

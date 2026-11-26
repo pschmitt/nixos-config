@@ -1,0 +1,3 @@
+nmap-me-json --open $@ | jq -er '.[0].ports.port[]["+@portid"]'
+
+# vim: set ft=zsh et ts=2 sw=2 :

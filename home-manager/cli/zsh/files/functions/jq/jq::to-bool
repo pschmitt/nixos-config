@@ -1,0 +1,4 @@
+local val="$1"
+[[ -n $val ]] && print true || print false
+
+# vim: set ft=zsh et ts=2 sw=2 :

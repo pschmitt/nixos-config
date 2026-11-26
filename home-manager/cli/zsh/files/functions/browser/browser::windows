@@ -1,0 +1,32 @@
+# This machine's browser windows: id, tab count, browser, focus.
+local help json_output
+local usage="usage: $0 [--json]"
+zparseopts -D -K -E -- \
+  {h,-help}=help \
+  {j,-json}=json_output
+
+if [[ -n $help ]]
+then
+  print "$usage"
+  return
+fi
+
+local res
+res=$(browser-daemon tabs --local --json | jq -e '
+  group_by([.client, .window])
+  | map({
+      window_id: "\(.[0].client):w\(.[0].window)",
+      tab_count: length,
+      browser: .[0].client,
+      focused: any(.[]; .focused_window)
+    })
+') || return
+
+if [[ -n $json_output ]]
+then
+  print -r -- "$res"
+else
+  tsv::pretty-from-json <<< "$res"
+fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

@@ -1,0 +1,4 @@
+nmap-json --open $@ | \
+  jq -er '.[] | .address["+@addr"] + ":" + .ports.port[]["+@portid"]'
+
+# vim: set ft=zsh et ts=2 sw=2 :

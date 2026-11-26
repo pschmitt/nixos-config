@@ -1,0 +1,8 @@
+local query="SELECT datetime(v.visit_date/1000000, 'unixepoch'), p.title, p.url
+FROM moz_places p
+JOIN moz_historyvisits v ON p.id = v.place_id
+GROUP BY p.url
+ORDER BY last_visit_date DESC"
+browser::sqlite --db places.sqlite $query | sort | column -t -s $'\t'
+
+# vim: set ft=zsh et ts=2 sw=2 :

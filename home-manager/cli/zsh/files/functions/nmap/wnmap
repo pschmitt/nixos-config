@@ -1,0 +1,25 @@
+# NMAP wrapped in watch
+local interval=(-n 2)
+local notitle
+local differences
+
+zparseopts -D -K \
+  n:=interval -interval:=interval \
+  t=notitle -no-title=notitle \
+  d=differences -differences=differences
+
+local extra_args=()
+if [[ -n "$notitle" ]]
+then
+  extra_args+=("--no-title")
+fi
+
+if [[ -n "$differences" ]]
+then
+  extra_args+=("--differences")
+fi
+
+watch --color -n "$interval[2]" $extra_args[@] \
+  "${commands[grc]:+grc --colour=on} nmap $*"
+
+# vim: set ft=zsh et ts=2 sw=2 :

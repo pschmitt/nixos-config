@@ -1,0 +1,9 @@
+local nmap_xml
+if ! nmap_xml=$(nmap $@ -oX -)
+then
+  return 1
+fi
+
+nmap::xml-to-json <<< "$nmap_xml"
+
+# vim: set ft=zsh et ts=2 sw=2 :

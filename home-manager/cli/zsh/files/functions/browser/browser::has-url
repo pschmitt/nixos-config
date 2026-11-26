@@ -1,0 +1,16 @@
+local quiet
+zparseopts -D -E -K -- \
+  {e,-exact}=exact \
+  {q,-quiet}=quiet
+
+local url="$1"
+local extra_args=()
+local tab_id=$(browser::tabs --field id --urlmatch $exact "$url" | head -1)
+
+[[ -z "$tab_id" ]] && return 1
+
+[[ -z $quiet ]] && echo $tab_id
+
+return 0
+
+# vim: set ft=zsh et ts=2 sw=2 :

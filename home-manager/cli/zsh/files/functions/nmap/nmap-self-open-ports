@@ -1,0 +1,12 @@
+local with_host
+zparseopts -D -K -E {-with-host,-host}=with_host
+local filter='.[0].ports.port[]["+@portid"]'
+
+if [[ -n "$with_host" ]]
+then
+  filter='.[0].address["+@addr"] as $addr | $addr + ":" + '${filter}
+fi
+
+nmap-self-json --open $@ | jq -er $filter
+
+# vim: set ft=zsh et ts=2 sw=2 :

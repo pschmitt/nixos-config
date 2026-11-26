@@ -1,0 +1,7 @@
+local u
+for u in $(browser::current-url)
+do
+  url::extract-domain "$u"
+done
+
+# vim: set ft=zsh et ts=2 sw=2 :

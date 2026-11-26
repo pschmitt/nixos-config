@@ -1,0 +1,3 @@
+browser::tabs --field id $@
+
+# vim: set ft=zsh et ts=2 sw=2 :
