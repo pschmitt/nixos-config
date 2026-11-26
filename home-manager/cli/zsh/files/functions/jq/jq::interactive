@@ -1,6 +1,5 @@
 local -a extra_args
-zparseopts -D -K -E -a -- \
-  extra_args \
+zparseopts -D -K -E -a extra_args -- \
   {r,-raw,-raw-output}
 
 local query=${@[-1]:-.} # default query: '.'

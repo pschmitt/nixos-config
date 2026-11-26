@@ -9,6 +9,6 @@ else
   input=$(cat)
 fi
 
-tr ' ' '\n' <<< "$input" | sort | tail -1
+tr ' ' '\n' <<< "$input" | sort -g | tail -1
 
 # vim: set ft=zsh et ts=2 sw=2 :

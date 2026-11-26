@@ -1,5 +1,5 @@
 local usage="$0 [--recursive] GROUP"
-local help resursive
+local help recursive
 zparseopts -D -E -K -- \
   {h,-help}=help \
   {r,R,-recurse,-recursive}=recursive

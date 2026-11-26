@@ -8,7 +8,7 @@ local verbose
 zparseopts -D -E -K -- \
   {b,-both}=both \
   {d,-default}=default \
-  {p,-permissions}=permissions \
+  {p,-permissions}:=permissions \
   {v,-verbose}=verbose
 
 permissions=${permissions[2]}

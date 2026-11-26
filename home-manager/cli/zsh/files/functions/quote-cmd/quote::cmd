@@ -21,22 +21,6 @@ do
       val=${val//\"/\\\"}
       out+="$flag=\"$val\""
     fi
-  elif [[ $w == --* && i -lt n && ${in[i+1]} != -* ]]
-  then
-    local val=${in[i+1]}
-    if [[ $val == *\$* || $val == *\`* ]]
-    then
-      out+="$w='${val//\'/'"'"'}'"
-    elif [[ $val == [A-Za-z0-9_./:@%+-]## ]]
-    then
-      out+="$w=$val"
-    else
-      val=${val//\\/\\\\}
-      val=${val//\"/\\\"}
-      out+="$w=\"$val\""
-    fi
-    (( i+=2 ))
-    continue
   else
     if [[ $w == [A-Za-z0-9_./:@%+-]## ]]
     then

@@ -18,7 +18,7 @@ case "$1" in
     curl -fSsL -H 'Accept: application/vnd.github.v3+json' \
       https://api.github.com/licenses/mit | \
         jq -r .body | \
-        sed -e 's/\[year\]/2021/' \
+        sed -e "s/\[year\]/$(date +%Y)/" \
             -e 's/\[fullname\]/Philipp Schmitt <'${EMAIL}'>/'
     ;;
   *)

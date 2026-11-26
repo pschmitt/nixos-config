@@ -6,7 +6,12 @@ zparseopts -D -E -K -- \
   {s,-sep,-separator}:=sep
 
 local query="$*"
-local file=~ffx/${db[2]}  # expands ffx
+local profile_dir
+if ! profile_dir=$(firefox::profile-dir)
+then
+  return 1
+fi
+local file="${profile_dir}/${db[2]}"
 
 sqlite3 -separator "$sep[2]" "file:${file}?immutable=1" "${query}"
 

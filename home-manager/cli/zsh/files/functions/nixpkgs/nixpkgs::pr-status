@@ -20,8 +20,7 @@ zparseopts -D -K -E -- \
   {j,-json}=json
 
 repo=$repo[2]
-local branch_args=(-b --branch)
-branches=(${(u)branches:#$branch_args})
+branches=(${(u)branches:#(-b|--branch)})
 
 if [[ -n "$help" ]]
 then
@@ -33,7 +32,7 @@ if [[ -z $* ]]
 then
   echo_error "Missing PR number(s)"
   print -u2 $usage
-  return 0
+  return 2
 fi
 
 local prs=("$@")

@@ -1,5 +1,5 @@
 # NMAP local network
-local dev_type=(-d wifi)
+local dev_type=()
 local wired
 local wireless
 zparseopts -D -K \
@@ -16,9 +16,15 @@ then
 elif [[ -n "$wired" ]]
 then
   dev_type=ethernet
+else
+  dev_type=wifi
 fi
 
-local default_devices=($(default_gw_dev))
+local default_devices=(
+  "${(@f)$(ip -j route show default 2>/dev/null | \
+    jq -r 'sort_by(.metric // 0) | .[].dev' 2>/dev/null)}"
+)
+default_devices=(${default_devices:#})
 local dev
 
 case "${#default_devices}" in

@@ -1,13 +1,17 @@
 local usage="$0 [-l USER] HOST"
 
-local interface=eth2
+local interface
 local remote_username=(-u root)
 
 zparseopts -D -E -K -- \
-  {i,-interface}=interface \
+  {i,-interface}:=interface \
   {l,-login,u,-username}:=remote_username
 remote_username=$remote_username[2]
-interface=$interface[2]
+local -a extra_args=()
+if [[ -n "$interface" ]]
+then
+  extra_args+=("-oextcap.sshdump.remoteinterface:${interface[2]}")
+fi
 
 local remote_host="$1"
 if [[ -z "$remote_host" ]]
@@ -19,6 +23,7 @@ fi
 wireshark \
   "-oextcap.sshdump.remoteusername:${remote_username}" \
   "-oextcap.sshdump.remotehost:${remote_host}" \
+  $extra_args \
   -i sshdump -k
 
 # ssh -l $remote_username $remote_host \

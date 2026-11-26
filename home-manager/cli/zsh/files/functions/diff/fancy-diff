@@ -5,11 +5,6 @@ then
   return
 fi
 
-if (( $+commands[delta] ))
-then
-  delta $@
-fi
-
 diff $@
 
 # vim: set ft=zsh et ts=2 sw=2 :

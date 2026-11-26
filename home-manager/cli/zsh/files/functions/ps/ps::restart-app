@@ -1,8 +1,8 @@
-local usge="usage: $0 [--force] [--if-running] [--gui] [--full] CMD [ARGS]"
+local usage="usage: $0 [--force] [--if-running] [--gui] [--full] CMD [ARGS]"
 local force full if_running gui_app background
 
 zparseopts -D -E -K \
-  f:=force \
+  {f,-force}=force \
   {F,-full}=full \
   {g,-gui}=gui_app \
   {i,-if-running}=if_running \

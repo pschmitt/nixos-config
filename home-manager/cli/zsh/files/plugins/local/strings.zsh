@@ -4,7 +4,7 @@ alias toupper="string::toupper"
 
 alias noemoji="string::remove-emojis"
 
-alias noleadingemoji="string::remove-emojis"
+alias noleadingemoji="string::remove-leading-emojis"
 
 alias nocolor="string::remove-escape-sequences"
 alias string::nocolor="string::remove-escape-sequences"

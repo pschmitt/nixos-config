@@ -1,6 +1,6 @@
 local img="$@[-1]"
 
-if [[ -n "$img" && ! "$img" == -* ]]
+if [[ -n "$img" && -f "$img" ]]
 then
   shift
 elif [[ -p /dev/stdin ]]
@@ -11,9 +11,16 @@ then
   cat > "$img"
 else
   echo_info "Grabbing image from clipboard"
-  img=$(mktemp -u --suffix=.jpg)
+  local mime
+  mime=$(wl-paste --list-types 2>/dev/null | grep -m1 '^image/')
+  if [[ -z "$mime" ]]
+  then
+    echo_error "No image in clipboard"
+    return 1
+  fi
+  img=$(mktemp -u --suffix=".${mime#image/}")
   trap "rm -f '$img'" EXIT
-  wl-paste -t image/jpeg > "$img"
+  wl-paste -t "$mime" > "$img"
 fi
 
 # Docs: https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html

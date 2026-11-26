@@ -294,24 +294,19 @@ in
   # GUI hosts: servers and the phones do not ship these topics.
   config.programs.zsh.localConfig.excludeTopics = lib.mkIf (!guiEnable) [
     "display-manager"
-    "dms"
     "hyprland"
     "imv"
     "lockscreen"
-    "mako"
     "mouse"
     "noctalia"
     "obs"
     "pipewire"
     "pulseaudio"
     "screenshot"
-    "sway"
-    "waybar"
     "wayland"
     "wayvnc"
     "window-manager"
     "xkb"
-    "xorg"
     "ydotool"
   ];
 

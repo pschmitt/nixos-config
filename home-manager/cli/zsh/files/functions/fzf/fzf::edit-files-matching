@@ -1,7 +1,7 @@
 local pattern="${@[-1]}"
 set -- ${@[1,-2]}
 
-local matches=("${(@f)$(rg --files-with-matches $rg_args "$pattern")}")
+local matches=("${(@f)$(rg --files-with-matches "$@" "$pattern")}")
 if [[ $#matches -eq 0 ]]
 then
   echo_warn "No files containing $pattern found in $PWD"

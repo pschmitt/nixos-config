@@ -1,7 +1,6 @@
 local wayland_display=${WAYLAND_DISPLAY:-$(window-manager::wayland-display)}
 [[ -n $wayland_display ]] && export WAYLAND_DISPLAY=$wayland_display
 
-xorg::export-display
 unset XAUTHORITY
 
 # vim: set ft=zsh et ts=2 sw=2 :

@@ -1,13 +1,12 @@
-local average nounits max min watch
-local values
+local average nounits max min
+local values res
 local unit=RPM
 
 zparseopts -D -K \
   a=average -average=average \
   n=nounits -no-units=nounits \
   m=min -min=min \
-  M=max -max=max \
-  w::=watch -watch::=watch
+  M=max -max=max
 
 values=($(sensors -jA 2>/dev/null | \
   jq -r '.. | objects |

@@ -159,7 +159,7 @@ fi
 if [[ -n $fix_eof ]]
 then
   # Two sed passes: trim per line, then collapse trailing blank block
-  noglob fd "${fd_args[@]}" | xargs -0 -r -n1 sh -c '
+  noglob fd "${fd_args[@]}" | xargs -0 -r -I{} sh -c '
     f="$1"
     sed -i$2 -e "s/[[:space:]]*$//" "$f"
     # Delete trailing blank lines using a classic sed loop

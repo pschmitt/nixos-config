@@ -8,7 +8,7 @@ local email="${${1:-$EMAIL}:l}"
 
 # https://en.gravatar.com/site/implement/images/
 # NOTE printf is the way to go here (the trailing \n matters)
-local md5sum=$(printf "$EMAIL" | md5sum --binary | awk '{ print $1 }')
+local md5sum=$(printf "%s" "$email" | md5sum --binary | awk '{ print $1 }')
 
 echo "$email https://www.gravatar.com/avatar/${md5sum}.${extension}?size=${size}"
 

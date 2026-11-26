@@ -57,7 +57,7 @@ tsv=$(jq -er <<< "$data" \
   --argjson NO_ELLIPSIS "${${NO_ELLIPSIS:+true}:-false}" \
   --argjson max_length "$max_length" \
   --argjson obj_max_length "$obj_max_length" \
-  --argjson strip_nl "${${no_strip_nl:-true}:-false}" \
+  --argjson strip_nl "${${no_strip_nl:+false}:-true}" \
   '
     import "plib" as p;
 

@@ -1,4 +1,19 @@
-pulseaudio::unmute-all-sources
-pulseaudio::unmute-all-sinks
+local kind s
+local -a devices
+
+for kind in sources sinks
+do
+  echo_info "Unmuting all $kind"
+  devices=($(pulseaudio::list $kind))
+  for s in $devices
+  do
+    if [[ $kind == sinks ]]
+    then
+      pulseaudio::unmute-sink "$s"
+    else
+      pulseaudio::unmute-source "$s"
+    fi
+  done
+done
 
 # vim: set ft=zsh et ts=2 sw=2 :

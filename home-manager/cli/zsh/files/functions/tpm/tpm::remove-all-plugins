@@ -1,3 +1,0 @@
-rm -rf "${TMUX_PLUGIN_MANAGER_PATH}"
-
-# vim: set ft=zsh et ts=2 sw=2 :

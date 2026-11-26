@@ -17,7 +17,7 @@ fi
 local px1="$1" px2="$2"
 if [[ ! "$px1" =~ ^([-+]?[0-9]+)$ ]]
 then
-  echo_error "Invalid argument: $px"
+  echo_error "Invalid argument: $px1"
   return 2
 fi
 

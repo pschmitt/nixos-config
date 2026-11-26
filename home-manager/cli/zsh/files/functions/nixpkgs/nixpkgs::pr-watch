@@ -1,4 +1,4 @@
-local usagbe="usage: $0 [PR_NUMBER]"
+local usage="usage: $0 [PR_NUMBER]"
 local pr="${1:t}" # tail, in case we passed a URL
 
 if [[ -z $pr ]]

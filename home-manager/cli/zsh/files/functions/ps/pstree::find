@@ -22,6 +22,6 @@ fi
 local cmd=$(ps -o command= $pid)
 echo_info "Resolved PID: $pid [$cmd]"
 
-pstree -p -s -a
+pstree -p -s -a $pid
 
 # vim: set ft=zsh et ts=2 sw=2 :

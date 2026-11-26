@@ -1,9 +1,21 @@
-local usage="Usage: $0 [FILE]"
+local usage="Usage: $0 [TEXT]"
+local text="$*"
+
+if [[ -z "$text" && ! -t 0 ]]
+then
+  text="$(cat)"
+fi
+
+if [[ -z "$text" ]]
+then
+  echo "$usage" >&2
+  return 2
+fi
 
 local tmpfile=$(mktemp --suffix .png)
 trap "rm -f '$tmpfile'" EXIT
 
-qrencode -o "$tmpfile" $1
+qrencode -o "$tmpfile" "$text"
 
 img::cat "$tmpfile"
 rm -f "$tmpfile"

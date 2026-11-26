@@ -74,7 +74,7 @@ sed -r 's/^\s{4}//' <<EOF | python3
     cmd = cmd.replace("%m", "$(cat /etc/machine-id)")
     cmd = cmd.replace("%n", "${unit_name}")
     cmd = cmd.replace("%N", "${unit_name//.*}")
-    cmd = cmd.replace("%p", "${${unit//.*}//@*}")
+    cmd = cmd.replace("%p", "${${unit_name//.*}//@*}")
     cmd = cmd.replace("%H", "${HOSTNAME}")
     cmd = cmd.replace("%l", "${HOSTNAME//.*}")
     cmd = cmd.replace("%u", "${unit_user_name}")

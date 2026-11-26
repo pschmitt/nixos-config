@@ -2,7 +2,7 @@ local help dry_run urlmatch
 local usage="usage: $0 [--dry-run] [--url] TITLE"
 
 zparseopts -D -K -E -- \
-  {h,help}=help \
+  {h,-help}=help \
   {k,-dry-run,-dryrun}=dry_run \
   {u,-url}=urlmatch
 

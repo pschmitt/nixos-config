@@ -5,7 +5,7 @@ local help
 
 zparseopts -D -K -E \
   {h,-help}=help \
-  {d,-dir,-directory}=:dir \
+  {d,-dir,-directory}:=dir \
   {k,-dryrun,-dry-run}=dryrun
 
 if [[ -n "$help" ]]
@@ -47,15 +47,18 @@ fi
 
 local sed_cmd="s${delimiter}${from}${delimiter}${to}${delimiter}g"
 
-for file in $(rg --hidden --files-with-matches -- "$from")
+local file
+for file in "${(@f)$(rg --hidden --files-with-matches -- "$from" "$dir")}"
 do
+  [[ -z "$file" ]] && continue
+
   if [[ -n "$dryrun" ]]
   then
     echo_debug "DRYRUN: \$ sed -i '$sed_cmd' '$file'"
     continue
   fi
 
-  sed -i "$sed_cmd" $file
+  sed -i "$sed_cmd" "$file"
 done
 
 # vim: set ft=zsh et ts=2 sw=2 :

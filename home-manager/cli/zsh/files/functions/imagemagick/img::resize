@@ -27,7 +27,15 @@ then
   output="$input"
 fi
 
+# NOTE a plain number is used as bounding box (NxN), anything else (x600,
+# 800x, 800x600) is passed as geometry as-is.
+local geometry="$size"
+if [[ "$size" != *x* ]]
+then
+  geometry="${size}x${size}"
+fi
+
 # NOTE the trailing '>' is a resize-only-if-larger flag.
-magick "$input" -resize ${size}x${size}\> $output
+magick "$input" -resize "${geometry}>" $output
 
 # vim: set ft=zsh et ts=2 sw=2 :

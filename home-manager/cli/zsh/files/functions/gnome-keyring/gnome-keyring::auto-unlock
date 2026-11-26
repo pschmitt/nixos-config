@@ -16,7 +16,7 @@ gnome-keyring::status $verbose && return 0
 local password=$(rbw::get "gnome-keyring: $HOST")
 if [[ -z "$password" ]]
 then
-  echo_error "Could not find password for $kr_id"
+  echo_error "Could not find password for gnome-keyring: $HOST"
   return 1
 fi
 

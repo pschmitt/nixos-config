@@ -1,10 +1,9 @@
 # same as fzf::rg, but the text input is used to filter on filenames
 local pattern="${@[-1]}"
 set -- ${@[1,-2]}
-local rgargs=("$@")
 local data
 
-data=$(rg --json $rg_args -- "$pattern" | jq -r '
+data=$(rg --json "$@" -- "$pattern" | jq -r '
     select(.type == "match") |
     .data.path.text + " " +
     (.data.line_number | tostring) + " " + (.data.submatches[0].start | tostring)')
