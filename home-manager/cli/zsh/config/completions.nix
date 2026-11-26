@@ -97,7 +97,6 @@
 
       if [[ -z "$NO_COMPLETIONS" ]]
       then
-        source "$ZDOTDIR/completions/source-me.zsh" 2>/dev/null
         (( $+functions[compdef] )) && compdef _kubectl kubectl kubecolor
       fi
 
