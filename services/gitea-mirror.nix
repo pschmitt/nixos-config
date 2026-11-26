@@ -6,7 +6,7 @@
 }:
 let
   # renovate: datasource=docker depName=ghcr.io/raylabshq/gitea-mirror depType=automerge
-  giteaMirrorVersion = "v3.54.0";
+  giteaMirrorVersion = "v3.58.1";
   dataDir = "/srv/gitea-mirror";
   listenPort = 54439;
   containerBackend = config.virtualisation.oci-containers.backend;
