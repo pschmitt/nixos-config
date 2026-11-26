@@ -198,99 +198,135 @@ in
       };
     };
     extra-keys = {
-      keys = [
+      keys =
+        let
+          keycap = {
+            background-color = "#26252B";
+            text-color = "#E0DCE5";
+            inset = 2;
+          };
+          navigation = keycap // {
+            background-color = "#1D2A34";
+            text-color = "#BCD0E4";
+          };
+        in
         [
-          {
-            key = "ESC";
-            display = "Esc";
-            background-color = "#502D3A";
-          }
-          {
-            key = "/";
-            popup = "BACKSLASH";
-          }
-          {
-            key = "-";
-            hold = "_";
-            popup = "_";
-          }
-          {
-            key = "HOME";
-            display = "Home";
-          }
-          {
-            key = "UP";
-            text-color = "#A0A0A0";
-            popup = {
-              key = "PGUP";
-              display = "PgUp";
-            };
-          }
-          {
-            key = "END";
-            display = "End";
-          }
-          {
-            key = "PGUP";
-            display = "PgUp";
-          }
-          "|"
-        ]
-        [
-          "TAB"
-          {
-            key = "CTRL";
-            display = "Ctrl";
-            hold = "SHIFT";
-            hold-display = "Shift";
-          }
-          {
-            key = "ALT";
-            display = "Alt";
-          }
-          {
-            key = "LEFT";
-            text-color = "#A0A0A0";
-            popup = {
-              key = "HOME";
-              display = "Home";
-            };
-          }
-          {
-            key = "DOWN";
-            text-color = "#A0A0A0";
-            popup = {
-              key = "PGDN";
-              display = "PgDn";
-            };
-          }
-          {
-            key = "RIGHT";
-            text-color = "#A0A0A0";
-            popup = {
-              key = "END";
-              display = "End";
-            };
-          }
-          {
-            key = "PGDN";
-            display = "PgDn";
-          }
-          {
-            key = "BKSP";
-            popup = {
-              key = "DEL";
-              display = "Del";
-            };
-          }
-        ]
-      ];
-      # Latched modifiers and pressed keys in the logo palette.
+          [
+            (
+              keycap
+              // {
+                key = "ESC";
+                display = "Esc";
+                popup = "DEL";
+              }
+            )
+            (
+              keycap
+              // {
+                key = "/";
+                popup = "~";
+                hint = "~";
+              }
+            )
+            (
+              keycap
+              // {
+                key = "-";
+                hold = "_";
+                popup = "|";
+                hint = "|";
+              }
+            )
+            (
+              navigation
+              // {
+                key = "HOME";
+                display = "Home";
+              }
+            )
+            (
+              navigation
+              // {
+                key = "UP";
+                popup = {
+                  key = "PGUP";
+                  display = "PgUp";
+                };
+                hint = "PgUp";
+              }
+            )
+            (
+              navigation
+              // {
+                key = "END";
+                display = "End";
+              }
+            )
+          ]
+          [
+            (
+              keycap
+              // {
+                key = "TAB";
+                popup = "BACKSLASH";
+              }
+            )
+            (
+              keycap
+              // {
+                key = "CTRL";
+                display = "Ctrl";
+                hold = "SHIFT";
+                hold-display = "Shift";
+              }
+            )
+            (
+              keycap
+              // {
+                key = "ALT";
+                display = "Alt";
+                popup = "BKSP";
+                hint = "⌫";
+              }
+            )
+            (
+              navigation
+              // {
+                key = "LEFT";
+                popup = {
+                  key = "HOME";
+                  display = "Home";
+                };
+              }
+            )
+            (
+              navigation
+              // {
+                key = "DOWN";
+                popup = {
+                  key = "PGDN";
+                  display = "PgDn";
+                };
+                hint = "PgDn";
+              }
+            )
+            (
+              navigation
+              // {
+                key = "RIGHT";
+                popup = {
+                  key = "END";
+                  display = "End";
+                };
+              }
+            )
+          ]
+        ];
       active = {
-        text-color = "#D8B4FE";
-        background-color = "#3B1D6A";
+        text-color = "#291B45";
+        background-color = "#BEA8E6";
       };
-      corner-radius = 8;
+      corner-radius = 12;
       # Extra keys row: finger to the right = previous session, to the left =
       # next session (the default), further to the right = new session.
       swipe = {
