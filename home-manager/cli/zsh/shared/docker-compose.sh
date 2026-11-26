@@ -2,6 +2,7 @@
 # shell config (profiles/specializations/server/interactive/dotfiles/shell.nix)
 # and the Home Manager zsh (config/docker-compose.nix). Needs echo_info and
 # echo_error; colors come from zsh's $fg_bold where it is set.
+# shellcheck disable=SC2154 # fg_bold and reset_color (zsh colors module)
 
 if ! command -v docker-compose &>/dev/null
 then
@@ -85,9 +86,9 @@ de() {
   echo_info "Targeting compose service ${fg_bold[yellow]}${svc}${reset_color}"
   local cmd=("$@")
 
-  if [[ -n $cmd ]]
+  if [[ ${#cmd[@]} -gt 0 ]]
   then
-    echo_info "Executing command \$ ${fg_bold[magenta]}${cmd}${reset_color}"
+    echo_info "Executing command \$ ${fg_bold[magenta]}${cmd[*]}${reset_color}"
     docker compose -f "$compose_file" exec "$svc" "${cmd[@]}"
     return "$?"
   fi
