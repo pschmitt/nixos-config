@@ -140,9 +140,18 @@ in
 
     conform-nvim = {
       enable = true;
-      # Format on demand only (<leader>F / :Format), never on save
+      # Format on save, as LazyVim did (toggle with <leader>uf for the
+      # buffer, <leader>uF globally); <leader>F / :Format on demand.
       settings = {
         default_format_opts.lsp_format = "fallback";
+        format_on_save = mkRaw ''
+          function(bufnr)
+            if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+              return
+            end
+            return { timeout_ms = 1000, lsp_format = "fallback" }
+          end
+        '';
         formatters_by_ft = {
           lua = [ "stylua" ];
           python = [
