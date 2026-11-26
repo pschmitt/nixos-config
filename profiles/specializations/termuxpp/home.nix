@@ -180,6 +180,7 @@ in
     };
     # The active tmux window as a filled accent pill.
     tmux.sidebar.style = "rounded";
+    tmux.sidebar.right = true;
     keyboard = {
       back-key = "back";
       shortcuts = {
