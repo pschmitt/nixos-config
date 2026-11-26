@@ -7,7 +7,7 @@ let
   date = inputs.zsh-completions.lastModifiedDate;
 in
 {
-  # Track upstream master (flake input) like the yadm shell's zinit does: the
+  # Track upstream master (flake input): the
   # 0.36.0 release lacks completions added since (ab, nu, peco, playwright,
   # pwsh, tmuxp, ...).
   zsh-completions = prev.zsh-completions.overrideAttrs (_old: {

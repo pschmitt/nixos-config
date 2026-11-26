@@ -14,8 +14,7 @@ in
 {
   programs.zsh.initContent = lib.mkOrder 900 ''
     if [[ -o interactive && -z "''${NO_PLUGINS:-}" && -z "$SSH_CONNECTION" ]] \
-      && (( $+commands[notify-send] )) \
-      && ! is_termux
+      && (( $+commands[notify-send] ))
     then
       zsh::source-plugin ${autoNotify}/auto-notify.plugin.zsh
       AUTO_NOTIFY_IGNORE+=(journalctl watch)

@@ -5,7 +5,12 @@ description: Edit local zsh plugins at ~/.config/zsh/plugins/local. Use when the
 
 # Local Zsh Plugins (zpl)
 
-Plugin root: `~/.config/zsh/plugins/local`
+Installed at `~/.config/zsh/plugins/local` (functions in
+`~/.config/zsh/functions`) as read-only Home Manager links. Edit the sources:
+
+- public: `nixos-config.git/home-manager/cli/zsh/files/{plugins/local,functions}`
+- private (work, personal, anything sensitive):
+  `nixos-config-private.git/hm/zsh/files/{plugins/local,functions}`
 
 Hermes Agent has no access to this tree: work there only on a checkout the
 user provides in its workspace, without the paths or reload commands below.
@@ -19,7 +24,7 @@ plugins/local/
   99-after/         # alias files that load after everything else
 ```
 
-Files are sourced automatically by zinit on shell startup — no registration step needed. New `.zsh` files dropped in the root or subdirectories are picked up on the next shell start (or `source`).
+Every `.zsh` file in the root, `work/` and `99-after/` is sourced on shell startup (asynchronously in interactive shells) — no registration step needed. New files appear after the next Home Manager switch.
 
 ## Autoloaded functions
 
@@ -102,9 +107,10 @@ filtering automatically.
 
 ## Workflow
 
-- This directory is managed by **yadm**, not git. Stage/commit with `yadm add`,
-  `yadm commit`, etc.
-- Edit files directly with standard file tools — no build step
-- For plugin file changes, source `~/.config/zsh/plugins/local/<file>.zsh` or reload the full plugin set with `exec zsh`.
+- Edit the source tree in the nixos-config (or private) checkout, commit, and
+  deploy with Home Manager (see AGENTS.md there); `git add -N` new files first.
+- To try a change before deploying, `source` the edited source file in a shell,
+  or drop a `*.zsh` override in `~/.config/zsh/static/` (loaded last).
+- After a switch, reload the full plugin set with `zsrclocal` or `exec zsh`.
 - For autoload function changes, use `zsh::reload-file ~/.config/zsh/functions/<topic>/<function-name>` in an interactive shell, or
   restart the shell with `exec zsh`.

@@ -69,8 +69,6 @@ in
     ../../../home-manager/cli/zsh/zoxide.nix
     ../../../home-manager/cli/zsh/config/core.nix
     ../../../home-manager/cli/zsh/config/zhj.nix
-    ../../../home-manager/cli/zsh/plugins/local-path.nix
-    ../../../home-manager/cli/zsh/plugins/local-yadm.nix
     ../../../home-manager/cli/zsh/config/portable.nix
     ../../../home-manager/cli/zsh/config/source-me.nix
     ../../../home-manager/cli/git.nix

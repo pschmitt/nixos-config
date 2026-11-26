@@ -5,7 +5,6 @@
 }:
 let
   plugin = pkgs.zsh-diff-so-fancy;
-  inherit (import ./path.nix { inherit lib; }) pluginPath;
 in
 {
   home.packages = [
@@ -14,9 +13,6 @@ in
   ];
 
   programs.zsh.initContent = lib.mkOrder 1120 ''
-    zsh::source-plugin ${
-      pluginPath "diff-so-fancy" "zsh-diff-so-fancy.plugin.zsh"
-        "${plugin}/share/zsh/plugins/zsh-diff-so-fancy/zsh-diff-so-fancy.plugin.zsh"
-    } diff-so-fancy
+    zsh::source-plugin ${lib.escapeShellArg "${plugin}/share/zsh/plugins/zsh-diff-so-fancy/zsh-diff-so-fancy.plugin.zsh"} diff-so-fancy
   '';
 }

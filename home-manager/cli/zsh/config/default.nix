@@ -1,10 +1,9 @@
-# The Nix-managed Zsh startup files in ~/.config/zsh (ZDOTDIR). yadm only
-# provides the local plugins, functions and host/OS overlays beside them.
+# The Nix-managed Zsh config in ~/.config/zsh (ZDOTDIR): startup files,
+# local plugins, functions and host/OS overlays.
 {
   imports = [
     ./core.nix
     ./hashicorp-completions.nix
-    ./hm.nix
     ./portable.nix
     ./runtime.nix
     ./zhj.nix

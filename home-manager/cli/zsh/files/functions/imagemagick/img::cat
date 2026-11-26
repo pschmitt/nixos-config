@@ -74,13 +74,7 @@ then
   viewer=($=VIEWER)
 elif [[ -n $gui ]]
 then
-  if is_termux
-  then
-    viewer=(termux-open)
-    delay_deletion=1
-  else
-    viewer=(eog)
-  fi
+  viewer=(eog)
 elif [[ -n $pixelation ]]
 then
   # Pick a tool that can speak the requested protocol: timg handles all of
@@ -104,9 +98,6 @@ then
     esac
   fi
 # TODO handle the case where SSH_CONNECTION is set
-elif is_termux
-then
-  viewer=(timg)
 elif (( $+commands[timg] ))
 then
   viewer=(timg)
@@ -139,7 +130,7 @@ then
 fi
 
 case "${viewer[1]}" in
-  termux-open|eog)
+  eog)
     # These viewers are non-blocking, so we need to delay deletion of the
     # temporary file.
     delay_deletion=1

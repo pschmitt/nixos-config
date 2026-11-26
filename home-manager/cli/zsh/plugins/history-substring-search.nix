@@ -3,19 +3,13 @@
   pkgs,
   ...
 }:
-let
-  inherit (import ./path.nix { inherit lib; }) pluginPath;
-in
 {
   # After zsh-syntax-highlighting (1550), as its README asks: it highlights
   # the matched part of the command line through that plugin.
   programs.zsh.initContent = lib.mkOrder 1560 ''
     if zsh::prompt-plugins-enabled && not_in_vt
     then
-      zsh::source-plugin ${
-        pluginPath "history-substring-search" "zsh-history-substring-search.zsh"
-          "${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh"
-      }
+      zsh::source-plugin ${lib.escapeShellArg "${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh"}
       export HISTORY_SUBSTRING_SEARCH_FUZZY=1
     fi
 

@@ -8,8 +8,7 @@ in
     (lib.mkOrder 800 ''
       zsh::prompt-plugins-enabled() {
         [[ -z "''${NO_PLUGINS:-}" &&
-          -z "''${NO_PROMPT_PLUGINS:-}" &&
-          -z "''${ZINIT_SKIP_PROMPT_PLUGINS:-}" ]]
+          -z "''${NO_PROMPT_PLUGINS:-}" ]]
       }
 
       zsh::source-plugin() {
@@ -56,7 +55,6 @@ in
         do
           reply+=("$dir"/*.zsh(N))
         done
-        reply=("''${(@)reply:#*/zinit.zsh}")
       }
 
       zsh::local-plugins-prepare() {
@@ -66,35 +64,9 @@ in
         then
           unalias docker-compose
         fi
-
-        # These Nix aliases must be absent while the yadm-managed Codex plugin
-        # defines its legacy cxt/cxs functions. Restore them after sourcing.
-        if (( $+commands[codex-terra] )) && (( $+aliases[cxt] ))
-        then
-          unalias cxt
-        fi
-        if (( $+commands[codex-sol] )) && (( $+aliases[cxs] ))
-        then
-          unalias cxs
-        fi
       }
 
       zsh::local-plugins-finish() {
-        if (( $+functions[zsh::override-local-path] ))
-        then
-          zsh::override-local-path
-        fi
-
-        if (( $+functions[zsh::override-local-yadm] ))
-        then
-          zsh::override-local-yadm
-        fi
-
-        if [[ "''${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
-        then
-          typeset -g TERMUX_NATIVE_USER_PLUGINS_READY=1
-        fi
-
         if (( $+functions[zsh::apply-plugin-overrides] ))
         then
           zsh::apply-plugin-overrides
@@ -111,17 +83,9 @@ in
           (( $+functions[$hook] )) && "$hook"
         done
 
-        if (( $+commands[codex-terra] ))
-        then
-          builtin alias -- cxt=codex-terra
-        fi
-        if (( $+commands[codex-sol] ))
-        then
-          builtin alias -- cxs=codex-sol
-        fi
         typeset -g ZSH_LOCAL_PLUGINS_LOADED=1
 
-        # Writable yadm-managed overrides run last, after the managed plugins
+        # Writable local overrides run last, after the managed plugins
         # and their overrides, in both synchronous and deferred shells.
         local static_file
         for static_file in "${config.xdg.configHome}/zsh/static/"*.zsh(N)
@@ -130,7 +94,6 @@ in
         done
       }
 
-      # yadm/zinit name for reloading the local plugins
       alias zsrclocal=zsh::source-local-plugins
 
       zsh::source-local-plugins() {

@@ -4,7 +4,6 @@
   ...
 }:
 let
-  inherit (import ./path.nix { inherit lib; }) pluginPath;
   manydots = pkgs.fetchFromGitHub {
     owner = "knu";
     repo = "zsh-manydots-magic";
@@ -16,7 +15,7 @@ in
   programs.zsh.initContent = lib.mkOrder 946 ''
     if zsh::prompt-plugins-enabled && not_in_vt
     then
-      zsh::source-plugin ${pluginPath "manydots" "manydots-magic" "${manydots}/manydots-magic"}
+      zsh::source-plugin ${lib.escapeShellArg "${manydots}/manydots-magic"}
     fi
   '';
 }

@@ -1,12 +1,5 @@
 local url="$1"
 
-# not much we can do on termux, just open the url
-if is_termux
-then
-  termux-open "$url"
-  return
-fi
-
 local tab_id
 
 if tab_id=$(browser::has-url "$url")

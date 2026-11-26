@@ -9,8 +9,6 @@ _: {
       TC = "| tee >(cat)";
     };
     shellAliases = {
-      y = "nix search nixpkgs";
-      ync = "nix-shell --packages";
       lsu = "luks-ssh-unlock";
     };
     initContent = ''

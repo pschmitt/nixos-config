@@ -1,5 +1,4 @@
-# Commands the local plugins check for, from Nix instead of zinit's polaris
-# bin.
+# Commands the local plugins check for.
 {
   imports = [
     ./adb.nix

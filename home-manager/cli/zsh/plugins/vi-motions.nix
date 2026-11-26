@@ -4,7 +4,6 @@
   ...
 }:
 let
-  inherit (import ./path.nix { inherit lib; }) pluginPath;
   viMotions = pkgs.fetchFromGitHub {
     owner = "zsh-vi-more";
     repo = "vi-motions";
@@ -13,14 +12,12 @@ let
   };
 in
 {
-  # After bindkeys.nix (1300), like the yadm shell where zinit loads it late:
-  # its Home/End bindings (vi-beginning/end-of-line) win.
+  # After bindkeys.nix (1300), so its Home/End bindings
+  # (vi-beginning/end-of-line) win.
   programs.zsh.initContent = lib.mkOrder 1310 ''
     if zsh::prompt-plugins-enabled && not_in_vt
     then
-      zsh::source-plugin ${
-        pluginPath "vi-motions" "motions.plugin.zsh" "${viMotions}/motions.plugin.zsh"
-      }
+      zsh::source-plugin ${lib.escapeShellArg "${viMotions}/motions.plugin.zsh"}
     fi
   '';
 }

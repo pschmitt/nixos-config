@@ -4,9 +4,6 @@
   pkgs,
   ...
 }:
-let
-  inherit (import ./path.nix { inherit lib; }) pluginPath;
-in
 {
   home.packages = [ pkgs.gitstatus ];
 
@@ -28,10 +25,7 @@ in
     (lib.mkOrder 890 ''
       if zsh::prompt-plugins-enabled
       then
-        zsh::source-plugin ${
-          pluginPath "powerlevel10k" "powerlevel10k.zsh-theme"
-            "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"
-        }
+        zsh::source-plugin ${lib.escapeShellArg "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"}
       fi
     '')
     # The shared prompt config (./p10k.zsh);

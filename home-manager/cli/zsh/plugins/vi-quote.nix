@@ -4,7 +4,6 @@
   ...
 }:
 let
-  inherit (import ./path.nix { inherit lib; }) pluginPath;
   viQuote = pkgs.fetchFromGitHub {
     owner = "zsh-vi-more";
     repo = "vi-quote";
@@ -16,7 +15,7 @@ in
   programs.zsh.initContent = lib.mkOrder 948 ''
     if zsh::prompt-plugins-enabled && not_in_vt
     then
-      zsh::source-plugin ${pluginPath "vi-quote" "vi-quote.plugin.zsh" "${viQuote}/vi-quote.plugin.zsh"}
+      zsh::source-plugin ${lib.escapeShellArg "${viQuote}/vi-quote.plugin.zsh"}
     fi
   '';
 }

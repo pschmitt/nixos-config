@@ -17,7 +17,7 @@
       findNoDups = true;
       share = true;
       ignoreSpace = true;
-      # Home Manager emits `unsetopt APPEND_HISTORY` otherwise (yadm sets it).
+      # Home Manager emits `unsetopt APPEND_HISTORY` otherwise.
       append = true;
     };
     # HISTFILE/HISTSIZE/SAVEHIST come from `history` as plain shell

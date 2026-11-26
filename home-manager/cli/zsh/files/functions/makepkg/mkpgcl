@@ -1,6 +1,0 @@
-# Clean makepkg devel directory
-unsetopt nomatch
-rm -rf pkg/ src/ $(basename $PWD)-*.{pkg.tar.xz,src.tar.gz}
-setopt nomatch
-
-# vim: set ft=zsh et ts=2 sw=2 :

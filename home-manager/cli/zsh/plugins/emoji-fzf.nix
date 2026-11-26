@@ -4,7 +4,6 @@
   ...
 }:
 let
-  inherit (import ./path.nix { inherit lib; }) pluginPath;
   emojiFzfPlugin = pkgs.fetchFromGitHub {
     owner = "pschmitt";
     repo = "emoji-fzf.zsh";
@@ -14,8 +13,6 @@ let
 in
 {
   programs.zsh.initContent = lib.mkOrder 960 ''
-    [[ -z "$NO_PLUGINS" ]] && zsh::source-plugin ${
-      pluginPath "emoji-fzf" "emoji-fzf.plugin.zsh" "${emojiFzfPlugin}/emoji-fzf.plugin.zsh"
-    }
+    [[ -z "$NO_PLUGINS" ]] && zsh::source-plugin ${lib.escapeShellArg "${emojiFzfPlugin}/emoji-fzf.plugin.zsh"}
   '';
 }

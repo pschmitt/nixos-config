@@ -1,155 +1,13 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
-let
-  # The OS is known when the config is built: NixOS-integrated Home Manager
-  # runs on NixOS. Only containers/distroboxes
-  # sharing this home (or unknown hosts) need runtime /etc/os-release parsing.
-  staticOsKind = if config.submoduleSupport.enable then "nixos" else null;
-  genericYqo = ''
-    yqo() {
-      case "$(os-release::kind)" in
-        arch)
-          command yay -Qo "$@"
-          ;;
-        fedora)
-          command dnf provides "$@"
-          ;;
-        ubuntu)
-          local usage="Usage: $0 [--verbatim|-n] CMD"
-          if (( $# == 0 ))
-          then
-            print -ru2 -- "$usage"
-            return 2
-          fi
-
-          if [[ "$1" == (help|h|-h|--help) ]]
-          then
-            print -r -- "$usage"
-            return 0
-          fi
-
-          local query="$1" command_path
-          if [[ "$query" == --verbatim || "$query" == -n ]]
-          then
-            shift
-            if (( $# == 0 ))
-            then
-              print -ru2 -- 'Missing CMD'
-              return 2
-            fi
-            query="$1"
-          elif command_path="$(whence -p -- "$query" 2>/dev/null)" && [[ -n "$command_path" ]]
-          then
-            query="$command_path"
-          fi
-
-          print -r -- "Looking for: $query"
-          command dpkg -S "$query"
-          ;;
-        *)
-          command nix-env --query "$@"
-          ;;
-      esac
-    }
-  '';
-  yqoInit = genericYqo;
-in
 {
-  home.packages = [ pkgs.update-and-deploy ];
-
   programs.zsh.initContent = lib.mkOrder 520 ''
-    if [[ -n "''${DISTROBOX_ENTER_PATH:-}" && "$TERM" == wezterm ]]
-    then
-      export TERM=xterm-256color
-    fi
-
-    # Parse /etc/os-release once into __OS_RELEASE and derive __OS_KIND. Only
-    # needed at runtime for os-release::value or when the OS is not static.
-    os-release::load() {
-      (( ''${+__OS_RELEASE} )) && return 0
-      setopt localoptions extendedglob
-      typeset -gA __OS_RELEASE
-      typeset -g __OS_KIND=
-      local line
-      if [[ -r /etc/os-release ]]
-      then
-        while IFS= read -r line
-        do
-          [[ "$line" == [A-Za-z_][A-Za-z0-9_]#=* ]] || continue
-          __OS_RELEASE[''${line%%=*}]="''${(Q)line#*=}"
-        done < /etc/os-release
-      fi
-
-      if is_termux
-      then
-        __OS_KIND=termux
-        return 0
-      fi
-
-      case "''${__OS_RELEASE[ID]}" in
-        neon|ubuntu) __OS_KIND=ubuntu ;;
-        arch|archarm|manjaro) __OS_KIND=arch ;;
-        fedora) __OS_KIND=fedora ;;
-        alpine|postmarketos) __OS_KIND=alpine ;;
-        *) __OS_KIND="''${__OS_RELEASE[ID]}" ;;
-      esac
-    }
-
-    os-release::value() {
-      os-release::load
-      [[ -n "''${__OS_RELEASE[$1]}" ]] || return 1
-      print -r -- "''${__OS_RELEASE[$1]}"
-    }
-
-    os-release::is() {
-      local key=ID
-      if (( $# > 1 )); then
-        key="$1"
-        shift
-      fi
-      os-release::load
-      [[ "''${__OS_RELEASE[''${key:u}]}" == "$1" ]]
-    }
-
-    os-release::kind() {
-      [[ -n "''${__OS_KIND:-}" ]] || os-release::load
-      [[ -n "$__OS_KIND" ]] || return 1
-      print -r -- "$__OS_KIND"
-    }
-
-    is_termux() {
-      # Static: a non-Termux build never runs in Termux; CI exercises
-      # the Termux paths on Linux.
-      [[ "''${TERMUX_RUN_MODE:-}" == ci ]]
-    }
-
-    is_nixos() { [[ "$__OS_KIND" == nixos || -e /etc/NIXOS ]] }
-    is_archlinux() { [[ "$__OS_KIND" == arch ]] }
-    is_postmarketos() { os-release::is postmarketos }
-    is_fedora() { [[ "$__OS_KIND" == fedora ]] }
-    is_ubuntu() { [[ "$__OS_KIND" == ubuntu ]] }
-    is_distrobox() { [[ -n "''${DISTROBOX_ENTER_PATH:-}" ]] }
-    in_flatpak() { [[ "''${container:-}" == flatpak ]] }
+    is_nixos() { [[ -e /etc/NIXOS ]] }
     not_in_vt() {
       [[ "''${TTY:-}" != /dev/tty* && "$TERM" != vt* && "$TERM" != linux ]]
-    }
-
-    ${
-      if staticOsKind != null then
-        ''
-          if is_distrobox || [[ -e /run/.containerenv || -e /.dockerenv ]]
-          then
-            os-release::load
-          else
-            typeset -g __OS_KIND=${staticOsKind}
-          fi
-        ''
-      else
-        "os-release::load"
     }
 
     falias() {
@@ -197,16 +55,7 @@ in
       [[ "$oldest" == "$1" ]]
     }
 
-    libc::version-at-least() {
-      [[ $# == 1 ]] || return 2
-      local current
-      current="$(ldd --version 2>/dev/null | awk 'NR == 1 { print $NF }')" || return 1
-      [[ -n "$current" ]] || return 1
-      version::at-least "$1" "$current"
-    }
-
-    # The yadm lib set this as a side effect of tmux::version-at-least;
-    # plugins use it at load time (aliases like whatswrong).
+    # Plugins use this at load time (aliases like whatswrong).
     typeset -g TMUX_BIN_HOME="''${TMUX_BIN_HOME:-${config.xdg.configHome}/tmux/bin}"
 
     tmux::version-at-least() {
@@ -281,7 +130,7 @@ in
       fi
     }
 
-    # stderr, like the yadm echo:: helpers: functions whose stdout is
+    # stderr, like the echo:: helpers: functions whose stdout is
     # captured (rbw::get in gpg::auto-unlock) must not get these messages.
     echo_info() { print -ru2 -- "$*" }
     echo_err() { print -ru2 -- "$*" }
@@ -294,25 +143,6 @@ in
       read -rq REPLY
       print -u2
       [[ "$REPLY" == [Yy] ]]
-    }
-
-    yup() {
-      command update-and-deploy "$@"
-    }
-
-    yupnc() {
-      yup --flake-update --print-build-logs "$@"
-    }
-
-    ${yqoInit}
-
-    yrm() {
-      local -a packages=("$@")
-      (( ''${#packages} )) || return 2
-      if command nix-env -e "''${packages[@]}"
-      then
-        command nix-collect-garbage --delete-older-than 7d
-      fi
     }
   '';
 }

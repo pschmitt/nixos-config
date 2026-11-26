@@ -3,14 +3,9 @@
   pkgs,
   ...
 }:
-let
-  inherit (import ./path.nix { inherit lib; }) pluginTree;
-in
 {
   home.packages = [ pkgs.zsh-completions ];
   programs.zsh.initContent = lib.mkOrder 520 ''
-    fpath=("${
-      pluginTree "completions" "src" "${pkgs.zsh-completions}/share/zsh/site-functions"
-    }" $fpath)
+    fpath=("${pkgs.zsh-completions}/share/zsh/site-functions" $fpath)
   '';
 }

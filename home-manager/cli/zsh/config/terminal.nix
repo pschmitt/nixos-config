@@ -5,14 +5,6 @@
   programs.zsh.initContent = lib.mkOrder 1450 ''
     if [[ -o interactive ]]
     then
-      if is_fedora && [[ -r /etc/profile.d/vte.sh ]]
-      then
-        () {
-          local TERM=xterm VTE_VERSION=99999
-          source /etc/profile.d/vte.sh
-        }
-      fi
-
       # Delete all Kitty-graphics images (timg -pk, kitten icat, ...) that are
       # left on screen. Pure escape sequence, so no kitty binary is needed.
       # Inside tmux the sequence is wrapped in a DCS passthrough.
