@@ -266,8 +266,6 @@ in
               keycap
               // {
                 key = "TAB";
-                popup = "BKSP";
-                hint = "⌫";
               }
             )
             (
@@ -317,8 +315,6 @@ in
               // {
                 key = "-";
                 hold = "BACKSLASH";
-                popup = "/";
-                hint = "/";
               }
             )
           ]
