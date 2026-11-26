@@ -37,7 +37,6 @@ in
     # as a system package. See:
     # https://github.com/NixOS/nixpkgs/pull/339384
     # bitwarden-desktop
-    master.bitwarden-cli
     rbwRequestUnlock
   ];
 
