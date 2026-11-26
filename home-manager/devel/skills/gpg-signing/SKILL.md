@@ -1,6 +1,6 @@
 ---
 name: gpg-signing
-description: Create GPG-signed git commits and tags without a pinentry prompt. Use before any signed commit or tag, including amend, cherry-pick and rebase, or when signing fails because the key is not unlocked.
+description: Create GPG-signed commits and tags without pinentry, or unlock a GPG encryption subkey for SOPS decryption. Use before any signed commit or tag, including amend, cherry-pick and rebase, and when a GPG key is not unlocked.
 ---
 
 # GPG signing
