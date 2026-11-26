@@ -272,6 +272,8 @@ in
                   "\\"
                   "-"
                   "$"
+                  "<"
+                  ">"
                 ];
               }
             )
@@ -324,7 +326,16 @@ in
               keycap
               // {
                 key = "-";
-                hold = "BACKSLASH";
+                # Same long-press menu as the pipe key, with the pipe in place of the minus.
+                menu = [
+                  "~"
+                  "/"
+                  "\\"
+                  "|"
+                  "$"
+                  "<"
+                  ">"
+                ];
               }
             )
           ]
