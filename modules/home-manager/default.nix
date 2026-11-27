@@ -4,5 +4,6 @@
   glab = import ./glab.nix;
   "go-hass-agent" = import ./go-hass-agent.nix;
   lnxlink = import ./lnxlink.nix;
+  mickey = import ./mickey.nix;
   openclaw = import ./openclaw.nix;
 }

@@ -1,7 +1,9 @@
 { config, ... }:
 {
   home-manager.users.${config.mainUser.username} = {
-    imports = [ ../../home-manager/gui/mickey.nix ];
+    imports = [ ../../modules/home-manager/mickey.nix ];
+
+    programs.mickey.enable = true;
 
     wayland.windowManager.hyprland.settings.device = [
       {
