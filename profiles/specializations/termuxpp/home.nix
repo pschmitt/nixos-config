@@ -248,7 +248,6 @@ in
                   key = "PGUP";
                   display = "PgUp";
                 };
-                hint = "PgUp";
               }
             )
             (
@@ -266,7 +265,6 @@ in
                   key = "PGDN";
                   display = "PgDn";
                 };
-                hint = "PgDn";
               }
             )
             (
