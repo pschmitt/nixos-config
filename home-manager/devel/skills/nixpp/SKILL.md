@@ -41,7 +41,11 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
    nixos-config for the guest configuration.
 2. For termuxpp changes, bump the input in nixos-config
    (`nix flake lock --update-input termuxpp`), check that only that input moved,
-   commit `flake.lock` by path and push (`deploy` skill, steps 1-4).
+   commit `flake.lock` by path and push (`deploy` skill, steps 1-4). When the
+   lock was updated on a worker, carry over only its `termuxpp` node
+   (`jq '.nodes.termuxpp'`) into the current local `flake.lock`, never the
+   whole file: other agents bump inputs meanwhile, and a copied lock silently
+   reverts their bumps.
 3. Upgrade each phone, both in parallel:
    - **Published system (default):** `nixpp upgrade`. It installs the system
      that nixos-config CI built and pinned for the host in the signed cache;
@@ -134,6 +138,14 @@ on the claimed phones and verify that the worker profile is `gh-aarch64`.
 If a previous attempt looked up the runtime before it was published, set
 the Nix option `narinfo-cache-negative-ttl = 0` in `NIX_CONFIG` for the retry.
 
+### Launcher updates
+
+Generations ship the guest launcher (`native/launcher`), built for the
+runtime's syscall stub address (`system.launcherStub`). Read
+[references/launcher.md](references/launcher.md) before changing the
+launcher, enrolling a host, or when every new guest program dies with
+"invalid system call".
+
 ## Build the phone artifacts
 
 Build on rworkers, never on the workstation or a phone, and push every result
@@ -150,6 +162,10 @@ docs; follow them instead of improvising:
   OpenStack worker with `--disk 250`). Check that the APK embeds the new zip
   (`libtermux-bootstrap.so` contains its bytes). Such APKs and zips carry the
   private setup config: keep them 0600 and local.
+
+On a `gh-aarch64` lease Nix uses a chroot store: a path printed by
+`nix build` exists only inside `nix shell`/`nix develop` there. Copy a file
+out with `nix shell PKG -c sh -c 'cp "$(readlink -f "$(command -v X)")" ~/X'`.
 
 ## Enroll a phone from scratch
 
@@ -213,5 +229,8 @@ host while a phone copies through its relay: the switch cuts the connection
   activation, nightly included, do this; `--no-backup` overrides it.
 - From an Android failsafe session, `nixpp native-shell` opens the native
   TermuxPP shell; the native controller runs independently of the guest.
+- Every new guest program dies with "invalid system call" (SIGSYS): the
+  runtime launcher is broken; restore it as in
+  [references/launcher.md](references/launcher.md#recover-a-broken-launcher).
 - `nixpp gc --keep-generations N` prunes old generations; keep at least the
   previous one until a new generation is verified.
