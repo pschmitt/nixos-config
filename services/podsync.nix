@@ -90,7 +90,7 @@ in
   virtualisation.oci-containers.containers.podsync = {
     autoStart = true;
     # renovate: depType=automerge
-    image = "ghcr.io/mxpv/podsync:nightly@sha256:0c7d9391f5ecea215182b86d824f0e98d9f76231b6b5818372634d5ed7bae02c";
+    image = "ghcr.io/mxpv/podsync:nightly@sha256:9eb485b8804522e57a316688f20828ffeb2a55fa126d4667e2ce4300719b4e7c";
     pull = "always";
     ports = [
       "127.0.0.1:${toString listenPort}:${toString containerPort}"
