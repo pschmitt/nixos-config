@@ -17,6 +17,7 @@
     ./lumine-capture.nix
     ./networking.nix
     ./noctalia-obs.nix
+    ./power.nix
     ./prompt.nix
     ./user-services.nix
     ./wacom.nix

@@ -72,6 +72,7 @@ in
 
     preStart = ''
       echo "PreStart: recreate auth file"
+      umask 077
       rm -vf "${wiitAuthUserPass}"
 
       PASSWORD_PREFIX=$(cat ${config.sops.secrets."openvpn/wiit/password".path})
@@ -109,6 +110,7 @@ in
   # dig git.wiit.one @1.1.1.1 A +short
   # networking.extraHosts = "185.32.80.217 git.wiit.one";
   networking.extraHosts = ''
-    2001:4ba0:133b:39::2b0 2001:4ba0:133b:39::1f6 docker-hub-proxy.prod.capp.wiit-cloud.io
+    2001:4ba0:133b:39::2b0 docker-hub-proxy.prod.capp.wiit-cloud.io
+    2001:4ba0:133b:39::1f6 docker-hub-proxy.prod.capp.wiit-cloud.io
   '';
 }

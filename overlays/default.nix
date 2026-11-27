@@ -43,7 +43,6 @@
       ];
       config = {
         allowUnfree = true;
-        allowBroken = true;
         permittedInsecurePackages = final.config.permittedInsecurePackages or [ ];
       };
     };

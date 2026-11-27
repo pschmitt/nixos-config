@@ -10,8 +10,8 @@
   services.openssh = {
     enable = true;
     settings = {
-      PasswordAuthentication = true;
-      KbdInteractiveAuthentication = true;
+      PasswordAuthentication = lib.mkDefault false;
+      KbdInteractiveAuthentication = lib.mkDefault false;
       PermitRootLogin = "prohibit-password";
       # Let clients pick the bind address (e.g. 0.0.0.0)
       GatewayPorts = "clientspecified";
