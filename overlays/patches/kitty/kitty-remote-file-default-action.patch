@@ -1,0 +1,17 @@
+--- a/kittens/remote_file/main.go
++++ b/kittens/remote_file/main.go
+@@ -371,6 +371,14 @@
+ 
+ func main(cmd *cli.Command, opts *Options, args []string) (rc int, err error) {
+ 	action := opts.Mode
++	// Local patch: kitty always launches this kitten in ask mode. Let
++	// KITTY_REMOTE_FILE_ACTION (open, edit or save) pick the action instead.
++	if action == "ask" {
++		switch env_action := os.Getenv("KITTY_REMOTE_FILE_ACTION"); env_action {
++		case "open", "edit", "save":
++			action = env_action
++		}
++	}
+ 	if action == "ask" {
+ 		action, err = ask_action(opts)
+ 		reset_terminal()

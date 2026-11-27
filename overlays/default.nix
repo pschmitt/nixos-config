@@ -39,6 +39,7 @@
       overlays = [
         (_final: prev: import ./hotfixes/onnxruntime.nix { inherit prev; })
         (_final: prev: import ./hotfixes/kitty.nix { inherit prev; })
+        (_final: prev: import ./kitty.nix { inherit prev; })
       ];
       config = {
         allowUnfree = true;

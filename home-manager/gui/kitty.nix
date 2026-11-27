@@ -57,6 +57,10 @@
     };
     extraConfig = ''
       mouse_map ctrl+left release ungrabbed mouse_handle_click link
+
+      # Open remote file:// hyperlinks (ls --hyperlink over ssh) right away
+      # instead of asking open/edit/save; see overlays/kitty.nix.
+      env KITTY_REMOTE_FILE_ACTION=open
     '';
   };
 }
