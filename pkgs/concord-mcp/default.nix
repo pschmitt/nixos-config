@@ -11,13 +11,13 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "concord-mcp";
-  version = "0.25.0";
+  version = "0.26.0";
 
   src = fetchFromGitHub {
     owner = "Get-Concord-AI";
     repo = "concord-mcp";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-MuD8LqIiKeW2eDpGS/xX1Hmsa90o8NwJPIqXk6LbWZw=";
+    hash = "sha256-+eQbDojEdYYQ4DgOJ7bB/9XqMFKBp7O9AHK2TB6hq8A=";
   };
 
   # Concord keeps its user-level state in a hardcoded ~/.concord; move it to
