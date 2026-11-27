@@ -81,6 +81,7 @@ in
     }
   ) { };
   vivid = withSignalStack prev.vivid [ "vivid" ];
+  ssh-clipboard = withSignalStack prev.ssh-clipboard [ "ssh-clipboard" ];
   zoxide = withSignalStack prev.zoxide [ "zoxide" ];
   # The guest cannot reliably allocate LuaJIT executable memory at startup.
   # The patch only touches the test suite: two treesitter tests assumed async parses finish
