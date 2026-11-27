@@ -96,7 +96,10 @@ runner through the controller's restricted `phone-rworker` account, retries
 within its budget and never installs an older system ("latest or nothing").
 `termuxpp-nightly-update --check` shows its readiness, including whether the
 controller accepts the phone, without activating anything. Its log is
-`~/.local/state/termuxpp-nightly/last-run.log`. Phones are on neither NetBird
+`~/.local/state/termuxpp-nightly/last-run.log`; a run killed outright (no
+`Result:` line) is kept as `killed-run.log`, and `adb shell dumpsys activity
+exit-info dev.pschmitt.termux` gives Android's reason (for example
+`MemoryLimiter:AnonSwap`, in the phone's local time). Phones are on neither NetBird
 nor Tailscale: anything that needs a mesh route to an OpenStack worker fails
 there ("does not accept SSH").
 

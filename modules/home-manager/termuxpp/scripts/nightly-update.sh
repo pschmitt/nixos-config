@@ -13,7 +13,8 @@ finish() {
     nightly_result=failed
   fi
   log "Result: $nightly_result (exit $status)"
-  printf 'TermuxPP nightly update: %s (exit %s)\n' "$nightly_result" "$status" >&3
+  printf 'TermuxPP nightly update: %s (exit %s)%s\n' "$nightly_result" "$status" \
+    "${killed_run:+; the previous run was killed}" >&3
 }
 
 run_step() {
@@ -153,8 +154,9 @@ host_reachable() {
 }
 
 main() {
-  local mode=update state_dir log_file free_kib
+  local mode=update state_dir log_file free_kib killed_at=''
   nightly_result=failed
+  killed_run=''
   if (( $# > 1 ))
   then
     usage >&2
@@ -187,6 +189,17 @@ main() {
   fi
   if [[ -f "$log_file" ]]
   then
+    # Every run ends with a Result line from its EXIT trap. A log without
+    # one belongs to a run that was killed outright (SIGKILL, for example
+    # Android's memory limiter taking down the app with its children). Keep
+    # that log until the next killed run, so later runs do not rotate it away.
+    if ! grep -q '^[^ ]* Result: ' "$log_file"
+    then
+      killed_run="$(head -n 1 -- "$log_file" | cut -d ' ' -f 1)"
+      killed_run=${killed_run:-unknown}
+      killed_at="$(date -r "$log_file" -Iseconds)"
+      cp -f -- "$log_file" "$state_dir/killed-run.log" || return 1
+    fi
     mv -f -- "$log_file" "$state_dir/previous-run.log" || return 1
   fi
   exec 3>&1 >>"$log_file" 2>&1
@@ -195,6 +208,10 @@ main() {
   trap 'exit 143' TERM HUP
   cd "$HOME" || return 1
   log "Starting nightly maintenance ($mode)"
+  if [[ -n "$killed_run" ]]
+  then
+    log "The previous run (started $killed_run, last output $killed_at) ended without a result: it was killed. Its log is $state_dir/killed-run.log."
+  fi
 
   plugged=$(timeout 15 tpp battery plugged </dev/null) || plugged=''
   if [[ -z "$plugged" || "$plugged" == UNPLUGGED ]]

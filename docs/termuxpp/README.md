@@ -422,7 +422,10 @@ the run fails when none succeeds. It then runs `nixpp gc --keep-generations 3` a
 fast-forwards yadm. It syncs Atuin when signed in,
 then syncs and updates each
 configured mani workspace. Git runs without prompting. The latest two runs
-are logged under `~/.local/state/termuxpp-nightly/` in the guest. To check the
+are logged under `~/.local/state/termuxpp-nightly/` in the guest. A run that
+ends without a `Result:` line was killed outright (on Pixels, Android's memory
+limiter takes down the app with the run): the next run says so in its log and
+result, and keeps that log as `killed-run.log`. To check the
 readiness (the controller's restricted lease account must accept the phone's
 key) without leasing or activating anything,
 run `termuxpp-nightly-update --check`.
