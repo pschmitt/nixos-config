@@ -1,8 +1,8 @@
 {
   lib,
-  stdenv,
+  rustPlatform,
   fetchurl,
-  autoPatchelfHook,
+  pkg-config,
   makeWrapper,
   libpulseaudio,
   libglvnd,
@@ -24,44 +24,44 @@ let
     libxrandr
   ];
 in
-stdenv.mkDerivation (finalAttrs: {
+rustPlatform.buildRustPackage {
   pname = "mickey";
   version = "0.6.0";
 
   src = fetchurl {
-    url = "https://github.com/EduardoMG12/mickey/releases/download/v${finalAttrs.version}/mickey-linux-x86_64.tar.gz";
-    hash = "sha256-vhWH3+Fnx91fZzv0UoE5x+e8z7IfA1zXFqfrBsL3YKk=";
+    url = "https://codeload.github.com/EduardoMG12/mickey/tar.gz/84aabf2f53157542c8b5da579318e0984e4e1161";
+    name = "mickey-0.6.0.tar.gz";
+    hash = "sha256-mwcKf/rsECmk7mHtxfVJ7KokEYABaAgfAZ9leZwHHWc=";
   };
+  cargoLock.lockFile = ./Cargo.lock;
+
+  patches = [ ./0001-resolve-peer-hostnames.patch ];
 
   nativeBuildInputs = [
-    autoPatchelfHook
     makeWrapper
+    pkg-config
   ];
   buildInputs = [
     libpulseaudio
-    stdenv.cc.cc.lib
+    wayland
   ];
 
-  dontBuild = true;
-  installPhase = ''
-    runHook preInstall
-    install -Dm755 mickey "$out/bin/mickey"
-    install -Dm755 mickey-ui "$out/bin/mickey-ui"
-    install -Dm644 mickey-settings.desktop "$out/share/applications/mickey-settings.desktop"
-    install -Dm644 mickey.png "$out/share/icons/hicolor/256x256/apps/mickey.png"
+  cargoBuildFlags = [ "--workspace" ];
+  cargoTestFlags = [ "--workspace" ];
+
+  postInstall = ''
+    install -Dm644 packaging/linux/mickey-settings.desktop "$out/share/applications/mickey-settings.desktop"
+    install -Dm644 packaging/linux/mickey.png "$out/share/icons/hicolor/256x256/apps/mickey.png"
     install -Dm644 LICENSE "$out/share/licenses/mickey/LICENSE"
-    install -Dm644 THIRD-PARTY-LICENSES.txt "$out/share/licenses/mickey/THIRD-PARTY-LICENSES.txt"
     wrapProgram "$out/bin/mickey-ui" \
       --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath uiLibraries}:/run/opengl-driver/lib"
-    runHook postInstall
   '';
 
   meta = {
     description = "Share a keyboard and mouse across computers";
     homepage = "https://github.com/EduardoMG12/mickey";
-    license = lib.licenses.gpl3Only;
+    license = lib.licenses.gpl3Plus;
     mainProgram = "mickey";
     platforms = [ "x86_64-linux" ];
-    sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
   };
-})
+}

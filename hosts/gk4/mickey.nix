@@ -3,7 +3,16 @@
   home-manager.users.${config.mainUser.username} = {
     imports = [ ../../modules/home-manager/mickey.nix ];
 
-    programs.mickey.enable = true;
+    programs.mickey = {
+      enable = true;
+      peers.ge2 = {
+        address = "ge2.${config.domains.vpn}:4242";
+        position = [
+          (-5360)
+          (-240)
+        ];
+      };
+    };
 
     wayland.windowManager.hyprland.settings.device = [
       {

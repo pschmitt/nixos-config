@@ -1,0 +1,577 @@
+diff --git a/crates/mickey-config/src/address.rs b/crates/mickey-config/src/address.rs
+new file mode 100644
+index 0000000..52de694
+--- /dev/null
++++ b/crates/mickey-config/src/address.rs
+@@ -0,0 +1,139 @@
++use serde::Deserialize;
++use std::fmt;
++use std::io;
++use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
++use std::str::FromStr;
++
++/// A peer endpoint as written by the user. DNS is resolved by the caller
++/// when dialing, so a VPN can become available after Mickey starts.
++#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
++#[serde(try_from = "String")]
++pub enum PeerAddress {
++    Ip(SocketAddr),
++    Host { name: String, port: u16 },
++}
++
++impl PeerAddress {
++    pub fn port(&self) -> u16 {
++        match self {
++            Self::Ip(address) => address.port(),
++            Self::Host { port, .. } => *port,
++        }
++    }
++
++    pub fn numeric(&self) -> Option<SocketAddr> {
++        match self {
++            Self::Ip(address) => Some(*address),
++            Self::Host { .. } => None,
++        }
++    }
++
++    pub fn resolve(&self) -> io::Result<Vec<SocketAddr>> {
++        match self {
++            Self::Ip(address) => Ok(vec![*address]),
++            Self::Host { name, port } => Ok((name.as_str(), *port).to_socket_addrs()?.collect()),
++        }
++    }
++
++    pub fn matches_ip(&self, ip: IpAddr) -> bool {
++        self.resolve()
++            .is_ok_and(|addresses| addresses.iter().any(|address| address.ip() == ip))
++    }
++}
++
++impl fmt::Display for PeerAddress {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        match self {
++            Self::Ip(address) => address.fmt(f),
++            Self::Host { name, port } => write!(f, "{name}:{port}"),
++        }
++    }
++}
++
++impl From<SocketAddr> for PeerAddress {
++    fn from(address: SocketAddr) -> Self {
++        Self::Ip(address)
++    }
++}
++
++impl TryFrom<String> for PeerAddress {
++    type Error = String;
++
++    fn try_from(value: String) -> Result<Self, Self::Error> {
++        value.parse()
++    }
++}
++
++impl FromStr for PeerAddress {
++    type Err = String;
++
++    fn from_str(value: &str) -> Result<Self, Self::Err> {
++        if let Ok(address) = value.parse::<SocketAddr>() {
++            return Ok(address.into());
++        }
++        let invalid =
++            || format!("expected an IP address or DNS hostname with a port, got {value:?}");
++        let (name, port) = value.rsplit_once(':').ok_or_else(invalid)?;
++        let labels = name.strip_suffix('.').unwrap_or(name);
++        if labels.len() > 253
++            || !labels.split('.').all(|label| {
++                !label.is_empty()
++                    && label.len() <= 63
++                    && !label.starts_with('-')
++                    && !label.ends_with('-')
++                    && label
++                        .bytes()
++                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
++            })
++        {
++            return Err(invalid());
++        }
++        Ok(Self::Host {
++            name: name.into(),
++            port: port.parse().map_err(|_| invalid())?,
++        })
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn parses_dns_without_resolving_it() {
++        let config =
++            crate::parse("[[peer]]\nname = \"Desk\"\naddress = \"desk.invalid:4242\"\n").unwrap();
++        assert_eq!(config.peers[0].address.to_string(), "desk.invalid:4242");
++        assert_eq!(config.peers[0].address.numeric(), None);
++    }
++
++    #[test]
++    fn accepts_numeric_addresses_and_resolves_a_hostname() {
++        for endpoint in ["192.0.2.1:4242", "[::1]:4242"] {
++            let parsed: PeerAddress = endpoint.parse().unwrap();
++            assert_eq!(parsed.numeric(), Some(endpoint.parse().unwrap()));
++        }
++        let endpoint: PeerAddress = "localhost:4242".parse().unwrap();
++        let addresses = endpoint.resolve().unwrap();
++        assert!(!addresses.is_empty());
++        assert!(
++            addresses
++                .iter()
++                .all(|address| address.ip().is_loopback() && address.port() == 4242)
++        );
++    }
++
++    #[test]
++    fn rejects_addresses_without_a_valid_host_and_port() {
++        for invalid in [
++            "desk",
++            "desk:70000",
++            "a..b:4242",
++            "a/b:4242",
++            "::1:4242",
++            "-desk:4242",
++        ] {
++            assert!(invalid.parse::<PeerAddress>().is_err(), "{invalid}");
++        }
++    }
++}
+diff --git a/crates/mickey-config/src/lib.rs b/crates/mickey-config/src/lib.rs
+index 0f79606..0cf465d 100644
+--- a/crates/mickey-config/src/lib.rs
++++ b/crates/mickey-config/src/lib.rs
+@@ -10,6 +10,7 @@
+ //! speed = 16
+ //! ```
+ 
++mod address;
+ pub mod audio;
+ pub mod chord;
+ mod edit;
+@@ -19,6 +20,7 @@ mod interface;
+ pub mod peers;
+ pub mod version;
+ 
++pub use address::PeerAddress;
+ pub use audio::{Audio, SoundMode, now_seconds};
+ pub use edit::{add_peer, set_audio, set_hotkeys, set_key, set_position, toml_string};
+ pub use hotkeys::{
+@@ -209,7 +211,7 @@ pub enum Share {
+ #[serde(deny_unknown_fields)]
+ pub struct Peer {
+     pub name: String,
+-    pub address: SocketAddr,
++    pub address: PeerAddress,
+     /// Goes straight to this peer, e.g. `"AltGr+RightShift+1"`.
+     #[serde(default)]
+     pub hotkey: Option<String>,
+@@ -327,7 +329,7 @@ impl Config {
+     pub fn peer_name(&self, ip: std::net::IpAddr) -> Option<&str> {
+         self.peers
+             .iter()
+-            .find(|peer| peer.address.ip() == ip)
++            .find(|peer| peer.address.matches_ip(ip))
+             .map(|peer| peer.name.as_str())
+     }
+ 
+diff --git a/crates/mickey/src/audio/mod.rs b/crates/mickey/src/audio/mod.rs
+index 47542ab..e4b3dc8 100644
+--- a/crates/mickey/src/audio/mod.rs
++++ b/crates/mickey/src/audio/mod.rs
+@@ -148,7 +148,7 @@ fn volume_of(from: IpAddr) -> f32 {
+     config
+         .peers
+         .iter()
+-        .find(|peer| peer.address.ip() == from)
++        .find(|peer| peer.address.matches_ip(from))
+         .and_then(|peer| peer.key.as_deref())
+         .map_or(1.0, |key| config.audio.volume_of(key))
+ }
+diff --git a/crates/mickey/src/net/secure.rs b/crates/mickey/src/net/secure.rs
+index 1ea4a34..0efbf8d 100644
+--- a/crates/mickey/src/net/secure.rs
++++ b/crates/mickey/src/net/secure.rs
+@@ -51,6 +51,11 @@ pub struct Link {
+ }
+ 
+ impl Link {
++    /// The concrete address used by this connection.
++    pub fn peer_addr(&self) -> io::Result<std::net::SocketAddr> {
++        self.stream.peer_addr()
++    }
++
+     /// Runs the handshake as the side that connected (the source).
+     pub fn initiate(stream: TcpStream, identity: &Identity) -> io::Result<Link> {
+         let handshake = builder(identity)?.build_initiator().map_err(noise_error)?;
+diff --git a/crates/mickey/src/run.rs b/crates/mickey/src/run.rs
+index 060cc73..5e21227 100644
+--- a/crates/mickey/src/run.rs
++++ b/crates/mickey/src/run.rs
+@@ -217,7 +217,7 @@ pub fn run(command: Command) -> Result<(), String> {
+             let peers = match (to, config) {
+                 (Some(to), _) => vec![config::Peer {
+                     name: to.to_string(),
+-                    address: to,
++                    address: to.into(),
+                     hotkey: None,
+                     position: None,
+                     key: None,
+diff --git a/crates/mickey/src/source/joining.rs b/crates/mickey/src/source/joining.rs
+index c1f0691..34cbf7e 100644
+--- a/crates/mickey/src/source/joining.rs
++++ b/crates/mickey/src/source/joining.rs
+@@ -139,7 +139,7 @@ pub(super) fn join(
+     }
+     let known = peers
+         .iter()
+-        .position(|peer| peer.key == Some(member.key) || peer.address == member.address);
++        .position(|peer| peer.key == Some(member.key) || peer.address == Some(member.address));
+     if let Some(index) = known {
+         if let Some(position) = member.position
+             && positions[index] != Some(position)
+@@ -184,7 +184,7 @@ pub(super) fn add_peer(
+         config::write(&path, &text)?;
+         Ok(name)
+     })?;
+-    peers.push(Peer::new(name, address, None, Instant::now()));
++    peers.push(Peer::new(name, address.into(), None, Instant::now()));
+     positions.push(position);
+     Ok(peers.len() - 1)
+ }
+diff --git a/crates/mickey/src/source/mod.rs b/crates/mickey/src/source/mod.rs
+index d7bbd39..171a707 100644
+--- a/crates/mickey/src/source/mod.rs
++++ b/crates/mickey/src/source/mod.rs
+@@ -296,13 +296,7 @@ pub fn run(
+     // needed: one that hangs (frozen, or waiting for its owner to answer
+     // a pair window) never holds up the others. Links arrive on `back`.
+     for (index, peer) in peers.iter().enumerate() {
+-        connect_first(
+-            index,
+-            peer.name.clone(),
+-            peer.address,
+-            &shared,
+-            &back_sender,
+-        );
++        connect_first(index, peer, &shared, &back_sender);
+     }
+     // The clipboard follows the keyboard (PRD 0011), over data links.
+     let data_links = keeper
+@@ -448,14 +442,9 @@ pub fn run(
+                 None => save_key(&peers[index].name, link.peer_key()),
+             }
+             read_peer(index, &link, &pong_sender, start);
+-            if let Some(data_links) = &data_links {
+-                open_data_link(
+-                    index,
+-                    peers[index].address,
+-                    *link.peer_key(),
+-                    &shared,
+-                    data_links,
+-                );
++            peers[index].address = link.peer_addr().ok();
++            if let (Some(data_links), Some(address)) = (&data_links, peers[index].address) {
++                open_data_link(index, address, *link.peer_key(), &shared, data_links);
+             }
+             peers[index].key = Some(*link.peer_key());
+             peers[index].new_key = false;
+@@ -954,12 +943,17 @@ pub fn run(
+             if let Some(updates) = &updates {
+                 updates.heard(&version);
+             }
+-            for peer in peers.iter_mut().filter(|peer| peer.address.ip() == from) {
++            for peer in peers
++                .iter_mut()
++                .filter(|peer| peer.address.is_some_and(|address| address.ip() == from))
++            {
+                 peer.version = Some(version.clone());
+             }
+         }
+         if let Some((from, position)) = placed
+-            && let Some(index) = peers.iter().position(|peer| peer.address.ip() == from)
++            && let Some(index) = peers
++                .iter()
++                .position(|peer| peer.address.is_some_and(|address| address.ip() == from))
+         {
+             positions[index] = Some(position);
+             save_position(&peers[index].name, position);
+@@ -988,7 +982,7 @@ pub fn run(
+         if let Some((address, name, reply)) = connecting {
+             // The owner is connecting a PC now: it may answer back.
+             trust::open_pairing();
+-            let known = peers.iter().position(|peer| peer.address == address);
++            let known = peers.iter().position(|peer| peer.address == Some(address));
+             let paired = known.is_some_and(|i| peers[i].key.is_some());
+             let answer = if let (false, Some(left)) = (paired, trust::refused_for(address.ip())) {
+                 format!(
+@@ -1001,7 +995,7 @@ pub fn run(
+                         ]
+                     )
+                 )
+-            } else if shared.pairing.lock_anyway().contains(&address) {
++            } else if shared.pairing.lock_anyway().contains(&address.into()) {
+                 // Its first connection is still waiting for an answer: a
+                 // second one would show a second window with another code.
+                 format!("error: already pairing with {address}: answer the windows on both PCs")
+@@ -1009,7 +1003,7 @@ pub fn run(
+                 // Listed but never paired (its code was refused, or it
+                 // never answered): pair again, under the name it has.
+                 let name = peers[index].name.clone();
+-                connect_first(index, name.clone(), address, &shared, &back_sender);
++                connect_first(index, &peers[index], &shared, &back_sender);
+                 format!(
+                     "ok: {}",
+                     mickey_config::i18n::tf("messages.pairing_with", &[("name", &name)])
+@@ -1028,7 +1022,7 @@ pub fn run(
+                         let name = peers[index].name.clone();
+                         names.push(name.clone());
+                         // Pairs: the code shows on both PCs.
+-                        connect_first(index, name.clone(), address, &shared, &back_sender);
++                        connect_first(index, &peers[index], &shared, &back_sender);
+                         format!(
+                             "ok: {}",
+                             mickey_config::i18n::tf("messages.pairing_with", &[("name", &name)])
+@@ -1042,7 +1036,7 @@ pub fn run(
+         if let Some((lines, from)) = heard_hotkeys {
+             let who = peers
+                 .iter()
+-                .find(|peer| peer.address.ip() == from)
++                .find(|peer| peer.address.is_some_and(|address| address.ip() == from))
+                 .map_or_else(|| from.to_string(), |peer| peer.name.clone());
+             offer_hotkeys(lines, &who, &wake);
+         }
+@@ -1081,7 +1075,13 @@ pub fn run(
+             && let Some(index) = join(member, &by, &shared, &mut peers, &mut positions)
+         {
+             names.push(peers[index].name.clone());
+-            reconnect(index, peers[index].address, &shared, &back_sender);
++            reconnect(
++                index,
++                peers[index].endpoint.clone(),
++                peers[index].key,
++                &shared,
++                &back_sender,
++            );
+         }
+         if let Some((members, by)) = heard_map {
+             let joined = take_map(
+@@ -1095,7 +1095,13 @@ pub fn run(
+             );
+             for index in joined {
+                 names.push(peers[index].name.clone());
+-                reconnect(index, peers[index].address, &shared, &back_sender);
++                reconnect(
++                    index,
++                    peers[index].endpoint.clone(),
++                    peers[index].key,
++                    &shared,
++                    &back_sender,
++                );
+             }
+         }
+         // Share the group map when the PCs online changed (one came, or
+@@ -1117,7 +1123,7 @@ pub fn run(
+                     Some(group::Member {
+                         key: peer.key?,
+                         name: peer.name.clone(),
+-                        address: peer.address,
++                        address: peer.address?,
+                         position: *position,
+                     })
+                 })
+@@ -1224,7 +1230,13 @@ pub fn run(
+                 grabbed = None;
+                 println!("{}", mickey_config::i18n::t("messages.focus_back"));
+             });
+-            reconnect(index, peers[index].address, &shared, &back_sender);
++            reconnect(
++                index,
++                peers[index].endpoint.clone(),
++                peers[index].key,
++                &shared,
++                &back_sender,
++            );
+         }
+     }
+     Err(mickey_config::i18n::t("messages.every_device_gone").into())
+diff --git a/crates/mickey/src/source/peer.rs b/crates/mickey/src/source/peer.rs
+index 4bd33dd..d36ff6e 100644
+--- a/crates/mickey/src/source/peer.rs
++++ b/crates/mickey/src/source/peer.rs
+@@ -21,7 +21,9 @@ use std::time::Instant;
+ /// One configured peer and its link, if it is connected.
+ pub(super) struct Peer {
+     pub(super) name: String,
+-    pub(super) address: SocketAddr,
++    pub(super) endpoint: config::PeerAddress,
++    /// Most recent authenticated destination, or the configured literal IP.
++    pub(super) address: Option<SocketAddr>,
+     pub(super) link: Option<Link>,
+     /// When it last answered (a pong, its monitors…).
+     pub(super) heard: Instant,
+@@ -41,13 +43,14 @@ impl Peer {
+     /// A peer not connected yet, last heard of at `heard`.
+     pub(super) fn new(
+         name: String,
+-        address: SocketAddr,
++        endpoint: config::PeerAddress,
+         key: Option<[u8; 32]>,
+         heard: Instant,
+     ) -> Peer {
+         Peer {
+             name,
+-            address,
++            address: endpoint.numeric(),
++            endpoint,
+             link: None,
+             heard,
+             key,
+@@ -72,15 +75,15 @@ pub(super) struct Shared {
+ }
+ 
+ /// The addresses being paired with, shared with the threads doing it.
+-pub(super) type Pairing = Arc<std::sync::Mutex<std::collections::HashSet<SocketAddr>>>;
++pub(super) type Pairing = Arc<std::sync::Mutex<std::collections::HashSet<config::PeerAddress>>>;
+ 
+ /// Marks `address` as being paired with until dropped, whether the pairing
+ /// worked or not.
+-struct PairingWith(Pairing, SocketAddr);
++struct PairingWith(Pairing, config::PeerAddress);
+ 
+ impl PairingWith {
+-    fn start(pairing: &Pairing, address: SocketAddr) -> PairingWith {
+-        pairing.lock_anyway().insert(address);
++    fn start(pairing: &Pairing, address: config::PeerAddress) -> PairingWith {
++        pairing.lock_anyway().insert(address.clone());
+         PairingWith(Arc::clone(pairing), address)
+     }
+ }
+@@ -95,38 +98,63 @@ impl Drop for PairingWith {
+ /// hands the link to the main loop; if it fails, retries like any peer.
+ pub(super) fn connect_first(
+     index: usize,
+-    name: String,
+-    to: SocketAddr,
++    peer: &Peer,
+     shared: &Arc<Shared>,
+     back: &Sender<(usize, Link)>,
+ ) {
+     let (shared, back) = (Arc::clone(shared), back.clone());
++    let (name, endpoint, key) = (peer.name.clone(), peer.endpoint.clone(), peer.key);
+     // Marked before the thread starts, so the main loop sees it at once.
+-    let pairing = PairingWith::start(&shared.pairing, to);
++    let pairing = PairingWith::start(&shared.pairing, endpoint.clone());
+     crate::threads::spawn("connect", move || {
+-        let result = connect_and_pair(&shared.identity, &shared.trusted, &name, to);
++        let result = dial(&endpoint, key, &shared.identity).and_then(|(to, link)| {
++            if key.is_some_and(|key| key != *link.peer_key()) {
++                return Ok(link); // The main loop reports the changed identity.
++            }
++            connect_and_pair(link, &shared.trusted, &name, to)
++        });
+         drop(pairing);
+         match result {
+             Ok(link) => {
+                 let _ = back.send((index, link));
+             }
+             Err(err) => {
+-                println!("mickey: {name} ({to}) not connected: {err}");
+-                reconnect(index, to, &shared, &back);
++                println!("mickey: {name} ({endpoint}) not connected: {err}");
++                reconnect(index, endpoint, key, &shared, &back);
+             }
+         }
+     });
+ }
+ 
++/// Resolve on the connection thread. A failed answer must not prevent
++/// trying other addresses, and a pinned key is checked before pairing.
++fn dial(
++    endpoint: &config::PeerAddress,
++    key: Option<[u8; 32]>,
++    identity: &Identity,
++) -> Result<(SocketAddr, Link), String> {
++    let mut error = "DNS returned no addresses".into();
++    let mut changed_identity = None;
++    for address in endpoint.resolve().map_err(|err| err.to_string())? {
++        match transport::connect(address, identity) {
++            Ok(link) if key.is_none_or(|key| key == *link.peer_key()) => {
++                return Ok((address, link));
++            }
++            Ok(link) => changed_identity = Some((address, link)),
++            Err(err) => error = err.to_string(),
++        }
++    }
++    changed_identity.ok_or(error)
++}
++
+ /// Connects, asks to pair if the key is unknown, and waits for the peer to
+ /// accept us.
+-pub(super) fn connect_and_pair(
+-    identity: &Identity,
++fn connect_and_pair(
++    mut link: Link,
+     trusted: &trust::Shared,
+     name: &str,
+     to: SocketAddr,
+ ) -> Result<Link, String> {
+-    let mut link = transport::connect(to, identity).map_err(|err| err.to_string())?;
+     let peer_key = *link.peer_key();
+     if trusted.lock_anyway().is_trusted(&peer_key) {
+         transport::hello(&mut link).map_err(|err| refusal(&err, false, name))?;
+@@ -309,7 +337,8 @@ pub(super) fn open_data_link(
+ /// trusted is left alone.
+ pub(super) fn reconnect(
+     index: usize,
+-    to: SocketAddr,
++    endpoint: config::PeerAddress,
++    key: Option<[u8; 32]>,
+     shared: &Arc<Shared>,
+     back: &Sender<(usize, Link)>,
+ ) {
+@@ -317,9 +346,13 @@ pub(super) fn reconnect(
+     crate::threads::spawn("reconnect", move || {
+         loop {
+             thread::sleep(RETRY_EVERY);
+-            let Ok(mut link) = transport::connect(to, &shared.identity) else {
++            let Ok((to, mut link)) = dial(&endpoint, key, &shared.identity) else {
+                 continue;
+             };
++            if key.is_some_and(|key| key != *link.peer_key()) {
++                let _ = back.send((index, link));
++                return;
++            }
+             let trusted = shared.trusted.lock_anyway().is_trusted(link.peer_key());
+             if !trusted {
+                 println!(
+@@ -418,8 +451,8 @@ mod tests {
+     #[test]
+     fn a_pairing_in_progress_is_marked_until_it_ends() {
+         let pairing = Pairing::default();
+-        let to: SocketAddr = "192.0.2.7:4242".parse().unwrap();
+-        let marked = PairingWith::start(&pairing, to);
++        let to: config::PeerAddress = "192.0.2.7:4242".parse().unwrap();
++        let marked = PairingWith::start(&pairing, to.clone());
+         assert!(
+             pairing.lock_anyway().contains(&to),
+             "a second Connect sees it"
+diff --git a/crates/mickey/src/source/sound.rs b/crates/mickey/src/source/sound.rs
+index 55e8d78..469c647 100644
+--- a/crates/mickey/src/source/sound.rs
++++ b/crates/mickey/src/source/sound.rs
+@@ -54,7 +54,7 @@ pub(super) fn audio_target(
+         return None;
+     }
+     let index = peers.iter().position(|peer| peer.key == Some(listener))?;
+-    let address = peers[index].address;
++    let address = peers[index].address?;
+     online[index].then(|| {
+         (
+             index,
