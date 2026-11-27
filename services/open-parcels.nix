@@ -12,7 +12,9 @@ in
     content = ''
       OPENPARCELS_PASSWORD=${config.sops.placeholder."open-parcels/reader-password"}
     '';
-    restartUnits = [ config.virtualisation.oci-containers.containers.open-parcels.serviceName ];
+    restartUnits = [
+      "${config.virtualisation.oci-containers.containers.open-parcels.serviceName}.service"
+    ];
   };
 
   virtualisation.oci-containers.containers.open-parcels = {
