@@ -197,7 +197,7 @@ index 0000000..b94fb30
 +
 +    async fn read_text(&self) -> Result<Vec<u8>> {
 +        let mut child = Command::new("tpp")
-+            .args(["clipboard", "get"])
++            .args(["clipboard", "get", "--text"])
 +            .stdin(Stdio::null())
 +            .stdout(Stdio::piped())
 +            .stderr(Stdio::null())

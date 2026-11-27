@@ -38,7 +38,7 @@ From a visible TermuxPP session, start the phone peer in the foreground:
 SSH_CLIPBOARD_TERMUXPP=1 ssh-clipboard daemon
 ```
 
-The bridge reads text through `tpp clipboard get` at most once per second.
+The bridge reads text through `tpp clipboard get --text` at most once per second.
 The first readable value establishes the baseline, then subsequent changes go
 to the configured peers. Android can withhold the clipboard when TermuxPP
 loses focus. The text API does not expose Android's sensitive-clipboard flag,
