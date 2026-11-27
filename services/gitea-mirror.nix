@@ -99,34 +99,24 @@ in
     };
   };
 
-  services.nginx.virtualHosts."${mainHost}" = {
-    enableACME = true;
-    forceSSL = true;
-
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString listenPort}";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
+  services.containerServices.services."gitea-mirror" = {
+    port = listenPort;
+    hosts = [ mainHost ];
+    redirect = false;
+    monitoring = {
+      restart.systemdUnit = serviceUnit;
+      path = "/api/health";
+      expectedHttpStatusCode = 200;
+      timeout = 15;
+      failCycles = 3;
+      restartLimit = {
+        restarts = 3;
+        cycles = 15;
+      };
     };
   };
 
   services.monit.checks = {
-    gitea-mirror = {
-      type = "host";
-      address = "127.0.0.1";
-      group = "container-services";
-      restartUnit = "${serviceUnit}";
-      conditions = ''
-        if failed
-          port ${toString listenPort}
-          protocol http request "/api/health" status 200
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-      '';
-    };
-
     "gitea-mirror mirror-health" = {
       type = "program";
       path = "${mirrorHealthCheckScript}";

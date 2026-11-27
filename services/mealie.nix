@@ -56,16 +56,21 @@ in
   #   credentialsFile = config.sops.templates.mealieCredentials.path;
   # };
 
-  services.nginx.virtualHosts."${mealieHost}" = {
-    enableACME = true;
-    forceSSL = true;
-
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString mealiePort}";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
+  services.containerServices.services.mealie = {
+    port = mealiePort;
+    hosts = [ mealieHost ];
+    redirect = false;
+    monitoring = {
+      restart.systemdUnit = "${config.virtualisation.oci-containers.backend}-mealie.service";
+      failCycles = 3;
+      restartLimit = {
+        restarts = 3;
+        cycles = 15;
+      };
     };
+  };
 
+  services.nginx.virtualHosts."${mealieHost}" = {
     locations."= /.well-known/assetlinks.json" = {
       alias = syncwichAssetLinks;
       extraConfig = ''
@@ -75,22 +80,4 @@ in
     };
   };
 
-  services.monit.checks = {
-    mealie = {
-      type = "host";
-      address = "127.0.0.1";
-      group = "container-services";
-      restartUnit = "${config.virtualisation.oci-containers.backend}-mealie.service";
-      conditions = ''
-          with timeout 180 seconds
-        if failed
-          port ${toString mealiePort}
-          protocol http
-          with timeout 90 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-      '';
-    };
-  };
 }

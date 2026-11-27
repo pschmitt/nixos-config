@@ -76,33 +76,21 @@ in
   };
 
   services = {
-    nginx.virtualHosts."${n8nHost}" = {
-      enableACME = true;
-      forceSSL = true;
-      locations."/" = {
-        proxyPass = "http://127.0.0.1:${toString n8nPort}";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-      };
-    };
-
-    monit.checks = {
-      n8n = {
-        type = "host";
-        address = "127.0.0.1";
+    containerServices.services.n8n = {
+      port = n8nPort;
+      hosts = [ n8nHost ];
+      redirect = false;
+      monitoring = {
+        restart.systemdUnit = "${systemdUnit}.service";
+        timeout = 15;
+        # Image pulls during upgrades can keep the port unavailable for
+        # several minutes before the container is ready.
+        failCycles = 10;
+        restartLimit = {
+          restarts = 3;
+          cycles = 35;
+        };
         group = "services";
-        restartUnit = "${systemdUnit}.service";
-        conditions = ''
-          if failed
-            port ${toString n8nPort}
-            protocol http
-            with timeout 15 seconds
-            # Image pulls during upgrades can keep the port unavailable for
-            # several minutes before the container is ready.
-            for 10 cycles
-          then restart
-          if 3 restarts within 35 cycles then alert
-        '';
       };
     };
   };

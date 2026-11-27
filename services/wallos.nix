@@ -44,34 +44,19 @@ in
     };
   };
 
-  services.nginx.virtualHosts."${wallosHost}" = {
-    authelia.enable = true;
-    enableACME = true;
-    forceSSL = true;
-
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString wallosPort}";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
+  services.containerServices.services.wallos = {
+    port = wallosPort;
+    hosts = [ wallosHost ];
+    redirect = false;
+    auth.enable = true;
+    monitoring = {
+      restart.systemdUnit = "${config.virtualisation.oci-containers.backend}-wallos.service";
+      failCycles = 3;
+      restartLimit = {
+        restarts = 3;
+        cycles = 15;
+      };
     };
   };
 
-  services.monit.checks = {
-    wallos = {
-      type = "host";
-      address = "127.0.0.1";
-      group = "container-services";
-      restartUnit = "${config.virtualisation.oci-containers.backend}-wallos.service";
-      conditions = ''
-          with timeout 180 seconds
-        if failed
-          port ${toString wallosPort}
-          protocol http
-          with timeout 90 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-      '';
-    };
-  };
 }

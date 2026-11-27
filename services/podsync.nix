@@ -105,33 +105,24 @@ in
     ];
   };
 
-  services.nginx.virtualHosts."${primaryHost}" = {
-    inherit serverAliases;
-    enableACME = true;
-    forceSSL = true;
-
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString listenPort}";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
+  services.containerServices.services.podsync = {
+    port = listenPort;
+    hosts = [ primaryHost ];
+    redirect = false;
+    monitoring = {
+      restart.systemdUnit = "${config.virtualisation.oci-containers.backend}-podsync.service";
+      path = "/health";
+      expectedHttpStatusCode = 200;
+      timeout = 15;
+      failCycles = 3;
+      restartLimit = {
+        restarts = 3;
+        cycles = 15;
+      };
     };
   };
 
-  services.monit.checks = {
-    podsync = {
-      type = "host";
-      address = "127.0.0.1";
-      group = "container-services";
-      restartUnit = "${config.virtualisation.oci-containers.backend}-podsync.service";
-      conditions = ''
-        if failed
-          port ${toString listenPort}
-          protocol http request "/health" status 200
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-      '';
-    };
-  };
+  # Aliases share the primary vhost (and its certificate).
+  services.nginx.virtualHosts.${primaryHost}.serverAliases = serverAliases;
+
 }

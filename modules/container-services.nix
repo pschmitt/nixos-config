@@ -68,6 +68,16 @@ let
         description = "Whether the container expects TLS at the upstream.";
       };
 
+      redirect = mkOption {
+        type = types.bool;
+        default = true;
+        description = ''
+          Whether to DNAT this service's port from the trusted (mesh) interfaces
+          straight to the container. This bypasses nginx and its auth, so turn it
+          off for services that must only be reached through the proxy.
+        '';
+      };
+
       monitoring = mkOption {
         description = "Monitoring configuration applied to Monit checks for this service.";
         default = { };
@@ -92,6 +102,37 @@ let
                 description = "Systemd unit Monit restarts when this service is unhealthy.";
               };
 
+            };
+
+            timeout = mkOption {
+              type = types.ints.positive;
+              default = 90;
+              description = "Connection timeout in seconds for the HTTP health check.";
+            };
+
+            failCycles = mkOption {
+              type = types.nullOr types.ints.positive;
+              default = null;
+              description = "Consecutive failed HTTP checks before Monit restarts the service (null: restart on the first failure).";
+            };
+
+            restartLimit = {
+              restarts = mkOption {
+                type = types.ints.positive;
+                default = 5;
+                description = "Number of restarts within `restartLimit.cycles` that raises an alert.";
+              };
+              cycles = mkOption {
+                type = types.ints.positive;
+                default = 10;
+                description = "Window in cycles for `restartLimit.restarts`.";
+              };
+            };
+
+            restartTimeout = mkOption {
+              type = types.ints.positive;
+              default = 180;
+              description = "Timeout in seconds for the Monit restart program.";
             };
 
             restartAfterFailures = mkOption {
@@ -207,7 +248,11 @@ let
         group
         program
         restartAfterFailures
+        timeout
+        failCycles
+        restartLimit
         ;
+      restartAlert = "if ${toString restartLimit.restarts} restarts within ${toString restartLimit.cycles} cycles then alert";
       monitorClauses =
         optional (path != null) "request \"${path}\""
         ++ optional (expectedHttpStatusCode != null) "status ${toString expectedHttpStatusCode}";
@@ -218,7 +263,7 @@ let
       group = [ "container-services" ] ++ optional (group != null) group;
       dependsOn = optional (dependsOn != null) dependsOn;
       restartUnit = service.monitoring.restart.systemdUnit;
-      restartTimeout = 180;
+      inherit (service.monitoring) restartTimeout;
     }
     // (
       if program != null then
@@ -232,7 +277,7 @@ let
               else
                 "if status != 0 for ${toString restartAfterFailures} cycles then restart"
             }
-            if 5 restarts within 10 cycles then alert
+            ${restartAlert}
           '';
         }
       else
@@ -243,9 +288,11 @@ let
             if failed
               port ${toString service.port}
               protocol ${proto}${optionalString (extraClause != "") " ${extraClause}"}
-              with timeout 90 seconds
+              with timeout ${toString timeout} seconds${
+                optionalString (failCycles != null) "\n  for ${toString failCycles} cycles"
+              }
             then restart
-            if 5 restarts within 10 cycles then alert
+            ${restartAlert}
           '';
         }
     );
@@ -466,7 +513,7 @@ in
               "iifname { ${
                 concatMapStringsSep ", " (p: "\"${p}\"") cfg.trustedInterfacePatterns
               } } tcp dport ${toString service.port} dnat to 127.0.0.1:${toString service.port}"
-            ) (attrValues cfg.services)}
+            ) (filter (service: service.redirect) (attrValues cfg.services))}
           }
         '';
       };

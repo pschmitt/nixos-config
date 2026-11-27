@@ -260,34 +260,23 @@ in
       type = "receiveonly";
     };
 
-    nginx.virtualHosts."${endurainHost}" = {
-      serverAliases = endurainAliases;
-      enableACME = true;
-      forceSSL = true;
-
-      locations."/" = {
-        proxyPass = "http://127.0.0.1:${toString endurainPort}";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
+    containerServices.services.endurain = {
+      port = endurainPort;
+      hosts = [ endurainHost ];
+      redirect = false;
+      monitoring = {
+        restart.systemdUnit = endurainUnit;
+        timeout = 15;
+        failCycles = 3;
+        restartLimit = {
+          restarts = 3;
+          cycles = 15;
+        };
       };
     };
 
-    monit.checks = {
-      endurain = {
-        type = "host";
-        address = "127.0.0.1";
-        group = "container-services";
-        restartUnit = "${endurainUnit}";
-        conditions = ''
-          if failed
-            port ${toString endurainPort}
-            protocol http
-            with timeout 15 seconds
-            for 3 cycles
-          then restart
-          if 3 restarts within 15 cycles then alert
-        '';
-      };
-    };
+    # Aliases share the primary vhost (and its certificate).
+    nginx.virtualHosts.${endurainHost}.serverAliases = endurainAliases;
+
   };
 }
