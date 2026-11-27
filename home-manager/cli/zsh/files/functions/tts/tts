@@ -1,12 +1,13 @@
-local ha_cloud
+local tiktok ha_cloud
 zparseopts -D -E -K \
+  {t,-tiktok}=tiktok \
   {H,-ha,-ha-cloud}=ha_cloud
 
-if [[ -n "$ha_cloud" ]]
+if [[ -n "$tiktok" ]]
 then
-  tts::ha-cloud "$@"
-else
   tts::tiktok "$@"
+else
+  tts::ha-cloud "$@"
 fi
 
 # vim: set ft=zsh et ts=2 sw=2 :
