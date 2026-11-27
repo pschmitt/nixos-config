@@ -13,7 +13,6 @@
     ./go-hass-agent
     ./gnome-keyring.nix
     ./home-assistant-secrets.nix
-    ./lan-mouse.nix
     ./mcp-browser.nix
     ./media.nix
     ./microphone.nix

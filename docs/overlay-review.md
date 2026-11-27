@@ -28,7 +28,7 @@ own overlay. Plugin API, caffeine, OSD and notification features remain in
 the split preserves their names, order and contents.
 
 Deliberate package integrations remain in `overlays/<package>.nix`: rbw's
-upstream overlay, Lan Mouse keymap/input handling, pytr's system-browser
+upstream overlay, pytr's system-browser
 selection, go-task's executable/completion rename, WireGuard's `wg-json`, and
 the chosen zsh-completions source. The pytr patch is a separate patch file
 instead of a large embedded Python replacement script.

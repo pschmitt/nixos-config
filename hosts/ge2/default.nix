@@ -13,8 +13,8 @@
     ./hardware-configuration.nix
     ./initrd-wifi.nix
     ./kmscon.nix
-    ./lan-mouse.nix
     ./lumine-capture.nix
+    ./mickey.nix
     ./networking.nix
     ./noctalia-obs.nix
     ./power.nix

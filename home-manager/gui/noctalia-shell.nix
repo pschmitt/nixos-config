@@ -255,7 +255,6 @@ in
                     "ha"
                     "syncthing"
                     "tray"
-                    "lan-mouse"
                   ];
                   padding = 12;
                 }
@@ -324,10 +323,6 @@ in
                 # hyprlock.nix) after Noctalia replaced hyprlock as the session
                 # locker — see pschmitt/noctalia-plugins.
                 "pschmitt/feierabend"
-                # Bar icon + panel showing which host currently owns
-                # mouse/keyboard control -- see home-manager/gui/lan-mouse.nix's
-                # enter_hook (away sentinel) and pschmitt/noctalia-plugins.
-                "pschmitt/lan-mouse"
                 # Native-style status for the RNNoise voice branch, separate
                 # from the open meeting mix carrying soundboard audio.
                 "pschmitt/mic-state"
@@ -407,12 +402,6 @@ in
                   name = "pschmitt-screencast";
                   kind = "path";
                   location = "${noctaliaPlugins.noctalia-screencast}/share/noctalia-plugins";
-                  enabled = true;
-                }
-                {
-                  name = "pschmitt-lan-mouse";
-                  kind = "path";
-                  location = "${pkgs.noctalia-lan-mouse}/share/noctalia-plugins";
                   enabled = true;
                 }
                 {
@@ -691,30 +680,6 @@ in
                         background_padding = 18.0;
                       };
                     };
-                    # "Bring input back" button -- see pschmitt/noctalia-plugins'
-                    # lan-mouse plugin lockscreen.luau and releaseBind's comment
-                    # in home-manager/gui/lan-mouse.nix. Only relevant while this
-                    # host is locked and a peer holds capture (the one case
-                    # lan-mouse's own edge-crossing release can't reach), so it's
-                    # tucked in the opposite bottom corner from the battery icon
-                    # rather than competing with the avatar/login box for
-                    # attention. Auto-fit box (0.0/0.0), same as
-                    # feierabend-${name}/media-${name} above.
-                    "lanmouse-${name}" = {
-                      type = "pschmitt/lan-mouse:lockscreen";
-                      output = name;
-                      cx = h * 0.10;
-                      cy = h * 0.97;
-                      box_width = 0.0;
-                      box_height = 0.0;
-                      # Every desktop_widget gets a background card by default
-                      # (see battery-${name} below, which disables it the same
-                      # way) -- without this, the widget showed as an empty
-                      # framed box whenever the button itself is hidden
-                      # (state.incoming == false, i.e. not currently using
-                      # another host's mouse/keyboard, the common case).
-                      settings.background = false;
-                    };
                     # Fixed widget-id convention for the login panel itself
                     # (password field, weather/media row, session buttons) --
                     # see docs.noctalia.dev/noctalia/configuration/lockscreen/
@@ -839,7 +804,6 @@ in
               # read-only config.toml — so a live tweak silently wins over any
               # `settings` declared here until it is cleared.
               timewarrior.type = "pschmitt/timewarrior:bar";
-              lan-mouse.type = "pschmitt/lan-mouse:bar";
               ha.type = "pschmitt/ha:bar";
               ha-ai-usage.type = "pschmitt/ha-ai-usage:bar";
               touch-keyboard.type = "pschmitt/touch-keyboard:bar";
@@ -854,9 +818,6 @@ in
             # active custom palette by pschmitt/noctalia-plugins' battery-icon
             # service.luau before hitting ImageMagick.
             plugin_settings = {
-              "pschmitt/lan-mouse".start_command = "zsh -lc 'zhj lan-mouse::start'";
-              # lan-mouse and mic-state are event-driven with slow safety-net
-              # polls by default. screencast still polls pw-cli, so keep it slow.
               "pschmitt/screencast".poll_interval = 5;
               # duo-status is not placed in any bar but its service still polls.
               "pschmitt/duo-status".poll_interval = 60;

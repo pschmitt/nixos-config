@@ -304,11 +304,6 @@
       };
     };
 
-    lan-mouse = {
-      url = "github:feschber/lan-mouse";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     rworker = {
       url = "github:pschmitt/rworker";
       inputs = {

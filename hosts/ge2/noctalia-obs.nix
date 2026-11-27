@@ -75,7 +75,6 @@ in
             "syncthing"
             "tray"
             "obs-studio"
-            "lan-mouse"
           ];
           padding = 12;
         }

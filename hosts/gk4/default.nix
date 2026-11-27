@@ -8,7 +8,7 @@
     ./hardware-configuration.nix
     ./initrd-wifi.nix
     ./kmscon.nix
-    ./lan-mouse.nix
+    ./mickey.nix
     ./network.nix
     ./noctalia.nix
     ./power.nix

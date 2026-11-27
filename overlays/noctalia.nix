@@ -9,8 +9,6 @@ let
   fixes = import ./hotfixes/noctalia.nix;
 in
 {
-  noctalia-lan-mouse = final.callPackage "${inputs.noctalia-plugins}/pkgs/noctalia-lan-mouse" { };
-
   noctalia = base.overrideAttrs (old: {
     # Keep feature additions and temporary corrections in the original order.
     patches =

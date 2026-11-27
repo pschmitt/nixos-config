@@ -1,15 +1,11 @@
 { inputs, pkgs, ... }:
 {
-  # https://app.cachix.org/cache/lan-mouse
   nix.settings = {
-    # lan-mouse flake
     extra-substituters = [
       "https://ghostty.cachix.org"
-      "https://lan-mouse.cachix.org"
     ];
     trusted-public-keys = [
       "ghostty.cachix.org-1:QB389yTa6gTyneehvqG58y0WnHjQOqgnA+wBnpWWxns="
-      "lan-mouse.cachix.org-1:KlE2AEZUgkzNKM7BIzMQo8w9yJYqUpor1CAUNRY6OyM="
     ];
   };
 
@@ -39,7 +35,6 @@
 
     # input emulation
     dotool
-    pkgs.lan-mouse
     libinput # libinput debug-events
     wlrctl
     wtype

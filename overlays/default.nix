@@ -24,8 +24,7 @@
     // (import ./pytr.nix { inherit prev; })
     // (import ./hotfixes/default.nix { inherit final prev; })
     // (import ./noctalia.nix { inherit inputs final prev; })
-    // (import ./zsh-completions.nix { inherit inputs final prev; })
-    // (import ./lan-mouse.nix { inherit inputs final; });
+    // (import ./zsh-completions.nix { inherit inputs final prev; });
 
   # nixpkgs master, accessible through 'pkgs.master'
   master-packages = final: _prev: {

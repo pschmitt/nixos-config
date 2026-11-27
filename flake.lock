@@ -1324,27 +1324,6 @@
         "type": "github"
       }
     },
-    "lan-mouse": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "rust-overlay": "rust-overlay"
-      },
-      "locked": {
-        "lastModified": 1792937279,
-        "narHash": "sha256-5M3fR20KcHo2YjrQRKf9geVYh37yrlWZ55XWXecAn1k=",
-        "owner": "feschber",
-        "repo": "lan-mouse",
-        "rev": "69958c625163649b69e27d0a6fb5a3edd596a467",
-        "type": "github"
-      },
-      "original": {
-        "owner": "feschber",
-        "repo": "lan-mouse",
-        "type": "github"
-      }
-    },
     "ldifj": {
       "inputs": {
         "flake-utils": [
@@ -2446,7 +2425,6 @@
         "hyprland": "hyprland",
         "jcalapi": "jcalapi",
         "jellysync": "jellysync",
-        "lan-mouse": "lan-mouse",
         "ldifj": "ldifj",
         "llm-agents": "llm-agents",
         "luks-mount": "luks-mount",
@@ -2559,27 +2537,6 @@
         "owner": "rust-lang",
         "ref": "nightly",
         "repo": "rust-analyzer",
-        "type": "github"
-      }
-    },
-    "rust-overlay": {
-      "inputs": {
-        "nixpkgs": [
-          "lan-mouse",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1792913333,
-        "narHash": "sha256-wjoZGhxH/Yr+OsFRpNyV9DpMGQIdNEjjAOinfzQvadk=",
-        "owner": "oxalica",
-        "repo": "rust-overlay",
-        "rev": "fad80eb74614f7dc37c1c83df8caae64361eda22",
-        "type": "github"
-      },
-      "original": {
-        "owner": "oxalica",
-        "repo": "rust-overlay",
         "type": "github"
       }
     },
