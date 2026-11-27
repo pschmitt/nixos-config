@@ -422,7 +422,9 @@ the run fails when none succeeds. It then runs `nixpp gc --keep-generations 3` a
 fast-forwards yadm. It syncs Atuin when signed in,
 then syncs and updates each
 configured mani workspace. Git runs without prompting. The latest two runs
-are logged under `~/.local/state/termuxpp-nightly/` in the guest. The outer
+are logged under `~/.local/state/termuxpp-nightly/` in the guest. A failed run
+(upgrade, gc or any later step) shows an Android notification that names the
+failed steps and the log; the next successful run removes it. The outer
 Termux layer is not upgraded with `apt`: it comes from the generation. A run that
 ends without a `Result:` line was killed outright (on Pixels, Android's memory
 limiter takes down the app with the run): the next run says so in its log and

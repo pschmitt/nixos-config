@@ -6,6 +6,40 @@ log() {
   printf '%s %s\n' "$(date -Iseconds)" "$*"
 }
 
+# Record a failed maintenance step for the result and the notification.
+fail_step() {
+  failed_steps+=("$1")
+  return 1
+}
+
+# Show a failed run on the phone, so it does not go unnoticed until someone
+# reads the log. A fixed id keeps one notification, and a later successful run
+# removes it again.
+notify_result() {
+  local status="$1" content
+  [[ -n "$NOTIFICATION_ID" ]] || return 0
+  if [[ "$nightly_result" == success ]]
+  then
+    timeout 15 tpp notification remove "$NOTIFICATION_ID" </dev/null >/dev/null 2>&1 || :
+    return 0
+  fi
+  [[ "$nightly_result" == failed ]] || return 0
+
+  if (( ${#failed_steps[@]} ))
+  then
+    content="Failed: ${failed_steps[*]} (exit $status)."
+  else
+    content="Exit $status."
+  fi
+  content+=" Log: $log_file"
+  if ! timeout 15 tpp notification send --id "$NOTIFICATION_ID" \
+    --title 'TermuxPP nightly update failed' --content "$content" \
+    --icon error --priority high </dev/null >/dev/null 2>&1
+  then
+    log 'Could not show the failure notification (tpp notification send).'
+  fi
+}
+
 finish() {
   local status="$?"
   if (( status != 0 ))
@@ -16,7 +50,8 @@ finish() {
   then
     timeout 15 tpp wake-lock release >/dev/null 2>&1 || :
   fi
-  log "Result: $nightly_result (exit $status)"
+  log "Result: $nightly_result (exit $status)${failed_steps[*]:+; failed: ${failed_steps[*]}}"
+  notify_result "$status"
   printf 'TermuxPP nightly update: %s (exit %s)%s\n' "$nightly_result" "$status" \
     "${killed_run:+; the previous run was killed}" >&3
 }
@@ -103,13 +138,13 @@ check_lease() {
 
 maintenance() {
   local config failed=0
-  upgrade_profile || return 1
-  run_step gc 1200 nixpp gc --keep-generations 3 || failed=1
-  run_step dotfiles 180 yadm pull --ff-only || failed=1
+  upgrade_profile || fail_step upgrade || return 1
+  run_step gc 1200 nixpp gc --keep-generations 3 || fail_step gc || failed=1
+  run_step dotfiles 180 yadm pull --ff-only || fail_step dotfiles || failed=1
 
   if [[ -s "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/session" ]]
   then
-    run_step atuin 90 atuin sync || failed=1
+    run_step atuin 90 atuin sync || fail_step atuin || failed=1
   else
     log 'Atuin is signed out. Skipping sync.'
   fi
@@ -128,9 +163,10 @@ maintenance() {
       log "$remote_host is unreachable. Skipping the $config repositories."
     elif run_step "mani-$config-sync" 240 mani --config "$manifest" sync
     then
-      run_step "mani-$config-update" 480 mani --config "$manifest" run update --all --ignore-non-existing || failed=1
+      run_step "mani-$config-update" 480 mani --config "$manifest" run update --all --ignore-non-existing ||
+        fail_step "mani-$config-update" || failed=1
     else
-      failed=1
+      fail_step "mani-$config-sync" || failed=1
     fi
   done
   return "$failed"
@@ -157,9 +193,13 @@ host_reachable() {
   return 1
 }
 
+NOTIFICATION_ID=termuxpp-nightly-update
+
 main() {
-  local mode=update state_dir log_file free_kib killed_at=''
+  local mode=update state_dir free_kib killed_at=''
   nightly_result=failed
+  failed_steps=()
+  log_file=
   killed_run=''
   wake_locked=0
   if (( $# > 1 ))
@@ -169,7 +209,12 @@ main() {
   fi
   case "${1:-}" in
     '') ;;
-    --check) mode=check ;;
+    --check)
+      mode=check
+      # A readiness check is run by hand; it neither shows nor clears the
+      # notification of the last nightly run.
+      NOTIFICATION_ID=''
+      ;;
     --help|-h)
       usage
       return 0
