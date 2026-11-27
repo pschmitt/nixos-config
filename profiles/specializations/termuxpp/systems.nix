@@ -84,15 +84,10 @@ builtins.mapAttrs (
                   source = "${seed}/bootstrap-aarch64.zip";
                 }
                 {
-                  # As the bootstrap builder writes it, after the app's
-                  # com.termux -> dev.pschmitt.termux rewrite.
                   path = "bin/nixpp-setup";
-                  source = "${home.pkgs.writeText "nixpp-setup" ''
-                    #!/data/data/dev.pschmitt.termux/files/usr/bin/bash
-                    exec nixpp setup "$@"
-
-                    # vim: set ft=sh et ts=2 sw=2 :
-                  ''}";
+                  # Exactly the slim outer bootstrap's wrapper: the native
+                  # prefix has no bash, Android's shell runs it.
+                  source = "${home.pkgs.writeText "nixpp-setup" "#!/system/bin/sh\nexec nixpp setup \"$@\"\n"}";
                   mode = "0700";
                 }
                 {
