@@ -238,9 +238,6 @@ main() {
     check_lease || return 1
     nightly_result=ready
   else
-    # The native launcher upgrades the outer Termux packages after this job,
-    # under the same conditions (Wi-Fi, charging).
-    : > "$state_dir/native-upgrade.request"
     maintenance || return 1
     nightly_result=success
   fi
