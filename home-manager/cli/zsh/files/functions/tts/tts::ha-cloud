@@ -1,13 +1,13 @@
 local usage="usage: $0 [-V VOICE] [-l LANGUAGE] [-k] [-P] TEXT"
 local help
-local voice=(--voice JennyNeural)
+local voice
 local language=(--language en-US)
 local keep noplay
 
 zparseopts -D -E -K -- \
   {h,-help}=help \
   {V,-voice}:=voice \
-  {l,-language,-lang}:=language \
+  {l,-lang,-language}:=language \
   {k,-keep}=keep \
   {P,-dnp,-no-play,-noplay,-silent,q}=noplay
 
@@ -44,6 +44,24 @@ case $language in
   zh)   language=zh-CN ;;
   ja)   language=ja-JP ;;
 esac
+
+if [[ -z "$voice" ]]
+then
+  case $language in
+    de-DE) voice=KatjaNeural ;;
+    en-GB) voice=SoniaNeural ;;
+    fr-FR) voice=DeniseNeural ;;
+    es-ES) voice=ElviraNeural ;;
+    it-IT) voice=ElsaNeural ;;
+    nl-NL) voice=ColetteNeural ;;
+    pt-PT) voice=RaquelNeural ;;
+    pl-PL) voice=ZofiaNeural ;;
+    ru-RU) voice=SvetlanaNeural ;;
+    zh-CN) voice=XiaoxiaoNeural ;;
+    ja-JP) voice=NanamiNeural ;;
+    *) voice=JennyNeural ;;
+  esac
+fi
 
 local text="${@[-1]//\"/\\\"}"
 [[ "$#" -gt 0 ]] && set -- ${@[1,-2]}
