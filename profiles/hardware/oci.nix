@@ -10,7 +10,7 @@
     nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
     services = {
       # Pets get a non-ephemeral NetBird peer; cattle peers vanish when offline.
-      netbird.setupKeyName = lib.mkForce (if config.hardware.cattle then "oci" else "oci-pets");
+      netbird.setupKeyName = if config.hardware.cattle then "oci" else "oci-pets";
       udev.path = [ pkgs.oci-consistent-device-naming ];
       udev.packages = [ pkgs.oci-consistent-device-naming ];
     };

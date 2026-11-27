@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, ... }:
 {
   # FIXME Disable wait-online services, this somehow results in NM not being started at all.
   # systemd.network.wait-online.enable = false;
@@ -14,7 +14,7 @@
 
   users.users."${config.mainUser.username}".extraGroups = [ "networkmanager" ];
 
-  services.netbird.setupKeyName = lib.mkForce "laptop";
+  services.netbird.setupKeyName = "laptop";
 
   services.tailscale.extraSetFlags = [
     "--accept-routes"

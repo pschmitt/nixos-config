@@ -9,9 +9,7 @@
 
     nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
     # Pets get a non-ephemeral NetBird peer; cattle peers vanish when offline.
-    services.netbird.setupKeyName = lib.mkForce (
-      if config.hardware.cattle then "optimist" else "optimist-pets"
-    );
+    services.netbird.setupKeyName = if config.hardware.cattle then "optimist" else "optimist-pets";
 
     # Accept the router advertisements emitted by the OpenStack IPv6 subnet.
     systemd.network.networks."99-ethernet-default-dhcp".networkConfig.IPv6AcceptRA = true;
