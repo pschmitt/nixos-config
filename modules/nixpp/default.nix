@@ -151,6 +151,29 @@ in
           instead of only with a fresh bootstrap.
         '';
       };
+      bootstrapTools = mkOption {
+        type = types.nullOr (
+          types.submodule {
+            options = {
+              busybox = mkOption {
+                type = types.package;
+                description = "Static busybox: /bin/sh, /usr/bin/env and the fallback PATH.";
+              };
+              nix = mkOption {
+                type = types.package;
+                description = "Static Nix on the session's fallback PATH.";
+              };
+            };
+          }
+        );
+        default = null;
+        description = ''
+          The guest's bootstrap tools, shipped as bootstrap/busybox and
+          bootstrap/nix. After switching to the generation the native daemon
+          makes them the runtime's (session.env, /bin/sh, /usr/bin/env) once
+          both ran, instead of keeping the bootstrap seed's forever.
+        '';
+      };
       launcherStub = mkOption {
         type = types.strMatching "0x[0-9a-fA-F]+";
         default = "0x1000005690";
@@ -196,6 +219,11 @@ in
       ${lib.optionalString (cfg.system.nativeNixpp != null) ''
         mkdir -p "$out/native"
         ln -s ${lib.getExe cfg.system.nativeNixpp} "$out/native/nixpp"
+      ''}
+      ${lib.optionalString (cfg.system.bootstrapTools != null) ''
+        mkdir -p "$out/bootstrap"
+        ln -s ${cfg.system.bootstrapTools.busybox} "$out/bootstrap/busybox"
+        ln -s ${cfg.system.bootstrapTools.nix} "$out/bootstrap/nix"
       ''}
       ${lib.optionalString (cfg.system.nativeLauncher != null) ''
         mkdir -p "$out/native"

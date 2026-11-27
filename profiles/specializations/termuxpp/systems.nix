@@ -43,6 +43,16 @@ builtins.mapAttrs (
             # installs a launcher that still runs when exec'd under the current
             # one's filter.
             nativeLauncher = (inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux).nixpp-runtime-termux-seed.launcher.withStub config.system.launcherStub;
+            # The seed's static tools, so their fixes reach installed runtimes.
+            bootstrapTools = {
+              inherit
+                ((inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux)
+                  .nixpp-runtime-termux-seed
+                )
+                busybox
+                nix
+                ;
+            };
           };
           environment = {
             systemPackages = with home.pkgs; [
