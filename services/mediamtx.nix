@@ -85,15 +85,16 @@ in
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
 
-    # TODO Don't run as root!
-    # serviceConfig = {
-    #   User = "mediamtx";
-    #   DynamicUser = true;
-    #   SupplementaryGroups = "video";
-    #   Restart = "on-failure";
-    # };
+    serviceConfig = {
+      DynamicUser = true;
+      # ffmpeg (runOnDemand) reads the camera.
+      SupplementaryGroups = [ "video" ];
+      # The sops template is root-only; systemd hands the dynamic user a copy.
+      LoadCredential = "config:${config.sops.templates."mediamtx.yaml".path}";
+      Restart = "on-failure";
+    };
 
-    script = "${pkgs.mediamtx}/bin/mediamtx ${config.sops.templates."mediamtx.yaml".path}";
+    script = ''${pkgs.mediamtx}/bin/mediamtx "$CREDENTIALS_DIRECTORY/config"'';
   };
 
   # Open only what you need. Add 8889/8189 if you use the WebRTC page.
