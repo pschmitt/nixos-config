@@ -81,18 +81,6 @@ in
       '';
     };
 
-    nixpp.sops.disableGoGc = mkOption {
-      type = types.bool;
-      default = false;
-      description = ''
-        Run the sops-nix installer with Go's garbage collector off (`GOGC=off`).
-        A workaround for devices whose guest runtime corrupts Go's heap during
-        garbage collection (seen on zf10: Android 15, kernel 5.15). Leave it off
-        elsewhere: without a GC the installer can grow to several GiB, and
-        Android's per-app memory limiter then kills the app mid-activation.
-      '';
-    };
-
     system.build.secretsActivation = mkOption {
       type = types.nullOr types.package;
       readOnly = true;
@@ -113,7 +101,7 @@ in
         pkgs.writeShellScriptBin "activate-secrets" (script {
           installer = config.systemd.user.services.sops-nix.Service.ExecStart;
           inherit (sops) environment;
-          inherit (config.nixpp.sops) runtimeDir disableGoGc;
+          inherit (config.nixpp.sops) runtimeDir;
         });
   };
 }
