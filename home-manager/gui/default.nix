@@ -35,5 +35,6 @@
     ./hyprland
     ./niri.nix
     ./noctalia.nix
+    ./noctalia-shell.nix
   ];
 }

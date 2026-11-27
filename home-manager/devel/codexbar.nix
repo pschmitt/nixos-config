@@ -1,6 +1,6 @@
 # CodexBar CLI — AI plan/quota reporting for Codex, the OpenAI admin API,
 # Claude and Antigravity. Feeds the salemsayed/codexbar-meter Noctalia widget
-# (profiles/specializations/laptop/noctalia.nix) and is useful on its own in a terminal.
+# (home-manager/gui/noctalia-shell.nix) and is useful on its own in a terminal.
 {
   config,
   lib,

@@ -121,7 +121,7 @@
       default = [ ];
       description = ''
         Outputs Noctalia's custom lockscreen_widgets (see
-        profiles/specializations/laptop/noctalia.nix) should be duplicated onto, with each
+        home-manager/gui/noctalia-shell.nix) should be duplicated onto, with each
         one's real logical size. Noctalia has no "show on every output"
         widget mode of its own (that's bespoke-coded for its login_box only,
         not generic widgets), so getting the same layout on every screen

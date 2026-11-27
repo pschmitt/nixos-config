@@ -23,8 +23,10 @@ in
         };
       };
       plugins = {
-        enabled = [ "pschmitt/obs-studio" ];
-        source = [
+        # mkBefore keeps OBS ahead of the shared plugin list, as before the
+        # shell config moved into Home Manager.
+        enabled = lib.mkBefore [ "pschmitt/obs-studio" ];
+        source = lib.mkBefore [
           {
             name = "pschmitt-obs-studio";
             kind = "path";

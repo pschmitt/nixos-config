@@ -1,6 +1,15 @@
-{ inputs, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 {
   hardware.cattle = false;
+
+  # Noctalia is the default Quickshell bar on all laptops; its configuration
+  # lives in home-manager/gui/noctalia-shell.nix.
+  home-manager.users.${config.mainUser.username}.programs.noctalia.enable = true;
 
   imports = [
     inputs.hardware.nixosModules.common-pc-laptop
@@ -15,7 +24,7 @@
 
     ../../features/network/wifi.nix
     ./a11y.nix
-    ./noctalia.nix
+    ../../hardware/fan-control.nix
     ./initrd-network.nix
     ./helixnotes.nix
     ./noisetorch.nix
