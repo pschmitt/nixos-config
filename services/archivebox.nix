@@ -5,6 +5,10 @@
 }:
 let
   backend = config.virtualisation.oci-containers.backend;
+  networkUnits = map (n: config.virtualisation.oci-containers.ensureNetworks.${n}.unit) [
+    "archivebox_default"
+    "archivebox_dns"
+  ];
   # renovate: datasource=docker depName=archivebox/archivebox
   archiveboxVersion = "0.9.77";
   # renovate: datasource=docker depName=pihole/pihole
@@ -52,9 +56,17 @@ in
     '';
   };
 
+  virtualisation.oci-containers.ensureNetworks = {
+    archivebox_default = { };
+    archivebox_dns.extraArgs = [
+      "--subnet"
+      "10.27.24.0/24"
+    ];
+  };
+
   systemd.services = lib.genAttrs units (unit: {
-    requires = [ "rofl-10-container-networks.service" ];
-    after = [ "rofl-10-container-networks.service" ];
+    requires = networkUnits;
+    after = networkUnits;
     restartIfChanged = true;
     restartTriggers =
       if

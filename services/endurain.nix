@@ -65,6 +65,8 @@ let
 
   networkName = "endurain";
 
+  # renovate: datasource=docker depName=postgres
+  postgresVersion = "17.5";
   # renovate: datasource=docker depName=ghcr.io/endurain-project/endurain
   endurainVersion = "v0.21.0";
 
@@ -197,7 +199,7 @@ in
 
   virtualisation.oci-containers.containers = {
     endurain-postgres = {
-      image = "docker.io/postgres:17.5";
+      image = "docker.io/postgres:${postgresVersion}";
       autoStart = true;
       environment = {
         POSTGRES_DB = dbName;

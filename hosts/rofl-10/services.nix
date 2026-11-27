@@ -43,7 +43,6 @@ in
     ../../services/postgresql.nix
     ../../services/rclone-bisync.nix
     ../../services/restic-remote.nix
-    ../../services/rofl-10-container-networks.nix
     ../../services/searxng.nix
     ../../services/stricknani.nix
     ../../services/tagesschau.nix

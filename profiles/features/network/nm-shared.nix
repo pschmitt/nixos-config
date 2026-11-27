@@ -1,6 +1,7 @@
-{ config, ... }:
+{ config, lib, ... }:
 {
-  networking.networkmanager.ensureProfiles = {
+  # The hotspot profile reads NM_HOTSPOT_* from nm.env, which wifi.nix defines.
+  networking.networkmanager.ensureProfiles = lib.mkIf (config.sops.templates ? "nm.env") {
     environmentFiles = [ config.sops.templates."nm.env".path ];
     profiles = {
       "Auto Ethernet" = {

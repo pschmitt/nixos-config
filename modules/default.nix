@@ -3,6 +3,7 @@
     ./browser.nix
     ./browser-daemon.nix
     ./cli-proxy-api.nix
+    ./container-networks.nix
     ./dotfiles.nix
     ./domains.nix
     ./falcon-sensor-vm.nix

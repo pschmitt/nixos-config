@@ -5,6 +5,9 @@
 }:
 let
   backend = config.virtualisation.oci-containers.backend;
+  networkUnits = map (n: config.virtualisation.oci-containers.ensureNetworks.${n}.unit) [
+    "dawarich_dawarich"
+  ];
   # renovate: datasource=docker depName=freikin/dawarich
   dawarichVersion = "1.23.0";
   # renovate: datasource=docker depName=postgis/postgis
@@ -71,9 +74,11 @@ in
     '';
   };
 
+  virtualisation.oci-containers.ensureNetworks.dawarich_dawarich = { };
+
   systemd.services = lib.genAttrs units (unit: {
-    requires = [ "rofl-10-container-networks.service" ];
-    after = [ "rofl-10-container-networks.service" ];
+    requires = networkUnits;
+    after = networkUnits;
     restartIfChanged = true;
     restartTriggers =
       if

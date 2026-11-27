@@ -5,6 +5,9 @@
 }:
 let
   backend = config.virtualisation.oci-containers.backend;
+  networkUnits = map (n: config.virtualisation.oci-containers.ensureNetworks.${n}.unit) [
+    "linkding_default"
+  ];
   # renovate: datasource=docker depName=sissbruecker/linkding
   linkdingVersion = "1.47.0";
   # renovate: datasource=docker depName=proog/linkding-media-archiver depType=automerge
@@ -25,9 +28,11 @@ in
     LDMA_TOKEN=${config.sops.placeholder."compose/linkding/media-archiver-token"}
   '';
 
+  virtualisation.oci-containers.ensureNetworks.linkding_default = { };
+
   systemd.services = lib.genAttrs units (unit: {
-    requires = [ "rofl-10-container-networks.service" ];
-    after = [ "rofl-10-container-networks.service" ];
+    requires = networkUnits;
+    after = networkUnits;
     restartIfChanged = true;
     restartTriggers =
       if unit == "${backend}-linkding" then [ linkdingVersion ] else [ mediaArchiverVersion ];
