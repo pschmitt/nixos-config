@@ -1,0 +1,17 @@
+--- a/kitty/keys.c
++++ b/kitty/keys.c
+@@ -284,6 +284,14 @@
+         return;
+     }
+     send_pending_click_to_window(w, -1);
++    // Dispatching the pending click can run Python callbacks that add windows
++    // (e.g. a hyperlink click launching an overlay kitten), which may reallocate
++    // the window array and leave w dangling. Look the active window up again.
++    w = active_window();
++    if (!w) {
++        debug("no active window after dispatching pending clicks, ignoring\n");
++        return;
++    }
+     if (OPT(mouse_hide.hide_wait) < 0 && !is_no_action_key(key, native_key)) hide_mouse(global_state.callback_os_window);
+     Screen *screen = w->render_data.screen;
+     id_type active_window_id = w->id;

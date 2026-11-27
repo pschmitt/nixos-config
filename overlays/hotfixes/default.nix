@@ -1,5 +1,6 @@
 { final, prev }:
 # Noctalia's patch bundle is applied at explicit positions by ../noctalia.nix.
+# kitty.nix applies to pkgs.master (home-manager uses pkgs.master.kitty), via ../default.nix.
 let
   packageOverrides = [
     (import ./home-assistant-cli.nix { inherit prev; })
