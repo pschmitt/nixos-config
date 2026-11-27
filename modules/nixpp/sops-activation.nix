@@ -19,6 +19,8 @@
   environment ? { },
   # Used for `%r` when XDG_RUNTIME_DIR is not set in the activating environment.
   runtimeDir,
+  # Run the installer with Go's garbage collector off (nixpp.sops.disableGoGc).
+  disableGoGc ? false,
 }:
 let
   envPath = environment.PATH or "";
@@ -39,5 +41,11 @@ in
   # The umask a systemd user unit would run with: the installer applies the
   # configured modes itself and a stricter umask would silently strip them.
   umask 022
+  ${lib.optionalString disableGoGc ''
+    # Host workaround (nixpp.sops.disableGoGc): Go's GC corrupts memory under
+    # this device's guest runtime. Without a GC the installer keeps everything
+    # it allocates, several GiB for a large secrets file.
+    export GOGC=off
+  ''}
   exec ${lib.concatStringsSep " " (lib.toList installer)}
 ''

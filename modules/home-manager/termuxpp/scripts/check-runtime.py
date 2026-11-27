@@ -465,8 +465,9 @@ def check_go(gate):
     used. The check keeps the name "go" for compatibility with existing callers.
     """
     kubectl = gate.tool('kubectl')
-    # A short-lived version probe; it does not configure the user's kubectl.
-    env = {'KUBECONFIG': str(gate.scratch / 'no-kubeconfig')}
+    # The Android guest can corrupt memory during concurrent Go GC. This is
+    # a short-lived version probe and does not configure the user's kubectl.
+    env = {'KUBECONFIG': str(gate.scratch / 'no-kubeconfig'), 'GOGC': 'off'}
     res = gate.run([kubectl, 'version', '--client', '--output=json'], extra_env=env)
     gate.require(res, 'kubectl version --client')
     try:
