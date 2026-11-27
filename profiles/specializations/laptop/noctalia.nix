@@ -973,7 +973,7 @@ in
             # service's).
             start_command = "${lib.getExe pkgs.zhj} tw::work-start";
             stop_command = "${lib.getExe pkgs.zhj} tw::work-stop";
-            # tw::work-stop shuts the gec-debian VM down, closes Zoom/Teams
+            # tw::work-stop stops the VPN and SOCKS proxy, closes Zoom/Teams
             # tabs and runs timewsync before it returns.
             command_timeout = 300;
             # Sync button in the panel header. tw::sync is the two-sided
