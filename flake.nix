@@ -210,11 +210,6 @@
       flake = false;
     };
 
-    manydots = {
-      url = "github:knu/zsh-manydots-magic/4372de0718714046f0c7ef87b43fc0a598896af6";
-      flake = false;
-    };
-
     zsh-completions = {
       url = "github:zsh-users/zsh-completions";
       flake = false;
@@ -228,16 +223,6 @@
 
     plib-jq = {
       url = "github:pschmitt/plib.jq";
-      flake = false;
-    };
-
-    vi-motions = {
-      url = "github:zsh-vi-more/vi-motions/c21a9e13be15166810e9487a015cd70c21229cf7";
-      flake = false;
-    };
-
-    vi-quote = {
-      url = "github:zsh-vi-more/vi-quote/13399086a4c31e8c0e09562ca0c4205ee4c055bd";
       flake = false;
     };
 
@@ -989,14 +974,6 @@
                 deviceType = "server";
               };
               oci-01 = {
-                system = "aarch64-linux";
-                deviceType = "server";
-              };
-              test-delete-os = {
-                system = "x86_64-linux";
-                deviceType = "server";
-              };
-              test-delete-oci = {
                 system = "aarch64-linux";
                 deviceType = "server";
               };

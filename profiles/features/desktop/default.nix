@@ -15,7 +15,6 @@
     # services
     ./flatpak.nix
     ./gnome-keyring.nix
-    # ./kde-connect.nix
     ./libvirt.nix
     ./services.nix
     ./snapper.nix
@@ -29,7 +28,7 @@
   ];
 
   # Display managers and desktop environments are opt-in roles — see
-  # profiles/display-manager-*.nix and profiles/desktop-*.nix. Hosts compose the
+  # gdm.nix, gnome.nix and hyprland.nix in this directory. Hosts compose the
   # ones they actually run (e.g. the workstation profile picks hyprland + gnome
   # + gdm).
 }

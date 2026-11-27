@@ -5,7 +5,6 @@ let
   packageOverrides = [
     (import ./home-assistant-cli.nix { inherit prev; })
     (import ./matrix-synapse.nix { inherit final prev; })
-    (import ./mautrix-signal.nix { inherit prev; })
     (import ./onnxruntime.nix { inherit prev; })
     (import ./squeekboard.nix { inherit prev; })
     (import ./tmux.nix { inherit prev; })

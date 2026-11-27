@@ -520,10 +520,6 @@ in
 
     sops = {
       secrets = {
-        "mistral-vibe/env" = {
-          mode = "0600";
-          sopsFile = config.host.sopsDefaultFile;
-        };
         "n8n/mcp/token" = {
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
@@ -965,27 +961,6 @@ in
       };
     };
 
-    # FIXME vibe-cli is broken as of 2026-02-25
-    # Create ~/.config/vibe directory and .env file
-    # xdg.configFile =
-    #   let
-    #     tomlFormat = pkgs.formats.toml { };
-    #     vibeUpstreamCliPrompt = builtins.readFile "${pkgs.master.mistral-vibe.src}/vibe/core/prompts/cli.md";
-    #     vibeCustomPromptId = "cli_context";
-    #     vibeCustomPrompt = vibeUpstreamCliPrompt + "\n\n" + builtins.readFile ./CONTEXT.md;
-    #   in
-    #   {
-    #     "vibe/.env".source =
-    #       config.lib.file.mkOutOfStoreSymlink
-    #         config.sops.secrets."mistral-vibe/env".path;
-    #
-    #     "vibe/config.toml".source = tomlFormat.generate "config.toml" {
-    #       system_prompt_id = vibeCustomPromptId;
-    #     };
-    #
-    #     "vibe/prompts/${vibeCustomPromptId}.md".text = vibeCustomPrompt;
-    #   };
-
     xdg.configFile."claude/keybindings.json".source = ./claude-keybindings.json;
     xdg.configFile."opencode/plugins/tmux-context.js".source = ./scripts/opencode-tmux-context.js;
 
@@ -1033,12 +1008,6 @@ in
           # cursor-cli
           # kilocode-cli
 
-          # FIXME vibe-cli is broken as of 2026-02-25
-          # (pkgs.writeShellScriptBin "vibe" ''
-          #   export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
-          #
-          #   exec ${mistral-vibe}/bin/vibe "$@"
-          # '')
         ]
         ++ [
           claudeOgl

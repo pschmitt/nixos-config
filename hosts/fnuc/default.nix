@@ -7,7 +7,6 @@
     ../../services/go-hass-agent.nix
     ../../services/harmonia.nix
 
-    # ./agent-limits.nix
     ./authorized-keys.nix
     ./backups.nix
     ./browser-daemon.nix

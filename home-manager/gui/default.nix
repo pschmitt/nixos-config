@@ -35,6 +35,5 @@
     ./hyprland
     ./niri.nix
     ./noctalia.nix
-    # ./vicinae.nix
   ];
 }

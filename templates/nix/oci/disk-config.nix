@@ -4,7 +4,7 @@
     disk.system = {
       # Stable only with a single disk: SCSI letters depend on attachment order.
       # Hosts with a data volume need /dev/oracleoci/oraclevda and a custom kexec
-      # image (see hosts/test-delete-oci/disk-config.nix).
+      # image (see the removed hosts/test-delete-oci/disk-config.nix in git history).
       device = lib.mkDefault "/dev/sda";
       type = "disk";
       content = {
