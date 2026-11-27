@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 let
   emojiList =
     pkgs.runCommand "elephant-emoji-list.txt"
@@ -58,6 +58,10 @@ in
           "${./walker/soundboard.lua}"
           "${./walker/soundboard-tts.lua}"
           "${emojiList}"
+          # elephant caches desktop entries (with their store-path Exec=
+          # lines) at startup; restart it when the profile changes so the
+          # launcher does not keep starting outdated binaries.
+          "${config.home.path}"
         ];
         Service = {
           ExecStartPre = "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
