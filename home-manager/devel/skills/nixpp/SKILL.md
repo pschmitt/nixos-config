@@ -46,7 +46,8 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
    (`jq '.nodes.termuxpp'`) into the current local `flake.lock`, never the
    whole file: other agents bump inputs meanwhile, and a copied lock silently
    reverts their bumps.
-3. Upgrade each phone, both in parallel:
+3. Upgrade each phone (published system: both in parallel; `--rworker`: one
+   after the other, see below):
    - **Published system (default):** `nixpp upgrade`. It installs the system
      that nixos-config CI built and pinned for the host in the signed cache;
      no evaluation or build on the phone. Only works once CI has published
@@ -83,8 +84,13 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
      `nixpp prepare PATH` and `nixpp switch NAME`. Without `--refresh` a
      cached "not in cache" answer makes Nix report that no substituter can
      build the path.
-   - To upgrade both phones in parallel from here, start each in the
-     background and poll the log, not the process table:
+   - `--rworker` on one phone at a time: leasing for both at once failed both
+     runs (2026-11-27). Never while the controller host (`lease.controller`)
+     is deployed: its switch ends leases (exit status 255, "Broken pipe") and
+     refuses new ones ("the runner lease ended"). Check Concord for its
+     `deploy:<host>` claim and wait until no `switch-to-configuration` runs.
+   - To upgrade the phones from here, start each in the background and poll
+     the log, not the process table:
      `ssh HOST 'nohup nixpp upgrade --rworker --flake github:pschmitt/nixos-config/<sha> > ~/.cache/upgrade.log 2>&1 < /dev/null &'`,
      then `ssh HOST 'tail -3 ~/.cache/upgrade.log'` until it ends with
      `ok system switched` (or an error). `pgrep -f "nixpp upgrade"` inside the
