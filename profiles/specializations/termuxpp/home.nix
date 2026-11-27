@@ -190,14 +190,16 @@ in
       # terminal, above the keyboard while it is shown.
       picker-position = "terminal";
     };
-    # The active tmux window as a filled accent pill.
-    tmux.sidebar.style = "rounded";
-    tmux.sidebar.right = true;
-    sidebar.left = {
-      show-sessions = true;
-      show-tmux-windows = false;
-      show-new-session = false;
-      show-keyboard-button = false;
+    sidebar = {
+      # The current session and active tmux window as a filled accent pill.
+      style = "rounded";
+      right.enabled = true;
+      left = {
+        show-sessions = true;
+        show-tmux-windows = false;
+        show-new-session = false;
+        show-keyboard-button = false;
+      };
     };
     keyboard = {
       back-key = "back";
@@ -347,14 +349,14 @@ in
           ]
         ];
       corner-radius = 7;
-      # Extra keys row: finger to the right = previous session, to the left =
-      # next session (the default), further to the right = new session.
-      swipe = {
-        left.action = "previous-session";
-        long-left.action = "new-session";
-      };
     };
     gestures = {
+      # Extra keys row: finger to the right = previous session, to the left =
+      # next session (the default), further to the right = new session.
+      extra-keys = {
+        swipe.right.action = "previous-session";
+        long-swipe.right.action = "new-session";
+      };
       # Gesture feedback pills in the middle of the screen.
       feedback.position = "center";
       # Focus an existing fnuc tmux client before asking the local zsh prompt

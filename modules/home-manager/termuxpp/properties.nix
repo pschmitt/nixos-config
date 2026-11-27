@@ -40,6 +40,17 @@ let
                 names = ["-"]
         elif mode == "--value":
             names = sys.argv[4].split(",")
+        # The Display screen's choices (accent, color scheme, font) live in
+        # this file too; keep the ones made in the app unless Nix sets them.
+        try:
+            with open(path, encoding="utf-8") as current:
+                previous = yaml.safe_load(current) or {}
+        except (OSError, yaml.YAMLError):
+            previous = {}
+        kept = (previous.get("appearance") or {}) if isinstance(previous, dict) else {}
+        for name in ("accent", "color-scheme", "font"):
+            if name in kept and name not in config.get("appearance", {}):
+                config.setdefault("appearance", {})[name] = kept[name]
         if names is not None:
             integrations = config.setdefault("integrations", {})
             adb_shell = integrations.setdefault("adb-shell", {})
@@ -85,14 +96,15 @@ in
     default = { };
     example = {
       terminal.bell = "vibrate";
-      extra-keys.swipe.long-left.action = "new-session";
+      gestures.extra-keys.long-swipe.right.action = "new-session";
     };
     description = ''
       The TermuxPP app's settings, written to config.yaml in its grouped
-      layout (see docs/en/terminal-settings.md in the TermuxPP repository).
+      layout (see docs/en/config-yaml.md in the TermuxPP repository).
       The whole file is written on activation from these settings and
       `nixpp.adbShell`; edits made in the file or in the app's settings are
-      overwritten. Nothing is written while this is empty and no ADB shell
+      overwritten, except the accent, color scheme and font chosen on the
+      app's Display screen when these settings do not set them. Nothing is written while this is empty and no ADB shell
       allow-list is set.
     '';
   };
