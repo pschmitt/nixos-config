@@ -76,36 +76,6 @@ let
     }
   '';
 
-  monitSystem = ''
-    check system $HOST
-      if loadavg (15min) per core > 1 for 5 times within 15 cycles then alert
-      if memory usage > 80% for 4 cycles then alert
-      if uptime < 1 hours then alert
-  '';
-
-  monitRebootRequired = ''
-    check program "Reboot required" with path "${needsReboot}"
-      group system
-      every 2 cycles
-      if status > 0 then alert
-  '';
-
-  monitFailedTimers = ''
-    check program "systemd timers" with path "${lib.getExe failedTimers}"
-      group system
-      if status > 0 then alert
-  '';
-
-  monitFailedServices = ''
-    check program "systemd services" with path "${lib.getExe failedServices}"
-      group system
-      if status > 0 then alert
-  '';
-
-  monitFilesystem = fs: ''
-    check filesystem "filesystem ${fs}" with path ${fs}
-      group storage
-      if space usage > 85% then alert'';
   # Below will exclude NFS and bind mounts
   nonNFSFileSystems = lib.filterAttrs (
     _name: fs: fs.fsType != "nfs" && !lib.elem "bind" (fs.options or [ ])
@@ -124,7 +94,31 @@ let
       selected ++ [ fs ]
   ) [ ] (builtins.attrValues nonNFSFileSystems);
   mountPoints = map (fs: fs.mountPoint) monitoredFileSystems;
-  monitFilesystems = lib.strings.concatMapStringsSep "\n" monitFilesystem mountPoints;
+
+  filesystemChecks = lib.concatMap (mountpoint: [
+    {
+      name = "filesystem ${mountpoint}";
+      value = {
+        type = "filesystem";
+        path = mountpoint;
+        group = "storage";
+        conditions = "if space usage > 85% then alert";
+      };
+    }
+    # Btrfs can report substantial free blocks that are unavailable for
+    # writes because they belong to allocated metadata chunks. Monit's
+    # native usage check uses total free blocks; also check the
+    # available-to-writers value.
+    {
+      name = "filesystem available ${mountpoint}";
+      value = {
+        type = "program";
+        path = "${lib.getExe filesystemAvailable} ${lib.escapeShellArg mountpoint}";
+        group = "storage";
+        conditions = "if status != 0 then alert";
+      };
+    }
+  ]) mountPoints;
 
   renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''
     MONIT_CONF_DIR=/etc/monit/conf.d
@@ -192,30 +186,40 @@ in
     # monit runs on every server; cattle servers merely skip the M/Monit
     # registration (see the sops template above) to stay off the license.
     enable = true;
-    # Btrfs can report substantial free blocks that are unavailable for writes
-    # because they belong to allocated metadata chunks. Monit's native usage
-    # check uses total free blocks; also check the available-to-writers value.
-    checks = builtins.listToAttrs (
-      map (mountpoint: {
-        name = "filesystem available ${mountpoint}";
-        value = {
-          type = "program";
-          path = "${lib.getExe filesystemAvailable} ${lib.escapeShellArg mountpoint}";
-          group = "storage";
-          conditions = "if status != 0 then alert";
-        };
-      }) mountPoints
-    );
+    checks = builtins.listToAttrs filesystemChecks // {
+      system = {
+        type = "system";
+        name = config.networking.hostName;
+        conditions = ''
+          if loadavg (15min) per core > 1 for 5 times within 15 cycles then alert
+          if memory usage > 80% for 4 cycles then alert
+          if uptime < 1 hours then alert
+        '';
+      };
+      "Reboot required" = {
+        type = "program";
+        path = "${needsReboot}";
+        group = "system";
+        every = 2;
+        conditions = "if status > 0 then alert";
+      };
+      "systemd timers" = {
+        type = "program";
+        path = lib.getExe failedTimers;
+        group = "system";
+        conditions = "if status > 0 then alert";
+      };
+      "systemd services" = {
+        type = "program";
+        path = lib.getExe failedServices;
+        group = "system";
+        conditions = "if status > 0 then alert";
+      };
+    };
     # NOTE The restic check lives in restic.nix so that hosts without
     # restic backups (cattle) do not get a permanently failing check.
-    config = lib.strings.concatStringsSep "\n" [
-      monitGeneral
-      monitSystem
-      monitRebootRequired
-      monitFailedTimers
-      monitFailedServices
-      monitFilesystems
-    ];
+    # Daemon settings only; checks are declared above.
+    config = monitGeneral;
   };
 
   systemd.services.monit.preStart = "${renderMonitConfig}";
