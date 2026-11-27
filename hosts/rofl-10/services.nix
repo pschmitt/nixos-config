@@ -36,6 +36,7 @@ in
     ../../services/n8n.nix
     ../../services/netbox.nix
     ../../services/nextcloud.nix
+    ../../services/open-parcels.nix
     ../../services/paperless-ngx.nix
     ../../services/pinchflat.nix
     ../../services/podsync.nix
