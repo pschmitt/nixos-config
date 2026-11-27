@@ -9,7 +9,9 @@
 let
   enableNvidiaOffload = config.host.nvidiaPrimeOffload;
   # OBS 33 expects the existing Nixpkgs plugin layout through legacy paths.
-  # Remove this wrapper once wrapOBS supports the OBS 33 plugin layout.
+  # Remove this wrapper when the pinned Nixpkgs includes the wrapOBS fix:
+  # https://github.com/NixOS/nixpkgs/pull/591735
+  # Keeping it then would overwrite the upstream legacy plugin paths.
   obsWithLegacyPlugins = pkgs.symlinkJoin {
     name = "${pkgs.master.obs-studio.name}-legacy-plugins";
     paths = [ pkgs.master.obs-studio ];
