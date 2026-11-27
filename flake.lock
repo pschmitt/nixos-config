@@ -2905,11 +2905,11 @@
         "rbw-src": "rbw-src"
       },
       "locked": {
-        "lastModified": 1795798540,
-        "narHash": "sha256-cd70tuIrt+TeXYKPDFYjBAk4uxCjuUebn9KP8rUunGs=",
+        "lastModified": 1795799695,
+        "narHash": "sha256-lPahcIt0OG/j+AE+oL8FfYpfqkOuVHHSK5SivV3RjtQ=",
         "owner": "pschmitt",
         "repo": "termuxpp",
-        "rev": "9863e7a091a6ab95eb4df2069f149c2016b73189",
+        "rev": "37f59be7e32770f45fb0ba86b6891a1397749c4a",
         "type": "github"
       },
       "original": {
