@@ -8,6 +8,17 @@
 
 let
   enableNvidiaOffload = config.host.nvidiaPrimeOffload;
+  # OBS 33 expects the existing Nixpkgs plugin layout through legacy paths.
+  # Remove this wrapper once wrapOBS supports the OBS 33 plugin layout.
+  obsWithLegacyPlugins = pkgs.symlinkJoin {
+    name = "${pkgs.master.obs-studio.name}-legacy-plugins";
+    paths = [ pkgs.master.obs-studio ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram "$out/bin/obs" \
+        --run 'export OBS_LEGACY_PLUGINS_PATH="$OBS_PLUGINS_PATH" OBS_LEGACY_PLUGINS_DATA_PATH="$OBS_PLUGINS_DATA_PATH"'
+    '';
+  };
   registrar = import ./obs-register-script.nix { inherit pkgs; };
   obsAutostart = pkgs.writeShellApplication {
     name = "obs-hyprland-autostart";
@@ -53,7 +64,7 @@ in
 
   programs.obs-studio = {
     enable = true;
-    package = pkgs.master.obs-studio;
+    package = obsWithLegacyPlugins;
     plugins = with pkgs.obs-studio-plugins; [
       droidcam-obs
       obs-text-pthread
