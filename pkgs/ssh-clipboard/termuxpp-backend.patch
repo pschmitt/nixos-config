@@ -22,6 +22,21 @@ index 1755d02..5884a34 100644
      let originals = representations.clone();
      for representation in originals {
          let aliases: &[&str] = match representation.format.as_str() {
+diff --git a/src/config.rs b/src/config.rs
+index 5e11b2b..9b9c46b 100644
+--- a/src/config.rs
++++ b/src/config.rs
+@@ -129,6 +129,10 @@ pub struct Paths {
+     pub headless_service: PathBuf,
+ }
+
++pub(crate) fn termuxpp_clipboard_enabled() -> bool {
++    env::var_os("SSH_CLIPBOARD_TERMUXPP").is_some_and(|value| value == "1")
++}
++
+ pub fn paths() -> Result<Paths> {
+     let home = env::var_os("HOME")
+         .map(PathBuf::from)
 diff --git a/src/daemon.rs b/src/daemon.rs
 index d51b7db..5a9558b 100644
 --- a/src/daemon.rs
@@ -115,7 +130,7 @@ index d51b7db..5a9558b 100644
          }
          self.emit(Direction::Receive, Some(peer_name.to_owned()), &clip);
 diff --git a/src/daemon/runtime.rs b/src/daemon/runtime.rs
-index f174b91..1e02372 100644
+index f174b91..eddb87c 100644
 --- a/src/daemon/runtime.rs
 +++ b/src/daemon/runtime.rs
 @@ -15,10 +15,15 @@ use crate::clipboard::{ClipboardBackend, NativeClipboard};
@@ -127,7 +142,7 @@ index f174b91..1e02372 100644
 
  pub async fn run(config: Config) -> Result<()> {
 -    let clipboard = Arc::new(NativeClipboard::new(config.max_bytes)?);
-+    let termuxpp = std::env::var_os("SSH_CLIPBOARD_TERMUXPP").is_some_and(|value| value == "1");
++    let termuxpp = crate::config::termuxpp_clipboard_enabled();
 +    let clipboard: Arc<dyn ClipboardBackend> = if termuxpp {
 +        Arc::new(TermuxClipboard::new(config.max_bytes))
 +    } else {
@@ -238,3 +253,17 @@ index 0000000..b94fb30
 +        true
 +    }
 +}
+diff --git a/src/ssh.rs b/src/ssh.rs
+index cf78d28..0c1d756 100644
+--- a/src/ssh.rs
++++ b/src/ssh.rs
+@@ -157,6 +157,9 @@ async fn upload(raw: &str, remote: &str, bytes: &[u8]) -> Result<()> {
+ fn command(raw: &str, remote: &str) -> Result<Command> {
+     let parsed = parse_command(raw)?;
+     let mut command = Command::new(parsed.program);
++    if crate::config::termuxpp_clipboard_enabled() {
++        command.arg("-oStrictHostKeyChecking=yes");
++    }
+     command.args(SSH_OPTIONS).args(parsed.arguments).arg(remote);
+     command.stdin(Stdio::null());
+     command.kill_on_drop(true);
