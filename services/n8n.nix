@@ -79,7 +79,6 @@ in
     containerServices.services.n8n = {
       port = n8nPort;
       hosts = [ n8nHost ];
-      redirect = false;
       monitoring = {
         restart.systemdUnit = "${systemdUnit}.service";
         timeout = 15;

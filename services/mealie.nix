@@ -59,7 +59,6 @@ in
   services.containerServices.services.mealie = {
     port = mealiePort;
     hosts = [ mealieHost ];
-    redirect = false;
     monitoring = {
       restart.systemdUnit = "${config.virtualisation.oci-containers.backend}-mealie.service";
       failCycles = 3;

@@ -17,7 +17,6 @@ in
   services.containerServices.services.bentopdf = {
     port = bentopdfPort;
     hosts = [ bentopdfHost ];
-    redirect = false;
     monitoring = {
       restart.systemdUnit = "${config.virtualisation.oci-containers.backend}-bentopdf.service";
       failCycles = 3;

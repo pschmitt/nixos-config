@@ -263,7 +263,6 @@ in
     containerServices.services.endurain = {
       port = endurainPort;
       hosts = [ endurainHost ];
-      redirect = false;
       monitoring = {
         restart.systemdUnit = endurainUnit;
         timeout = 15;

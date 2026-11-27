@@ -70,11 +70,11 @@ let
 
       redirect = mkOption {
         type = types.bool;
-        default = true;
+        default = false;
         description = ''
           Whether to DNAT this service's port from the trusted (mesh) interfaces
-          straight to the container. This bypasses nginx and its auth, so turn it
-          off for services that must only be reached through the proxy.
+          straight to the container. This bypasses nginx and its auth, so only
+          enable it for services that must be reachable without the proxy.
         '';
       };
 

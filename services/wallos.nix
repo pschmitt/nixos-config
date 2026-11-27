@@ -47,7 +47,6 @@ in
   services.containerServices.services.wallos = {
     port = wallosPort;
     hosts = [ wallosHost ];
-    redirect = false;
     auth.enable = true;
     monitoring = {
       restart.systemdUnit = "${config.virtualisation.oci-containers.backend}-wallos.service";

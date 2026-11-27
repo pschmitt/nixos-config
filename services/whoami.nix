@@ -25,7 +25,6 @@ in
   services.containerServices.services.whoami = {
     port = listenPort;
     hosts = [ hostName ];
-    redirect = false;
     monitoring = {
       restart.systemdUnit = "${config.virtualisation.oci-containers.backend}-whoami.service";
       timeout = 15;

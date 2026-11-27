@@ -102,7 +102,6 @@ in
   services.containerServices.services."gitea-mirror" = {
     port = listenPort;
     hosts = [ mainHost ];
-    redirect = false;
     monitoring = {
       restart.systemdUnit = serviceUnit;
       path = "/api/health";

@@ -108,7 +108,6 @@ in
   services.containerServices.services.podsync = {
     port = listenPort;
     hosts = [ primaryHost ];
-    redirect = false;
     monitoring = {
       restart.systemdUnit = "${config.virtualisation.oci-containers.backend}-podsync.service";
       path = "/health";
