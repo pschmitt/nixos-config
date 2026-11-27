@@ -40,8 +40,12 @@ builtins.mapAttrs (
             nativeNixpp =
               (inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux)
               .nixpp-runtime-termux;
-            # No nativeLauncher yet: a launcher whose syscall stub moved breaks
-            # every exec from processes still filtered by the old one.
+            # Cross-built like nativeNixpp. termuxpp keeps its syscall stub at
+            # the deployed address, and the daemon only installs a launcher
+            # that still runs when exec'd under the current one's filter.
+            nativeLauncher =
+              (inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux)
+              .nixpp-runtime-termux-seed.launcher;
           };
           environment = {
             systemPackages = with home.pkgs; [
