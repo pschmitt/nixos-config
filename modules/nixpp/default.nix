@@ -174,6 +174,40 @@ in
           both ran, instead of keeping the bootstrap seed's forever.
         '';
       };
+      nativePrefix = mkOption {
+        type = types.listOf (
+          types.submodule {
+            options = {
+              path = mkOption {
+                type = types.str;
+                description = "Path relative to the native prefix ($PREFIX).";
+              };
+              source = mkOption {
+                type = types.str;
+                description = "Store file installed there.";
+              };
+              mode = mkOption {
+                type = types.enum [
+                  "0600"
+                  "0644"
+                  "0700"
+                  "0755"
+                ];
+                default = "0644";
+              };
+            };
+          }
+        );
+        default = [ ];
+        description = ''
+          TermuxPP's own files in the native prefix, shipped as
+          native/prefix.json. After switching to the generation the native
+          daemon installs them: a file absent, identical or unchanged since
+          it installed it is replaced (the bootstrap's first copy is kept as
+          <file>.nixpp.bak); a file changed since stays. Upstream Termux
+          packages are not listed here, apt updates them.
+        '';
+      };
       launcherStub = mkOption {
         type = types.strMatching "0x[0-9a-fA-F]+";
         default = "0x1000005690";
@@ -219,6 +253,10 @@ in
       ${lib.optionalString (cfg.system.nativeNixpp != null) ''
         mkdir -p "$out/native"
         ln -s ${lib.getExe cfg.system.nativeNixpp} "$out/native/nixpp"
+      ''}
+      ${lib.optionalString (cfg.system.nativePrefix != [ ]) ''
+        mkdir -p "$out/native"
+        ln -s ${pkgs.writeText "native-prefix.json" (builtins.toJSON cfg.system.nativePrefix)} "$out/native/prefix.json"
       ''}
       ${lib.optionalString (cfg.system.bootstrapTools != null) ''
         mkdir -p "$out/bootstrap"

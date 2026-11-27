@@ -43,6 +43,52 @@ builtins.mapAttrs (
             # installs a launcher that still runs when exec'd under the current
             # one's filter.
             nativeLauncher = (inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux).nixpp-runtime-termux-seed.launcher.withStub config.system.launcherStub;
+            # TermuxPP's own files in the native prefix. The seed must be the
+            # one nativeNixpp was built with (its hash is compiled in).
+            nativePrefix =
+              let
+                android = inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux;
+                seed = "${android.nixpp-runtime-termux-seed}/share/nixpp";
+                rbw = "${android.rbw-termux}";
+                setupConf = import ./setup-config.nix {
+                  inherit (home) pkgs;
+                  inherit inputs;
+                };
+              in
+              [
+                {
+                  path = "bin/rbw";
+                  source = "${rbw}/bin/rbw";
+                  mode = "0700";
+                }
+                {
+                  path = "bin/rbw-agent";
+                  source = "${rbw}/bin/rbw-agent";
+                  mode = "0700";
+                }
+                {
+                  path = "share/licenses/rbw/LICENSE";
+                  source = "${rbw}/share/licenses/rbw/LICENSE";
+                }
+                {
+                  path = "share/nixpp/launcher";
+                  source = "${seed}/launcher";
+                  mode = "0700";
+                }
+                {
+                  path = "share/nixpp/manifest.json";
+                  source = "${seed}/manifest.json";
+                }
+                {
+                  path = "share/nixpp/bootstrap-aarch64.zip";
+                  source = "${seed}/bootstrap-aarch64.zip";
+                }
+                {
+                  path = "etc/nixpp/setup.conf";
+                  source = "${setupConf}";
+                  mode = "0600";
+                }
+              ];
             # The seed's static tools, so their fixes reach installed runtimes.
             bootstrapTools = {
               inherit
