@@ -83,6 +83,12 @@ cat /etc/nixpp/upgrade.json   # flake, host and cache the upgrade uses
      `nixpp prepare PATH` and `nixpp switch NAME`. Without `--refresh` a
      cached "not in cache" answer makes Nix report that no substituter can
      build the path.
+   - To upgrade both phones in parallel from here, start each in the
+     background and poll the log, not the process table:
+     `ssh HOST 'nohup nixpp upgrade --rworker --flake github:pschmitt/nixos-config/<sha> > ~/.cache/upgrade.log 2>&1 < /dev/null &'`,
+     then `ssh HOST 'tail -3 ~/.cache/upgrade.log'` until it ends with
+     `ok system switched` (or an error). `pgrep -f "nixpp upgrade"` inside the
+     same `ssh` command matches its own shell and never reports the end.
    - Never build on the phone or the workstation: no plain `--build` without
      `--rworker` unless remote builders are configured (`--max-jobs 0`).
    - **"Existing file ... would be clobbered":** Home Manager found an
@@ -117,20 +123,9 @@ starting the native ARM guest builds. An ARM-only worker cannot build it.
 A platform mismatch on `nixpp-runtime-termux`, the bootstrap seed or its
 `manifest.json` derivation is a sign that the prerequisite is missing.
 
-Use the exact **nixos-config** commit that pins the TermuxPP change. Its
-locked inputs select the same TermuxPP source and Nixpkgs as the phone build.
-Run this on the x86_64 worker:
-
-```bash
-set -o pipefail
-nix build --no-link --print-out-paths --max-jobs 4 --cores 4 -L --expr '
-  let f = builtins.getFlake "github:pschmitt/nixos-config/<sha>";
-  in (f.inputs.termuxpp.lib.nixpp.packagesFor
-    f.inputs.nixpkgs.legacyPackages.x86_64-linux).nixpp-runtime-termux
-' > "$HOME/nixpp-native.path" &&
-  nix path-info --recursive "$(cat "$HOME/nixpp-native.path")" |
-    niks3 push --stdin
-```
+Build and push them from the exact nixos-config commit that pins the
+TermuxPP change, in the same worker job as the termuxpp bump and before
+pushing it: [references/prerequisites.md](references/prerequisites.md).
 
 After the upload succeeds, run
 `nixpp upgrade --rworker --flake 'github:pschmitt/nixos-config/<sha>'`
@@ -146,6 +141,14 @@ runtime's syscall stub address (`system.launcherStub`). Read
 launcher, enrolling a host, or when every new guest program dies with
 "invalid system call".
 
+### The native prefix
+
+The app's native prefix is the slim outer layer (nixpp, rbw, the seed, the
+app's tpp; no Termux packages, bash or APT), kept current by generations,
+never by `apt`. Read [references/outer-layer.md](references/outer-layer.md)
+before adding a file to `system.nativePrefix`, when a prefix file is not
+updated, or to slim an old Termux prefix in place without wiping the guest.
+
 ## Build the phone artifacts
 
 Build on rworkers, never on the workstation or a phone, and push every result
@@ -156,9 +159,9 @@ docs; follow them instead of improvising:
   prerequisite: nixos-config `docs/termuxpp/system.md`, "Build on a native
   aarch64 rworker" (systems on a `gh-aarch64` lease, prerequisite on an x86_64
   worker first after a TermuxPP or nixpkgs bump).
-- Bootstrap zip and debug APK: termuxpp `docs/en/aarch64-bootstrap.md` (runtime,
-  seed and `rbw-termux` from the termuxpp flake; `--nixpp-setup-config` from
-  nixos-config's `termuxpp-setup-conf`; Gradle in the Android dev shell on an
+- Bootstrap zip and debug APK: termuxpp `docs/en/aarch64-bootstrap.md`
+  (`termuxpp-outer-bootstrap` from the termuxpp flake with nixos-config's
+  `termuxpp-setup-conf` as `setupConfig`; Gradle in the Android dev shell on an
   OpenStack worker with `--disk 250`). Check that the APK embeds the new zip
   (`libtermux-bootstrap.so` contains its bytes). Such APKs and zips carry the
   private setup config: keep them 0600 and local.
@@ -173,15 +176,17 @@ out with `nix shell PKG -c sh -c 'cp "$(readlink -f "$(command -v X)")" ~/X'`.
 it). Clearing the app's data wipes the native prefix and the whole guest:
 only with the user's explicit approval for that device.
 
-1. Install a debug APK whose aarch64 bootstrap carries nixpp, rbw and the
-   private `etc/nixpp/setup.conf` (controller as an FQDN, its host key, cache
+1. Install a debug APK whose aarch64 bootstrap is the slim outer
+   environment (termuxpp's `termuxpp-outer-bootstrap`: nixpp, `nixpp-setup`,
+   rbw, the seed, no Termux packages) with the private
+   `etc/nixpp/setup.conf` (controller as an FQDN, its host key, cache
    store/keys/pin URL, `ssh_inputs`, `user`, `email`, `dotfiles_repo`).
    That file is generated, never kept by hand: nixos-config's
    `packages.<system>.termuxpp-setup-conf` renders it from
-   nixos-config-private's `lib.termuxppSetup`; pass
-   `--nixpp-setup-config "$(nix build --no-link --print-out-paths github:pschmitt/nixos-config#termuxpp-setup-conf)"`
-   (on a worker) to the bootstrap builder.
-   Recipe: termuxpp `docs/en/aarch64-bootstrap.md`. Such APKs and zips embed
+   nixos-config-private's `lib.termuxppSetup`; pass it as
+   `termuxpp-outer-bootstrap.override { setupConfig = ...; }` (on an x86_64
+   worker). Recipe: termuxpp `docs/en/aarch64-bootstrap.md`, "The slim
+   outer environment". Such APKs and zips embed
    private config: keep them 0600 and local. Reinstalling (`adb install -r`)
    does not re-extract the prefix, so a changed `nixpp` or `setup.conf` needs
    a cleared app (fresh bootstrap) or an env override such as
