@@ -1,5 +1,4 @@
-{ lib, ... }:
-{
+_: {
   imports = [
     ../../profiles/specializations/server
 
@@ -13,7 +12,6 @@
   };
 
   networking = {
-    hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
     firewall.enable = false;
   };
 

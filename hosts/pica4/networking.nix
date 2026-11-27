@@ -1,7 +1,6 @@
-{ config, lib, ... }:
+{ config, ... }:
 {
   networking = {
-    hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
     firewall.enable = false;
     networkmanager = {
       dns = "systemd-resolved";

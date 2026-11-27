@@ -4,7 +4,6 @@
     ../../services/luks-ssh-unlock/push-client.nix
 
     ./hardware-configuration.nix
-    ./networking.nix
     ./prompt.nix
   ];
 

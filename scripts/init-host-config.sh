@@ -84,7 +84,6 @@ main() {
   fi
 
   cp -vaL "./templates/nix/${TEMPLATE_TYPE}" "$DEST"
-  printf '%s' "$NEW_HOSTNAME" > "${DEST}/HOSTNAME"
   NIXOS_CONFIG_DIR="$PWD" "$private_root/secrets/sops-init.sh" "$NEW_HOSTNAME"
   NIXOS_CONFIG_DIR="$PWD" "$private_root/secrets/ssh-gen-known-hosts.sh"
 

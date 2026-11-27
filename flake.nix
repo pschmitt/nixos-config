@@ -584,6 +584,7 @@
               hostModule
               {
                 hardware.type = deviceType;
+                networking.hostName = nixpkgs.lib.mkDefault hostname;
               }
             ]
             ++ nixpkgs.lib.optionals homeManager [

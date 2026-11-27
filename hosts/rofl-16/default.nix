@@ -5,7 +5,6 @@
     ../../services/circus/agent.nix
 
     ./hardware-configuration.nix
-    ./networking.nix
     ./prompt.nix
   ];
 

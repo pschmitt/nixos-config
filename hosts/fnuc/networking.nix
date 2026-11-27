@@ -1,7 +1,6 @@
 { config, pkgs, ... }:
 {
   networking = {
-    hostName = "fnuc";
     # Default-deny firewall (enabled by profiles/specializations/server) on the
     # nftables backend.
     nftables.enable = true;

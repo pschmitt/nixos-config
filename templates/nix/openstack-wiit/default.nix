@@ -1,5 +1,4 @@
-{ lib, ... }:
-{
+_: {
   imports = [
     ../../profiles/specializations/server
 
@@ -12,7 +11,6 @@
 
   # Enable networking
   networking = {
-    hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
     # Disable the firewall altogether.
     firewall = {
       enable = false;

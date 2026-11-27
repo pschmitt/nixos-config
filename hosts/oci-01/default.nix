@@ -8,7 +8,6 @@
     ./hardware.nix
     ./install.nix
     ./luks-data.nix
-    ./networking.nix
     ./services.nix
   ];
 

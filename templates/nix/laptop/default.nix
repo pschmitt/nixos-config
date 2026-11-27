@@ -18,7 +18,6 @@
   hardware.cattle = false;
 
   networking = {
-    hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
     firewall.enable = false;
   };
 

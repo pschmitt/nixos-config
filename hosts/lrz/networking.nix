@@ -1,7 +1,6 @@
 { config, ... }:
 {
   networking = {
-    hostName = "lrz";
     # Default-deny firewall (enabled by profiles/specializations/server) on the
     # nftables backend.
     nftables.enable = true;
