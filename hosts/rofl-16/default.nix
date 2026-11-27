@@ -1,12 +1,15 @@
 {
   imports = [
+    ../../modules/disko/openstack-luks-btrfs.nix
     ../../profiles/specializations/rofl-build-node
     ../../services/luks-ssh-unlock/push-client.nix
     ../../services/circus/agent.nix
 
-    ./hardware-configuration.nix
     ./prompt.nix
   ];
+
+  hardware.disko.openstack.rootDiskId =
+    (builtins.fromJSON (builtins.readFile ./tf-vars.json)).disks.root.id;
 
   # Circus CI trial (services/circus/README.md): agents reach the
   # queue-runner on rofl-15.

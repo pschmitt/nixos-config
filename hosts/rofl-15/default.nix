@@ -1,13 +1,16 @@
 { config, ... }:
 {
   imports = [
+    ../../modules/disko/openstack-luks-btrfs.nix
     ../../profiles/specializations/rofl-build-node
     ../../services/luks-ssh-unlock/push-client.nix
     ../../services/circus
 
-    ./hardware-configuration.nix
     ./prompt.nix
   ];
+
+  hardware.disko.openstack.rootDiskId =
+    (builtins.fromJSON (builtins.readFile ./tf-vars.json)).disks.root.id;
 
   sops.secrets."circus/pr-author-ids" = config.sops.mkHostSecret {
     owner = "circus";

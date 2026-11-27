@@ -10,11 +10,15 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     inputs.hardware.nixosModules.gpd-pocket-4
-    ./disko-config.nix
+    ../../modules/disko/laptop-luks-btrfs.nix
 
     ../../profiles/hardware/fprintd.nix
     ../../profiles/hardware/touchscreen.nix
   ];
+
+  hardware.disko.laptop = {
+    device = "/dev/disk/by-id/nvme-WD_PC_SN740_SDDPNQE-2T00_251517802927";
+  };
 
   swapDevices = [
     {

@@ -1,5 +1,0 @@
-{
-  imports = [
-    ./disk-config.nix
-  ];
-}
