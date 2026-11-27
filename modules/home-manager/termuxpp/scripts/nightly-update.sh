@@ -12,6 +12,10 @@ finish() {
   then
     nightly_result=failed
   fi
+  if (( wake_locked ))
+  then
+    timeout 15 tpp wake-lock release >/dev/null 2>&1 || :
+  fi
   log "Result: $nightly_result (exit $status)"
   printf 'TermuxPP nightly update: %s (exit %s)%s\n' "$nightly_result" "$status" \
     "${killed_run:+; the previous run was killed}" >&3
@@ -157,6 +161,7 @@ main() {
   local mode=update state_dir log_file free_kib killed_at=''
   nightly_result=failed
   killed_run=''
+  wake_locked=0
   if (( $# > 1 ))
   then
     usage >&2
@@ -224,6 +229,14 @@ main() {
   then
     nightly_result='deferred (Wi-Fi disconnected or unavailable)'
     return 0
+  fi
+
+  # Keep the CPU awake for the maintenance; without the lock it still runs.
+  if timeout 15 tpp wake-lock acquire >/dev/null 2>&1
+  then
+    wake_locked=1
+  else
+    log 'Could not take the wake lock (tpp wake-lock). Continuing without.'
   fi
 
   free_kib=$(df -k --output=avail "$HOME" | tail -n 1) || return 1
