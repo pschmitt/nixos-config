@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   # Vimium C keeps its settings in storage.local, which home-manager can seed
   # (storage.js). The old Vimium only used storage.sync, hence vimium.nix.
@@ -18,7 +18,7 @@
         }
         {
           passKeys = "";
-          pattern = ":http://10.5.1.10:8123";
+          pattern = ":http://${config.networking.homeLan.homeAssistant}:8123";
         }
         {
           passKeys = "";

@@ -8,6 +8,7 @@
     ./domains.nix
     ./falcon-sensor-vm.nix
     ./hardware.nix
+    ./home-lan.nix
     ./hermes.nix
     ./initrd-wifi.nix
     ./ktunnel.nix

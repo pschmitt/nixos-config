@@ -7,6 +7,7 @@
     ../modules/hermes.nix
     ../modules/main-user.nix
     ../modules/domains.nix
+    ../modules/home-lan.nix
     ../modules/theme.nix
     ./host.nix
 

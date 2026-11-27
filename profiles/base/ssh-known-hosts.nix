@@ -1,16 +1,24 @@
 { domains, inputs }:
 let
+  tailnet =
+    if domains.tailnet or null != null then
+      domains.tailnet
+    else
+      (inputs.nixos-config-private.lib.network or { }).tailnet or null;
+
   # Helper to build hostnames across all known suffixes
-  mkHostnames = host: [
-    host
-    "${host}.lan"
-    "${host}.${domains.main}"
-    "${host}.vpn.${domains.main}"
-    "${host}.${domains.netbird}"
-    "${host}.${domains.tailscale}"
-    "${host}.snake-eagle.ts.net"
-    "${host}.netbird.cloud"
-  ];
+  mkHostnames =
+    host:
+    [
+      host
+      "${host}.lan"
+      "${host}.${domains.main}"
+      "${host}.vpn.${domains.main}"
+      "${host}.${domains.netbird}"
+      "${host}.${domains.tailscale}"
+    ]
+    ++ (if tailnet != null then [ "${host}.${tailnet}" ] else [ ])
+    ++ [ "${host}.netbird.cloud" ];
 
   # NOTE data/ssh-hosts.generated.json is generated using
   # nixos-config-private/secrets/ssh-gen-known-hosts.sh.

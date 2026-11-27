@@ -14,14 +14,13 @@ in
     home-assistant-vm = {
       enable = true;
       physicalInterface = "eno1";
-      bridgeMac = "1c:69:7a:0f:e5:fe";
-      macAddress = "52:54:00:a0:a7:1b";
+      # bridgeMac and macAddress are set in the private input.
       autostart = true;
     };
 
     # The VM runs on this host: mount its config over the local bridge instead
     # of the VPN name (unreachable from the hypervisor itself).
-    home-assistant.sshfs.host = "10.5.1.1";
+    home-assistant.sshfs.host = config.networking.homeLan.homeAssistant;
 
     monit.checks = {
       "libvirt ${cfg.domainName}" = {
@@ -35,7 +34,7 @@ in
 
       "libvirt ${cfg.domainName} (net)" = {
         type = "host";
-        address = "10.5.1.1";
+        address = config.networking.homeLan.homeAssistant;
         conditions = ''
           start program "${virsh} start ${cfg.domainName}"
           stop program "${virsh} stop ${cfg.domainName}"
@@ -45,7 +44,7 @@ in
 
       hass-fnuc = {
         type = "host";
-        address = "10.5.1.1";
+        address = config.networking.homeLan.homeAssistant;
         conditions = ''
           if failed port 8123 for 5 cycles then alert
           if failed port 1883 for 5 cycles then alert

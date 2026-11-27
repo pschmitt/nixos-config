@@ -5,7 +5,7 @@
 }:
 {
   # Configure the provider's recursive resolver as a link-specific DNS scope.
-  # The Neutron gateway at 10.69.46.1 does not listen for DNS; the provider
+  # The Neutron gateway does not listen for DNS; the provider
   # resolver also serves the private records registered by Neutron.
   systemd.services.roflnet-dns = {
     description = "Configure roflnet split DNS";

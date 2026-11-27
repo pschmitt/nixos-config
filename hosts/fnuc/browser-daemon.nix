@@ -6,6 +6,7 @@
 }:
 let
   inherit (config.mainUser) username;
+  haUrl = "http://${config.networking.homeLan.homeAssistant}:8123";
   meshNodes = [
     "fnuc"
     "rofl-13"
@@ -37,25 +38,10 @@ in
     enable = true;
     user = username;
     nodes = map (h: "https://browser.${h}.${config.domains.netbird}") meshNodes;
-    unlockWebhook = "http://10.5.1.1:8123/api/webhook/rbw_unlock_request";
+    unlockWebhook = "${haUrl}/api/webhook/rbw_unlock_request";
     # A fill into a site the vault entry is not saved for notifies the phone.
-    notifyWebhook = "http://10.5.1.1:8123/api/webhook/browser_daemon_any_site_fill";
-    # The client certificate is assigned the browser-daemon policy on
-    # rbw-agent. The policy grants access across both vault accounts.
-    rbwApi =
-      let
-        pki = "${config.users.users.${username}.home}/.local/share/rbw/remote-api/pki";
-        client = id: {
-          certFile = "${pki}/client-${id}.pem";
-          keyFile = "${pki}/client-${id}-key.pem";
-        };
-      in
-      {
-        url = "https://10.5.0.14:24871";
-        caFile = "${pki}/ca.pem";
-        clients = map client [
-          "21c6acba88084ae7bddf08c94c807ef2"
-        ];
-      };
+    notifyWebhook = "${haUrl}/api/webhook/browser_daemon_any_site_fill";
+    # rbwApi (the rbw-agent endpoint and client certificates) is set in the
+    # private input.
   };
 }

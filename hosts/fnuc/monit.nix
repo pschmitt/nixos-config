@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   ...
 }:
@@ -29,9 +30,9 @@ let
       failures+=("EEE is not disabled on eno1")
     fi
 
-    if ! ${pkgs.iputils}/bin/ping -I hass-br0 -c 1 -W 2 10.5.0.1 >/dev/null 2>&1
+    if ! ${pkgs.iputils}/bin/ping -I hass-br0 -c 1 -W 2 ${config.networking.homeLan.gateway} >/dev/null 2>&1
     then
-      failures+=("10.5.0.1 is unreachable through hass-br0")
+      failures+=("${config.networking.homeLan.gateway} is unreachable through hass-br0")
     fi
 
     if [[ ''${#failures[@]} -eq 0 ]]

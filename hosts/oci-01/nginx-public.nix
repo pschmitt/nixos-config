@@ -236,7 +236,7 @@ in
     # it -- a request just gets a 502 if both mesh peers are down.
     upstreams.hass_dieppe_mesh = {
       servers = {
-        "homeassistant-dieppe.snake-eagle.ts.net:8123" = { };
+        "homeassistant-dieppe.${config.domains.tailnet}:8123" = { };
         "homeassistant-dieppe.${config.domains.netbird}:8123" = {
           backup = true;
         };
@@ -425,17 +425,17 @@ in
 
       "grafana.ovm5.de" = publicProxy {
         cert = "oci-01-ovm5-de";
-        backend = "https://ha.snake-eagle.ts.net:3000";
+        backend = "https://ha.${config.domains.tailnet}:3000";
         aliases = [
           "graphana.ovm5.de"
           "graph.ovm5.de"
           "gr.ovm5.de"
         ];
         websockets = true;
-        proxyHost = "ha.snake-eagle.ts.net";
+        proxyHost = "ha.${config.domains.tailnet}";
         extraConfig = ''
           proxy_ssl_server_name on;
-          proxy_ssl_name ha.snake-eagle.ts.net;
+          proxy_ssl_name ha.${config.domains.tailnet};
         '';
       };
 

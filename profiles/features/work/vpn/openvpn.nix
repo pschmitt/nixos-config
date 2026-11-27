@@ -28,8 +28,8 @@ let
     setenv UV_IP4_TABLE FRA
   '';
 
-  # WIIT
-  wiitUsername = "philipp.schmitt";
+  # WIIT: the VPN login is the local part of the work address.
+  wiitUsername = lib.head (lib.splitString "@" config.mainUser.email.work);
 
   updateSystemdResolvedPackageCompat = pkgs.symlinkJoin {
     name = "update-systemd-resolved-with-openvpn-conf";

@@ -116,7 +116,7 @@ in
       (execBind "SUPER + ALT + Z" "${bin}/ms-teams-join-room.sh home-room")
       (execBind "SUPER + ALT + T" "${bin}/ms-teams-join-room.sh home-room")
       (execBind "SUPER + SHIFT + Z" "${bin}/bring-window.sh --fullscreen chrome")
-      (execBind "SUPER + ALT + H" "${bin}/browser-run-or-raise.sh --url https://ha.brkn.lol --alt http://10.5.1.1:8123")
+      (execBind "SUPER + ALT + H" "${bin}/browser-run-or-raise.sh --url https://ha.${config.domains.main} --alt http://${config.networking.homeLan.homeAssistant}:8123")
       (execBind "F1" "${bin}/scratchpad.sh term")
       (execBind "SUPER + E" "${bin}/scratchpad.sh files")
       (execBind "SUPER + SHIFT + V" "${bin}/scratchpad.sh audio")

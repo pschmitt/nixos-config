@@ -26,6 +26,13 @@
       description = "Domain used for VPN hosts";
     };
 
+    tailnet = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "example-tailnet.ts.net";
+      description = "Tailscale MagicDNS tailnet domain (set from the private input).";
+    };
+
     roflnet = lib.mkOption {
       type = lib.types.str;
       default = "roflnet.internal";

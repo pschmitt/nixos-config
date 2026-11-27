@@ -59,6 +59,7 @@ in
       # Bridge: feed system facts from the NixOS config into the (osConfig-free)
       # home config.
       inherit (config) mainUser domains;
+      networking.homeLan = config.networking.homeLan;
       dotfiles = {
         inherit (config.dotfiles) promptColor promptHostAlias;
         inherit (config.dotfiles) desktop;
