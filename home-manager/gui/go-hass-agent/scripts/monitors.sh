@@ -12,26 +12,6 @@ MONITORS_JSON="[]"
 SESSION=""
 DESKTOP=""
 
-collect_wayland_sway() {
-  local data
-  if ! data=$(swaymsg_wrapper --raw --type get_outputs 2>/dev/null)
-  then
-    ERROR="Failed to query sway outputs"
-    return 1
-  fi
-
-  MONITORS_JSON=$(jq -cer '[.[] | select(.active == true) | {
-      name: .name,
-      make: .make,
-      model: .model,
-      width: (.current_mode.width // .rect.width),
-      height: (.current_mode.height // .rect.height),
-      refresh: (.current_mode.refresh // null),
-      scale: (.scale // 1)
-    }]' <<<"$data" 2>/dev/null || echo "[]")
-  return 0
-}
-
 collect_wayland_hyprland() {
   local data
   if ! data=$(hyprctl_wrapper -j monitors 2>/dev/null)
@@ -81,16 +61,7 @@ main() {
     wayland)
       local handled=0
 
-      if [[ "$DESKTOP" == "sway" || -z "$DESKTOP" ]]
-      then
-        if collect_wayland_sway
-        then
-          handled=1
-          ERROR=""
-        fi
-      fi
-
-      if (( handled == 0 )) && [[ "$DESKTOP" == "Hyprland" || -z "$DESKTOP" ]]
+      if [[ "$DESKTOP" == "Hyprland" || -z "$DESKTOP" ]]
       then
         if collect_wayland_hyprland
         then

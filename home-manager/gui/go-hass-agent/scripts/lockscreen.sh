@@ -59,7 +59,7 @@ main() {
         fi
         program="plasma-lockscreen"
         ;;
-      sway|Hyprland)
+      Hyprland)
         if lockscreen_noctalia
         then
           state=false

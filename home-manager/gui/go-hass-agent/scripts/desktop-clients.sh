@@ -9,55 +9,6 @@ CLIENTS_JSON="[]"
 FOCUSED_CLIENT="null"
 ERROR_MSG=""
 
-collect_sway_clients() {
-  local tree result focused
-
-  if ! tree=$(swaymsg_wrapper -t get_tree)
-  then
-    ERROR_MSG="Failed to query sway tree"
-    return 1
-  fi
-
-  if ! result=$(jq -c '
-      def walk:
-        recurse(.nodes[]?, .floating_nodes[]?);
-
-      [walk | select(.type == "con" and (.pid // 0) > 0) | {
-          class: (.app_id // .window_properties.class // "unknown"),
-          title: (.name // .window_properties.title // ""),
-          pid: (.pid // 0),
-          focused: (.focused // false)
-        }]
-      as $clients
-      | {
-          clients: $clients,
-          focused: ($clients | map(select(.focused == true)) | first // null)
-        }
-    ' <<<"$tree")
-  then
-    ERROR_MSG="Failed to parse sway tree"
-    return 1
-  fi
-
-  if ! CLIENTS_JSON=$(jq -cr '.clients' <<<"$result")
-  then
-    CLIENTS_JSON="[]"
-  fi
-
-  if ! focused=$(jq -c '.focused' <<<"$result")
-  then
-    focused="null"
-  fi
-  if [[ -z "$focused" || "$focused" == "null" ]]
-  then
-    FOCUSED_CLIENT="null"
-  else
-    FOCUSED_CLIENT="$focused"
-  fi
-
-  return 0
-}
-
 collect_hyprland_clients() {
   local clients_json="" focused_json="" active_raw="" focus_addr=""
 
@@ -138,9 +89,6 @@ main() {
   if [[ -n "$desktop" ]]
   then
     case "$desktop" in
-      sway)
-        collect_sway_clients
-        ;;
       Hyprland)
         collect_hyprland_clients
         ;;

@@ -9,10 +9,6 @@ check_hid() {
   lsusb -d 1a40:0101 >/dev/null 2>&1
 }
 
-check_display_sway() {
-  swaymsg_wrapper --raw --type get_outputs --pretty 2>/dev/null | grep -qi pikvm
-}
-
 check_display_hyprland() {
   hyprctl_wrapper -j monitors 2>/dev/null | jq -e 'map(.description // "" | test("pikvm"; "i")) | any' >/dev/null 2>&1
 }
@@ -35,12 +31,6 @@ main() {
   desktop="$(guess_desktop 2>/dev/null || true)"
 
   case "$desktop" in
-    sway)
-      if check_display_sway
-      then
-        display_present=true
-      fi
-      ;;
     Hyprland)
       if check_display_hyprland
       then
