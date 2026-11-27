@@ -15,11 +15,23 @@ itself lives in the [termuxpp repository](https://github.com/pschmitt/termuxpp/t
 
 ## Push Android clipboard text over SSH
 
-Configure the receiving machine as a peer in
-`~/.config/ssh-clipboard/config.json` and make sure its ssh-clipboard daemon
-is running with `~/.local/bin/ssh-clipboard` available to incoming SSH.
-For the peer's `ssh_command`, use an SSH alias with a verified host key,
-for example `ssh -o StrictHostKeyChecking=yes desktop`.
+Make sure the receiving machine's ssh-clipboard daemon is running and
+incoming SSH can execute `~/.local/bin/ssh-clipboard` there. Create
+`~/.config/ssh-clipboard/config.json` on the phone with a unique node ID
+(generate one with `python3 -m uuid`) and an SSH alias whose host key you
+have already verified.
+
+```json
+{
+  "version": 1,
+  "node_id": "8748b7d1-017b-44a4-96f2-9df43854681b",
+  "node_name": "phone",
+  "peers": [{ "name": "desktop", "ssh_command": "ssh desktop" }],
+  "max_bytes": 1048576,
+  "poll_interval_ms": 1000
+}
+```
+
 From a visible TermuxPP session, start the phone peer in the foreground:
 
 ```sh
