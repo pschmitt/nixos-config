@@ -151,6 +151,18 @@ in
           instead of only with a fresh bootstrap.
         '';
       };
+      launcherStub = mkOption {
+        type = types.strMatching "0x[0-9a-fA-F]+";
+        default = "0x1000005690";
+        description = ''
+          Address of the launcher's exempt syscall stub on this host. Every
+          running guest process carries a seccomp filter that exempts exactly
+          that range, so a launcher update must keep it. Runtimes keep the
+          address of the launcher they were bootstrapped with: read it with
+          `nm launcher | grep allow_start` on the runtime's launcher. New
+          bootstraps use the default.
+        '';
+      };
       nativeLauncher = mkOption {
         type = types.nullOr types.package;
         default = null;
