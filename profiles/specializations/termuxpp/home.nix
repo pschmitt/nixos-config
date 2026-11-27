@@ -134,6 +134,7 @@ in
         rsync
         shellcheck
         sops
+        ssh-clipboard
         ssh-to-age
         tmux
         unzip
