@@ -422,7 +422,12 @@ the run fails when none succeeds. It then runs `nixpp gc --keep-generations 3` a
 fast-forwards yadm. It syncs Atuin when signed in,
 then syncs and updates each
 configured mani workspace. Git runs without prompting. The latest two runs
-are logged under `~/.local/state/termuxpp-nightly/` in the guest. A run that
+are logged under `~/.local/state/termuxpp-nightly/` in the guest. After a run
+whose maintenance ran (Wi-Fi, charging), the native launcher upgrades the
+outer Termux packages with `apt-get full-upgrade` (unattended, existing
+configuration files kept) when at least ten minutes of Tasker's hour remain,
+and logs that to the same file. TermuxPP's own packages `nixpp` and `rbw` are
+held there: generations update their files (`native/prefix.json`). A run that
 ends without a `Result:` line was killed outright (on Pixels, Android's memory
 limiter takes down the app with the run): the next run says so in its log and
 result, and keeps that log as `killed-run.log`. To check the

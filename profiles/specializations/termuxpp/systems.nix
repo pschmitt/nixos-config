@@ -84,6 +84,18 @@ builtins.mapAttrs (
                   source = "${seed}/bootstrap-aarch64.zip";
                 }
                 {
+                  # As the bootstrap builder writes it, after the app's
+                  # com.termux -> dev.pschmitt.termux rewrite.
+                  path = "bin/nixpp-setup";
+                  source = "${home.pkgs.writeText "nixpp-setup" ''
+                    #!/data/data/dev.pschmitt.termux/files/usr/bin/bash
+                    exec nixpp setup "$@"
+
+                    # vim: set ft=sh et ts=2 sw=2 :
+                  ''}";
+                  mode = "0700";
+                }
+                {
                   path = "etc/nixpp/setup.conf";
                   source = "${setupConf}";
                   mode = "0600";
