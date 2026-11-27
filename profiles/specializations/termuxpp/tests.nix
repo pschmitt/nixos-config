@@ -35,25 +35,19 @@ let
     assert c.nixpp.rworker.controller != null;
     assert c.nixpp.rworker.awsCredentialsFile == c.nixpp.upgradeCache.credentials_file;
     assert c.nixpp.rworker.system == "aarch64-linux";
-    assert c.programs.eza.package.name == "eza-nixpp";
     assert builtins.elem c.programs.eza.package c.home.packages;
     assert c.programs.eza.package == home.pkgs.eza;
-    assert home.pkgs.bat.nixppSignalStackPrograms == [ "bat" ];
-    assert home.pkgs.fd.nixppSignalStackPrograms == [ "fd" ];
-    assert home.pkgs.rworker.nixppSignalStackPrograms == [ "rworker" ];
-    assert
-      (home.pkgs.rworker.override { sshControlMaster = false; }).nixppSignalStackPrograms == [
-        "rworker"
-      ];
-    assert home.pkgs.ripgrep.nixppSignalStackPrograms == [ "rg" ];
-    assert
-      home.pkgs.rbw.nixppSignalStackPrograms == [
-        "rbw"
-        "rbw-agent"
-      ];
-    assert home.pkgs.openstack-rs.nixppSignalStackPrograms == [ "osc" ];
-    assert home.pkgs.vivid.nixppSignalStackPrograms == [ "vivid" ];
-    assert home.pkgs.zoxide.nixppSignalStackPrograms == [ "zoxide" ];
+    # The launcher's handler runs on its own stack: no program needs the
+    # old signal-stack preload any more.
+    assert builtins.all (name: !(home.pkgs.${name} ? nixppSignalStackPrograms)) [
+      "bat"
+      "eza"
+      "fd"
+      "ripgrep"
+      "rbw"
+      "rworker"
+      "zoxide"
+    ];
     assert builtins.elem ../../../overlays/termuxpp/rsync-search-only-ancestors.patch
       home.pkgs.rsync.patches;
     assert c.nix.settings.max-jobs == 0;

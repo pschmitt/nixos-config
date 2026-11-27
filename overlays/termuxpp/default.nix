@@ -1,29 +1,5 @@
 final: prev:
 let
-  signalStack = final.stdenv.mkDerivation {
-    pname = "nixpp-eza-signal-stack";
-    version = "1";
-    src = ./eza-stack.c;
-    dontUnpack = true;
-    buildPhase = ''
-      $CC -shared -fPIC -O2 -Wall -Wextra -Werror "$src" -o stack.so
-    '';
-    installPhase = ''
-      install -Dm755 stack.so $out/lib/stack.so
-    '';
-  };
-  withSignalStack =
-    package: programs:
-    final.symlinkJoin {
-      name = "${package.pname or package.name}-nixpp";
-      paths = [ package ];
-      passthru.nixppSignalStackPrograms = programs;
-      passthru.version = final.lib.getVersion package;
-      nativeBuildInputs = [ final.makeWrapper ];
-      postBuild = final.lib.concatMapStringsSep "\n" (program: ''
-        wrapProgram $out/bin/${program} --prefix LD_PRELOAD : ${signalStack}/lib/stack.so
-      '') programs;
-    };
   flakeComma = prev.comma.overrideAttrs (old: {
     nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
     postFixup = (old.postFixup or "") + ''
@@ -34,57 +10,12 @@ let
   });
 in
 {
-  eza = withSignalStack prev.eza [ "eza" ];
-  bat = withSignalStack prev.bat [ "bat" ];
-  fd = withSignalStack prev.fd [ "fd" ];
-  ripgrep = withSignalStack prev.ripgrep [ "rg" ];
-  # The Pixel's seccomp pathname handler overflows nix-locate's Rust signal stack.
-  nix-index-unwrapped = prev.nix-index-unwrapped.overrideAttrs (old: {
-    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.makeWrapper ];
-    postFixup = (old.postFixup or "") + ''
-      for program in nix-index nix-locate; do
-        wrapProgram "$out/bin/$program" --prefix LD_PRELOAD : ${signalStack}/lib/stack.so
-      done
-    '';
-  });
   # A channel is not available in the managed guest. Keep comma on the
   # pinned flake registry even when other tools export a NIX_PATH entry.
-  comma = final.lib.makeOverridable (
-    args:
-    let
-      package = flakeComma.override args;
-    in
-    (withSignalStack package [
-      ","
-      "comma"
-    ])
-    // {
-      inherit (package) version;
-    }
-  ) { };
-  rbw = withSignalStack prev.rbw [
-    "rbw"
-    "rbw-agent"
-  ];
-  openstack-rs = withSignalStack prev.openstack-rs [ "osc" ];
-  # rworker (Rust) segfaults on the Pixel (p11) without the larger signal
-  # stack: `rworker ls` exits 139, with stack.so it works (2026-11-20).
-  # Overridable, since modules/home-manager/termuxpp/rworker.nix overrides it.
-  rworker = final.lib.makeOverridable (
-    args:
-    let
-      package = prev.rworker.override args;
-    in
-    (withSignalStack package [ "rworker" ])
-    // {
-      inherit (package) version;
-    }
-  ) { };
-  vivid = withSignalStack prev.vivid [ "vivid" ];
-  ssh-clipboard = withSignalStack (prev.ssh-clipboard.overrideAttrs (old: {
+  comma = flakeComma;
+  ssh-clipboard = prev.ssh-clipboard.overrideAttrs (old: {
     patches = old.patches ++ [ ../../pkgs/ssh-clipboard/termuxpp-backend.patch ];
-  })) [ "ssh-clipboard" ];
-  zoxide = withSignalStack prev.zoxide [ "zoxide" ];
+  });
   # The guest cannot reliably allocate LuaJIT executable memory at startup.
   # The patch only touches the test suite: two treesitter tests assumed async parses finish
   # within their 3ms budget, which does not hold when the build runs under emulation.
