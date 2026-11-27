@@ -1,15 +1,17 @@
-local usage="usage: $0 [-V VOICE] [-l LANGUAGE] [-k] [-P] TEXT"
+local usage="usage: $0 [-V VOICE | --gender m|male|f|female] [-l LANGUAGE] [-k] [-P] TEXT"
 local help
 local voice
+local gender
 local language=(--language en-US)
 local keep noplay
 
 zparseopts -D -E -K -- \
   {h,-help}=help \
   {V,-voice}:=voice \
+  -gender:=gender \
   {l,-lang,-language}:=language \
   {k,-keep}=keep \
-  {P,-dnp,-no-play,-noplay,-silent,q}=noplay
+  {P,-dnp,-no-play,-noplay,-silent,q}=noplay || return 2
 
 if [[ -n $help ]]
 then
@@ -18,6 +20,26 @@ then
 fi
 
 [[ -n "$noplay" ]] && keep=1
+
+if [[ -n "$voice" && -n "$gender" ]]
+then
+  echo_error "Choose either --voice or --gender"
+  return 2
+fi
+
+if [[ -n "$gender" ]]
+then
+  case $gender[2] in
+    m|male) gender=male ;;
+    f|female) gender=female ;;
+    *)
+      echo_error "Invalid gender: $gender[2] (use m, male, f, or female)"
+      return 2
+      ;;
+  esac
+else
+  gender=female
+fi
 
 voice=$voice[2]
 language=$language[2]
@@ -47,20 +69,42 @@ esac
 
 if [[ -z "$voice" ]]
 then
-  case $language in
-    de-DE) voice=KatjaNeural ;;
-    en-GB) voice=SoniaNeural ;;
-    fr-FR) voice=DeniseNeural ;;
-    es-ES) voice=ElviraNeural ;;
-    it-IT) voice=ElsaNeural ;;
-    nl-NL) voice=ColetteNeural ;;
-    pt-PT) voice=RaquelNeural ;;
-    pl-PL) voice=ZofiaNeural ;;
-    ru-RU) voice=SvetlanaNeural ;;
-    zh-CN) voice=XiaoxiaoNeural ;;
-    ja-JP) voice=NanamiNeural ;;
-    *) voice=JennyNeural ;;
-  esac
+  if [[ "$gender" == male ]]
+  then
+    case $language in
+      en-US) voice=GuyNeural ;;
+      en-GB) voice=RyanNeural ;;
+      de-DE) voice=ConradNeural ;;
+      fr-FR) voice=HenriNeural ;;
+      es-ES) voice=AlvaroNeural ;;
+      it-IT) voice=DiegoNeural ;;
+      nl-NL) voice=MaartenNeural ;;
+      pt-PT) voice=DuarteNeural ;;
+      pl-PL) voice=MarekNeural ;;
+      ru-RU) voice=DmitryNeural ;;
+      zh-CN) voice=YunxiNeural ;;
+      ja-JP) voice=KeitaNeural ;;
+      *)
+        echo_error "No male voice configured for language: $language"
+        return 2
+        ;;
+    esac
+  else
+    case $language in
+      de-DE) voice=KatjaNeural ;;
+      en-GB) voice=SoniaNeural ;;
+      fr-FR) voice=DeniseNeural ;;
+      es-ES) voice=ElviraNeural ;;
+      it-IT) voice=ElsaNeural ;;
+      nl-NL) voice=ColetteNeural ;;
+      pt-PT) voice=RaquelNeural ;;
+      pl-PL) voice=ZofiaNeural ;;
+      ru-RU) voice=SvetlanaNeural ;;
+      zh-CN) voice=XiaoxiaoNeural ;;
+      ja-JP) voice=NanamiNeural ;;
+      *) voice=JennyNeural ;;
+    esac
+  fi
 fi
 
 local text="${@[-1]//\"/\\\"}"
