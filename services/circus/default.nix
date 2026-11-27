@@ -354,6 +354,10 @@ in
 
           evaluator = {
             github_token_file = lib.mkIf cfg.githubApp.enable githubTokenFile;
+            # Private project repositories, fetched with a scoped App token.
+            github_auth_repositories = lib.mkIf cfg.githubApp.enable [
+              "pschmitt/homeassistant-kindle-opendisplay"
+            ];
             # Pure, restricted evaluation like nixbot's. With an impure one, the
             # lazyvim-nix module stats ~/.config at eval time (README.md).
             restrict_eval = true;

@@ -1,4 +1,5 @@
-# Public Circus projects.
+# Circus projects. Private ones also need an evaluator
+# github_auth_repositories entry (default.nix).
 let
   project = repository: branch: expression: {
     name = builtins.replaceStrings [ "." ] [ "-" ] repository;
@@ -76,6 +77,7 @@ map (repo: project repo "main" "packages.x86_64-linux") [
   "bruvtab"
   "circus"
   "declaroid"
+  "homeassistant-kindle-opendisplay"
   "jellysync"
   "luks-ssh-unlock"
   "monarch"
