@@ -26,8 +26,6 @@ builtins.mapAttrs (
         { config, ... }:
         {
           networking.hostName = hostname;
-          # One host switch for both layers' sops installers (hosts/<host>/home.nix).
-          nixpp.sops.disableGoGc = home.config.nixpp.sops.disableGoGc;
           sops.defaultSopsFile = inputs.nixos-config-private.outPath + "/hosts/${hostname}/secrets.sops.yaml";
           user = {
             name = home.config.home.username;
