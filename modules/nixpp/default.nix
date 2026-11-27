@@ -151,6 +151,17 @@ in
           instead of only with a fresh bootstrap.
         '';
       };
+      nativeLauncher = mkOption {
+        type = types.nullOr types.package;
+        default = null;
+        description = ''
+          The guest's seccomp launcher (a package with bin/launcher) shipped
+          with this generation as native/launcher. After switching to the
+          generation the native daemon replaces the runtime's launcher with
+          it when it differs and has run the bootstrap busybox; running guest
+          processes keep the launcher they started with.
+        '';
+      };
     };
   };
 
@@ -173,6 +184,10 @@ in
       ${lib.optionalString (cfg.system.nativeNixpp != null) ''
         mkdir -p "$out/native"
         ln -s ${lib.getExe cfg.system.nativeNixpp} "$out/native/nixpp"
+      ''}
+      ${lib.optionalString (cfg.system.nativeLauncher != null) ''
+        mkdir -p "$out/native"
+        ln -s ${cfg.system.nativeLauncher}/bin/launcher "$out/native/launcher"
       ''}
       ${lib.optionalString (secretsActivation != null) ''
         mkdir -p "$out/bin"

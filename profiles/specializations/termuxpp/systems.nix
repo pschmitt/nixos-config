@@ -40,6 +40,10 @@ builtins.mapAttrs (
             nativeNixpp =
               (inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux)
               .nixpp-runtime-termux;
+            # Cross-built like nativeNixpp; a static aarch64 binary either way.
+            nativeLauncher =
+              (inputs.termuxpp.lib.nixpp.packagesFor inputs.nixpkgs.legacyPackages.x86_64-linux)
+              .nixpp-runtime-termux-seed.launcher;
           };
           environment = {
             systemPackages = with home.pkgs; [
