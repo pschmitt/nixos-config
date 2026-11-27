@@ -212,6 +212,8 @@ in
       # The Rounded theme supplies Gboard's dark palette: letter keys, function-key tint for
       # Esc and the arrows, and the keyboard background.
       theme = "rounded";
+      # Lower rows (three quarters of the toolbar height).
+      compact = true;
       keys =
         let
           keycap = {

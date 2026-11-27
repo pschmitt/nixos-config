@@ -11,6 +11,8 @@ Load `rworker` before builds or substantial tests, `adb` and `brkn-infra` before
 
 ## Builds
 
+Maven Central rate-limits the workers (HTTP 429, mostly Robolectric artifacts in the unit tests). Pre-seed `~/.m2` and pass the `mavenLocal` init script from the rworker skill's [android-gradle reference](../rworker/references/android-gradle.md) **before the first Gradle run** on a fresh worker instead of waiting for the failure.
+
 Follow the repository's `AGENTS.md`: run Gradle on a remote worker in its Android Nix development shell, including an APK assembly when validating Android builds. Java-only tests do not prove the APK builds. Build guest Nix packages remotely; do not build on a phone or the local workstation.
 
 To build the APKs CI publishes without waiting for it, mirror `.github/workflows/latest_release.yml` on a worker: export `TERMUX_GIT_REVISION` (full commit) and `TERMUX_APP_VERSION_NAME` (`versionName+<short sha>`) so the updater recognises the build, set `TERMUX_SPLIT_APKS_FOR_RELEASE_BUILDS=1` and `TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS=1` for per-ABI APKs (about 70-80 MB for arm64 instead of 160 MB universal), and pass an init script that sets `android.buildTypes.release.signingConfig = android.signingConfigs.debug`. Both variants are signed with the repository's public development key, like CI's, so they install over the published ones with `adb install -r`. Gradle names the release APK `...-debug_<abi>.apk` in `outputs/apk/release/`; check `pkgFlags` (no `DEBUGGABLE`) after installing.
