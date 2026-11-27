@@ -13,6 +13,26 @@ their legacy nixpp client were removed; only the host-owned prompt settings and
 the optional `hosts/<host>/home.nix` and `system.nix` feed these profiles. nixpp
 itself lives in the [termuxpp repository](https://github.com/pschmitt/termuxpp/tree/main/nix/nixpp).
 
+## Push Android clipboard text over SSH
+
+Configure the receiving machine as a peer in
+`~/.config/ssh-clipboard/config.json` and make sure its ssh-clipboard daemon
+is running with `~/.local/bin/ssh-clipboard` available to incoming SSH.
+For the peer's `ssh_command`, use an SSH alias with a verified host key,
+for example `ssh -o StrictHostKeyChecking=yes desktop`.
+From a visible TermuxPP session, start the phone peer in the foreground:
+
+```sh
+SSH_CLIPBOARD_TERMUXPP=1 ssh-clipboard daemon
+```
+
+The bridge reads text through `tpp clipboard get` at most once per second.
+The first readable value establishes the baseline, then subsequent changes go
+to the configured peers. Android can withhold the clipboard when TermuxPP
+loses focus. The text API does not expose Android's sensitive-clipboard flag,
+so stop the bridge before copying sensitive data. Use Ctrl+C to stop it.
+The existing TermuxPP image-paste workflow handles images separately.
+
 ## Build and check
 
 Run on a disposable build worker, from this repository root with its pinned

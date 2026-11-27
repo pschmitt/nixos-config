@@ -1,0 +1,240 @@
+diff --git a/src/clipboard.rs b/src/clipboard.rs
+index 1755d02..5884a34 100644
+--- a/src/clipboard.rs
++++ b/src/clipboard.rs
+@@ -53,6 +53,10 @@ pub trait ClipboardBackend: Send + Sync {
+     async fn apply(&self, representations: &[Representation]) -> Result<Snapshot>;
+     fn name(&self) -> &'static str;
+
++    fn is_push_only(&self) -> bool {
++        false
++    }
++
+     fn change_receiver(&self, _interval: Duration) -> Option<tokio::sync::mpsc::UnboundedReceiver<()>> {
+         None
+     }
+@@ -574,7 +578,7 @@ fn clipboard_file_paths(representations: &[Representation]) -> Vec<String> {
+         .collect()
+ }
+
+-fn add_portable_aliases(representations: &mut Vec<Representation>, mut remaining: u64) {
++pub(crate) fn add_portable_aliases(representations: &mut Vec<Representation>, mut remaining: u64) {
+     let originals = representations.clone();
+     for representation in originals {
+         let aliases: &[&str] = match representation.format.as_str() {
+diff --git a/src/daemon.rs b/src/daemon.rs
+index d51b7db..5a9558b 100644
+--- a/src/daemon.rs
++++ b/src/daemon.rs
+@@ -3,6 +3,7 @@ mod client;
+ #[cfg(target_os = "macos")]
+ mod file_conflict;
+ mod runtime;
++mod termuxpp;
+
+ use std::collections::HashMap;
+ use std::sync::Arc;
+@@ -129,22 +130,34 @@ impl Daemon {
+     }
+
+     async fn watch_clipboard(self: Arc<Self>, mut shutdown: watch::Receiver<bool>) {
++        let push_only = self.clipboard.is_push_only();
+         let mut retry = capture_retry::CaptureRetry::default();
+         let mut previous = match self.clipboard.capture().await {
+             Ok(Some(snapshot)) => Some(snapshot),
+             Ok(None) => {
+-                retry.failed();
++                if !push_only {
++                    retry.failed();
++                }
+                 None
+             }
+             Err(error) => {
+                 warn!(error = %format!("{error:#}"), "initial clipboard capture failed");
+-                retry.failed();
++                if !push_only {
++                    retry.failed();
++                }
+                 None
+             }
+         };
+-        let poll = Duration::from_millis(self.config.poll_interval_ms);
++        let mut poll = Duration::from_millis(self.config.poll_interval_ms);
++        if push_only {
++            poll = poll.max(Duration::from_secs(1));
++        }
+         let mut changes = self.clipboard.change_receiver(poll);
+-        let mut interval = tokio::time::interval(Duration::from_millis(self.config.poll_interval_ms));
++        let mut interval = if push_only {
++            tokio::time::interval_at(tokio::time::Instant::now() + poll, poll)
++        } else {
++            tokio::time::interval(poll)
++        };
+         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+         loop {
+             tokio::select! {
+@@ -155,10 +168,17 @@ impl Daemon {
+                         // Clipboard ownership/change notification may precede
+                         // the provider publishing its image or file data. An
+                         // empty first read needs a bounded retry too.
+-                        Ok(None) => { retry.failed(); continue; },
++                        Ok(None) => {
++                            if !push_only {
++                                retry.failed();
++                            }
++                            continue;
++                        },
+                         Err(error) => {
+                             warn!(error = %format!("{error:#}"), "clipboard capture failed");
+-                            retry.failed();
++                            if !push_only {
++                                retry.failed();
++                            }
+                             continue;
+                         }
+                     };
+@@ -175,7 +195,10 @@ impl Daemon {
+                     if previous.as_ref().is_some_and(|last| last.fingerprint == snapshot.fingerprint) {
+                         continue;
+                     }
+-                    previous = Some(snapshot.clone());
++                    let first_read = previous.replace(snapshot.clone()).is_none();
++                    if first_read && push_only {
++                        continue;
++                    }
+                     let mut suppressed = self.suppressed.lock().await;
+                     if let Some(count) = suppressed.get_mut(&snapshot.fingerprint) {
+                         *count -= 1;
+@@ -347,7 +370,7 @@ impl Daemon {
+     }
+
+     async fn receive_clip(&self, clip: Arc<Clip>, peer_name: &str, source: Uuid) {
+-        if !self.mark_seen(clip.id).await {
++        if self.clipboard.is_push_only() || !self.mark_seen(clip.id).await {
+             return;
+         }
+         self.emit(Direction::Receive, Some(peer_name.to_owned()), &clip);
+diff --git a/src/daemon/runtime.rs b/src/daemon/runtime.rs
+index f174b91..1e02372 100644
+--- a/src/daemon/runtime.rs
++++ b/src/daemon/runtime.rs
+@@ -15,10 +15,15 @@ use crate::clipboard::{ClipboardBackend, NativeClipboard};
+ use crate::config::{Config, PeerConfig, ensure_private_dir, paths};
+ use crate::{service, ssh, update};
+
+-use super::Daemon;
++use super::{Daemon, termuxpp::TermuxClipboard};
+
+ pub async fn run(config: Config) -> Result<()> {
+-    let clipboard = Arc::new(NativeClipboard::new(config.max_bytes)?);
++    let termuxpp = std::env::var_os("SSH_CLIPBOARD_TERMUXPP").is_some_and(|value| value == "1");
++    let clipboard: Arc<dyn ClipboardBackend> = if termuxpp {
++        Arc::new(TermuxClipboard::new(config.max_bytes))
++    } else {
++        Arc::new(NativeClipboard::new(config.max_bytes)?)
++    };
+     let paths = paths()?;
+     let (desired_version, _) = watch::channel(update::initial_desired_version());
+     let (update_hints, hint_receiver) = mpsc::unbounded_channel();
+@@ -26,7 +31,7 @@ pub async fn run(config: Config) -> Result<()> {
+     let shutdown = async move {
+         tokio::select! {
+             () = shutdown_signal() => {}
+-            version = update::run_auto_updates(update_desired, hint_receiver) => {
++            version = update::run_auto_updates(update_desired, hint_receiver), if !termuxpp => {
+                 info!(%version, "automatic update installed; requesting an explicit service restart");
+                 if let Err(error) = service::control(service::Action::Restart).await {
+                     warn!(%error, %version, "explicit service restart failed; falling back to a clean daemon exit");
+@@ -115,7 +120,7 @@ pub(super) async fn handle_local(
+     let mut command = String::new();
+     buffered.read_line(&mut command).await?;
+     match command.trim() {
+-        "BRIDGE" => {
++        "BRIDGE" if !daemon.clipboard.is_push_only() => {
+             let (mut reader, mut writer) = tokio::io::split(buffered);
+             daemon
+                 .serve_peer(&mut reader, &mut writer, "incoming SSH", shutdown, None)
+diff --git a/src/daemon/termuxpp.rs b/src/daemon/termuxpp.rs
+new file mode 100644
+index 0000000..b94fb30
+--- /dev/null
++++ b/src/daemon/termuxpp.rs
+@@ -0,0 +1,78 @@
++use std::process::Stdio;
++use std::time::Duration;
++
++use anyhow::{Context, Result, bail, ensure};
++use async_trait::async_trait;
++use tokio::io::AsyncReadExt;
++use tokio::process::Command;
++
++use crate::clipboard::{ClipboardBackend, Snapshot, add_portable_aliases};
++use crate::model::Representation;
++
++pub(super) struct TermuxClipboard {
++    max_bytes: u64,
++}
++
++impl TermuxClipboard {
++    pub(super) fn new(max_bytes: u64) -> Self {
++        Self { max_bytes }
++    }
++
++    async fn read_text(&self) -> Result<Vec<u8>> {
++        let mut child = Command::new("tpp")
++            .args(["clipboard", "get"])
++            .stdin(Stdio::null())
++            .stdout(Stdio::piped())
++            .stderr(Stdio::null())
++            .kill_on_drop(true)
++            .spawn()
++            .context("start tpp clipboard get")?;
++        let stdout = child.stdout.take().context("open tpp clipboard output")?;
++        let mut data = Vec::new();
++        stdout
++            .take(self.max_bytes.saturating_add(1))
++            .read_to_end(&mut data)
++            .await
++            .context("read tpp clipboard output")?;
++        ensure!(
++            data.len() as u64 <= self.max_bytes,
++            "clipboard exceeds configured limit"
++        );
++        let status = child.wait().await.context("wait for tpp clipboard get")?;
++        ensure!(status.success(), "tpp clipboard get exited with {status}");
++        Ok(data)
++    }
++}
++
++#[async_trait]
++impl ClipboardBackend for TermuxClipboard {
++    async fn capture(&self) -> Result<Option<Snapshot>> {
++        let data = tokio::time::timeout(Duration::from_secs(3), self.read_text())
++            .await
++            .context("tpp clipboard get timed out")??;
++        if data.is_empty() {
++            return Ok(None);
++        }
++        std::str::from_utf8(&data).context("tpp clipboard output is not UTF-8")?;
++        let remaining = self.max_bytes - data.len() as u64;
++        let mut representations = vec![Representation {
++            item: 0,
++            format: "UTF8_STRING".into(),
++            data,
++        }];
++        add_portable_aliases(&mut representations, remaining);
++        Ok(Some(Snapshot::new(representations)))
++    }
++
++    async fn apply(&self, _: &[Representation]) -> Result<Snapshot> {
++        bail!("Android clipboard bridge is push-only")
++    }
++
++    fn name(&self) -> &'static str {
++        "TermuxPP (push-only)"
++    }
++
++    fn is_push_only(&self) -> bool {
++        true
++    }
++}
