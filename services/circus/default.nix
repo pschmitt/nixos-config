@@ -667,6 +667,12 @@ in
               if config.networking.nameservers != [ ] then config.networking.nameservers else [ "127.0.0.53" ];
           };
           locations = {
+            # The flow cookie is scoped to the host that starts OIDC. Start
+            # on the callback host even when following a public dashboard link.
+            "= /api/v1/auth/oidc/authelia" = lib.mkIf ((cfg.settings.oauth.oidc or { }) ? authelia) {
+              return = "302 https://${buildHost}/api/v1/auth/oidc/authelia$is_args$args";
+              authelia = false;
+            };
             "/" = {
               proxyPass = "http://127.0.0.1:${toString serverPort}";
               proxyWebsockets = true;
