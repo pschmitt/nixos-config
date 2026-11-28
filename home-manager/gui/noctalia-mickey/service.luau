@@ -37,7 +37,9 @@ end
 
 noctalia.runStream("@mickey@ status --waybar", function(line)
   local ok, status = pcall(noctalia.json.decode, line)
-  local state = { mode = "local" }
+  local connected = ok and type(status) == "table"
+    and (status.class == "local" or status.class == "remote")
+  local state = { mode = "local", connected = connected }
   if ok and type(status) == "table" then
     if status.class == "remote" then
       state.mode = "recallable"
