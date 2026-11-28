@@ -204,7 +204,7 @@ in
     keyboard = {
       back-key = "back";
       shortcuts = {
-        create-session = "disabled";
+        create-session = "ctrl+shift+t";
         previous-session = "ctrl + 1";
         next-session = "ctrl + 2";
         rename-session = "ctrl + 3";
