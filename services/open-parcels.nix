@@ -18,7 +18,7 @@ in
   };
 
   virtualisation.oci-containers.containers.open-parcels = {
-    image = "bluscream1/open-parcels:dev@sha256:917b56c39e4792e1e0ffdd49e9baf7901a2b47ac4e6597919045f5a7bf82c186";
+    image = "bluscream1/open-parcels:dev@sha256:a66247af6115d93ef79ee87fd67e6ccf9867bd5141941bdd117138b4a48335c4";
     ports = [ "127.0.0.1:${toString port}:3000" ];
     volumes = [
       "${dataDir}:/data"
