@@ -219,7 +219,8 @@ let
       install -d -m 0750 "$profiles"
       ${lib.concatStrings (
         lib.mapAttrsToList (name: file: ''
-          install -d -m 0750 "$profiles/${name}"
+          # Managed Hermes homes require these directories before startup.
+          install -d -m 0750 "$profiles/${name}"/{cron,sessions,logs,memories}
           install -m 0640 ${file} "$profiles/${name}/config.yaml"
           install -m 0600 ${config.sops.templates."hermes/profile-${name}.env".path} "$profiles/${name}/.env"
         '') hermesProfileFiles
