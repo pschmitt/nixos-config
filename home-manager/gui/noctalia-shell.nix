@@ -16,6 +16,16 @@ let
         { };
   };
 
+  mickeyEnabled = config.programs.mickey.enable or false;
+  mickeyPlugin = pkgs.runCommand "noctalia-mickey" { } ''
+    mkdir -p "$out/mickey"
+    cp ${./noctalia-mickey/plugin.toml} "$out/mickey/plugin.toml"
+    substitute ${./noctalia-mickey/service.luau} "$out/mickey/service.luau" \
+      --replace-fail '@mickey@' '${lib.getExe config.programs.mickey.package}'
+    substitute ${./noctalia-mickey/lockscreen.luau} "$out/mickey/lockscreen.luau" \
+      --replace-fail '@mickey@' '${lib.getExe config.programs.mickey.package}'
+  '';
+
   # Noctalia's built-in "sticker" widget (used for the lockscreen avatar
   # below) has no rounding/mask setting of its own -- just image_path and
   # opacity -- so it renders ~/.face as a plain square. Pre-crop a circular
@@ -326,7 +336,8 @@ in
                 # Native-style status for the RNNoise voice branch, separate
                 # from the open meeting mix carrying soundboard audio.
                 "pschmitt/mic-state"
-              ];
+              ]
+              ++ lib.optional mickeyEnabled "pschmitt/mickey";
               # The official/community git sources aren't actually hardcoded —
               # they're seeded into runtime state on first launch, so declaring
               # them here too makes the config self-contained regardless of
@@ -410,7 +421,13 @@ in
                   location = "${noctaliaPlugins.noctalia-mic-state}/share/noctalia-plugins";
                   enabled = true;
                 }
-              ];
+              ]
+              ++ lib.optional mickeyEnabled {
+                name = "pschmitt-mickey";
+                kind = "path";
+                location = "${mickeyPlugin}";
+                enabled = true;
+              };
             };
             weather.enabled = true;
             location.auto_locate = true;
@@ -734,6 +751,17 @@ in
                         # Password field corner radius per request (default 6).
                         input_radius = 24.0;
                       };
+                    };
+                  }
+                  // lib.optionalAttrs mickeyEnabled {
+                    "mickey-${name}" = {
+                      type = "pschmitt/mickey:lockscreen";
+                      output = name;
+                      cx = h * 0.15;
+                      cy = h * 0.97;
+                      box_width = 0.0;
+                      box_height = 0.0;
+                      settings.background = false;
                     };
                   };
               in

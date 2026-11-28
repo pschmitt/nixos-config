@@ -1,0 +1,16 @@
+id = "pschmitt/mickey"
+name = "Mickey"
+version = "1.0.0"
+plugin_api = 42
+author = "pschmitt"
+license = "GPL-3.0-only"
+description = "Bring this computer's mouse and keyboard back from the lock screen."
+icon = "mouse"
+
+[[service]]
+id = "focus"
+entry = "service.luau"
+
+[[desktop_widget]]
+id = "lockscreen"
+entry = "lockscreen.luau"

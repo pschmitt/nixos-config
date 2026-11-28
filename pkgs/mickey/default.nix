@@ -41,6 +41,7 @@ rustPlatform.buildRustPackage {
     ./0002-linux-input-hotplug.patch
     ./0003-wake-on-edge-crossing.patch
     ./0004-handoff-feedback.patch
+    ./0005-place-cursor-before-releasing-capture.patch
   ];
 
   nativeBuildInputs = [

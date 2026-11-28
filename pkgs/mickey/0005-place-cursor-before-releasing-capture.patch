@@ -1,0 +1,100 @@
+diff --git a/crates/mickey/src/source/mod.rs b/crates/mickey/src/source/mod.rs
+--- a/crates/mickey/src/source/mod.rs
++++ b/crates/mickey/src/source/mod.rs
+@@ -63,7 +63,7 @@
+ /// What wakes the main loop.
+ enum Wake {
+     Input(InputEvent),
+-    /// The edge worker has a crossing ready in its answer queue.
++    /// An edge worker or a peer has queued a crossing.
+     EdgeCrossing,
+     /// The switcher window closed: the picked peer, `None` for this PC or
+     /// Esc, or why the window could not run.
+@@ -446,7 +446,7 @@
+                 Some(_) => {}
+                 None => save_key(&peers[index].name, link.peer_key()),
+             }
+-            read_peer(index, &link, &pong_sender, start);
++            read_peer(index, &link, &pong_sender, wake.clone(), start);
+             peers[index].address = link.peer_addr().ok();
+             if let (Some(data_links), Some(address)) = (&data_links, peers[index].address) {
+                 open_data_link(index, address, *link.peer_key(), &shared, data_links);
+@@ -715,6 +715,20 @@
+                 }
+             }
+         };
++        // Place the cursor while the devices are still grabbed, so the
++        // first local motion starts at the landing point.
++        if let Some((x, y)) = home_at {
++            match emit::place(x, y) {
++                Ok(()) => crate::handoff::show("arrive", (x, y)),
++                Err(err) => eprintln!(
++                    "{}",
++                    mickey_config::i18n::tf(
++                        "messages.cannot_place_cursor",
++                        &[("err", &err.to_string())]
++                    )
++                ),
++            }
++        }
+         // A hop goes home first, as a pick in the switcher does, so the
+         // focus machine moves from one peer to the other the usual way.
+         if home_at.is_some() || hop.is_some() || refused {
+@@ -1141,18 +1155,6 @@
+             println!("{}", mickey_config::i18n::t("messages.quitting"));
+             return Ok(());
+         }
+-        if let Some((x, y)) = home_at {
+-            match emit::place(x, y) {
+-                Ok(()) => crate::handoff::show("arrive", (x, y)),
+-                Err(err) => eprintln!(
+-                    "{}",
+-                    mickey_config::i18n::tf(
+-                        "messages.cannot_place_cursor",
+-                        &[("err", &err.to_string())]
+-                    )
+-                ),
+-            }
+-        }
+         if let Some(delta) = pushed
+             && edges_matter(&positions, &peers)
+         {
+diff --git a/crates/mickey/src/source/peer.rs b/crates/mickey/src/source/peer.rs
+--- a/crates/mickey/src/source/peer.rs
++++ b/crates/mickey/src/source/peer.rs
+@@ -1,7 +1,7 @@
+ //! One paired PC as the source sees it: its address, its link, what it
+ //! said last, and the threads that connect to it, pair with it and read it.
+ 
+-use super::RETRY_EVERY;
++use super::{RETRY_EVERY, Wake};
+ use crate::clipboard::sync::DataLinks;
+ use crate::monitors::Monitor;
+ use crate::net::identity::Identity;
+@@ -383,7 +383,13 @@
+ 
+ /// Reads what a peer sends, on its own thread, and passes it on as
+ /// `News`: pongs as round-trip times, its monitors, and the rest.
+-pub(super) fn read_peer(index: usize, link: &Link, news: &Sender<(usize, News)>, start: Instant) {
++pub(super) fn read_peer(
++    index: usize,
++    link: &Link,
++    news: &Sender<(usize, News)>,
++    wake: Sender<Wake>,
++    start: Instant,
++) {
+     let (Ok(mut reader), news) = (link.try_clone(), news.clone()) else {
+         return;
+     };
+@@ -399,7 +405,11 @@
+                 Message::Picked { card } => News::Picked(card),
+                 _ => continue,
+             };
++            let crossed = matches!(item, News::Leave(..));
+             if news.send((index, item)).is_err() {
++                return;
++            }
++            if crossed && wake.send(Wake::EdgeCrossing).is_err() {
+                 return;
+             }
+         }
