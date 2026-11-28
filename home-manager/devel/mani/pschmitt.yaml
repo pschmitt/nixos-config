@@ -3,6 +3,9 @@ projects:
   .github:
     url: https://github.com/pschmitt/.github.git
     path: ~/devel/private/pschmitt/.github.git
+  alles:
+    path: ~/devel/private/pschmitt/alles.git
+    url: https://github.com/pschmitt/alles.git
   anika-blue:
     path: ~/devel/private/pschmitt/anika-blue.git
     url: https://github.com/pschmitt/anika-blue.git
