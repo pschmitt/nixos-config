@@ -1,4 +1,4 @@
-"""Hide the Hyprland cursor while Mickey sends input to another desktop."""
+"""Hide the Hyprland cursor while Mickey input is elsewhere."""
 
 import json
 import os
@@ -56,8 +56,8 @@ def follow():
             try:
                 with connection.makefile("r", encoding="utf-8") as statuses:
                     for status in statuses:
-                        focus, here, *_ = status.rstrip("\n").split("\t")
-                        if focus != "0" and here == "elsewhere":
+                        _, here, *_ = status.rstrip("\n").split("\t")
+                        if here == "elsewhere":
                             hide()
                         else:
                             restore()

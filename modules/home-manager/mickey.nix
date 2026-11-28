@@ -28,7 +28,7 @@ in
     enable = lib.mkEnableOption "Mickey keyboard and mouse sharing";
     package = lib.mkPackageOption pkgs "mickey" { };
     handoffAnimation = lib.mkEnableOption "the Wayland overlay for Mickey’s optional edge handoff animations";
-    hideSenderCursor = lib.mkEnableOption "hiding the sender cursor on Hyprland while Mickey forwards input";
+    hideSenderCursor = lib.mkEnableOption "hiding the Hyprland cursor while Mickey input is elsewhere";
 
     settings = lib.mkOption {
       inherit (toml) type;
@@ -91,7 +91,7 @@ in
     systemd.user.services = {
       mickey-cursor = lib.mkIf cfg.hideSenderCursor {
         Unit = {
-          Description = "Hide the Hyprland cursor while Mickey forwards input";
+          Description = "Hide the Hyprland cursor while Mickey input is elsewhere";
           PartOf = [ "graphical-session.target" ];
           After = [ "graphical-session.target" ];
         };
@@ -130,7 +130,9 @@ in
         Service = {
           ExecStartPre = "${lib.getExe python} ${./scripts/mickey-config.py} ${lib.escapeShellArg configFile} ${managedSettings}";
           ExecStart = "${lib.getExe cfg.package} run";
-          Environment = lib.optional cfg.handoffAnimation "MICKEY_HANDOFF_FILE=%t/mickey-handoff.json";
+          Environment =
+            lib.optional cfg.handoffAnimation "MICKEY_HANDOFF_FILE=%t/mickey-handoff.json"
+            ++ lib.optional cfg.hideSenderCursor "MICKEY_HIDE_CURSOR=1";
           Restart = "on-failure";
           RestartSec = 3;
           TimeoutStopSec = 10;
