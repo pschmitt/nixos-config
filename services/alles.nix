@@ -26,6 +26,8 @@ in
     "alles/users" = config.sops.mkHostSecret (owned // { restartUnits = [ "alles.service" ]; });
     # Same value as Hermes's API server key (services/hermes.nix).
     "alles/hermesApiKey" = config.sops.mkHostSecret (owned // { key = "hermes/apiServer/key"; });
+    # The restricted `anika` Hermes profile's key (services/hermes.nix).
+    "alles/hermesAnikaKey" = config.sops.mkHostSecret (owned // { key = "hermes/apiServer/anikaKey"; });
     # Shared Home Assistant and Todoist tokens (default SOPS file).
     "alles/homeAssistantToken" = owned // {
       key = "home-assistant/token";
@@ -68,7 +70,7 @@ in
         };
         anika = {
           base_url = "http://127.0.0.1:8642/p/anika/v1";
-          api_key_file = secret "alles/hermesApiKey";
+          api_key_file = secret "alles/hermesAnikaKey";
           model = "hermes-agent";
           briefing = true;
         };

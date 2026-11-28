@@ -221,6 +221,7 @@ let
         lib.mapAttrsToList (name: file: ''
           install -d -m 0750 "$profiles/${name}"
           install -m 0640 ${file} "$profiles/${name}/config.yaml"
+          install -m 0600 ${config.sops.templates."hermes/profile-${name}.env".path} "$profiles/${name}/.env"
         '') hermesProfileFiles
       )}
       for name in ${lib.escapeShellArgs retiredMcpServers}
@@ -371,6 +372,10 @@ in
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
+      # One API key per restricted profile (hermesProfiles): a profile's key
+      # only opens its own /p/<name>/ route, never the full main Hermes.
+      "hermes/apiServer/stricknaniKey" = config.sops.mkHostSecret { mode = "0400"; };
+      "hermes/apiServer/anikaKey" = config.sops.mkHostSecret { mode = "0400"; };
       "age/hermes-sops/keys.txt" = {
         sopsFile = rofl10SecretsFile;
         owner = config.services.hermes-agent.user;
@@ -379,6 +384,28 @@ in
       };
     };
     templates = {
+      # Each profile reads its own .env (copied into the profile at start).
+      "hermes/profile-stricknani.env" = {
+        content = ''
+          API_SERVER_KEY=${config.sops.placeholder."hermes/apiServer/stricknaniKey"}
+        '';
+        owner = config.services.hermes-agent.user;
+        mode = "0400";
+        restartUnits = [ "hermes-agent.service" ];
+      };
+      "hermes/profile-anika.env" = {
+        content = ''
+          API_SERVER_KEY=${config.sops.placeholder."hermes/apiServer/anikaKey"}
+          MCP_HERMES_HA_URL=http://127.0.0.1:${toString hermesHaMcpPort}${
+            config.sops.placeholder."hermes/home-assistant/mcp-path"
+          }
+          HASS_URL=https://ha.${config.domains.main}
+          HASS_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}
+        '';
+        owner = config.services.hermes-agent.user;
+        mode = "0400";
+        restartUnits = [ "hermes-agent.service" ];
+      };
       "hermes/ha-mcp-token.env" = {
         content = ''
           HOMEASSISTANT_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}

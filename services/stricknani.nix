@@ -43,9 +43,9 @@ in
       owner = "stricknani";
       group = "stricknani";
     };
-    # Same value as Hermes's API server key (services/hermes.nix).
+    # The key of Hermes's restricted `stricknani` profile (services/hermes.nix).
     "stricknani/hermesApiKey" = config.sops.mkHostSecret {
-      key = "hermes/apiServer/key";
+      key = "hermes/apiServer/stricknaniKey";
       owner = "stricknani";
       group = "stricknani";
     };
