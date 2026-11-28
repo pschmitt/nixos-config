@@ -24,6 +24,11 @@ in
     "alles/oidc/clientSecret" = config.sops.mkHostSecret owned;
     "alles/serviceToken" = config.sops.mkHostSecret owned;
     "alles/users" = config.sops.mkHostSecret (owned // { restartUnits = [ "alles.service" ]; });
+    # Anika's own Home Assistant token: her service calls run as her HA user
+    # (`home_assistant_token_file` in the users file).
+    "alles/haToken/abergmann" = config.sops.mkHostSecret (
+      owned // { restartUnits = [ "alles.service" ]; }
+    );
     # Same value as Hermes's API server key (services/hermes.nix).
     "alles/hermesApiKey" = config.sops.mkHostSecret (owned // { key = "hermes/apiServer/key"; });
     # The restricted `anika` Hermes profile's key (services/hermes.nix).
