@@ -189,6 +189,8 @@ in
       # The session and tmux window pickers open in the middle of the
       # terminal, above the keyboard while it is shown.
       picker-position = "terminal";
+      # The first session of an app start attaches to tmux on fnuc; later ones are plain shells.
+      startup-command = "ssh::tmux f";
     };
     sidebar = {
       # The current session and active tmux window as a filled accent pill.
