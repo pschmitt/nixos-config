@@ -1,5 +1,5 @@
 -- Mickey follows the control socket and emits "off" if it disconnects.
-noctalia.state.set("mickey_input_state", "local")
+noctalia.state.set("mickey_input_state", { mode = "local" })
 noctalia.state.set("mickey_away_cursor", false)
 
 local away = false
@@ -37,12 +37,16 @@ end
 
 noctalia.runStream("@mickey@ status --waybar", function(line)
   local ok, status = pcall(noctalia.json.decode, line)
-  local state = "local"
+  local state = { mode = "local" }
   if ok and type(status) == "table" then
     if status.class == "remote" then
-      state = "recallable"
+      state.mode = "recallable"
+      -- Waybar appends an online-peer count to the destination label.
+      if type(status.text) == "string" then
+        state.destination = status.text:match("^(.+) · %d+/%d+$")
+      end
     elseif status.class == "local" and status.away == true then
-      state = "away"
+      state.mode = "away"
     end
   end
   noctalia.state.set("mickey_input_state", state)

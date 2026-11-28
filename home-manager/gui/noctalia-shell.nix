@@ -20,6 +20,7 @@ let
   mickeyPlugin = pkgs.runCommand "noctalia-mickey" { } ''
     mkdir -p "$out/mickey"
     cp ${./noctalia-mickey/plugin.toml} "$out/mickey/plugin.toml"
+    cp ${config.programs.mickey.package}/share/icons/hicolor/256x256/apps/mickey.png "$out/mickey/mickey.png"
     cp ${./noctalia-mickey/cursor.luau} "$out/mickey/cursor.luau"
     substitute ${./noctalia-mickey/service.luau} "$out/mickey/service.luau" \
       --replace-fail '@mickey@' '${lib.getExe config.programs.mickey.package}' \
