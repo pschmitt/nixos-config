@@ -1,10 +1,12 @@
 --!nonstrict
 
-local away = noctalia.state.get("mickey_input_away") == true
+local state = noctalia.state.get("mickey_input_state") or "local"
 local pending = false
 local failed = false
 
 local function render()
+  local away = state ~= "local"
+  local recallable = state == "recallable"
   desktopWidget.render(ui.row({
     gap = 8,
     align = "center",
@@ -12,8 +14,8 @@ local function render()
     radius = 14,
     fill = "surface_container",
     visible = away,
-    onClick = function()
-      if not away or pending then
+    onClick = recallable and function()
+      if state ~= "recallable" or pending then
         return
       end
       pending = true
@@ -29,20 +31,23 @@ local function render()
         failed = true
         render()
       end
-    end,
+    end or nil,
   }, away and {
-    ui.glyph({ name = "mouse", size = 15, color = "primary" }),
+    ui.label({ text = "zZ", fontSize = 13, color = "primary" }),
     ui.label({
-      text = pending and "Bringing input back…" or (failed and "Try bringing input back again" or "Input away · Bring back"),
+      text = if not recallable then "Input away"
+        elseif pending then "Bringing input back…"
+        elseif failed then "Try bringing input back again"
+        else "Input away · Bring back",
       fontSize = 11,
       color = "on_surface",
     }),
   } or {}))
 end
 
-noctalia.state.watch("mickey_input_away", function(value)
-  away = value == true
-  if not away then
+noctalia.state.watch("mickey_input_state", function(value)
+  state = value or "local"
+  if state ~= "recallable" then
     failed = false
   end
   render()

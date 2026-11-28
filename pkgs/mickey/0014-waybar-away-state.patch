@@ -1,0 +1,43 @@
+--- a/crates/mickey/src/control/mod.rs
++++ b/crates/mickey/src/control/mod.rs
+@@ -172,7 +172,7 @@
+ pub fn waybar_line(status: Option<&Status>) -> String {
+     let Some(status) = status else {
+         return format!(
+-            r#"{{"text":"{}","tooltip":"{}","class":"off"}}"#,
++            r#"{{"text":"{}","tooltip":"{}","class":"off","away":false}}"#,
+             json_escape(mickey_config::i18n::t("waybar.off_text")),
+             json_escape(mickey_config::i18n::t("waybar.off_tooltip")),
+         );
+@@ -184,8 +184,9 @@
+     };
+     let text = format!("{focus} · {online}/{}", status.peers.len());
+     let tooltip = status.describe();
++    let away = !status.here;
+     format!(
+-        r#"{{"text":"{}","tooltip":"{}","class":"{class}"}}"#,
++        r#"{{"text":"{}","tooltip":"{}","class":"{class}","away":{away}}}"#,
+         json_escape(&text),
+         json_escape(tooltip.trim_end())
+     )
+@@ -649,13 +650,18 @@
+     fn waybar_lines_are_json_with_a_class() {
+         assert_eq!(
+             waybar_line(Some(&status())),
+-            r#"{"text":"Win: B · 1/2","tooltip":"focus: Win: B\nin control: another PC\nWindows A: online\nWin: B: offline","class":"remote"}"#
++            r#"{"text":"Win: B · 1/2","tooltip":"focus: Win: B\nin control: another PC\nWindows A: online\nWin: B: offline","class":"remote","away":true}"#
+         );
+         let home = Status {
+             focus: None,
+             ..status()
+         };
+-        assert!(waybar_line(Some(&home)).contains(r#""class":"local""#));
++        let parked: serde_json::Value = serde_json::from_str(&waybar_line(Some(&home))).unwrap();
++        assert_eq!(parked["class"], "local");
++        assert_eq!(parked["away"], true);
++        let active: serde_json::Value =
++            serde_json::from_str(&waybar_line(Some(&Status { here: true, ..home }))).unwrap();
++        assert_eq!(active["away"], false);
+         assert!(waybar_line(None).contains(r#""class":"off""#));
+     }
+ 

@@ -49,6 +49,7 @@ rustPlatform.buildRustPackage {
     ./0010-limit-entry-motion-bursts.patch
     ./0011-ramp-entry-motion.patch
     ./0013-handoff-animation-styles.patch
+    ./0014-waybar-away-state.patch
   ];
 
   nativeBuildInputs = [
