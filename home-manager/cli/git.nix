@@ -29,7 +29,12 @@
         )
         [
           "alles"
+          "augh"
+          "gadgetbridge"
+          "jollyfin"
+          "nyetbox"
           "stricknani"
+          "tagesschau"
           "termuxpp"
         ];
 
