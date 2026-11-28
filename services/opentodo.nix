@@ -5,7 +5,7 @@ let
   dataDir = "/mnt/data/srv/opentodo";
   backend = config.virtualisation.oci-containers.backend;
   # renovate: datasource=docker depName=ghcr.io/opentodoapp/opentodo
-  version = "v1.11.0";
+  version = "1.11.0";
 in
 {
   systemd.tmpfiles.rules = [
