@@ -46,6 +46,7 @@ rustPlatform.buildRustPackage {
     ./0007-cursor-and-animation-settings.patch
     ./0008-hide-released-target-cursor.patch
     ./0009-filter-pre-grab-motion.patch
+    ./0010-limit-entry-motion-bursts.patch
   ];
 
   nativeBuildInputs = [

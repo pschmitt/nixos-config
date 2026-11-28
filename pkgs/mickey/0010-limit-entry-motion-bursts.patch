@@ -1,0 +1,116 @@
+--- a/crates/mickey/src/net/transport.rs
++++ b/crates/mickey/src/net/transport.rs
+@@ -213,6 +213,42 @@
+     Controlled(bool),
+     /// The source sits at this point of this PC's desktop (PRD 0005).
+     Arranged([i32; 2]),
++}
++
++/// The receiver can get several fresh reports at once while the compositor
++/// is showing the cursor at the entry edge. Bound their total travel for
++/// the first frame without delaying normal motion or replaying the excess.
++struct EntryMotion {
++    started: Instant,
++    used: i64,
++}
++
++impl EntryMotion {
++    const WINDOW: Duration = Duration::from_millis(20);
++
++    fn new(now: Instant) -> Self {
++        Self {
++            started: now,
++            used: 0,
++        }
++    }
++
++    fn limit(&mut self, now: Instant, dx: i32, dy: i32) -> (i32, i32) {
++        let elapsed = now.saturating_duration_since(self.started);
++        if elapsed >= Self::WINDOW {
++            return (dx, dy);
++        }
++        let distance = i64::from(dx).abs().max(i64::from(dy).abs());
++        let budget = 4 + (elapsed.as_micros() / 500) as i64 - self.used;
++        self.used += distance.min(budget);
++        if distance <= budget {
++            return (dx, dy);
++        }
++        (
++            (i64::from(dx) * budget / distance) as i32,
++            (i64::from(dy) * budget / distance) as i32,
++        )
++    }
+ }
+ 
+ /// Serves one source until it disconnects, passing every input event to
+@@ -255,6 +291,7 @@
+     let mut edge_check = edges::Throttle::new();
+     let edge = edges::EdgeWatch::start(monitors.to_vec(), cursor, || {});
+     let mut refused_at = None;
++    let mut entry_motion: Option<EntryMotion> = None;
+     let mut keys = HeldSet::new();
+     let mut buttons = HeldSet::new();
+     let result = loop {
+@@ -282,6 +319,22 @@
+         }
+         match message {
+             Message::Input(event) => {
++                let event = match (event, &mut entry_motion) {
++                    (InputEvent::Motion { dx, dy }, Some(entry)) => {
++                        let now = Instant::now();
++                        if now.duration_since(entry.started) >= EntryMotion::WINDOW {
++                            entry_motion = None;
++                            event
++                        } else {
++                            let (dx, dy) = entry.limit(now, dx, dy);
++                            if dx == 0 && dy == 0 {
++                                continue;
++                            }
++                            InputEvent::Motion { dx, dy }
++                        }
++                    }
++                    _ => event,
++                };
+                 match event {
+                     InputEvent::Key { code, pressed } => keys.set(code, pressed),
+                     InputEvent::Button { code, pressed } => buttons.set(code, pressed),
+@@ -342,11 +395,18 @@
+                 // focus straight back through the edge it left by.
+                 let _ = edge.answer();
+                 edge_check = edges::Throttle::new();
++                entry_motion = None;
+                 if act(Effect::Place { x, y }) {
++                    entry_motion = Some(EntryMotion::new(Instant::now()));
+                     crate::handoff::show("arrive", (x, y));
+                 }
+             }
+             Message::Focus { here } => {
++                if here && entry_motion.is_some() {
++                    entry_motion = Some(EntryMotion::new(Instant::now()));
++                } else if !here {
++                    entry_motion = None;
++                }
+                 if !here && let Some(point) = left.take() {
+                     crate::handoff::show("depart", point);
+                 }
+@@ -398,6 +458,20 @@
+             .local_addr()
+             .expect("a bound listener has an address");
+         (listener, addr)
++    }
++
++    #[test]
++    fn edge_entry_limits_a_burst_and_then_passes_motion_through() {
++        let now = Instant::now();
++        let mut entry = EntryMotion::new(now);
++        assert_eq!(entry.limit(now, 2, -1), (2, -1));
++        assert_eq!(entry.limit(now, 100, -50), (2, -1));
++        assert_eq!(entry.limit(now, 100, -50), (0, 0));
++        assert_eq!(
++            entry.limit(now + Duration::from_millis(5), 100, -50),
++            (10, -5)
++        );
++        assert_eq!(entry.limit(now + EntryMotion::WINDOW, 100, -50), (100, -50));
+     }
+ 
+     /// Starts a target with a fake emitter that records what it is given.
