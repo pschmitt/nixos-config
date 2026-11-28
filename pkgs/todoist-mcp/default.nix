@@ -11,16 +11,16 @@
 
 buildNpmPackage (finalAttrs: {
   pname = "todoist-mcp";
-  version = "19.1.0";
+  version = "19.1.1";
 
   src = fetchFromGitHub {
     owner = "Doist";
     repo = "todoist-mcp";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-ElS9GqVfadMN7HDQFGnYFyQWsooonYQRa/j0HB8zajI=";
+    hash = "sha256-LMbyT9KrZ+WP9kajDHZrtshPeNsUhbq7tAVaws1WDEc=";
   };
 
-  npmDepsHash = "sha256-kYg+adeMUmbyeSDXHGWiiYSlxvdbLWwdvWsfGUrsHpA=";
+  npmDepsHash = "sha256-IkFl0F+ThNGhr5Dpp4LOJvvRERV8AJMT6/9jhv5e+pg=";
 
   npmDeps = fetchNpmDeps {
     name = "${finalAttrs.pname}-${finalAttrs.version}-npm-deps";
