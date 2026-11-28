@@ -66,7 +66,7 @@ let
   networkName = "endurain";
 
   # renovate: datasource=docker depName=postgres
-  postgresVersion = "17.5";
+  postgresVersion = "19.0";
   # renovate: datasource=docker depName=ghcr.io/endurain-project/endurain
   endurainVersion = "v0.21.2";
 
