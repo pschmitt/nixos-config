@@ -229,6 +229,23 @@ in
             identity_providers:
               oidc:
                 clients:
+                  - client_id: 'opentodo'
+                    client_name: 'OpenTodo'
+                    public: true
+                    authorization_policy: 'two_factor'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      - 'https://todo.${config.domains.main}/api/v1/auth/oidc/callback'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'email'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    token_endpoint_auth_method: 'none'
                   - client_id: 'silo'
                     client_name: 'Silo'
                     client_secret: '${config.sops.placeholder."authelia/oidc-silo-secret-hash"}'
