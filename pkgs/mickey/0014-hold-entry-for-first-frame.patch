@@ -1,0 +1,106 @@
+--- a/crates/mickey/src/net/transport.rs
++++ b/crates/mickey/src/net/transport.rs
+@@ -215,32 +215,44 @@
+     Arranged([i32; 2]),
+ }
+ 
+-/// The receiver can get several fresh reports at once while the compositor
+-/// is showing the cursor at the entry edge. Bound their total travel for
+-/// the first frame, then ease back to full motion without replaying the excess.
++/// Show the pointer at the seam for a frame before moving it, then ease
++/// into normal motion. Reports during the hold are not replayed later.
+ struct EntryMotion {
++    placed: Instant,
+     started: Instant,
+     used: i64,
+ }
+ 
+ impl EntryMotion {
++    const FIRST_FRAME: Duration = Duration::from_millis(16);
+     const RAMP_START: Duration = Duration::from_millis(20);
+     const WINDOW: Duration = Duration::from_millis(50);
+ 
+     fn new(now: Instant) -> Self {
+         Self {
++            placed: now,
+             started: now,
+             used: 0,
+         }
+     }
+ 
++    fn focused(&mut self, now: Instant) {
++        self.started = now;
++        self.used = 0;
++    }
++
+     fn limit(&mut self, now: Instant, dx: i32, dy: i32) -> (i32, i32) {
++        let ready = self.placed + Self::FIRST_FRAME;
++        if now < ready {
++            return (0, 0);
++        }
+         let elapsed = now.saturating_duration_since(self.started);
+         if elapsed >= Self::WINDOW {
+             return (dx, dy);
+         }
+         let distance = i64::from(dx).abs().max(i64::from(dy).abs());
+-        let budget = 4 + (elapsed.as_micros() / 500) as i64 - self.used;
++        let moving = now.saturating_duration_since(self.started.max(ready));
++        let budget = 4 + (moving.as_micros() / 500) as i64 - self.used;
+         self.used += distance.min(budget);
+         if distance <= budget {
+             return (dx, dy);
+@@ -407,10 +419,10 @@
+                 }
+             }
+             Message::Focus { here } => {
+-                if here && entry_motion.is_some() {
+-                    entry_motion = Some(EntryMotion::new(Instant::now()));
+-                } else if !here {
++                if !here {
+                     entry_motion = None;
++                } else if let Some(entry) = &mut entry_motion {
++                    entry.focused(Instant::now());
+                 }
+                 if !here && let Some(point) = left.take() {
+                     crate::handoff::show("depart", point);
+@@ -469,18 +481,24 @@
+     fn edge_entry_limits_a_burst_and_then_passes_motion_through() {
+         let now = Instant::now();
+         let mut entry = EntryMotion::new(now);
+-        assert_eq!(entry.limit(now, 2, -1), (2, -1));
+-        assert_eq!(entry.limit(now, 100, -50), (2, -1));
+         assert_eq!(entry.limit(now, 100, -50), (0, 0));
++        entry.focused(now + Duration::from_millis(5));
+         assert_eq!(
+-            entry.limit(now + Duration::from_millis(5), 100, -50),
+-            (10, -5)
++            entry.limit(now + Duration::from_millis(15), 100, -50),
++            (0, 0)
+         );
+-        let start = entry.limit(now + EntryMotion::RAMP_START, 100, -50);
+-        let middle = entry.limit(now + Duration::from_millis(35), 100, -50);
+-        assert_eq!(start, (30, -15));
++        let first_frame = now + EntryMotion::FIRST_FRAME;
++        assert_eq!(entry.limit(first_frame, 2, -1), (2, -1));
++        assert_eq!(entry.limit(first_frame, 100, -50), (2, -1));
++        assert_eq!(entry.limit(first_frame, 100, -50), (0, 0));
++        let start = entry.limit(now + Duration::from_millis(25), 100, -50);
++        let middle = entry.limit(now + Duration::from_millis(40), 100, -50);
++        assert_eq!(start, (18, -9));
+         assert_eq!(middle, (65, -32));
+-        assert_eq!(entry.limit(now + EntryMotion::WINDOW, 100, -50), (100, -50));
++        assert_eq!(
++            entry.limit(entry.started + EntryMotion::WINDOW, 100, -50),
++            (100, -50)
++        );
+     }
+ 
+     /// Starts a target with a fake emitter that records what it is given.
+@@ -664,6 +682,7 @@
+         let mut link = source(addr);
+         link.send(&Message::Enter { x: 1535, y: 284 }).unwrap();
+         let push = Message::Input(InputEvent::Motion { dx: 4, dy: 0 });
++        thread::sleep(EntryMotion::FIRST_FRAME);
+         link.send(&push).unwrap();
+         // Still pushing a moment later: edges are checked at most every
+         // EDGE_CHECK, with the motion summed in between.
