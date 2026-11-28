@@ -9,6 +9,7 @@ Commands:
   start SERVICE        Start a service
   stop SERVICE         Stop a service
   restart SERVICE      Restart a service
+  status SERVICE       Show a service and its last lines of output
   show SERVICE         Show a service: state, PID, uptime, ports and settings
   logs SERVICE         Show recent service output
   supervise            Internal foreground runit supervisor
@@ -137,6 +138,13 @@ main() {
   then
     die "service manifest is unavailable"
     return 1
+  fi
+
+  # The declared service names, one per line: for the shell completions.
+  if [[ $command == __names ]]
+  then
+    jq -r 'keys[]' "$manifest"
+    return
   fi
 
   generation=$(active_generation) || return 1
@@ -751,7 +759,7 @@ main() {
         printf '%-24s %s\n' adb-shell "$(adb_shell_status) (managed by the TermuxPP app)"
       fi
       ;;
-    start|stop|restart|logs|show)
+    start|stop|restart|logs|show|status)
       if [[ $# -ne 1 ]]
       then
         usage >&2
@@ -762,6 +770,19 @@ main() {
       if [[ $command == show ]]
       then
         show_service "$service_name"
+        return
+      fi
+      # Like systemctl status: the summary, then the latest output.
+      if [[ $command == status ]]
+      then
+        show_service "$service_name" || return 1
+        ((json_output)) && return
+        local status_log=$logs_dir/$service_name/current
+        if [[ -r $status_log ]]
+        then
+          printf '\n'
+          tail -c 16384 "$status_log" | tail -n 10
+        fi
         return
       fi
       if [[ $command == logs ]]

@@ -128,7 +128,7 @@ let
       directory = toString serviceDirectories.${name};
     }) guestServices
   );
-  serviceCommand = pkgs.writeShellApplication {
+  serviceScript = pkgs.writeShellApplication {
     name = "svc";
     runtimeInputs = [
       pkgs.coreutils
@@ -140,6 +140,15 @@ let
     ];
     text = builtins.readFile ./scripts/svc.sh;
   };
+  # svc with its shell completions (commands, and service names from
+  # `svc __names`).
+  serviceCommand = pkgs.runCommand "svc" { meta.mainProgram = "svc"; } ''
+    mkdir -p "$out/bin"
+    ln -s ${lib.getExe serviceScript} "$out/bin/svc"
+    install -Dm644 ${./completions/svc.zsh} "$out/share/zsh/site-functions/_svc"
+    install -Dm644 ${./completions/svc.bash} "$out/share/bash-completion/completions/svc"
+    install -Dm644 ${./completions/svc.fish} "$out/share/fish/vendor_completions.d/svc.fish"
+  '';
 in
 {
   options.services = mkOption {

@@ -78,6 +78,13 @@ pkgs.runCommand "termuxpp-system-assembly-tests" { nativeBuildInputs = [ pkgs.py
   test "$(readlink ${integrated.system}/home-manager)" = ${hmFixture}
   test "$(cat ${integrated.system}/etc/source.conf)" = source=yes
   test -x ${integrated.system}/sw/bin/svc
+  test -f ${integrated.system}/sw/share/zsh/site-functions/_svc
+  test -f ${integrated.system}/sw/share/bash-completion/completions/svc
+  test -f ${integrated.system}/sw/share/fish/vendor_completions.d/svc.fish
+  ${integrated.system}/sw/bin/svc --help | grep -q '^  status SERVICE'
+  # The completions' service names come from the manifest alone.
+  test "$(NIXPP_SVC_MANIFEST=${integrated.system}/etc/nixpp/services.json \
+    NIXPP_SVC_RUNTIME_DIR=/nonexistent ${integrated.system}/sw/bin/svc __names)" = fixture
   python3 -I - ${integrated.system}/etc/nixpp/services.json <<'PY'
   import json, sys
   with open(sys.argv[1]) as stream:
