@@ -1,0 +1,34 @@
+diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
+--- a/crates/mickey/src/input/mod.rs
++++ b/crates/mickey/src/input/mod.rs
+@@ -109,9 +109,27 @@
+         fn drop(&mut self) {
+             let mut devices = self.input.devices.lock_anyway();
+             devices.grabbed = false;
+-            for device in &mut devices.attached {
+-                device.grab = None;
+-            }
++            let mut grabs = devices
++                .attached
++                .iter_mut()
++                .filter_map(|device| device.grab.take());
++            let Some(first) = grabs.next() else {
++                return;
++            };
++            // EVIOCGRAB release waits for RCU grace periods in both evdev
++            // and input core. Independent devices can share those waits.
++            // Keep the device lock until all releases finish so hotplug and
++            // the next grab cannot race an outstanding release.
++            std::thread::scope(|scope| {
++                for grab in grabs {
++                    // If the thread cannot start, dropping its closure
++                    // releases the grab on this thread instead.
++                    let _ = std::thread::Builder::new()
++                        .name("input ungrab".into())
++                        .spawn_scoped(scope, move || drop(grab));
++                }
++                drop(first);
++            });
+         }
+     }
+ 
