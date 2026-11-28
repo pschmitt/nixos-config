@@ -214,8 +214,8 @@ in
       # The Rounded theme supplies Gboard's dark palette: letter keys, function-key tint for
       # Esc and the arrows, and the keyboard background.
       theme = "rounded";
-      # Lower rows (three quarters of the toolbar height).
-      compact = true;
+      # Full-height rows ("true" lowers them to three quarters, "custom" sets row-height in dp).
+      compact = false;
       keys =
         let
           keycap = {
@@ -332,10 +332,15 @@ in
               keycap
               // {
                 key = "-";
-                # Same long-press menu as the pipe key, with the pipe in place of the minus.
+                # Same long-press menu as the pipe key, with the pipe in place of the minus;
+                # "/" is the default: it sits above the key and a long press without sliding
+                # types it.
                 menu = [
                   "~"
-                  "/"
+                  {
+                    key = "/";
+                    default = true;
+                  }
                   "\\"
                   "|"
                   "$"
