@@ -39,6 +39,7 @@ rustPlatform.buildRustPackage {
   patches = [
     ./0001-resolve-peer-hostnames.patch
     ./0002-linux-input-hotplug.patch
+    ./0003-wake-on-edge-crossing.patch
   ];
 
   nativeBuildInputs = [

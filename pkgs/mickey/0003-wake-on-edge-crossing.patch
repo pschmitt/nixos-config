@@ -1,0 +1,108 @@
+diff --git a/crates/mickey/src/edges/mod.rs b/crates/mickey/src/edges/mod.rs
+--- a/crates/mickey/src/edges/mod.rs
++++ b/crates/mickey/src/edges/mod.rs
+@@ -34,7 +34,11 @@
+ }
+ 
+ impl EdgeWatch {
+-    pub fn start(mut monitors: Vec<Monitor>, cursor: fn() -> Option<(i32, i32)>) -> EdgeWatch {
++    pub fn start(
++        mut monitors: Vec<Monitor>,
++        cursor: fn() -> Option<(i32, i32)>,
++        wake_on_crossing: impl Fn() + Send + 'static,
++    ) -> EdgeWatch {
+         let (pushed, motion) = std::sync::mpsc::channel::<(i32, i32)>();
+         let (answer, answers) = std::sync::mpsc::channel();
+         let (moved, new_monitors) = std::sync::mpsc::channel();
+@@ -50,6 +54,9 @@
+                 let off = cursor().and_then(|at| beyond(&monitors, at, delta));
+                 if answer.send(off).is_err() {
+                     break;
++                }
++                if off.is_some() {
++                    wake_on_crossing();
+                 }
+             }
+         });
+@@ -246,7 +253,7 @@
+             height: 1080,
+         }];
+         let cursor = || crate::desktop::hyprland::cursor().ok();
+-        let watch = EdgeWatch::start(screen.to_vec(), cursor);
++        let watch = EdgeWatch::start(screen.to_vec(), cursor, || {});
+         let mut throttle = Throttle::new();
+         let mut waits = Vec::new();
+         for _ in 0..8000 {
+@@ -376,7 +383,10 @@
+         fn on_the_right_edge() -> Option<(i32, i32)> {
+             Some((1535, 400))
+         }
+-        let watch = EdgeWatch::start(LAPTOP.to_vec(), on_the_right_edge);
++        let (wake, wakes) = std::sync::mpsc::channel();
++        let watch = EdgeWatch::start(LAPTOP.to_vec(), on_the_right_edge, move || {
++            let _ = wake.send(());
++        });
+         let answer = || {
+             let until = std::time::Instant::now() + std::time::Duration::from_secs(1);
+             loop {
+@@ -388,7 +398,14 @@
+             }
+         };
+         watch.push((5, 0));
+-        assert_eq!(answer(), Some((1536, 400)), "the pixel just off the laptop");
++        wakes
++            .recv_timeout(std::time::Duration::from_secs(1))
++            .expect("a crossing wakes the source without another motion report");
++        assert_eq!(
++            watch.answer(),
++            Some(Some((1536, 400))),
++            "the answer is ready when woken"
++        );
+         // A second monitor plugged in to the right: the same push stays here.
+         watch.set_monitors(vec![LAPTOP[0], m(1536, 0, 1920, 1080)]);
+         watch.push((5, 0));
+diff --git a/crates/mickey/src/source/mod.rs b/crates/mickey/src/source/mod.rs
+--- a/crates/mickey/src/source/mod.rs
++++ b/crates/mickey/src/source/mod.rs
+@@ -63,6 +63,8 @@
+ /// What wakes the main loop.
+ enum Wake {
+     Input(InputEvent),
++    /// The edge worker has a crossing ready in its answer queue.
++    EdgeCrossing,
+     /// The switcher window closed: the picked peer, `None` for this PC or
+     /// Esc, or why the window could not run.
+     Pick(Result<Option<usize>, String>),
+@@ -417,7 +419,10 @@
+         .then(|| monitors::first_found(PING_EVERY, monitors::this_pc));
+     // Where the cursor is, asked on a thread of its own: on Hyprland the
+     // answer took 2.7 ms at p99, and this loop must not wait for it (#187).
+-    let edge = edges::EdgeWatch::start(this_pc.clone(), crate::input::cursor_now);
++    let edge_wake = wake.clone();
++    let edge = edges::EdgeWatch::start(this_pc.clone(), crate::input::cursor_now, move || {
++        let _ = edge_wake.send(Wake::EdgeCrossing);
++    });
+     // The monitors again once a second: moving one in the display settings
+     // used to need a restart, or the edges stayed where it was (#365). Not
+     // on GNOME and KDE, whose edges are the portal's barriers.
+@@ -922,7 +927,7 @@
+                 let answer = obey(request.order, &names, &online, &mut focus_machine, &mut act);
+                 let _ = request.reply.send(answer);
+             }
+-            Err(RecvTimeoutError::Timeout) => {}
++            Ok(Wake::EdgeCrossing) | Err(RecvTimeoutError::Timeout) => {}
+             Err(RecvTimeoutError::Disconnected) => break,
+         }
+         drop(act);
+diff --git a/crates/mickey/src/net/transport.rs b/crates/mickey/src/net/transport.rs
+--- a/crates/mickey/src/net/transport.rs
++++ b/crates/mickey/src/net/transport.rs
+@@ -253,7 +253,7 @@
+     // The last Leave sent, so pushing against a wall sends it once.
+     let mut left = None;
+     let mut edge_check = edges::Throttle::new();
+-    let edge = edges::EdgeWatch::start(monitors.to_vec(), cursor);
++    let edge = edges::EdgeWatch::start(monitors.to_vec(), cursor, || {});
+     let mut refused_at = None;
+     let mut keys = HeldSet::new();
+     let mut buttons = HeldSet::new();
