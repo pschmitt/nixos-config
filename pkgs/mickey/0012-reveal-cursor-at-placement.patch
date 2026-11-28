@@ -1,0 +1,33 @@
+--- a/crates/mickey/src/input/emit.rs
++++ b/crates/mickey/src/input/emit.rs
+@@ -273,8 +273,29 @@
+         self.device.sync()
+     }
+ 
+-    /// Puts the cursor at `x, y` of the desktop, where it came in.
++    /// Places the incoming cursor and reveals it before any forwarded motion.
+     pub fn place(&mut self, x: i32, y: i32) -> io::Result<()> {
++        if std::env::var_os("MICKEY_HIDE_CURSOR").is_some()
++            && matches!(
++                here(),
++                (Path::Session(crate::desktop::Session::Hyprland), _)
++            )
++            && std::env::var_os("XDG_RUNTIME_DIR").is_some_and(|dir| {
++                std::path::Path::new(&dir)
++                    .join("mickey/cursor-hidden")
++                    .is_file()
++            })
++        {
++            // The helper owns this hide and still handles later status and
++            // shutdown. Place and reveal in one compositor request so the
++            // cursor can be painted at the edge before the first motion.
++            let request = format!(
++                "eval hl.dispatch(hl.dsp.cursor.move({{x={x},y={y}}})); hl.config({{cursor={{invisible=false}}}})"
++            );
++            if crate::desktop::hyprland::ask(&request).is_ok_and(|reply| reply.trim() == "ok") {
++                return Ok(());
++            }
++        }
+         place(x, y)
+     }
+ }
