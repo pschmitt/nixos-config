@@ -759,7 +759,9 @@ in
                     "mickey-${name}" = {
                       type = "pschmitt/mickey:lockscreen";
                       output = name;
-                      cx = w * 0.5;
+                      # The compact login row reserves 46 logical pixels for
+                      # the password reveal button and its gap.
+                      cx = w * 0.5 - 23.0;
                       cy = h * 0.69;
                       box_width = 0.0;
                       box_height = 0.0;
