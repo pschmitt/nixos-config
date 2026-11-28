@@ -78,10 +78,12 @@ in
 
       push = {
         subject = "https://github.com/pschmitt/alles";
-        # UnifiedPush distributors the phones use.
+        # UnifiedPush distributors and browser Web Push services.
         allowed_hosts = [
           "ntfy.sh"
           "fcm.googleapis.com"
+          "push.services.mozilla.com"
+          "push.apple.com"
         ];
         service_token_file = secret "alles/serviceToken";
       };
