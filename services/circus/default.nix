@@ -444,6 +444,7 @@ in
                 mainPool = {
                   name = "gha-aarch64-linux";
                   allowed_build_repositories = [
+                    "pschmitt/alles"
                     "pschmitt/anika-blue"
                     "pschmitt/browser-daemon"
                     "pschmitt/circus"
@@ -478,6 +479,7 @@ in
                 kvmPool = mainPool // {
                   name = "gha-x86_64-kvm";
                   allowed_build_repositories = [
+                    "pschmitt/alles"
                     "pschmitt/anika-blue"
                     "pschmitt/circus"
                     "pschmitt/luks-ssh-unlock"

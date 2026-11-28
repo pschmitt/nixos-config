@@ -6,6 +6,7 @@ in
   imports = [
     ../../modules/container-services.nix
     ../../services/ai-memory.nix
+    ../../services/alles.nix
     ../../services/anika-blue.nix
     ../../services/archivebox.nix
     ../../services/atuin.nix

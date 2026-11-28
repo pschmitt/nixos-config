@@ -25,6 +25,7 @@ let
         (
           if
             builtins.elem repository [
+              "alles"
               "anika-blue"
               "browser-daemon"
               "bruvtab"
@@ -72,6 +73,7 @@ map (repo: project repo "main" "packages.x86_64-linux") [
   "vodafone-station-cli"
 ]
 ++ map (repo: project repo "main" "hydraJobs.x86_64-linux") [
+  "alles"
   "anika-blue"
   "browser-daemon"
   "bruvtab"

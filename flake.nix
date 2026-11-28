@@ -92,6 +92,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # alles.brkn.lol (services/alles.nix): follows the main branch.
+    alles = {
+      url = "github:pschmitt/alles";
+      inputs = {
+        # Keep the application's pinned nixpkgs so deployment reuses its Circus-built package.
+        flake-utils.follows = "flake-utils";
+        pre-commit-hooks.follows = "pre-commit-hooks";
+      };
+    };
+
     # Production Stricknani (wolle.anika.blue): follows the main branch.
     stricknani = {
       url = "github:pschmitt/stricknani";

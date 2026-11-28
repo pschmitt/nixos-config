@@ -188,6 +188,7 @@ in
         "authelia/oidc-wallos-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-trek-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-stricknani-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-alles-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-silo-secret-hash" = secretsAttrs autheliaUser;
       };
       templates = {
@@ -411,6 +412,27 @@ in
                     access_token_signed_response_alg: 'none'
                     userinfo_signed_response_alg: 'none'
                     token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
+                  - client_id: 'alles'
+                    client_name: 'alles'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-alles-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    consent_mode: 'implicit'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      - 'https://alles.${config.domains.main}/auth/callback'
+                    scopes:
+                      - 'openid'
+                      - 'email'
+                      - 'profile'
+                      - 'groups'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    id_token_signed_response_alg: 'RS256'
+                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
                   - client_id: 'stricknani'
                     client_name: 'Stricknani'
                     client_secret: '${config.sops.placeholder."authelia/oidc-stricknani-secret-hash"}'
