@@ -19,6 +19,8 @@ To build the APKs CI publishes without waiting for it, mirror `.github/workflows
 
 The app's Android package identity is `dev.pschmitt.termux`; Java namespaces may still use `com.termux`. Do not infer one from the other. Preserve Android authorization and data, use `adb install -r` for an authorized APK update, and never clear app data or uninstall without explicit approval.
 
+Over Wi-Fi ADB, a streamed `adb install -r` can hang without any output (p11 while dozing, 2026-11-28; it completed in seconds the night before). Push and install on the device instead: `adb push APK /data/local/tmp/termuxpp.apk && adb shell pm install -r /data/local/tmp/termuxpp.apk`, then remove the file. An install stops the app: until it runs again (`adb shell am start -n dev.pschmitt.termux/com.termux.app.TermuxActivity`), `tpp` cannot reach it ("Connection refused") and guest `tpp` warns about a differing APK build.
+
 ## CLI and device validation
 
 `tpp` dispatches the integrated API and session commands; run `tpp list`, `tpp COMMAND --help`, and `tpp --json COMMAND` to inspect the current interface. Structured responses have human-readable output by default; binary operations must remain byte-preserving. Continuous streams and plugins have their own contracts: check the command and `docs/en/termuxpp-differences.md` rather than assuming all output is one JSON document.
