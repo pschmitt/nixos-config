@@ -240,6 +240,31 @@ test_no_mani_config_refuses() {
     && exists private/stray.git && pass "$n"
 }
 
+test_malformed_config_refuses() {
+  local n=malformed-config
+  printf 'projects: [\n' > "$XDG_CONFIG_HOME/mani/broken.yaml"
+  run --force
+  expect_rc "$n" 1 && expect_out "$n" "cannot read the mani configs" \
+    && exists private/stray.git && pass "$n"
+}
+
+test_detached_commit_is_kept() {
+  local n=detached-commit repo="$HOME/devel/private/stray.git"
+  tgit -C "$repo" switch -q --detach
+  tgit -C "$repo" commit -q --allow-empty -m detached
+  run --force
+  expect_rc "$n" 0 && expect_out "$n" "unpushed commits" \
+    && exists private/stray.git && pass "$n"
+}
+
+test_primary_checkout_with_linked_worktree_is_kept() {
+  local n=primary-worktree repo="$HOME/devel/private/stray.git" linked="$TMP/linked"
+  tgit -C "$repo" worktree add -qb linked "$linked"
+  run --force --dirty --worktrees
+  expect_rc "$n" 0 && expect_out "$n" "primary checkout has linked worktrees" \
+    && exists private/stray.git && tgit -C "$linked" status --porcelain && pass "$n"
+}
+
 test_arguments() {
   local n
   run --help

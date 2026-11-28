@@ -12,6 +12,27 @@
       ".envrc.md5sum"
     ];
 
+    # These Android repositories publish a rolling release under the latest tag.
+    includes =
+      builtins.concatMap
+        (
+          repo:
+          map
+            (gitDir: {
+              condition = "gitdir:${gitDir}";
+              contents.remote.origin.fetch = "+refs/tags/latest:refs/tags/latest";
+            })
+            [
+              "~/devel/private/pschmitt/${repo}.git/.git"
+              "~/devel/private/pschmitt/${repo}.git/.git/worktrees/"
+            ]
+        )
+        [
+          "alles"
+          "stricknani"
+          "termuxpp"
+        ];
+
     settings = {
       user = {
         name = "Philipp Schmitt";

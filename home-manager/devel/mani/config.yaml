@@ -20,18 +20,13 @@ tasks:
     cmd: git checkout main
   prune-merged:
     desc: git prune merged branches
-    cmd: ~/.config/mani/bin/git-prune-merged-branches.sh
+    cmd: '"${XDG_CONFIG_HOME:-$HOME/.config}/mani/bin/git-prune-merged-branches.sh"'
   pull:
-    desc: git pull --rebase --autostash
-    cmd: git pull --rebase --autostash
+    desc: git pull --quiet --rebase --autostash
+    cmd: git pull --quiet --rebase --autostash
   update:
     desc: git-update
-    cmd: ~/.config/mani/bin/git-update.sh
+    cmd: '"${XDG_CONFIG_HOME:-$HOME/.config}/mani/bin/git-update.sh"'
   magic:
     desc: update and prune
-    cmd: |
-      echo "Git update"
-      ~/.config/mani/bin/git-update.sh
-
-      echo "Prune merged branches"
-      ~/.config/mani/bin/git-prune-merged-branches.sh
+    cmd: '"${XDG_CONFIG_HOME:-$HOME/.config}/mani/bin/git-update.sh" --update-and-prune'

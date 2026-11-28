@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 
-git branch --merged | grep -Ev '(^\*|master|main|dev)' | \
-  xargs --verbose --no-run-if-empty git branch --delete --force
+exec bash "${BASH_SOURCE[0]%/*}/git-update.sh" --prune-merged "$@"
+
+# vim: set ft=sh et ts=2 sw=2 :
