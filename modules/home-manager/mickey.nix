@@ -31,6 +31,16 @@ let
       path = cfg.trustedPeersFile;
     }
   ];
+  executable = lib.getExe cfg.package;
+  credentialLauncher = pkgs.writeShellApplication {
+    name = "mickey-with-credentials";
+    text = ''
+      ${lib.concatMapStringsSep "\n" (entry: ''
+        export ${entry.variable}="''${CREDENTIALS_DIRECTORY:?}/${entry.name}"
+      '') credentials}
+      exec ${executable} run
+    '';
+  };
   managedSettings = toml.generate "mickey-managed.toml" (
     cfg.settings
     // lib.optionalAttrs (cfg.peers != { }) {
@@ -200,11 +210,10 @@ in
           LoadCredential = lib.mkIf (credentials != [ ]) (
             map (entry: "${entry.name}:${lib.replaceStrings [ "%" ] [ "%%" ] entry.path}") credentials
           );
-          ExecStart = "${lib.getExe cfg.package} run";
+          ExecStart = if credentials == [ ] then "${executable} run" else lib.getExe credentialLauncher;
           Environment =
             lib.optional cfg.handoffAnimation "MICKEY_HANDOFF_FILE=%t/mickey-handoff.json"
-            ++ lib.optional cfg.awayCursorIndicator "MICKEY_MANAGE_CURSOR=1"
-            ++ map (entry: "${entry.variable}=%d/${entry.name}") credentials;
+            ++ lib.optional cfg.awayCursorIndicator "MICKEY_MANAGE_CURSOR=1";
           Restart = "on-failure";
           RestartSec = 3;
           TimeoutStopSec = 10;
