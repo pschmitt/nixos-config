@@ -153,6 +153,55 @@ let
     "browser-daemon-rofl-15"
     "browser-daemon-rofl-16"
   ];
+  hermesModel = {
+    provider = "openai-codex";
+    default = "gpt-6-luna";
+  };
+  homeAssistantMcp = {
+    url = "\${MCP_HERMES_HA_URL}";
+    connect_timeout = 30;
+    timeout = 90;
+  };
+  # Restricted Hermes profiles, served by the API server under /p/<name>/v1
+  # (GATEWAY_MULTIPLEX_PROFILES). The main profile keeps every tool for
+  # Signal, Matrix and the API server's default route (alles). Each profile
+  # here carries only the tools its caller may use, keeps its own memory, and
+  # borrows the main profile's model credentials (read-only fallback to the
+  # global auth.json pool). Written over on every start.
+  hermesProfiles = {
+    # Stricknani's link imports read untrusted pages: no built-in tools and no
+    # other MCP servers, only the throwaway-browser-only browser-daemon MCP.
+    stricknani = {
+      model = hermesModel;
+      agent.system_prompt = "";
+      plugins.enabled = [ ];
+      mcp_servers.browser-daemon-import = browserMcps.browser-daemon-import;
+      platform_toolsets.api_server = [ "browser-daemon-import" ];
+      known_plugin_toolsets.api_server = [ "homeassistant" ];
+    };
+    # Anika in the alles app: the house and everyday helpers, no shell, code,
+    # GitHub, n8n or logged-in browsers.
+    anika = {
+      model = hermesModel;
+      agent.system_prompt = "";
+      plugins.enabled = [ "homeassistant" ];
+      mcp_servers.home-assistant = homeAssistantMcp;
+      platform_toolsets.api_server = [
+        "web"
+        "vision"
+        "memory"
+        "todo"
+        "clarify"
+        "session_search"
+        "homeassistant"
+        "home-assistant"
+      ];
+    };
+  };
+  hermesProfileFiles = lib.mapAttrs (
+    name: settings: (pkgs.formats.yaml { }).generate "hermes-profile-${name}.yaml" settings
+  ) hermesProfiles;
+
   hermesPruneRetiredMcp = pkgs.writeShellApplication {
     name = "hermes-prune-retired-mcp";
     runtimeInputs = [
@@ -163,6 +212,17 @@ let
       config="${config.services.hermes-agent.stateDir}/.hermes/config.yaml"
       [[ -f "$config" ]] || exit 0
       yq -i 'del(.mcp_servers."home-assistant".headers)' "$config"
+      # The API server's default route is the full main Hermes (alles); the
+      # restricted toolsets moved to profiles (hermesProfiles).
+      yq -i 'del(.platform_toolsets.api_server) | del(.known_plugin_toolsets.api_server)' "$config"
+      profiles="${config.services.hermes-agent.stateDir}/.hermes/profiles"
+      install -d -m 0750 "$profiles"
+      ${lib.concatStrings (
+        lib.mapAttrsToList (name: file: ''
+          install -d -m 0750 "$profiles/${name}"
+          install -m 0640 ${file} "$profiles/${name}/config.yaml"
+        '') hermesProfileFiles
+      )}
       for name in ${lib.escapeShellArgs retiredMcpServers}
       do
         NAME="$name" yq -i 'del(.mcp_servers[strenv(NAME)])' "$config"
@@ -459,19 +519,10 @@ in
         # never deletes a key that was removed here, so a former prompt would
         # otherwise linger.
         agent.system_prompt = "";
-        # The API server is only for Stricknani's link imports: no built-in tools,
-        # no other MCP servers and no plugin toolsets there (imported pages are
-        # untrusted). Its only tools: the throwaway-browser-only browser-daemon
-        # MCP, so imports can read pages the plain fetch can't (bot protection,
-        # JS rendering, lazy images) and list their diagrams and PDFs.
-        # Everywhere else Hermes keeps all of its tools, including the full
-        # browser-daemon MCP.
-        platform_toolsets.api_server = [ "browser-daemon-import" ];
-        known_plugin_toolsets.api_server = [ "homeassistant" ];
-        model = {
-          provider = "openai-codex";
-          default = "gpt-6-luna";
-        };
+        # The API server's default route has every tool (alles). Restricted
+        # callers (Stricknani's untrusted imports, Anika's alles chat) use the
+        # profiles in hermesProfiles under /p/<name>/v1.
+        model = hermesModel;
         tool_loop_guardrails = {
           hard_stop_enabled = true;
           hard_stop_after = {
@@ -486,11 +537,7 @@ in
             connect_timeout = 30;
             timeout = 90;
           };
-          home-assistant = {
-            url = "\${MCP_HERMES_HA_URL}";
-            connect_timeout = 30;
-            timeout = 90;
-          };
+          home-assistant = homeAssistantMcp;
           immich = {
             command = "${pkgs.immich-mcp}/bin/ImmichMCP";
             args = [ "--stdio" ];
@@ -714,6 +761,8 @@ in
         environment = {
           GNUPGHOME = gpgHome;
           SOPS_AGE_KEY_FILE = sopsAgeKeyFile;
+          # Serve hermesProfiles under /p/<name>/ on the shared API server.
+          GATEWAY_MULTIPLEX_PROFILES = "true";
         };
         path = [
           pkgs.bash

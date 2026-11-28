@@ -93,7 +93,8 @@ in
     ai = {
       enable = true;
       provider = "custom";
-      baseUrl = "http://127.0.0.1:8642/v1";
+      # The restricted `stricknani` Hermes profile (services/hermes.nix).
+      baseUrl = "http://127.0.0.1:8642/p/stricknani/v1";
       model = "hermes-agent";
       apiKeyFile = config.sops.secrets."stricknani/hermesApiKey".path;
       timeoutSeconds = 90;

@@ -57,11 +57,21 @@ in
         token_file = secret "alles/homeAssistantToken";
       };
       todoist.main.token_file = secret "alles/todoistToken";
-      hermes.hermes = {
-        base_url = "http://127.0.0.1:8642/v1";
-        api_key_file = secret "alles/hermesApiKey";
-        model = "hermes-agent";
-        briefing = true;
+      # The main Hermes (every tool), and the restricted `anika` profile
+      # (services/hermes.nix). The users file maps each user to one.
+      hermes = {
+        hermes = {
+          base_url = "http://127.0.0.1:8642/v1";
+          api_key_file = secret "alles/hermesApiKey";
+          model = "hermes-agent";
+          briefing = true;
+        };
+        anika = {
+          base_url = "http://127.0.0.1:8642/p/anika/v1";
+          api_key_file = secret "alles/hermesApiKey";
+          model = "hermes-agent";
+          briefing = true;
+        };
       };
 
       push = {
