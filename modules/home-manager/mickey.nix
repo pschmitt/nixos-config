@@ -27,7 +27,7 @@ in
   options.programs.mickey = {
     enable = lib.mkEnableOption "Mickey keyboard and mouse sharing";
     package = lib.mkPackageOption pkgs "mickey" { };
-    handoffAnimation = lib.mkEnableOption "Mickey edge handoff animations on Wayland";
+    handoffAnimation = lib.mkEnableOption "the Wayland overlay for Mickey’s optional edge handoff animations";
     hideSenderCursor = lib.mkEnableOption "hiding the sender cursor on Hyprland while Mickey forwards input";
 
     settings = lib.mkOption {

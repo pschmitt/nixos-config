@@ -1,0 +1,228 @@
+diff --git a/crates/mickey/src/handoff.rs b/crates/mickey/src/handoff.rs
+--- a/crates/mickey/src/handoff.rs
++++ b/crates/mickey/src/handoff.rs
+@@ -19,6 +19,15 @@
+     }
+     crate::threads::spawn("handoff effect", move || {
+         for (sequence, (kind, (x, y))) in receiver.into_iter().enumerate() {
++            // Read the setting here so a Settings save takes effect on the
++            // next crossing without waiting for disk I/O on the input path.
++            if !mickey_config::Config::load()
++                .ok()
++                .flatten()
++                .is_some_and(|config| config.interface.handoff_animation)
++            {
++                continue;
++            }
+             let time = SystemTime::now()
+                 .duration_since(UNIX_EPOCH)
+                 .unwrap_or_default()
+diff --git a/crates/mickey/src/run.rs b/crates/mickey/src/run.rs
+--- a/crates/mickey/src/run.rs
++++ b/crates/mickey/src/run.rs
+@@ -270,10 +270,7 @@
+             clipboard::Keeper::start().ok(),
+             None,
+         ),
+-        Command::Run => {
+-            crate::handoff::start();
+-            run_from_config()
+-        }
++        Command::Run => run_from_config(),
+         Command::Monitors => {
+             for (i, m) in monitors::this_pc()?.iter().enumerate() {
+                 println!("monitor {i}: {}x{} at {},{}", m.width, m.height, m.x, m.y);
+@@ -335,6 +332,7 @@
+         let _ = speakers::clean_up();
+     })
+     .map_err(|err| format!("cannot wait for stop signals: {err}"))?;
++    crate::handoff::start();
+     // Outside Hyprland, the RemoteDesktop portal's session (PRD 0004),
+     // opened now: its one question comes at login, not mid-switch.
+     #[cfg(target_os = "linux")]
+diff --git a/crates/mickey/src/source/mod.rs b/crates/mickey/src/source/mod.rs
+--- a/crates/mickey/src/source/mod.rs
++++ b/crates/mickey/src/source/mod.rs
+@@ -544,35 +544,7 @@
+             Focus::Remote(peer) => Some(peer),
+             Focus::Local | Focus::WaitingForKeysUp(_) => None,
+         };
+-        if let Some(was) = in_control.focus_is(focus) {
+-            came_from = was;
+-            // Motion summed here before the focus moved is about the last
+-            // stay: kept, it pushed the cursor back through the edge it
+-            // came home by.
+-            edge_check = edges::Throttle::new();
+-            if let Some(data_links) = &data_links
+-                && share == config::Share::Auto
+-            {
+-                data_links.moved(was, focus);
+-            }
+-            // Tell the peers the keyboard left and where it went.
+-            for (index, now_here) in [(was, false), (focus, true)] {
+-                if let Some(link) = index.and_then(|index| peers[index].link.as_mut()) {
+-                    let _ = link.send(&Message::Focus { here: now_here });
+-                }
+-            }
+-        }
+-        // Asked for: the clipboard of the PC the keyboard just left comes
+-        // here, whatever `share` says, but never when it is off. From
+-        // another PC, that PC still only answers within a few seconds of
+-        // the keyboard leaving it (#185).
+-        if std::mem::take(&mut bring)
+-            && share != config::Share::Off
+-            && came_from != focus
+-            && let Some(data_links) = &data_links
+-        {
+-            data_links.bring(came_from, focus);
+-        }
++        let previous_focus = in_control.focus_is(focus);
+         let here = in_control.here();
+         let waiting_update = updates.as_ref().and_then(update::Updates::waiting);
+         let changed = published.as_ref().is_none_or(|last: &Status| {
+@@ -596,6 +568,36 @@
+                 tray.show(&status);
+             }
+             published = Some(status);
++        }
++
++        if let Some(was) = previous_focus {
++            came_from = was;
++            // Motion summed here before the focus moved is about the last
++            // stay: kept, it pushed the cursor back through the edge it
++            // came home by.
++            edge_check = edges::Throttle::new();
++            if let Some(data_links) = &data_links
++                && share == config::Share::Auto
++            {
++                data_links.moved(was, focus);
++            }
++            // Tell the peers the keyboard left and where it went.
++            for (index, now_here) in [(was, false), (focus, true)] {
++                if let Some(link) = index.and_then(|index| peers[index].link.as_mut()) {
++                    let _ = link.send(&Message::Focus { here: now_here });
++                }
++            }
++        }
++        // Asked for: the clipboard of the PC the keyboard just left comes
++        // here, whatever `share` says, but never when it is off. From
++        // another PC, that PC still only answers within a few seconds of
++        // the keyboard leaving it (#185).
++        if std::mem::take(&mut bring)
++            && share != config::Share::Off
++            && came_from != focus
++            && let Some(data_links) = &data_links
++        {
++            data_links.bring(came_from, focus);
+         }
+ 
+         if let Some(found) = monitor_changes
+diff --git a/crates/mickey-config/locales/en.toml b/crates/mickey-config/locales/en.toml
+--- a/crates/mickey-config/locales/en.toml
++++ b/crates/mickey-config/locales/en.toml
+@@ -130,6 +130,7 @@
+ clean_below = "or with less free disk than"
+ clean_hint = "Mickey never deletes what you brought: before bringing more, it only says what is there and how old it is."
+ column = "Show the PCs in a column"
++handoff_animation = "Show screen-edge handoff animations"
+ order_in_switcher = "Order in the switcher"
+ like_layout = "Like the layout"
+ as_layout = "(as the layout places them)"
+diff --git a/crates/mickey-config/locales/pt-BR.toml b/crates/mickey-config/locales/pt-BR.toml
+--- a/crates/mickey-config/locales/pt-BR.toml
++++ b/crates/mickey-config/locales/pt-BR.toml
+@@ -128,6 +128,7 @@
+ clean_below = "ou com disco livre abaixo de"
+ clean_hint = "O Mickey nunca apaga o que você trouxe: antes de trazer mais, só mostra o que há lá e há quanto tempo."
+ column = "Mostrar os PCs em coluna"
++handoff_animation = "Mostrar animações ao passar para outro PC"
+ order_in_switcher = "Ordem no seletor"
+ like_layout = "Igual à disposição"
+ as_layout = "(como a disposição os coloca)"
+diff --git a/crates/mickey-config/locales/pt-PT.toml b/crates/mickey-config/locales/pt-PT.toml
+--- a/crates/mickey-config/locales/pt-PT.toml
++++ b/crates/mickey-config/locales/pt-PT.toml
+@@ -128,6 +128,7 @@
+ clean_below = "ou com disco livre abaixo de"
+ clean_hint = "O Mickey nunca apaga o que trouxe: antes de trazer mais, só mostra o que lá está e há quanto tempo."
+ column = "Mostrar os computadores em coluna"
++handoff_animation = "Mostrar animações ao passar para outro computador"
+ order_in_switcher = "Ordem no comutador"
+ like_layout = "Como a disposição"
+ as_layout = "(como a disposição os coloca)"
+diff --git a/crates/mickey-config/src/interface.rs b/crates/mickey-config/src/interface.rs
+--- a/crates/mickey-config/src/interface.rs
++++ b/crates/mickey-config/src/interface.rs
+@@ -12,6 +12,9 @@
+     /// The switcher's cards in a column instead of a row.
+     #[serde(default)]
+     pub switcher_vertical: bool,
++    /// Show local visual feedback when crossing a screen edge.
++    #[serde(default)]
++    pub handoff_animation: bool,
+     /// PC names in the order the switcher shows them; PCs left out follow,
+     /// as the layout places them. Empty: all as the layout places them.
+     #[serde(default)]
+@@ -42,6 +45,7 @@
+         Interface {
+             switcher_position: default_switcher_position(),
+             switcher_vertical: false,
++            handoff_animation: false,
+             switcher_order: Vec::new(),
+             bring_position: default_bring_position(),
+             bring_over_gb: default_bring_over_gb(),
+diff --git a/crates/mickey-ui/src/settings/form.rs b/crates/mickey-ui/src/settings/form.rs
+--- a/crates/mickey-ui/src/settings/form.rs
++++ b/crates/mickey-ui/src/settings/form.rs
+@@ -45,6 +45,7 @@
+     pub clean_below_percent: u64,
+     /// The switcher as a column.
+     pub vertical: bool,
++    pub handoff_animation: bool,
+     /// Keep a clipboard history here: always, never (another manager keeps
+     /// it), or `None`, only when no other manager runs.
+     pub history: Option<bool>,
+@@ -112,6 +113,7 @@
+             clean_over_gb: config.interface.clean_over_gb,
+             clean_below_percent: config.interface.clean_below_percent,
+             vertical: config.interface.switcher_vertical,
++            handoff_animation: config.interface.handoff_animation,
+             history: config.clipboard.history,
+             share: config.clipboard.share,
+             warn_received: config.clipboard.warn_received,
+@@ -204,6 +206,9 @@
+             "switcher_position = {}\n",
+             config::toml_string(&self.position)
+         );
++        if self.handoff_animation {
++            out += "handoff_animation = true\n";
++        }
+         if self.vertical {
+             out += "switcher_vertical = true\n";
+         }
+@@ -321,7 +326,9 @@
+             "[[peer]]\nname = \"Windows \\\"main\\\"\"\naddress = \"192.0.2.10:4242\"\nhotkey = \"AltGr+RightShift+1\"\nposition = [-1920, 0]\nkey = \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"\n\n[hotkeys]\nhome = \"AltGr+RightShift+H\"\n\n[interface]\nswitcher_position = \"top-left\"\nbring_over_gb = 5\nclean_over_gb = 40\nclean_below_percent = 20\n\n[clipboard]\nhistory = false\nshare = \"off\"\n\n[updates]\ncheck = false\n\n[audio]\nlistener = \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"\nmode = \"both\"\n\n[this_pc]\ncontrolled = false\nshare_hotkeys = false\nname = \"Desk\"\n\n[touchpad]\nspeed = 30\nscroll_speed = 10\nforward = false\ntap = \"on\"\nnatural_scroll = \"off\"\n",
+         )
+         .unwrap();
+-        let form = Form::from_config(&original);
++        let mut form = Form::from_config(&original);
++        assert!(!form.handoff_animation);
++        form.handoff_animation = true;
+         let reread = config::parse(&form.to_toml()).unwrap();
+         assert_eq!(Form::from_config(&reread), form);
+         assert!(
+diff --git a/crates/mickey-ui/src/settings/general.rs b/crates/mickey-ui/src/settings/general.rs
+--- a/crates/mickey-ui/src/settings/general.rs
++++ b/crates/mickey-ui/src/settings/general.rs
+@@ -162,6 +162,11 @@
+         ui.weak(i18n::t("general.clean_hint"));
+         ui.add_space(8.0);
+         ui.checkbox(&mut form.vertical, i18n::t("general.column"));
++        #[cfg(target_os = "linux")]
++        ui.checkbox(
++            &mut form.handoff_animation,
++            i18n::t("general.handoff_animation"),
++        );
+         ui.add_space(8.0);
+         switcher_order(ui, form);
+         ui.add_space(12.0);

@@ -43,6 +43,7 @@ rustPlatform.buildRustPackage {
     ./0004-handoff-feedback.patch
     ./0005-place-cursor-before-releasing-capture.patch
     ./0006-release-input-without-serial-waits.patch
+    ./0007-cursor-and-animation-settings.patch
   ];
 
   nativeBuildInputs = [

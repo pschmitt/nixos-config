@@ -4,23 +4,26 @@ import json
 import os
 from pathlib import Path
 import socket
-import subprocess
 import sys
 import time
 
 RUNTIME = Path(os.environ["XDG_RUNTIME_DIR"]) / "mickey"
-# Match the compositor running in this NixOS session.
-HYPRCTL = "/run/current-system/sw/bin/hyprctl"
 HIDDEN = RUNTIME / "cursor-hidden"
 
 
-def hyprctl(*args):
-    return subprocess.check_output([HYPRCTL, *args], text=True, timeout=3).strip()
+def hyprland(request):
+    endpoint = RUNTIME.parent / "hypr" / os.environ["HYPRLAND_INSTANCE_SIGNATURE"] / ".socket.sock"
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(3)
+        connection.connect(str(endpoint))
+        connection.sendall(request.encode())
+        with connection.makefile("r", encoding="utf-8") as response:
+            return response.read().strip()
 
 
 def set_invisible(invisible):
     value = "true" if invisible else "false"
-    result = hyprctl("eval", f"hl.config({{ cursor = {{ invisible = {value} }} }})")
+    result = hyprland(f"eval hl.config({{ cursor = {{ invisible = {value} }} }})")
     if result != "ok":
         raise RuntimeError(f"Hyprland rejected cursor visibility change: {result}")
 
@@ -32,7 +35,7 @@ def restore():
 
 
 def hide():
-    if HIDDEN.exists() or json.loads(hyprctl("-j", "getoption", "cursor:invisible"))["bool"]:
+    if HIDDEN.exists() or json.loads(hyprland("j/getoption cursor:invisible"))["bool"]:
         return
     # Record ownership before changing the compositor so ExecStopPost can
     # recover even if this process dies immediately after the request.
