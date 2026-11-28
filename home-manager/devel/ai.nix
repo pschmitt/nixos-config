@@ -510,6 +510,10 @@ in
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
         };
+        "opentodo/mcp/token" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
         # Own Google Cloud OAuth client (project "Gmail MCP") and the refresh
         # token from its one-time consent, for the Google Workspace MCP server.
         "gmail/mcp/client-id" = {
@@ -568,6 +572,10 @@ in
         n8n-mcp = mcpHttpProxy {
           url = "https://n8n.${domainName}/mcp-server/http";
           tokenFile = config.sops.secrets."n8n/mcp/token".path;
+        };
+        opentodo = mcpHttpProxy {
+          url = "https://todo.${domainName}/mcp";
+          tokenFile = config.sops.secrets."opentodo/mcp/token".path;
         };
         home-assistant = {
           command = lib.getExe (
