@@ -14,3 +14,13 @@ entry = "service.luau"
 [[desktop_widget]]
 id = "lockscreen"
 entry = "lockscreen.luau"
+
+[[desktop_widget]]
+id = "cursor"
+entry = "cursor.luau"
+
+[[desktop_widget.setting]]
+key = "output"
+type = "string"
+label_key = "settings.cursor.output"
+default = ""

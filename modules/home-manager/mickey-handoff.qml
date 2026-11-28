@@ -555,7 +555,9 @@ ShellRoot {
                 left: (point?.x ?? 0) > modelData.width - awayWindow.implicitWidth - 12
                       ? Math.max(0, point.x - awayWindow.implicitWidth - 8)
                       : (point?.x ?? 0) + 12
-                top: Math.max(0, Math.min(modelData.height - awayWindow.implicitHeight, (point?.y ?? 0) + 8))
+                top: (point?.y ?? 0) >= awayWindow.implicitHeight + 8
+                     ? point.y - awayWindow.implicitHeight - 8
+                     : Math.min(modelData.height - awayWindow.implicitHeight, (point?.y ?? 0) + 8)
             }
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
@@ -567,7 +569,7 @@ ShellRoot {
             Rectangle {
                 anchors.fill: parent
                 radius: height / 2
-                color: "#ec262239"
+                color: "#262239"
                 border.color: "#baa3e8"
                 border.width: 1
 

@@ -33,7 +33,6 @@ local function render()
       end
     end or nil,
   }, away and {
-    ui.label({ text = "zZ", fontSize = 13, color = "primary" }),
     ui.label({
       text = if not recallable then "Input away"
         elseif pending then "Bringing input back…"

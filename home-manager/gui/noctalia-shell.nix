@@ -20,8 +20,10 @@ let
   mickeyPlugin = pkgs.runCommand "noctalia-mickey" { } ''
     mkdir -p "$out/mickey"
     cp ${./noctalia-mickey/plugin.toml} "$out/mickey/plugin.toml"
+    cp ${./noctalia-mickey/cursor.luau} "$out/mickey/cursor.luau"
     substitute ${./noctalia-mickey/service.luau} "$out/mickey/service.luau" \
-      --replace-fail '@mickey@' '${lib.getExe config.programs.mickey.package}'
+      --replace-fail '@mickey@' '${lib.getExe config.programs.mickey.package}' \
+      --replace-fail '@hyprctl@' '${lib.getExe' pkgs.hyprland "hyprctl"}'
     substitute ${./noctalia-mickey/lockscreen.luau} "$out/mickey/lockscreen.luau" \
       --replace-fail '@mickey@' '${lib.getExe config.programs.mickey.package}'
   '';
@@ -757,11 +759,23 @@ in
                     "mickey-${name}" = {
                       type = "pschmitt/mickey:lockscreen";
                       output = name;
-                      cx = h * 0.15;
-                      cy = h * 0.97;
+                      cx = w * 0.5;
+                      cy = h * 0.69;
                       box_width = 0.0;
                       box_height = 0.0;
                       settings.background = false;
+                    };
+                    "mickey-cursor-${name}" = {
+                      type = "pschmitt/mickey:cursor";
+                      output = name;
+                      cx = w * 0.5;
+                      cy = h * 0.5;
+                      box_width = w * 1.0;
+                      box_height = h * 1.0;
+                      settings = {
+                        background = false;
+                        output = name;
+                      };
                     };
                   };
               in
