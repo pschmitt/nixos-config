@@ -94,6 +94,8 @@ in
         [ redisVersion ];
   });
 
+  services.postgresql.extensions = ps: [ ps.postgis ];
+
   services.containerServices.services.dawarich = {
     port = dawarichPort;
     hosts = [
