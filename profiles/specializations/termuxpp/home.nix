@@ -214,6 +214,8 @@ in
       # The Rounded theme supplies Gboard's dark palette: letter keys, function-key tint for
       # Esc and the arrows, and the keyboard background.
       theme = "rounded";
+      # Gboard's font on the Pixel; the system font elsewhere.
+      font = "google-sans";
       # Full-height rows ("true" lowers them to three quarters, "custom" sets row-height in dp).
       compact = false;
       keys =
