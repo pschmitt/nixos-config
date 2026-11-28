@@ -45,6 +45,7 @@ rustPlatform.buildRustPackage {
     ./0006-release-input-without-serial-waits.patch
     ./0007-cursor-and-animation-settings.patch
     ./0008-hide-released-target-cursor.patch
+    ./0009-filter-pre-grab-motion.patch
   ];
 
   nativeBuildInputs = [

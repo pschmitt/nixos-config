@@ -1,0 +1,60 @@
+--- a/crates/mickey/src/source/mod.rs
++++ b/crates/mickey/src/source/mod.rs
+@@ -62,7 +62,7 @@
+ 
+ /// What wakes the main loop.
+ enum Wake {
+-    Input(InputEvent),
++    Input(InputEvent, Option<Instant>),
+     /// An edge worker or a peer has queued a crossing.
+     EdgeCrossing,
+     /// The switcher window closed: the picked peer, `None` for this PC or
+@@ -91,7 +91,8 @@
+ 
+ impl From<InputEvent> for Wake {
+     fn from(event: InputEvent) -> Wake {
+-        Wake::Input(event)
++        let captured_at = matches!(event, InputEvent::Motion { .. }).then(Instant::now);
++        Wake::Input(event, captured_at)
+     }
+ }
+ 
+@@ -388,6 +389,7 @@
+     // Dropping a `Grab` gives its device back, on every way out of here,
+     // including `?` and panics.
+     let mut grabbed = None;
++    let mut grabbed_at = Instant::now();
+     let mut next_ping = start;
+     let bench = std::env::var_os("MICKEY_BENCH").is_some();
+     // Names never change; which peers are online is refreshed every turn.
+@@ -532,6 +534,7 @@
+             && !input.any_key_down()
+         {
+             grabbed = Some(input.grab()?);
++            grabbed_at = Instant::now();
+             focus_machine.grabbed();
+             println!(
+                 "{}",
+@@ -764,7 +767,7 @@
+         let mut asked_to_arrange = None;
+         match wakes.recv_timeout(wait) {
+             // While recording a hotkey, keys are named, never acted on.
+-            Ok(Wake::Input(InputEvent::Key { code, pressed })) if recording.is_some() => {
++            Ok(Wake::Input(InputEvent::Key { code, pressed }, _)) if recording.is_some() => {
+                 let answer = recording.as_mut().and_then(|(record, _, _)| {
+                     match record.key(code, pressed, Instant::now()) {
+                         Heard::Waiting => None,
+@@ -790,7 +793,12 @@
+                     Instant::now(),
+                 ));
+             }
+-            Ok(Wake::Input(event)) => {
++            // Capture remains active while the desktop still owns the devices.
++            // Do not replay the motion queued during the grab on the peer.
++            Ok(Wake::Input(_, Some(captured_at)))
++                if matches!(focus_machine.focus(), Focus::Remote(_))
++                    && captured_at < grabbed_at => {}
++            Ok(Wake::Input(event, _)) => {
+                 focus_machine.handle(event, &online, &mut act);
+                 // After a peer leaves, the first real local pointer event
+                 // returns visibility. Remote injection uses Mickey's own
