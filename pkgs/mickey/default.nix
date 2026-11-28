@@ -50,6 +50,7 @@ rustPlatform.buildRustPackage {
     ./0011-ramp-entry-motion.patch
     ./0013-handoff-animation-styles.patch
     ./0014-waybar-away-state.patch
+    ./0015-runtime-credentials.patch
   ];
 
   nativeBuildInputs = [

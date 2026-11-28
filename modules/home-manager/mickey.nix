@@ -9,6 +9,28 @@ let
   toml = pkgs.formats.toml { };
   python = pkgs.python3.withPackages (ps: [ ps.tomlkit ]);
   configFile = "${config.xdg.configHome}/mickey/config.toml";
+  runtimeFileType = lib.types.nullOr (
+    lib.types.addCheck lib.types.str (
+      path: lib.hasPrefix "/" path && !lib.hasInfix "\n" path && !lib.hasInfix "\r" path
+    )
+  );
+  credentials = lib.filter (entry: entry.path != null) [
+    {
+      name = "mickey-config";
+      variable = "MICKEY_CONFIG_FILE";
+      path = cfg.settingsFile;
+    }
+    {
+      name = "mickey-identity";
+      variable = "MICKEY_IDENTITY_FILE";
+      path = cfg.identityFile;
+    }
+    {
+      name = "mickey-trusted-peers";
+      variable = "MICKEY_TRUSTED_PEERS_FILE";
+      path = cfg.trustedPeersFile;
+    }
+  ];
   managedSettings = toml.generate "mickey-managed.toml" (
     cfg.settings
     // lib.optionalAttrs (cfg.peers != { }) {
@@ -38,6 +60,41 @@ in
         service starts. Declared settings take precedence. Other settings and
         pairing state are preserved. Define peers through
         {option}`programs.mickey.peers`.
+      '';
+    };
+
+    settingsFile = lib.mkOption {
+      type = runtimeFileType;
+      default = null;
+      example = lib.literalExpression ''config.sops.secrets."mickey/config".path'';
+      description = ''
+        Absolute runtime path to the complete Mickey TOML configuration.
+        The service reads a credential snapshot and blocks interactive
+        configuration writes. Mutually exclusive with settings and peers.
+        A sops-nix secret or rendered template can supply this path.
+      '';
+    };
+
+    identityFile = lib.mkOption {
+      type = runtimeFileType;
+      default = null;
+      example = lib.literalExpression ''config.sops.secrets."mickey/identity".path'';
+      description = ''
+        Absolute runtime path to Mickey's raw 32-byte private identity.
+        Use a binary secret if provisioned with sops-nix. The service fails
+        if the supplied file is missing or invalid.
+      '';
+    };
+
+    trustedPeersFile = lib.mkOption {
+      type = runtimeFileType;
+      default = null;
+      example = lib.literalExpression ''config.sops.secrets."mickey/trusted-peers".path'';
+      description = ''
+        Absolute runtime path to the complete incoming trust list, with one
+        64-digit hexadecimal public key and an optional note per line.
+        Interactive changes to trust are disabled. Restart Mickey after
+        replacing any of the runtime files.
       '';
     };
 
@@ -82,11 +139,20 @@ in
         assertion = !(cfg.settings ? peer);
         message = "Define Mickey peers with programs.mickey.peers.";
       }
+      {
+        assertion = cfg.settingsFile == null || (cfg.settings == { } && cfg.peers == { });
+        message = "programs.mickey.settingsFile is mutually exclusive with settings and peers.";
+      }
     ];
 
-    programs.mickey.settings.updates.check = lib.mkDefault false;
+    programs.mickey.settings = lib.mkIf (cfg.settingsFile == null) {
+      updates.check = lib.mkDefault false;
+    };
 
     home.packages = [ cfg.package ];
+    home.sessionVariables = lib.listToAttrs (
+      map (entry: lib.nameValuePair entry.variable entry.path) credentials
+    );
 
     systemd.user.services = {
       mickey-cursor = lib.mkIf cfg.awayCursorIndicator {
@@ -124,15 +190,21 @@ in
         Unit = {
           Description = "Mickey keyboard and mouse sharing";
           PartOf = [ "graphical-session.target" ];
-          After = [ "graphical-session.target" ];
+          After = [ "graphical-session.target" ] ++ lib.optional (credentials != [ ]) "sops-nix.service";
         };
 
         Service = {
-          ExecStartPre = "${lib.getExe python} ${./scripts/mickey-config.py} ${lib.escapeShellArg configFile} ${managedSettings}";
+          ExecStartPre =
+            lib.mkIf (cfg.settingsFile == null)
+              "${lib.getExe python} ${./scripts/mickey-config.py} ${lib.escapeShellArg configFile} ${managedSettings}";
+          LoadCredential = lib.mkIf (credentials != [ ]) (
+            map (entry: "${entry.name}:${lib.replaceStrings [ "%" ] [ "%%" ] entry.path}") credentials
+          );
           ExecStart = "${lib.getExe cfg.package} run";
           Environment =
             lib.optional cfg.handoffAnimation "MICKEY_HANDOFF_FILE=%t/mickey-handoff.json"
-            ++ lib.optional cfg.awayCursorIndicator "MICKEY_MANAGE_CURSOR=1";
+            ++ lib.optional cfg.awayCursorIndicator "MICKEY_MANAGE_CURSOR=1"
+            ++ map (entry: "${entry.variable}=%d/${entry.name}") credentials;
           Restart = "on-failure";
           RestartSec = 3;
           TimeoutStopSec = 10;
