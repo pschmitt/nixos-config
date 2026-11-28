@@ -51,6 +51,8 @@ in
     "teams-live/gitlab-url" = hostSecret;
     "teams-live/gitlab-group" = hostSecret;
     "teams-live/gitlab-webhook-secret" = hostSecret;
+    # Read-only, public repositories only (account pschmitt-bot).
+    "teams-live/github-token" = hostSecret;
     "teams-live/conversation-notes" = hostSecret;
     "teams-live/conversation-team" = hostSecret;
     "teams-live/jira-url" = hostSecret;
@@ -146,6 +148,18 @@ in
               path = "/dashboard";
             };
           };
+        };
+
+        # Open pull requests, listed with the merge requests on the dashboard and in /mrs.
+        github = {
+          token_file = secrets."teams-live/github-token".path;
+          # Every repository of an organization goes in `orgs`, single ones in `repos`.
+          orgs = [ ];
+          repos = [
+            "wiit-cloud/docs"
+            "pschmitt/teams-live"
+          ];
+          users.pschmitt = secretValue "teams-live/personal-gitlab-username";
         };
 
         jira = {
