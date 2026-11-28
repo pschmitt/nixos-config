@@ -1,0 +1,598 @@
+diff --git a/crates/mickey/src/input/capture.rs b/crates/mickey/src/input/capture.rs
+--- a/crates/mickey/src/input/capture.rs
++++ b/crates/mickey/src/input/capture.rs
+@@ -15,9 +15,10 @@
+ use crate::threads::LockAnyway;
+ use mickey_config as config;
+ use std::io;
+-use std::path::Path;
++use std::path::{Path, PathBuf};
+ use std::sync::mpsc::Sender;
+-use std::sync::{Arc, Mutex};
++use std::sync::{Arc, Mutex, Weak};
++use std::thread::JoinHandle;
+ use std::time::{Duration, Instant};
+ 
+ const EV_SYN: u16 = 0;
+@@ -49,7 +50,7 @@
+ const TYPING_WINDOW: Duration = Duration::from_millis(500);
+ 
+ /// When a key was last pressed, on any of this PC's devices.
+-type LastKey = Arc<Mutex<Option<Instant>>>;
++pub(super) type LastKey = Arc<Mutex<Option<Instant>>>;
+ /// Wake an idle reader once a second so it never stalls on a gone device,
+ /// and a touchpad with no events still sees its tap timers tick.
+ const IDLE_WAKE: Duration = Duration::from_secs(1);
+@@ -61,7 +62,10 @@
+     Touchpad,
+ }
+ 
++pub(super) type Keyboard = Arc<Mutex<Weak<Device>>>;
++
+ pub struct Found {
++    pub path: PathBuf,
+     pub device: Arc<Device>,
+     pub name: String,
+     pub kind: Kind,
+@@ -83,7 +87,7 @@
+ /// right now is root's until udev hands it to the `input` group, and
+ /// `mickey run` creates its own virtual device just as it starts. Only if
+ /// every device is refused is that the answer.
+-pub fn find_devices() -> io::Result<Vec<Found>> {
++pub fn find_devices(known: impl Fn(&Path) -> bool) -> io::Result<Vec<Found>> {
+     let mut found = Vec::new();
+     let mut refused = None;
+     for entry in std::fs::read_dir("/dev/input")? {
+@@ -92,13 +96,17 @@
+             .file_name()
+             .and_then(|name| name.to_str())
+             .is_some_and(|name| name.starts_with("event"));
+-        if !is_event_node {
++        if !is_event_node || known(&path) {
+             continue;
+         }
+         match classify(&path) {
+             Ok(Some(device)) => found.push(device),
+             Ok(None) => {}
+             Err(err) if err.kind() == io::ErrorKind::PermissionDenied => refused = Some(err),
++            // An input node can disappear between listing it and querying its capabilities.
++            Err(err)
++                if err.kind() == io::ErrorKind::NotFound
++                    || err.raw_os_error() == Some(libc::ENODEV) => {}
+             Err(err) => return Err(err),
+         }
+     }
+@@ -140,6 +148,7 @@
+         }
+     }
+     Ok(Some(Found {
++        path: path.to_path_buf(),
+         name: device.name()?,
+         hi_res_wheel: device.supports(EV_REL, REL_WHEEL_HI_RES)?,
+         kind,
+@@ -152,7 +161,7 @@
+ 
+ /// Marks which touchpads forward to other PCs (`forward = false` in
+ /// `config.toml` keeps a touchpad local). Called by the source after
+-/// `find_devices`, before `spawn_readers`.
++/// `find_devices`, before starting the reader.
+ pub fn set_forward(devices: &mut [Found], touchpad_config: &config::Touchpad) {
+     for found in devices {
+         if found.kind == Kind::Touchpad {
+@@ -193,95 +202,75 @@
+     }
+ }
+ 
+-/// Starts one reader thread per device. A thread ends when its device fails
+-/// (e.g. it was unplugged) or the receiver is gone. `config` is the
+-/// `[touchpad]` block of `config.toml`: a touchpad is read with the owner's
+-/// choices and the desktop's own, a mouse is read as a mouse.
+-///
+-/// Events go into `events` as any type that can be made from an
+-/// `InputEvent`, so the source can share one channel with other wake-ups.
+-///
+-/// `keyboard` is any keyboard among the devices, so a touchpad's
+-/// `disable while typing` can ask whether a key is down on a device other
+-/// than its own (the usual case: a touchpad with no keys, a keyboard next
+-/// to it). `None` falls back to the touchpad's own keys alone.
+-pub fn spawn_readers<T: From<InputEvent> + Send + 'static>(
+-    devices: &[Found],
++/// Starts a reader for one device. The handle lets discovery retry a failed reader.
++pub(super) fn spawn_reader<T: From<InputEvent> + Send + 'static>(
++    found: &Found,
+     events: Sender<T>,
+     config: &config::Touchpad,
+-    keyboard: Option<Arc<Device>>,
+-) {
+-    let last_key = LastKey::default();
+-    for found in devices {
+-        // A touchpad kept on this PC (`forward = false`) is not grabbed, so
+-        // the desktop already moves its cursor; reading it too would send
+-        // the same motion to the other PC as well.
+-        if found.kind == Kind::Touchpad && !found.forward {
+-            continue;
+-        }
+-        let device = Arc::clone(&found.device);
+-        let events = events.clone();
+-        let mut translator =
+-            Translator::new(found, config, keyboard.clone(), Arc::clone(&last_key));
+-        let mut batch = Vec::with_capacity(64);
+-        crate::threads::spawn("capture", move || {
+-            loop {
+-                // Wait for events, but at most until the touchpad's next
+-                // tap timer fires, so it gets to run even when the pad is
+-                // silent. A keyboard or mouse waits up to `IDLE_WAKE`.
+-                let wait = translator.wait_until().unwrap_or(IDLE_WAKE).min(IDLE_WAKE);
+-                let mut closed = false;
+-                match device.wait(wait) {
+-                    Ok(true) => {
+-                        // Events available: read one batch. `read_events`
+-                        // blocks for the next event if called again, so we
+-                        // read only once per `wait` and then let `tick`
+-                        // run — that is the whole point of `wait`.
+-                        match device.read_events(&mut batch) {
+-                            Ok(()) => {}
+-                            // Nothing read: the last batch is not sent again.
+-                            Err(err) if err.kind() == io::ErrorKind::Interrupted => batch.clear(),
+-                            // Unplugged, or a Bluetooth mouse asleep: `wait`
+-                            // would keep saying it is readable and this loop
+-                            // would spin, so this reader ends, as before.
+-                            Err(_) => return translator.let_go(&events),
+-                        }
+-                        for &raw in &batch {
+-                            translator.feed(raw, |event| {
+-                                closed |= events.send(T::from(event)).is_err();
+-                            });
+-                            if closed {
+-                                return;
+-                            }
+-                        }
++    keyboard: Keyboard,
++    last_key: LastKey,
++    running: Weak<()>,
++) -> JoinHandle<()> {
++    let device = Arc::clone(&found.device);
++    let mut translator = Translator::new(found, config, keyboard, last_key);
++    let mut batch = Vec::with_capacity(64);
++    crate::threads::spawn("capture", move || {
++        while running.strong_count() != 0 {
++            // Wait for events, but at most until the touchpad's next
++            // tap timer fires, so it gets to run even when the pad is
++            // silent. A keyboard or mouse waits up to `IDLE_WAKE`.
++            let wait = translator.wait_until().unwrap_or(IDLE_WAKE).min(IDLE_WAKE);
++            let mut closed = false;
++            match device.wait(wait) {
++                Ok(true) => {
++                    // Events available: read one batch. `read_events`
++                    // blocks for the next event if called again, so we
++                    // read only once per `wait` and then let `tick`
++                    // run — that is the whole point of `wait`.
++                    match device.read_events(&mut batch) {
++                        Ok(()) => {}
++                        // Nothing read: the last batch is not sent again.
++                        Err(err) if err.kind() == io::ErrorKind::Interrupted => batch.clear(),
++                        // Unplugged, or a Bluetooth mouse asleep: `wait`
++                        // would keep saying it is readable and this loop
++                        // would spin, so this reader ends, as before.
++                        Err(_) => return translator.let_go(&events),
+                     }
+-                    Ok(false) => {
+-                        // A timeout: no events, but time may have
+-                        // advanced enough to fire a tap's release.
+-                    }
+-                    // A signal, or a passing failure of `poll` itself (out of
+-                    // memory): wait a moment and ask again. Ending here would
+-                    // stop the keyboard's reader, and with it the hotkey home,
+-                    // while the keyboard is grabbed; a gone device ends at
+-                    // its read instead.
+-                    Err(err) => {
+-                        if err.kind() != io::ErrorKind::Interrupted {
+-                            std::thread::sleep(Duration::from_millis(50));
++                    for &raw in &batch {
++                        translator.feed(raw, |event| {
++                            closed |= events.send(T::from(event)).is_err();
++                        });
++                        if closed {
++                            return;
+                         }
+                     }
+                 }
+-                // Whether on a timeout or after a report: give the touchpad
+-                // its tick, so a tap whose time is up lets go of its button
+-                // even when the pad sends nothing more.
+-                translator.tick(|event| {
+-                    closed |= events.send(T::from(event)).is_err();
+-                });
+-                if closed {
+-                    return;
++                Ok(false) => {
++                    // A timeout: no events, but time may have
++                    // advanced enough to fire a tap's release.
++                }
++                // A signal, or a passing failure of `poll` itself (out of
++                // memory): wait a moment and ask again. Ending here would
++                // stop the keyboard's reader, and with it the hotkey home,
++                // while the keyboard is grabbed; a gone device ends at
++                // its read instead.
++                Err(err) => {
++                    if err.kind() != io::ErrorKind::Interrupted {
++                        std::thread::sleep(Duration::from_millis(50));
++                    }
+                 }
+             }
+-        });
+-    }
++            // Whether on a timeout or after a report: give the touchpad
++            // its tick, so a tap whose time is up lets go of its button
++            // even when the pad sends nothing more.
++            translator.tick(|event| {
++                closed |= events.send(T::from(event)).is_err();
++            });
++            if closed {
++                return;
++            }
++        }
++    })
+ }
+ 
+ /// Raw evdev events to `InputEvent`s, for one device. Motion and wheel
+@@ -292,9 +281,9 @@
+     hi_res_wheel: bool,
+     touchpad: Option<Touchpad>,
+     /// A keyboard, so a touchpad's `disable while typing` can ask whether a
+-    /// key is down on a device other than its own. `None` when this device
+-    /// is not a touchpad or no keyboard is shared with the reader.
+-    keyboard: Option<Arc<Device>>,
++    /// key is down on a device other than its own. Discovery updates the
++    /// weak reference as keyboards attach and detach.
++    keyboard: Keyboard,
+     /// The reader's epoch, the same one the touchpad's `Duration` clock
+     /// uses. Stored as an `Instant` so the monotonic clock is kept.
+     start: Instant,
+@@ -311,7 +300,7 @@
+     fn new(
+         found: &Found,
+         config: &config::Touchpad,
+-        keyboard: Option<Arc<Device>>,
++        keyboard: Keyboard,
+         last_key: LastKey,
+     ) -> Translator {
+         let touchpad = (found.kind == Kind::Touchpad).then(|| {
+@@ -356,7 +345,8 @@
+             .is_some_and(|at| at.elapsed() < TYPING_WINDOW)
+             || self
+                 .keyboard
+-                .as_ref()
++                .lock_anyway()
++                .upgrade()
+                 .is_some_and(|kb| kb.any_key_down().unwrap_or(false))
+     }
+ 
+@@ -481,7 +471,7 @@
+         Translator {
+             hi_res_wheel: false,
+             touchpad: None,
+-            keyboard: None,
++            keyboard: Keyboard::default(),
+             start: Instant::now(),
+             last_key,
+             dx: 0,
+diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
+--- a/crates/mickey/src/input/mod.rs
++++ b/crates/mickey/src/input/mod.rs
+@@ -20,8 +20,6 @@
+ #[cfg(windows)]
+ use crate::threads::LockAnyway;
+ use mickey_config as config;
+-#[cfg(target_os = "linux")]
+-use std::sync::Arc;
+ use std::sync::mpsc::Sender;
+ 
+ #[cfg(target_os = "linux")]
+@@ -37,18 +35,79 @@
+ mod linux {
+     use super::*;
+     use crate::input::capture;
+-    use crate::platform::linux::{Device, Grab};
++    use crate::platform::linux::Grab;
++    use crate::threads::LockAnyway;
+     use mickey_config::i18n;
++    use std::sync::{Arc, Mutex};
++    use std::thread::JoinHandle;
++    use std::time::Duration;
+ 
+     pub struct Input {
+-        devices: Vec<capture::Found>,
+-    }
+-
+-    /// While this lives, the devices are taken from the desktop. A touchpad
+-    /// the owner kept local (`forward = false` in `config.toml`) is not in
+-    /// the list: it keeps moving this PC's own cursor.
++        running: Arc<()>,
++        devices: Arc<Mutex<Devices>>,
++    }
++
++    struct Attached {
++        found: capture::Found,
++        reader: Option<JoinHandle<()>>,
++        grab: Option<Grab>,
++    }
++
++    #[derive(Default)]
++    struct Devices {
++        attached: Vec<Attached>,
++        grabbed: bool,
++        keyboard: capture::Keyboard,
++        last_key: capture::LastKey,
++    }
++
++    impl Devices {
++        fn remove_detached(&mut self) {
++            self.attached.retain(|device| {
++                !device.reader.as_ref().is_some_and(JoinHandle::is_finished)
++                    && device.found.device.still_at(&device.found.path)
++            });
++        }
++
++        fn add(&mut self, found: capture::Found) -> std::io::Result<()> {
++            let grab = if self.grabbed && found.forward {
++                Some(found.device.grab()?)
++            } else {
++                None
++            };
++            let message = match found.kind {
++                capture::Kind::Keyboard => {
++                    i18n::tf("messages.found_keyboard", &[("name", &found.name)])
++                }
++                capture::Kind::Mouse => i18n::tf("messages.found_mouse", &[("name", &found.name)]),
++                capture::Kind::Touchpad => {
++                    i18n::tf("messages.found_touchpad", &[("name", &found.name)])
++                }
++            };
++            println!("{message}");
++            self.attached.push(Attached {
++                found,
++                reader: None,
++                grab,
++            });
++            Ok(())
++        }
++    }
++
++    /// While this lives, forwarded devices are taken from the desktop,
++    /// including devices that attach while focus is remote.
+     pub struct Grabbed<'a> {
+-        _grabs: Vec<Grab<'a>>,
++        input: &'a Input,
++    }
++
++    impl Drop for Grabbed<'_> {
++        fn drop(&mut self) {
++            let mut devices = self.input.devices.lock_anyway();
++            devices.grabbed = false;
++            for device in &mut devices.attached {
++                device.grab = None;
++            }
++        }
+     }
+ 
+     /// Where the cursor is: a question to Hyprland or the X server,
+@@ -65,7 +124,7 @@
+         /// may not read them. `touchpad` is the `[touchpad]` block of
+         /// `config.toml`: its `forward = false` keeps a touchpad on this PC.
+         pub fn open(touchpad: &config::Touchpad) -> Result<Input, String> {
+-            let mut devices = capture::find_devices().map_err(|err| match err.kind() {
++            let mut devices = capture::find_devices(|_| false).map_err(|err| match err.kind() {
+                 std::io::ErrorKind::PermissionDenied => i18n::t("capture.permission_denied").into(),
+                 _ => i18n::tf("capture.cannot_list", &[("err", &err.to_string())]),
+             })?;
+@@ -73,21 +132,14 @@
+                 return Err(i18n::t("capture.no_keyboard").into());
+             }
+             capture::set_forward(&mut devices, touchpad);
+-            for found in &devices {
+-                let line = match found.kind {
+-                    capture::Kind::Keyboard => {
+-                        i18n::tf("messages.found_keyboard", &[("name", &found.name)])
+-                    }
+-                    capture::Kind::Mouse => {
+-                        i18n::tf("messages.found_mouse", &[("name", &found.name)])
+-                    }
+-                    capture::Kind::Touchpad => {
+-                        i18n::tf("messages.found_touchpad", &[("name", &found.name)])
+-                    }
+-                };
+-                println!("{line}");
+-            }
+-            Ok(Input { devices })
++            let mut state = Devices::default();
++            for found in devices {
++                state.add(found).map_err(|err| err.to_string())?;
++            }
++            Ok(Input {
++                running: Arc::new(()),
++                devices: Arc::new(Mutex::new(state)),
++            })
+         }
+ 
+         pub fn start<T: From<InputEvent> + Send + 'static>(
+@@ -95,45 +147,97 @@
+             events: Sender<T>,
+             touchpad: &config::Touchpad,
+         ) -> Result<(), String> {
+-            // A keyboard the touchpad's `disable while typing` can ask
+-            // about: the first keyboard among the devices. None when this
+-            // PC has no keyboard (a tablet with a touchpad, say).
+-            let keyboard: Option<Arc<Device>> = self
+-                .devices
++            let devices = Arc::clone(&self.devices);
++            let running = Arc::downgrade(&self.running);
++            let touchpad = touchpad.clone();
++            let start_readers = move |state: &mut Devices, touchpad: &config::Touchpad| {
++                *state.keyboard.lock_anyway() = state
++                    .attached
++                    .iter()
++                    .find(|device| device.found.kind == capture::Kind::Keyboard)
++                    .map_or_else(Default::default, |device| {
++                        Arc::downgrade(&device.found.device)
++                    });
++                for device in &mut state.attached {
++                    if device.found.forward && device.reader.is_none() {
++                        device.reader = Some(capture::spawn_reader(
++                            &device.found,
++                            events.clone(),
++                            touchpad,
++                            Arc::clone(&state.keyboard),
++                            Arc::clone(&state.last_key),
++                            running.clone(),
++                        ));
++                    }
++                }
++            };
++            start_readers(&mut devices.lock_anyway(), &touchpad);
++            let running = Arc::downgrade(&self.running);
++            crate::threads::spawn("input hotplug", move || {
++                loop {
++                    // Retry nodes whose permissions udev has not set yet.
++                    std::thread::sleep(Duration::from_secs(1));
++                    if running.strong_count() == 0 {
++                        break;
++                    }
++                    let mut state = devices.lock_anyway();
++                    state.remove_detached();
++                    if let Ok(mut found) = capture::find_devices(|path| {
++                        state
++                            .attached
++                            .iter()
++                            .any(|device| device.found.path == path)
++                    }) {
++                        capture::set_forward(&mut found, &touchpad);
++                        for device in found {
++                            // A new device is retried next scan if it cannot yet be grabbed.
++                            let _ = state.add(device);
++                        }
++                    }
++                    start_readers(&mut state, &touchpad);
++                }
++            });
++            Ok(())
++        }
++
++        pub fn any_key_down(&self) -> bool {
++            let devices = self.devices.lock_anyway();
++            devices
++                .attached
+                 .iter()
+-                .find(|found| found.kind == capture::Kind::Keyboard)
+-                .map(|found| Arc::clone(&found.device));
+-            capture::spawn_readers(&self.devices, events, touchpad, keyboard);
+-            Ok(())
+-        }
+-
+-        pub fn any_key_down(&self) -> bool {
+-            self.devices
++                .any(|device| device.found.device.any_key_down().unwrap_or(true))
++        }
++
++        pub fn button_down(&self) -> bool {
++            let devices = self.devices.lock_anyway();
++            devices
++                .attached
+                 .iter()
+-                .any(|found| found.device.any_key_down().unwrap_or(true))
+-        }
+-
+-        pub fn button_down(&self) -> bool {
+-            self.devices
++                .any(|device| device.found.device.button_down().unwrap_or(true))
++        }
++
++        /// Takes the forwarded devices from the desktop until focus returns.
++        pub fn grab(&self) -> Result<Grabbed<'_>, String> {
++            let mut devices = self.devices.lock_anyway();
++            devices.remove_detached();
++            // Collect first so a failed grab releases the earlier grabs.
++            let grabs = devices
++                .attached
+                 .iter()
+-                .any(|found| found.device.button_down().unwrap_or(true))
+-        }
+-
+-        /// Takes every input device from the desktop. A touchpad kept local (`forward = false`) is not grabbed: its
+-        /// events keep reaching this PC's own cursor while the keyboard
+-        /// and mouse go to another PC.
+-        pub fn grab(&self) -> Result<Grabbed<'_>, String> {
+-            let grabs = self
+-                .devices
+-                .iter()
+-                .filter(|found| match found.kind {
+-                    capture::Kind::Touchpad => found.forward,
+-                    _ => true,
++                .map(|device| {
++                    device
++                        .found
++                        .forward
++                        .then(|| device.found.device.grab())
++                        .transpose()
+                 })
+-                .map(|found| found.device.grab())
+                 .collect::<Result<Vec<_>, _>>()
+                 .map_err(|err| format!("cannot grab the input devices: {err}"))?;
+-            Ok(Grabbed { _grabs: grabs })
++            for (device, grab) in devices.attached.iter_mut().zip(grabs) {
++                device.grab = grab;
++            }
++            devices.grabbed = true;
++            Ok(Grabbed { input: self })
+         }
+     }
+ }
+diff --git a/crates/mickey/src/platform/linux.rs b/crates/mickey/src/platform/linux.rs
+--- a/crates/mickey/src/platform/linux.rs
++++ b/crates/mickey/src/platform/linux.rs
+@@ -167,22 +167,37 @@
+         Ok(written as usize)
+     }
+ 
++    /// Whether the open device is still the node at this path. Linux can reuse
++    /// the event number after unplugging, so compare the underlying inodes.
++    pub fn still_at(&self, path: &Path) -> bool {
++        use std::os::unix::fs::MetadataExt;
++        self.file
++            .metadata()
++            .ok()
++            .zip(path.metadata().ok())
++            .is_some_and(|(opened, current)| {
++                opened.dev() == current.dev() && opened.ino() == current.ino()
++            })
++    }
++
+     /// Takes the device away from the desktop until the guard is dropped.
+-    pub fn grab(&self) -> io::Result<Grab<'_>> {
++    pub fn grab(self: &std::sync::Arc<Self>) -> io::Result<Grab> {
+         set_grab(&self.file, true)?;
+-        Ok(Grab { file: &self.file })
++        Ok(Grab {
++            device: self.clone(),
++        })
+     }
+ }
+ 
+ /// Releases the grab when dropped, including during a panic. If the process
+ /// is killed, the kernel releases it when the file is closed.
+-pub struct Grab<'a> {
+-    file: &'a File,
+-}
+-
+-impl Drop for Grab<'_> {
++pub struct Grab {
++    device: std::sync::Arc<Device>,
++}
++
++impl Drop for Grab {
+     fn drop(&mut self) {
+-        if let Err(err) = set_grab(self.file, false) {
++        if let Err(err) = set_grab(&self.device.file, false) {
+             eprintln!("mickey: failed to release the grab: {err}");
+         }
+     }

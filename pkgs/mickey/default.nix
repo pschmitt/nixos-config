@@ -35,7 +35,10 @@ rustPlatform.buildRustPackage {
   };
   cargoLock.lockFile = ./Cargo.lock;
 
-  patches = [ ./0001-resolve-peer-hostnames.patch ];
+  patches = [
+    ./0001-resolve-peer-hostnames.patch
+    ./0002-linux-input-hotplug.patch
+  ];
 
   nativeBuildInputs = [
     makeWrapper
