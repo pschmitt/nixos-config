@@ -495,7 +495,6 @@ in
               # must match the `name[Group1]` strings in
               # pkgs/local/custom-keymaps/symbols/* verbatim.
               keyboard_layout.custom_labels = {
-                "Custom HHKB DE layout by pschmitt" = "hhkb-de";
                 "gpdpocket4 custom DE layout" = "gpd-de";
                 "gpdpocket4 custom US layout with some german-isms" = "gpd-us";
               };

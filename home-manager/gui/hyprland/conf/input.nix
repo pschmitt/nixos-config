@@ -1,25 +1,9 @@
-let
-  mkHhkb = name: {
-    inherit name;
-    kb_layout = "hhkb-de,de,us";
-  };
-in
 {
   # Input devices, keyboard layout and touchpad gestures.
   # Docs: https://wiki.hypr.land/Configuring/Variables/#input
   wayland.windowManager.hyprland.settings = {
     # Per-device overrides -> hl.device({ ... }).
     device = [
-      # HHKB USB variants.
-      (mkHhkb "pfu-limited-hhkb-hybrid")
-      (mkHhkb "pfu-limited-hhkb-hybrid-keyboard")
-      (mkHhkb "pfu-limited-hhkb-hybrid-consumer-control")
-      # HHKB over Bluetooth (multiple slots).
-      (mkHhkb "hhkb-hybrid_1-keyboard")
-      (mkHhkb "hhkb-hybrid_2-keyboard")
-      (mkHhkb "hhkb-hybrid_3-keyboard")
-      (mkHhkb "hhkb-hybrid_4-keyboard")
-
       # Magic Trackpad tuning.
       {
         name = "apple-inc.-magic-trackpad-usb-c";

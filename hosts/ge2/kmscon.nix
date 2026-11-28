@@ -1,4 +1,5 @@
-{ pkgs, ... }:
 {
-  services.kmscon.config."xkb-keymap" = "${pkgs.custom-keymaps}/share/keymaps/custom/hhkb-de.xkb";
+  # Console keyboard layout from services.xserver.xkb (de). The HHKB maps its
+  # JIS keys for plain de itself (ECK keymap), so no custom layout is needed.
+  services.kmscon.useXkbConfig = true;
 }

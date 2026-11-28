@@ -18,12 +18,5 @@
 
     # The window border can meet Mickey's crossing edge.
     wayland.windowManager.hyprland.settings.config.general.hover_icon_on_border = false;
-
-    wayland.windowManager.hyprland.settings.device = [
-      {
-        name = "mickey-virtual-input";
-        kb_layout = "hhkb-de";
-      }
-    ];
   };
 }
