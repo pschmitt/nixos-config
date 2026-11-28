@@ -63,7 +63,7 @@ ShellRoot {
         property: "progress"
         from: 0
         to: 1
-        duration: 260
+        duration: 360
     }
 
     Variants {
@@ -86,8 +86,8 @@ ShellRoot {
                 readonly property var point: root.handoff
                 x: (point?.x ?? 0) - width / 2
                 y: (point?.y ?? 0) - height / 2
-                width: 220
-                height: 220
+                width: 344
+                height: 344
                 onPhaseChanged: requestPaint()
                 onPointChanged: requestPaint()
                 onAvailableChanged: if (available) requestPaint()
@@ -99,27 +99,71 @@ ShellRoot {
                         return
 
                     const arriving = point.kind === "arrive"
-                    const spread = arriving ? 1 - Math.pow(1 - phase, 3) : Math.pow(1 - phase, 2)
-                    const strength = Math.min(1, phase * 9) * Math.pow(1 - phase, 1.15)
+                    const accent = arriving ? "#43dcff" : "#a486ff"
+                    const light = arriving ? "#c5fff3" : "#eedaff"
+                    const takeoff = 0.46
+                    const travel = arriving ? 1 - Math.pow(1 - phase, 3)
+                                            : Math.pow(Math.min(phase / takeoff, 1), 1.6)
+                    const head = arriving ? -8 + 104 * travel : 72 - 128 * travel
+                    const tail = head + (arriving ? -1 : 1) * (32 + 45 * Math.sin(Math.PI * phase))
+                    const fade = Math.min(1, phase * 14) * Math.pow(1 - phase, 0.76)
+
                     ctx.save()
                     ctx.translate(width / 2, height / 2)
                     ctx.rotate(point.angle)
                     ctx.lineCap = "round"
 
-                    // A broad, tinted sweep and two finer wavefronts.
-                    ctx.scale(0.58, 1)
-                    const radius = 7 + 79 * spread
-                    const palette = arriving ? ["#58d9ff", "#c3fff1"] : ["#a785ff", "#e7d6ff"]
-                    for (const [offset, weight, alpha, color] of [
-                        [0, 17, 0.18, palette[0]],
-                        [0, 5, 0.55, palette[0]],
-                        [12, 1.6, 0.85, palette[1]]
-                    ]) {
-                        ctx.globalAlpha = strength * alpha
-                        ctx.strokeStyle = color
+                    // The bright core and its tapered trail move along the edge normal.
+                    const streak = ctx.createLinearGradient(tail, 0, head, 0)
+                    streak.addColorStop(0, "transparent")
+                    streak.addColorStop(0.55, accent)
+                    streak.addColorStop(0.88, light)
+                    streak.addColorStop(1, "#ffffff")
+                    for (const [weight, opacity] of [[20, 0.13], [8, 0.36], [2.2, 0.98]]) {
+                        ctx.globalAlpha = fade * opacity
+                        ctx.strokeStyle = streak
                         ctx.lineWidth = weight
                         ctx.beginPath()
-                        ctx.arc(0, 0, Math.max(3, radius - offset), -1.48, 1.48)
+                        ctx.moveTo(tail, 0)
+                        ctx.lineTo(head, 0)
+                        ctx.stroke()
+                    }
+
+                    const core = ctx.createRadialGradient(head, 0, 0, head, 0, 16)
+                    core.addColorStop(0, "#ffffff")
+                    core.addColorStop(0.19, light)
+                    core.addColorStop(0.45, accent)
+                    core.addColorStop(1, "transparent")
+                    ctx.globalAlpha = fade
+                    ctx.fillStyle = core
+                    ctx.fillRect(head - 16, -16, 32, 32)
+
+                    // Contact lights the seam briefly, then scatters along the edge.
+                    const contact = arriving ? 0.03 : takeoff * Math.pow(72 / 128, 1 / 1.6)
+                    const flash = Math.max(0, 1 - Math.abs(phase - contact) * 7)
+                    const span = 17 + 33 * flash
+                    const seam = ctx.createLinearGradient(0, -span, 0, span)
+                    seam.addColorStop(0, "transparent")
+                    seam.addColorStop(0.5, light)
+                    seam.addColorStop(1, "transparent")
+                    ctx.globalAlpha = flash * 0.9
+                    ctx.fillStyle = seam
+                    ctx.fillRect(0, -span, 2.5, span * 2)
+
+                    ctx.strokeStyle = accent
+                    for (let i = 0; i < 9; ++i) {
+                        const age = phase - contact - i * 0.018
+                        if (age < 0 || age > 0.46)
+                            continue
+
+                        const side = i % 2 === 0 ? 1 : -1
+                        const x = 4 + age * (26 + i * 9)
+                        const y = side * (3 + age * (44 + (i * 19) % 105))
+                        ctx.globalAlpha = 0.8 * (1 - age / 0.46)
+                        ctx.lineWidth = i % 3 === 0 ? 2 : 1.1
+                        ctx.beginPath()
+                        ctx.moveTo(x, y)
+                        ctx.lineTo(x + 3 + age * 13, y + side * 3)
                         ctx.stroke()
                     }
                     ctx.restore()

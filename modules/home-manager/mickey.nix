@@ -28,6 +28,7 @@ in
     enable = lib.mkEnableOption "Mickey keyboard and mouse sharing";
     package = lib.mkPackageOption pkgs "mickey" { };
     handoffAnimation = lib.mkEnableOption "Mickey edge handoff animations on Wayland";
+    hideSenderCursor = lib.mkEnableOption "hiding the sender cursor on Hyprland while Mickey forwards input";
 
     settings = lib.mkOption {
       inherit (toml) type;
@@ -87,38 +88,56 @@ in
 
     home.packages = [ cfg.package ];
 
-    systemd.user.services.mickey-handoff = lib.mkIf cfg.handoffAnimation {
-      Unit = {
-        Description = "Mickey edge handoff animation";
-        PartOf = [ "graphical-session.target" ];
-        After = [ "graphical-session.target" ];
+    systemd.user.services = {
+      mickey-cursor = lib.mkIf cfg.hideSenderCursor {
+        Unit = {
+          Description = "Hide the Hyprland cursor while Mickey forwards input";
+          PartOf = [ "graphical-session.target" ];
+          After = [ "graphical-session.target" ];
+        };
+
+        Service = {
+          ExecStart = "${lib.getExe pkgs.python3} ${./scripts/mickey-cursor.py}";
+          ExecStopPost = "${lib.getExe pkgs.python3} ${./scripts/mickey-cursor.py} --restore";
+          Restart = "on-failure";
+        };
+
+        Install.WantedBy = [ "graphical-session.target" ];
       };
 
-      Service = {
-        ExecStart = "${lib.getExe pkgs.quickshell} -p ${./mickey-handoff.qml}";
-        Restart = "on-failure";
+      mickey-handoff = lib.mkIf cfg.handoffAnimation {
+        Unit = {
+          Description = "Mickey edge handoff animation";
+          PartOf = [ "graphical-session.target" ];
+          After = [ "graphical-session.target" ];
+        };
+
+        Service = {
+          ExecStart = "${lib.getExe pkgs.quickshell} -p ${./mickey-handoff.qml}";
+          Restart = "on-failure";
+        };
+
+        Install.WantedBy = [ "graphical-session.target" ];
       };
 
-      Install.WantedBy = [ "graphical-session.target" ];
-    };
+      mickey = {
+        Unit = {
+          Description = "Mickey keyboard and mouse sharing";
+          PartOf = [ "graphical-session.target" ];
+          After = [ "graphical-session.target" ];
+        };
 
-    systemd.user.services.mickey = {
-      Unit = {
-        Description = "Mickey keyboard and mouse sharing";
-        PartOf = [ "graphical-session.target" ];
-        After = [ "graphical-session.target" ];
+        Service = {
+          ExecStartPre = "${lib.getExe python} ${./scripts/mickey-config.py} ${lib.escapeShellArg configFile} ${managedSettings}";
+          ExecStart = "${lib.getExe cfg.package} run";
+          Environment = lib.optional cfg.handoffAnimation "MICKEY_HANDOFF_FILE=%t/mickey-handoff.json";
+          Restart = "on-failure";
+          RestartSec = 3;
+          TimeoutStopSec = 10;
+        };
+
+        Install.WantedBy = [ "graphical-session.target" ];
       };
-
-      Service = {
-        ExecStartPre = "${lib.getExe python} ${./scripts/mickey-config.py} ${lib.escapeShellArg configFile} ${managedSettings}";
-        ExecStart = "${lib.getExe cfg.package} run";
-        Environment = lib.optional cfg.handoffAnimation "MICKEY_HANDOFF_FILE=%t/mickey-handoff.json";
-        Restart = "on-failure";
-        RestartSec = 3;
-        TimeoutStopSec = 10;
-      };
-
-      Install.WantedBy = [ "graphical-session.target" ];
     };
   };
 }
