@@ -1,0 +1,176 @@
+--- a/crates/mickey-config/src/interface.rs
++++ b/crates/mickey-config/src/interface.rs
+@@ -15,6 +15,9 @@
+     /// Show local visual feedback when crossing a screen edge.
+     #[serde(default)]
+     pub handoff_animation: bool,
++    /// Animation to play on both sides of a local edge crossing.
++    #[serde(default = "default_handoff_style")]
++    pub handoff_animation_style: String,
+     /// PC names in the order the switcher shows them; PCs left out follow,
+     /// as the layout places them. Empty: all as the layout places them.
+     #[serde(default)]
+@@ -40,12 +43,17 @@
+     pub language: String,
+ }
+ 
++fn default_handoff_style() -> String {
++    "streak".into()
++}
++
+ impl Default for Interface {
+     fn default() -> Interface {
+         Interface {
+             switcher_position: default_switcher_position(),
+             switcher_vertical: false,
+             handoff_animation: false,
++            handoff_animation_style: default_handoff_style(),
+             switcher_order: Vec::new(),
+             bring_position: default_bring_position(),
+             bring_over_gb: default_bring_over_gb(),
+--- a/crates/mickey-ui/src/settings/form.rs
++++ b/crates/mickey-ui/src/settings/form.rs
+@@ -46,6 +46,7 @@
+     /// The switcher as a column.
+     pub vertical: bool,
+     pub handoff_animation: bool,
++    pub handoff_animation_style: String,
+     /// Keep a clipboard history here: always, never (another manager keeps
+     /// it), or `None`, only when no other manager runs.
+     pub history: Option<bool>,
+@@ -114,6 +115,7 @@
+             clean_below_percent: config.interface.clean_below_percent,
+             vertical: config.interface.switcher_vertical,
+             handoff_animation: config.interface.handoff_animation,
++            handoff_animation_style: config.interface.handoff_animation_style.clone(),
+             history: config.clipboard.history,
+             share: config.clipboard.share,
+             warn_received: config.clipboard.warn_received,
+@@ -209,6 +211,12 @@
+         if self.handoff_animation {
+             out += "handoff_animation = true\n";
+         }
++        if self.handoff_animation_style != "streak" {
++            out += &format!(
++                "handoff_animation_style = {}\n",
++                config::toml_string(&self.handoff_animation_style)
++            );
++        }
+         if self.vertical {
+             out += "switcher_vertical = true\n";
+         }
+@@ -328,7 +336,9 @@
+         .unwrap();
+         let mut form = Form::from_config(&original);
+         assert!(!form.handoff_animation);
++        assert_eq!(form.handoff_animation_style, "streak");
+         form.handoff_animation = true;
++        form.handoff_animation_style = "edge-pulse".into();
+         let reread = config::parse(&form.to_toml()).unwrap();
+         assert_eq!(Form::from_config(&reread), form);
+         assert!(
+--- a/crates/mickey-ui/src/settings/general.rs
++++ b/crates/mickey-ui/src/settings/general.rs
+@@ -163,10 +163,41 @@
+         ui.add_space(8.0);
+         ui.checkbox(&mut form.vertical, i18n::t("general.column"));
+         #[cfg(target_os = "linux")]
+-        ui.checkbox(
+-            &mut form.handoff_animation,
+-            i18n::t("general.handoff_animation"),
+-        );
++        {
++            ui.checkbox(
++                &mut form.handoff_animation,
++                i18n::t("general.handoff_animation"),
++            );
++            if form.handoff_animation {
++                let styles = [
++                    ("streak", "Streak"),
++                    ("fold", "Paper Fold"),
++                    ("wave", "Edge Ripple"),
++                    ("prism", "Prism Split"),
++                    ("edge-pulse", "Edge Pulse"),
++                    ("comet", "Courier"),
++                    ("wormhole", "Wormhole"),
++                    ("echo", "Afterimage"),
++                    ("scan", "Scanline"),
++                ];
++                let selected = styles
++                    .iter()
++                    .find(|(id, _)| *id == form.handoff_animation_style)
++                    .map_or("Streak", |(_, label)| *label);
++                egui::ComboBox::from_label(i18n::t("general.handoff_animation_style"))
++                    .selected_text(selected)
++                    .show_ui(ui, |ui| {
++                        for (id, label) in styles {
++                            if ui
++                                .selectable_label(form.handoff_animation_style == id, label)
++                                .clicked()
++                            {
++                                form.handoff_animation_style = id.into();
++                            }
++                        }
++                    });
++            }
++        }
+         ui.add_space(8.0);
+         switcher_order(ui, form);
+         ui.add_space(12.0);
+--- a/crates/mickey-config/locales/en.toml
++++ b/crates/mickey-config/locales/en.toml
+@@ -131,6 +131,7 @@
+ clean_hint = "Mickey never deletes what you brought: before bringing more, it only says what is there and how old it is."
+ column = "Show the PCs in a column"
+ handoff_animation = "Show screen-edge handoff animations"
++handoff_animation_style = "Handoff animation style"
+ order_in_switcher = "Order in the switcher"
+ like_layout = "Like the layout"
+ as_layout = "(as the layout places them)"
+--- a/crates/mickey-config/locales/pt-BR.toml
++++ b/crates/mickey-config/locales/pt-BR.toml
+@@ -129,6 +129,7 @@
+ clean_hint = "O Mickey nunca apaga o que você trouxe: antes de trazer mais, só mostra o que há lá e há quanto tempo."
+ column = "Mostrar os PCs em coluna"
+ handoff_animation = "Mostrar animações ao passar para outro PC"
++handoff_animation_style = "Estilo da animação de transição"
+ order_in_switcher = "Ordem no seletor"
+ like_layout = "Igual à disposição"
+ as_layout = "(como a disposição os coloca)"
+--- a/crates/mickey-config/locales/pt-PT.toml
++++ b/crates/mickey-config/locales/pt-PT.toml
+@@ -129,6 +129,7 @@
+ clean_hint = "O Mickey nunca apaga o que trouxe: antes de trazer mais, só mostra o que lá está e há quanto tempo."
+ column = "Mostrar os computadores em coluna"
+ handoff_animation = "Mostrar animações ao passar para outro computador"
++handoff_animation_style = "Estilo da animação de transição"
+ order_in_switcher = "Ordem no comutador"
+ like_layout = "Como a disposição"
+ as_layout = "(como a disposição os coloca)"
+--- a/crates/mickey/src/handoff.rs
++++ b/crates/mickey/src/handoff.rs
+@@ -21,18 +21,18 @@
+         for (sequence, (kind, (x, y))) in receiver.into_iter().enumerate() {
+             // Read the setting here so a Settings save takes effect on the
+             // next crossing without waiting for disk I/O on the input path.
+-            if !mickey_config::Config::load()
+-                .ok()
+-                .flatten()
+-                .is_some_and(|config| config.interface.handoff_animation)
+-            {
++            let Some(config) = mickey_config::Config::load().ok().flatten() else {
++                continue;
++            };
++            if !config.interface.handoff_animation {
+                 continue;
+             }
++            let style = config.interface.handoff_animation_style;
+             let time = SystemTime::now()
+                 .duration_since(UNIX_EPOCH)
+                 .unwrap_or_default()
+                 .as_millis();
+-            let value = serde_json::json!({ "kind": kind, "x": x, "y": y,
++            let value = serde_json::json!({ "kind": kind, "style": style, "x": x, "y": y,
+                 "time": time, "sequence": sequence });
+             if std::fs::write(&temporary, value.to_string()).is_ok() {
+                 let _ = std::fs::rename(&temporary, &path);
