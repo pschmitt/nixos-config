@@ -1,0 +1,146 @@
+diff --git a/crates/mickey/src/handoff.rs b/crates/mickey/src/handoff.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/mickey/src/handoff.rs
+@@ -0,0 +1,39 @@
++//! Optional desktop feedback. The capture and transport loops only enqueue
++//! coordinates; slow or unavailable feedback never holds up the handoff.
++use std::sync::OnceLock;
++use std::sync::mpsc::{self, SyncSender};
++use std::time::{SystemTime, UNIX_EPOCH};
++
++type Event = (&'static str, (i32, i32));
++static EVENTS: OnceLock<SyncSender<Event>> = OnceLock::new();
++
++pub fn start() {
++    let Some(path) = std::env::var_os("MICKEY_HANDOFF_FILE") else {
++        return;
++    };
++    let path = std::path::PathBuf::from(path);
++    let temporary = path.with_extension(format!("{}.tmp", std::process::id()));
++    let (sender, receiver) = mpsc::sync_channel::<Event>(4);
++    if EVENTS.set(sender).is_err() {
++        return;
++    }
++    crate::threads::spawn("handoff effect", move || {
++        for (sequence, (kind, (x, y))) in receiver.into_iter().enumerate() {
++            let time = SystemTime::now()
++                .duration_since(UNIX_EPOCH)
++                .unwrap_or_default()
++                .as_millis();
++            let value = serde_json::json!({ "kind": kind, "x": x, "y": y,
++                "time": time, "sequence": sequence });
++            if std::fs::write(&temporary, value.to_string()).is_ok() {
++                let _ = std::fs::rename(&temporary, &path);
++            }
++        }
++    });
++}
++
++pub fn show(kind: &'static str, point: (i32, i32)) {
++    if let Some(events) = EVENTS.get() {
++        let _ = events.try_send((kind, point));
++    }
++}
+diff --git a/crates/mickey/src/main.rs b/crates/mickey/src/main.rs
+--- a/crates/mickey/src/main.rs
++++ b/crates/mickey/src/main.rs
+@@ -12,6 +12,7 @@
+ mod fs;
+ #[cfg(test)]
+ mod fuzz;
++mod handoff;
+ mod hex;
+ mod input;
+ mod monitors;
+diff --git a/crates/mickey/src/run.rs b/crates/mickey/src/run.rs
+--- a/crates/mickey/src/run.rs
++++ b/crates/mickey/src/run.rs
+@@ -270,7 +270,10 @@
+             clipboard::Keeper::start().ok(),
+             None,
+         ),
+-        Command::Run => run_from_config(),
++        Command::Run => {
++            crate::handoff::start();
++            run_from_config()
++        }
+         Command::Monitors => {
+             for (i, m) in monitors::this_pc()?.iter().enumerate() {
+                 println!("monitor {i}: {}x{} at {},{}", m.width, m.height, m.x, m.y);
+diff --git a/crates/mickey/src/source/mod.rs b/crates/mickey/src/source/mod.rs
+--- a/crates/mickey/src/source/mod.rs
++++ b/crates/mickey/src/source/mod.rs
+@@ -1130,16 +1130,17 @@
+             println!("{}", mickey_config::i18n::t("messages.quitting"));
+             return Ok(());
+         }
+-        if let Some((x, y)) = home_at
+-            && let Err(err) = emit::place(x, y)
+-        {
+-            eprintln!(
+-                "{}",
+-                mickey_config::i18n::tf(
+-                    "messages.cannot_place_cursor",
+-                    &[("err", &err.to_string())]
+-                )
+-            );
++        if let Some((x, y)) = home_at {
++            match emit::place(x, y) {
++                Ok(()) => crate::handoff::show("arrive", (x, y)),
++                Err(err) => eprintln!(
++                    "{}",
++                    mickey_config::i18n::tf(
++                        "messages.cannot_place_cursor",
++                        &[("err", &err.to_string())]
++                    )
++                ),
++            }
+         }
+         if let Some(delta) = pushed
+             && edges_matter(&positions, &peers)
+@@ -1161,16 +1162,17 @@
+         // for the peers, sent the cursor onto the wrong peer (moving fast
+         // from one laptop to the other landed on the first one's edge).
+         // So a hop wins, and a late answer is dropped.
+-        let crossed = hop.or_else(|| {
+-            off.filter(|_| focus_machine.focus() == Focus::Local)
+-                .and_then(|off| edge_crossed(&positions, &peers, off, &input))
+-        });
++        let departure = off.filter(|_| hop.is_none() && focus_machine.focus() == Focus::Local);
++        let crossed =
++            hop.or_else(|| departure.and_then(|off| edge_crossed(&positions, &peers, off, &input)));
+         if let Some((index, (x, y))) = crossed {
+             focus_machine.go_to(Some(index), &online);
+-            if let Some(link) = &mut peers[index].link
+-                && link.send(&Message::Enter { x, y }).is_err()
+-            {
+-                lost.push(index);
++            if let Some(link) = &mut peers[index].link {
++                if link.send(&Message::Enter { x, y }).is_err() {
++                    lost.push(index);
++                } else if let Some(point) = departure {
++                    crate::handoff::show("depart", point);
++                }
+             }
+         }
+         if let Some(reply) = asked_for_peers {
+diff --git a/crates/mickey/src/net/transport.rs b/crates/mickey/src/net/transport.rs
+--- a/crates/mickey/src/net/transport.rs
++++ b/crates/mickey/src/net/transport.rs
+@@ -342,9 +342,14 @@
+                 // focus straight back through the edge it left by.
+                 let _ = edge.answer();
+                 edge_check = edges::Throttle::new();
+-                act(Effect::Place { x, y });
++                if act(Effect::Place { x, y }) {
++                    crate::handoff::show("arrive", (x, y));
++                }
+             }
+             Message::Focus { here } => {
++                if !here && let Some(point) = left.take() {
++                    crate::handoff::show("depart", point);
++                }
+                 act(Effect::Controlled(here));
+             }
+             Message::Arrange { x, y } => {
