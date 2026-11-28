@@ -68,7 +68,7 @@ let
   # renovate: datasource=docker depName=postgres
   postgresVersion = "17.5";
   # renovate: datasource=docker depName=ghcr.io/endurain-project/endurain
-  endurainVersion = "v0.21.0";
+  endurainVersion = "v0.21.2";
 
   runtimePkg =
     if containerBackend == "docker" then
