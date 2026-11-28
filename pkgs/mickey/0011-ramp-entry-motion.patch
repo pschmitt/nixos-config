@@ -1,0 +1,50 @@
+--- a/crates/mickey/src/net/transport.rs
++++ b/crates/mickey/src/net/transport.rs
+@@ -217,14 +217,15 @@
+ 
+ /// The receiver can get several fresh reports at once while the compositor
+ /// is showing the cursor at the entry edge. Bound their total travel for
+-/// the first frame without delaying normal motion or replaying the excess.
++/// the first frame, then ease back to full motion without replaying the excess.
+ struct EntryMotion {
+     started: Instant,
+     used: i64,
+ }
+ 
+ impl EntryMotion {
+-    const WINDOW: Duration = Duration::from_millis(20);
++    const RAMP_START: Duration = Duration::from_millis(20);
++    const WINDOW: Duration = Duration::from_millis(50);
+ 
+     fn new(now: Instant) -> Self {
+         Self {
+@@ -244,10 +245,14 @@
+         if distance <= budget {
+             return (dx, dy);
+         }
+-        (
+-            (i64::from(dx) * budget / distance) as i32,
+-            (i64::from(dy) * budget / distance) as i32,
+-        )
++        let ramp = elapsed.saturating_sub(Self::RAMP_START).as_micros() as i64;
++        let duration = (Self::WINDOW - Self::RAMP_START).as_micros() as i64;
++        let scale = |value: i32| {
++            let value = i64::from(value);
++            let limited = value * budget / distance;
++            (limited + (value - limited) * ramp / duration) as i32
++        };
++        (scale(dx), scale(dy))
+     }
+ }
+ 
+@@ -471,6 +476,10 @@
+             entry.limit(now + Duration::from_millis(5), 100, -50),
+             (10, -5)
+         );
++        let start = entry.limit(now + EntryMotion::RAMP_START, 100, -50);
++        let middle = entry.limit(now + Duration::from_millis(35), 100, -50);
++        assert_eq!(start, (30, -15));
++        assert_eq!(middle, (65, -32));
+         assert_eq!(entry.limit(now + EntryMotion::WINDOW, 100, -50), (100, -50));
+     }
+ 
