@@ -5,6 +5,7 @@
   pkg-config,
   makeWrapper,
   libpulseaudio,
+  udev,
   libglvnd,
   wayland,
   libxkbcommon,
@@ -46,6 +47,7 @@ rustPlatform.buildRustPackage {
   ];
   buildInputs = [
     libpulseaudio
+    udev
     wayland
   ];
 

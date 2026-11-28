@@ -1,3 +1,290 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -26,7 +26,7 @@
+           rustup default stable
+       - name: PulseAudio's headers (shared audio, PRD 0012)
+         if: runner.os == 'Linux'
+-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libpulse-dev
++        run: sudo apt-get update -qq && sudo apt-get install -y -qq libpulse-dev libudev-dev
+       - run: cargo fmt --check
+       # Hard rule 6: `unsafe` only in crates/mickey/src/platform/.
+       - name: unsafe only in platform/
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -24,7 +24,7 @@
+     container: ubuntu:22.04
+     steps:
+       - name: Tools the container lacks
+-        run: apt-get update -qq && apt-get install -y -qq curl ca-certificates build-essential git binutils python3 pkg-config libpulse-dev rpm >/dev/null
++        run: apt-get update -qq && apt-get install -y -qq curl ca-certificates build-essential git binutils python3 pkg-config libpulse-dev libudev-dev rpm >/dev/null
+       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+         with:
+           persist-credentials: false
+diff --git a/Cargo.lock b/Cargo.lock
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1441,6 +1441,12 @@
+ 
+ [[package]]
+ name = "hermit-abi"
++version = "0.3.9"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
++
++[[package]]
++name = "hermit-abi"
+ version = "0.5.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "e17592d60ebacc7d5e169f4663c5f84f9161cc90328abcfe8456f41e4dfcb284"
+@@ -1491,6 +1497,17 @@
+ checksum = "879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01"
+ dependencies = [
+  "generic-array",
++]
++
++[[package]]
++name = "io-lifetimes"
++version = "1.0.11"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "eae7b9aee968036d54dce06cebaefd919e4472e753296daccd6d344e3e2df0c2"
++dependencies = [
++ "hermit-abi 0.3.9",
++ "libc",
++ "windows-sys 0.48.0",
+ ]
+ 
+ [[package]]
+@@ -1705,6 +1722,16 @@
+  "libc",
+  "plain",
+  "redox_syscall 0.9.5",
++]
++
++[[package]]
++name = "libudev-sys"
++version = "0.1.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "3c8469b4a23b962c1396b9b451dda50ef5b283e8dd309d69033475fa9b334324"
++dependencies = [
++ "libc",
++ "pkg-config",
+ ]
+ 
+ [[package]]
+@@ -1791,6 +1818,7 @@
+  "serde_json",
+  "sha2 0.11.1",
+  "snow",
++ "udev",
+  "wasapi",
+  "wayland-client",
+  "wayland-protocols",
+@@ -2454,7 +2482,7 @@
+ dependencies = [
+  "cfg-if",
+  "concurrent-queue",
+- "hermit-abi",
++ "hermit-abi 0.5.3",
+  "pin-project-lite",
+  "rustix 1.1.6",
+  "windows-sys 0.61.2",
+@@ -3172,6 +3200,18 @@
+ version = "1.20.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
++
++[[package]]
++name = "udev"
++version = "0.9.3"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "af4e37e9ea4401fc841ff54b9ddfc9be1079b1e89434c1a6a865dd68980f7e9f"
++dependencies = [
++ "io-lifetimes",
++ "libc",
++ "libudev-sys",
++ "pkg-config",
++]
+ 
+ [[package]]
+ name = "uds_windows"
+@@ -3770,11 +3810,20 @@
+ 
+ [[package]]
+ name = "windows-sys"
++version = "0.48.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "677d2418bec65e3338edb076e806bc1ec15693c5d0104683f2efe857f61056a9"
++dependencies = [
++ "windows-targets 0.48.5",
++]
++
++[[package]]
++name = "windows-sys"
+ version = "0.52.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
+ dependencies = [
+- "windows-targets",
++ "windows-targets 0.52.6",
+ ]
+ 
+ [[package]]
+@@ -3783,7 +3832,7 @@
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
+ dependencies = [
+- "windows-targets",
++ "windows-targets 0.52.6",
+ ]
+ 
+ [[package]]
+@@ -3797,18 +3846,33 @@
+ 
+ [[package]]
+ name = "windows-targets"
++version = "0.48.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "9a2fa6e2155d7247be68c096456083145c183cbbbc2764150dda45a87197940c"
++dependencies = [
++ "windows_aarch64_gnullvm 0.48.5",
++ "windows_aarch64_msvc 0.48.5",
++ "windows_i686_gnu 0.48.5",
++ "windows_i686_msvc 0.48.5",
++ "windows_x86_64_gnu 0.48.5",
++ "windows_x86_64_gnullvm 0.48.5",
++ "windows_x86_64_msvc 0.48.5",
++]
++
++[[package]]
++name = "windows-targets"
+ version = "0.52.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "9b724f72796e036ab90c1021d4780d4d3d648aca59e491e6b98e725b84e99973"
+ dependencies = [
+- "windows_aarch64_gnullvm",
+- "windows_aarch64_msvc",
+- "windows_i686_gnu",
++ "windows_aarch64_gnullvm 0.52.6",
++ "windows_aarch64_msvc 0.52.6",
++ "windows_i686_gnu 0.52.6",
+  "windows_i686_gnullvm",
+- "windows_i686_msvc",
+- "windows_x86_64_gnu",
+- "windows_x86_64_gnullvm",
+- "windows_x86_64_msvc",
++ "windows_i686_msvc 0.52.6",
++ "windows_x86_64_gnu 0.52.6",
++ "windows_x86_64_gnullvm 0.52.6",
++ "windows_x86_64_msvc 0.52.6",
+ ]
+ 
+ [[package]]
+@@ -3822,9 +3886,21 @@
+ 
+ [[package]]
+ name = "windows_aarch64_gnullvm"
++version = "0.48.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "2b38e32f0abccf9987a4e3079dfb67dcd799fb61361e53e2882c3cbaf0d905d8"
++
++[[package]]
++name = "windows_aarch64_gnullvm"
+ version = "0.52.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "32a4622180e7a0ec044bb555404c800bc9fd9ec262ec147edd5989ccd0c02cd3"
++
++[[package]]
++name = "windows_aarch64_msvc"
++version = "0.48.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "dc35310971f3b2dbbf3f0690a219f40e2d9afcf64f9ab7cc1be722937c26b4bc"
+ 
+ [[package]]
+ name = "windows_aarch64_msvc"
+@@ -3834,6 +3910,12 @@
+ 
+ [[package]]
+ name = "windows_i686_gnu"
++version = "0.48.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "a75915e7def60c94dcef72200b9a8e58e5091744960da64ec734a6c6e9b3743e"
++
++[[package]]
++name = "windows_i686_gnu"
+ version = "0.52.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "8e9b5ad5ab802e97eb8e295ac6720e509ee4c243f69d781394014ebfe8bbfa0b"
+@@ -3846,9 +3928,21 @@
+ 
+ [[package]]
+ name = "windows_i686_msvc"
++version = "0.48.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "8f55c233f70c4b27f66c523580f78f1004e8b5a8b659e05a4eb49d4166cca406"
++
++[[package]]
++name = "windows_i686_msvc"
+ version = "0.52.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "240948bc05c5e7c6dabba28bf89d89ffce3e303022809e73deaefe4f6ec56c66"
++
++[[package]]
++name = "windows_x86_64_gnu"
++version = "0.48.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "53d40abd2583d23e4718fddf1ebec84dbff8381c07cae67ff7768bbf19c6718e"
+ 
+ [[package]]
+ name = "windows_x86_64_gnu"
+@@ -3858,9 +3952,21 @@
+ 
+ [[package]]
+ name = "windows_x86_64_gnullvm"
++version = "0.48.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "0b7b52767868a23d5bab768e390dc5f5c55825b6d30b86c844ff2dc7414044cc"
++
++[[package]]
++name = "windows_x86_64_gnullvm"
+ version = "0.52.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "24d5b23dc417412679681396f2b49f3de8c1473deb516bd34410872eff51ed0d"
++
++[[package]]
++name = "windows_x86_64_msvc"
++version = "0.48.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538"
+ 
+ [[package]]
+ name = "windows_x86_64_msvc"
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -427,7 +427,9 @@
+ 
+ Needs [Rust](https://rustup.rs), and on Linux PulseAudio's headers for
+ shared audio (`libpulse-dev` on Debian and Ubuntu, `pulseaudio-libs-devel`
+-on Fedora; Arch's `libpulse` has them). On Linux you can build both; the
++on Fedora; Arch's `libpulse` has them). Input hotplug also needs libudev
++headers (`libudev-dev` on Debian and Ubuntu, `systemd-devel` on Fedora,
++and `systemd-libs` on Arch). On Linux you can build both; the
+ Windows programs are cross-compiled:
+ 
+ ```sh
+diff --git a/crates/mickey/Cargo.toml b/crates/mickey/Cargo.toml
+--- a/crates/mickey/Cargo.toml
++++ b/crates/mickey/Cargo.toml
+@@ -57,6 +57,7 @@
+ # 0015), whose value differs between CPU architectures. Already in the
+ # tree through many crates.
+ libc = "0.2"
++udev = "0.9"
+ # Desktops other than Hyprland (PRD 0004): the RemoteDesktop portal
+ # (ashpd) and libei (reis, pure Rust). Both over async-io, already in the
+ # tree through ksni, so no tokio; ashpd's zbus 5 is ksni's too.
 diff --git a/crates/mickey/src/input/capture.rs b/crates/mickey/src/input/capture.rs
 --- a/crates/mickey/src/input/capture.rs
 +++ b/crates/mickey/src/input/capture.rs
@@ -289,17 +576,20 @@ diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
  use std::sync::mpsc::Sender;
  
  #[cfg(target_os = "linux")]
-@@ -37,18 +35,79 @@
+@@ -37,18 +35,84 @@
  mod linux {
      use super::*;
      use crate::input::capture;
 -    use crate::platform::linux::{Device, Grab};
 +    use crate::platform::linux::Grab;
 +    use crate::threads::LockAnyway;
++    use async_io::Async;
++    use futures_util::future::{Either, select};
      use mickey_config::i18n;
-+    use std::sync::{Arc, Mutex};
++    use std::io;
++    use std::os::unix::net::UnixStream;
++    use std::sync::{Arc, Mutex, OnceLock};
 +    use std::thread::JoinHandle;
-+    use std::time::Duration;
  
      pub struct Input {
 -        devices: Vec<capture::Found>,
@@ -309,6 +599,8 @@ diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
 -    /// the owner kept local (`forward = false` in `config.toml`) is not in
 -    /// the list: it keeps moving this PC's own cursor.
 +        running: Arc<()>,
++        // Closing this stream wakes the monitor even when no devices change.
++        hotplug_stop: OnceLock<UnixStream>,
 +        devices: Arc<Mutex<Devices>>,
 +    }
 +
@@ -377,7 +669,7 @@ diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
      }
  
      /// Where the cursor is: a question to Hyprland or the X server,
-@@ -65,7 +124,7 @@
+@@ -65,7 +129,7 @@
          /// may not read them. `touchpad` is the `[touchpad]` block of
          /// `config.toml`: its `forward = false` keeps a touchpad on this PC.
          pub fn open(touchpad: &config::Touchpad) -> Result<Input, String> {
@@ -386,7 +678,7 @@ diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
                  std::io::ErrorKind::PermissionDenied => i18n::t("capture.permission_denied").into(),
                  _ => i18n::tf("capture.cannot_list", &[("err", &err.to_string())]),
              })?;
-@@ -73,21 +132,14 @@
+@@ -73,21 +137,15 @@
                  return Err(i18n::t("capture.no_keyboard").into());
              }
              capture::set_forward(&mut devices, touchpad);
@@ -411,12 +703,13 @@ diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
 +            }
 +            Ok(Input {
 +                running: Arc::new(()),
++                hotplug_stop: OnceLock::new(),
 +                devices: Arc::new(Mutex::new(state)),
 +            })
          }
  
          pub fn start<T: From<InputEvent> + Send + 'static>(
-@@ -95,45 +147,97 @@
+@@ -95,46 +153,136 @@
              events: Sender<T>,
              touchpad: &config::Touchpad,
          ) -> Result<(), String> {
@@ -450,29 +743,34 @@ diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
 +                }
 +            };
 +            start_readers(&mut devices.lock_anyway(), &touchpad);
-+            let running = Arc::downgrade(&self.running);
++            let (stop, stopped) = UnixStream::pair().map_err(|err| err.to_string())?;
++            self.hotplug_stop
++                .set(stop)
++                .map_err(|_| "input hotplug monitor already started".to_string())?;
 +            crate::threads::spawn("input hotplug", move || {
-+                loop {
-+                    // Retry nodes whose permissions udev has not set yet.
-+                    std::thread::sleep(Duration::from_secs(1));
-+                    if running.strong_count() == 0 {
-+                        break;
-+                    }
++                let refresh = || {
 +                    let mut state = devices.lock_anyway();
 +                    state.remove_detached();
-+                    if let Ok(mut found) = capture::find_devices(|path| {
++                    match capture::find_devices(|path| {
 +                        state
 +                            .attached
 +                            .iter()
 +                            .any(|device| device.found.path == path)
 +                    }) {
-+                        capture::set_forward(&mut found, &touchpad);
-+                        for device in found {
-+                            // A new device is retried next scan if it cannot yet be grabbed.
-+                            let _ = state.add(device);
++                        Ok(mut found) => {
++                            capture::set_forward(&mut found, &touchpad);
++                            for device in found {
++                                if let Err(err) = state.add(device) {
++                                    eprintln!("mickey: cannot grab a new input device: {err}");
++                                }
++                            }
 +                        }
++                        Err(err) => eprintln!("mickey: cannot rescan input devices: {err}"),
 +                    }
 +                    start_readers(&mut state, &touchpad);
++                };
++                if let Err(err) = watch_devices(stopped, refresh) {
++                    eprintln!("mickey: input hotplug monitor stopped: {err}");
 +                }
 +            });
 +            Ok(())
@@ -539,14 +837,49 @@ diff --git a/crates/mickey/src/input/mod.rs b/crates/mickey/src/input/mod.rs
                  .collect::<Result<Vec<_>, _>>()
                  .map_err(|err| format!("cannot grab the input devices: {err}"))?;
 -            Ok(Grabbed { _grabs: grabs })
+-        }
 +            for (device, grab) in devices.attached.iter_mut().zip(grabs) {
 +                device.grab = grab;
 +            }
 +            devices.grabbed = true;
 +            Ok(Grabbed { input: self })
-         }
++        }
++    }
++
++    fn watch_devices(stopped: UnixStream, refresh: impl Fn()) -> io::Result<()> {
++        let stopped = Async::new(stopped)?;
++        // Subscribe before reconciling startup devices. Events queued during
++        // that scan are handled below, including permissions set by udev.
++        let monitor = Async::new(
++            udev::MonitorBuilder::new()?
++                .match_subsystem("input")?
++                .listen()?,
++        )?;
++        refresh();
++        async_io::block_on(async {
++            loop {
++                match select(
++                    std::pin::pin!(stopped.readable()),
++                    std::pin::pin!(monitor.readable()),
++                )
++                .await
++                {
++                    Either::Left((result, _)) => return result,
++                    Either::Right((result, _)) => result?,
++                }
++                // Drain the queue even after finding a matching event.
++                let mut changed = false;
++                for event in monitor.get_ref().iter() {
++                    changed |= event.sysname().as_encoded_bytes().starts_with(b"event");
++                }
++                if changed {
++                    refresh();
++                }
++            }
++        })
      }
  }
+ 
 diff --git a/crates/mickey/src/platform/linux.rs b/crates/mickey/src/platform/linux.rs
 --- a/crates/mickey/src/platform/linux.rs
 +++ b/crates/mickey/src/platform/linux.rs
@@ -596,3 +929,23 @@ diff --git a/crates/mickey/src/platform/linux.rs b/crates/mickey/src/platform/li
              eprintln!("mickey: failed to release the grab: {err}");
          }
      }
+diff --git a/packaging/deb-rpm/package.sh b/packaging/deb-rpm/package.sh
+--- a/packaging/deb-rpm/package.sh
++++ b/packaging/deb-rpm/package.sh
+@@ -46,7 +46,7 @@
+ Version: $version
+ Architecture: amd64
+ Maintainer: Eduardo Mello <102185386+EduardoMG12@users.noreply.github.com>
+-Depends: libc6 (>= 2.35), libpulse0
++Depends: libc6 (>= 2.35), libpulse0, libudev1
+ Section: utils
+ Priority: optional
+ Homepage: https://github.com/EduardoMG12/mickey
+@@ -72,6 +72,7 @@
+ URL: https://github.com/EduardoMG12/mickey
+ Requires: glibc >= 2.35
+ Requires: pulseaudio-libs
++Requires: libudev.so.1()(64bit)
+ AutoReqProv: no
+ 
+ %description
