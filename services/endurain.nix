@@ -15,8 +15,6 @@ let
   dataDir = "/srv/endurain";
   endurainDataDir = "${dataDir}/data/endurain/data";
   endurainLogsDir = "${dataDir}/data/endurain/logs";
-  endurainPostgresDir = "${dataDir}/data/psql";
-  endurainPgdataDir = "/var/lib/postgresql/data/pgdata";
 
   # Gadgetbridge activity export from the phone, synced in via Syncthing and
   # consumed by the Endurain ingest watcher. Syncthing mirrors the whole tree
@@ -61,12 +59,9 @@ let
 
   containerBackend = config.virtualisation.oci-containers.backend;
   endurainUnit = "${containerBackend}-endurain.service";
-  postgresUnit = "${containerBackend}-endurain-postgres.service";
 
   networkName = "endurain";
 
-  # renovate: datasource=docker depName=postgres
-  postgresVersion = "17.5";
   # renovate: datasource=docker depName=ghcr.io/endurain-project/endurain
   endurainVersion = "v0.21.2";
 
@@ -87,12 +82,18 @@ let
   '';
 in
 {
+  assertions = [
+    {
+      assertion = config.users.users.${config.mainUser.username}.uid == endurainUid;
+      message = "Endurain's container UID must match the host user in its PostgreSQL peer map.";
+    }
+  ];
+
   sops = {
     secrets = {
       "endurain/env" = config.sops.mkHostSecret {
         restartUnits = [
           endurainUnit
-          postgresUnit
         ];
       };
       # Endurain user login for the ingest service (username + password).
@@ -121,13 +122,13 @@ in
       "d ${dataDir}/data/endurain 0750 ${toString endurainUid} ${toString endurainGid} - -"
       "d ${endurainDataDir} 0750 ${toString endurainUid} ${toString endurainGid} - -"
       "d ${endurainLogsDir} 0750 ${toString endurainUid} ${toString endurainGid} - -"
-      "d ${endurainPostgresDir} 0700 999 999 - -"
       "d ${gadgetbridgeDir} 0750 syncthing syncthing - -"
     ];
 
     services = {
-      "${containerBackend}-endurain-postgres".preStart = ensureNetworkScript;
       "${containerBackend}-endurain" = {
+        requires = [ "postgresql.service" ];
+        after = [ "postgresql.service" ];
         serviceConfig.RuntimeDirectory = "endurain-proxy";
         preStart = ensureNetworkScript + ''
           set -o pipefail
@@ -198,29 +199,10 @@ in
   };
 
   virtualisation.oci-containers.containers = {
-    endurain-postgres = {
-      image = "docker.io/postgres:${postgresVersion}";
-      autoStart = true;
-      environment = {
-        POSTGRES_DB = dbName;
-        POSTGRES_USER = dbUser;
-        PGDATA = endurainPgdataDir;
-      };
-      environmentFiles = [
-        config.sops.secrets."endurain/env".path
-      ];
-      volumes = [
-        "${endurainPostgresDir}:/var/lib/postgresql/data"
-      ];
-      networks = [ networkName ];
-      extraOptions = [ "--network-alias=postgres" ];
-    };
-
     endurain = {
       image = "ghcr.io/endurain-project/endurain:${endurainVersion}";
       pull = "always";
       autoStart = true;
-      dependsOn = [ "endurain-postgres" ];
       environment = {
         ENDURAIN_HOST = "https://${endurainHost}";
         BEHIND_PROXY = "true";
@@ -228,7 +210,8 @@ in
 
         POSTGRES_DB = dbName;
         POSTGRES_USER = dbUser;
-        POSTGRES_HOST = "endurain-postgres";
+        POSTGRES_HOST = "/run/postgresql";
+        DB_HOST = "/run/postgresql";
         POSTGRES_PORT = "5432";
 
         REVERSE_GEO_PROVIDER = "geocode";
@@ -240,6 +223,7 @@ in
       volumes = [
         "${endurainDataDir}:/app/backend/data"
         "${endurainLogsDir}:/app/backend/logs"
+        "/run/postgresql:/run/postgresql:ro"
       ];
       ports = [
         "127.0.0.1:${toString endurainPort}:${toString endurainContainerPort}"
@@ -249,6 +233,20 @@ in
   };
 
   services = {
+    postgresql = {
+      enable = true;
+      ensureDatabases = [ dbName ];
+      ensureUsers = [
+        {
+          name = dbUser;
+          ensureDBOwnership = true;
+        }
+      ];
+      # The container runs as UID 1000, which is the main user on the host.
+      authentication = lib.mkBefore "local ${dbName} ${dbUser} peer map=endurain\n";
+      identMap = "endurain ${config.mainUser.username} ${dbUser}";
+    };
+
     # Receive Gadgetbridge exports from the phone. rofl-10 only receives; the
     # phone (p11) is authoritative. The matching device + Syncthing server
     # are configured in hosts/rofl-10/syncthing.nix.
