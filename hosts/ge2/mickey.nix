@@ -6,7 +6,7 @@
     programs.mickey = {
       enable = true;
       handoffAnimation = true;
-      hideSenderCursor = true;
+      awayCursorIndicator = true;
       peers.gk4 = {
         address = "gk4.${config.domains.vpn}:4242";
         position = [

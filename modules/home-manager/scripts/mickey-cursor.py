@@ -1,4 +1,4 @@
-"""Hide the Hyprland cursor while Mickey input is elsewhere."""
+"""Publish the parked pointer location while Mickey input is elsewhere."""
 
 import json
 import os
@@ -9,6 +9,7 @@ import time
 
 RUNTIME = Path(os.environ["XDG_RUNTIME_DIR"]) / "mickey"
 HIDDEN = RUNTIME / "cursor-hidden"
+INDICATOR = RUNTIME.parent / "mickey-away.json"
 
 
 def hyprland(request):
@@ -21,26 +22,29 @@ def hyprland(request):
             return response.read().strip()
 
 
-def set_invisible(invisible):
-    value = "true" if invisible else "false"
-    result = hyprland(f"eval hl.config({{ cursor = {{ invisible = {value} }} }})")
-    if result != "ok":
-        raise RuntimeError(f"Hyprland rejected cursor visibility change: {result}")
+def publish(position):
+    temporary = INDICATOR.with_name(f".{INDICATOR.name}.{os.getpid()}")
+    temporary.write_text(json.dumps(position))
+    temporary.replace(INDICATOR)
+
+
+def clear():
+    if INDICATOR.exists() and INDICATOR.read_text() != "null":
+        publish(None)
 
 
 def restore():
+    clear()
+    # Clear a hide left by the previous version if it exited uncleanly.
     if HIDDEN.exists():
-        set_invisible(False)
-        HIDDEN.unlink(missing_ok=True)
+        result = hyprland("eval hl.config({ cursor = { invisible = false } })")
+        if result == "ok":
+            HIDDEN.unlink(missing_ok=True)
 
 
-def hide():
-    if HIDDEN.exists() or json.loads(hyprland("j/getoption cursor:invisible"))["bool"]:
-        return
-    # Record ownership before changing the compositor so ExecStopPost can
-    # recover even if this process dies immediately after the request.
-    HIDDEN.touch()
-    set_invisible(True)
+def show_away():
+    x, y = map(int, hyprland("cursorpos").split(","))
+    publish({"x": x, "y": y})
 
 
 def follow():
@@ -55,16 +59,17 @@ def follow():
 
             try:
                 with connection.makefile("r", encoding="utf-8") as statuses:
+                    away = False
                     for status in statuses:
                         _, here, *_ = status.rstrip("\n").split("\t")
-                        if here == "elsewhere":
-                            hide()
-                        else:
-                            restore()
+                        now_away = here == "elsewhere"
+                        if now_away != away:
+                            (show_away if now_away else clear)()
+                            away = now_away
             except ConnectionError:
                 pass
             finally:
-                restore()
+                clear()
         time.sleep(0.5)
 
 

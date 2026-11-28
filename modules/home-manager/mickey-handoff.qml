@@ -7,6 +7,7 @@ ShellRoot {
     id: root
 
     property var handoff: null
+    property var away: null
     property real progress: 1
     property string lastEvent: ""
 
@@ -345,6 +346,28 @@ ShellRoot {
         }
     }
 
+    function locate(event) {
+        if (!event || !Number.isInteger(event.x) || !Number.isInteger(event.y))
+            return null
+        let nearest = null
+        let distance = Infinity
+        for (const screen of Quickshell.screens) {
+            const x = Math.max(0, Math.min(screen.width - 1, event.x - screen.x))
+            const y = Math.max(0, Math.min(screen.height - 1, event.y - screen.y))
+            const dx = event.x - screen.x - x
+            const dy = event.y - screen.y - y
+            const error = dx * dx + dy * dy
+            if (error < distance) {
+                distance = error
+                nearest = { "monitor": screen.name, "x": x, "y": y }
+                const edges = [x, screen.width - 1 - x, y, screen.height - 1 - y]
+                nearest.angle = [0, Math.PI, Math.PI / 2, -Math.PI / 2][edges.indexOf(Math.min(...edges))]
+            }
+        }
+
+        return nearest
+    }
+
     function show(event) {
         if ((event.kind !== "arrive" && event.kind !== "depart")
                 || !Number.isInteger(event.x) || !Number.isInteger(event.y)
@@ -356,23 +379,10 @@ ShellRoot {
             return
         lastEvent = key
 
-        let nearest = null
-        let distance = Infinity
-        for (const screen of Quickshell.screens) {
-            const x = Math.max(0, Math.min(screen.width - 1, event.x - screen.x))
-            const y = Math.max(0, Math.min(screen.height - 1, event.y - screen.y))
-            const dx = event.x - screen.x - x
-            const dy = event.y - screen.y - y
-            const error = dx * dx + dy * dy
-            if (error < distance) {
-                distance = error
-                nearest = { "monitor": screen.name, "x": x, "y": y, "kind": event.kind, "style": event.style }
-                const edges = [x, screen.width - 1 - x, y, screen.height - 1 - y]
-                nearest.angle = [0, Math.PI, Math.PI / 2, -Math.PI / 2][edges.indexOf(Math.min(...edges))]
-            }
-        }
-
+        const nearest = locate(event)
         if (nearest) {
+            nearest.kind = event.kind
+            nearest.style = event.style
             handoff = nearest
             pulse.restart()
         }
@@ -388,6 +398,20 @@ ShellRoot {
                 root.show(JSON.parse(text()))
             } catch (error) {
                 // The file may be empty before the first crossing.
+            }
+        }
+    }
+
+    FileView {
+        path: Quickshell.env("XDG_RUNTIME_DIR") + "/mickey-away.json"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                root.away = root.locate(JSON.parse(text()))
+            } catch (error) {
+                root.away = null
             }
         }
     }
@@ -510,6 +534,49 @@ ShellRoot {
                         ctx.stroke()
                     }
                     ctx.restore()
+                }
+            }
+        }
+    }
+
+    Variants {
+        model: Quickshell.screens
+
+        PanelWindow {
+            id: awayWindow
+            required property var modelData
+            readonly property var point: root.away
+            screen: modelData
+            visible: point?.monitor === modelData.name
+            implicitWidth: 28
+            implicitHeight: 19
+            anchors { top: true; left: true }
+            margins {
+                left: (point?.x ?? 0) > modelData.width - awayWindow.implicitWidth - 12
+                      ? Math.max(0, point.x - awayWindow.implicitWidth - 8)
+                      : (point?.x ?? 0) + 12
+                top: Math.max(0, Math.min(modelData.height - awayWindow.implicitHeight, (point?.y ?? 0) + 8))
+            }
+            exclusionMode: ExclusionMode.Ignore
+            color: "transparent"
+            mask: Region {}
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            WlrLayershell.namespace: "mickey-away-cursor"
+
+            Rectangle {
+                anchors.fill: parent
+                radius: height / 2
+                color: "#ec262239"
+                border.color: "#baa3e8"
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "zZ"
+                    color: "#f1e6ff"
+                    font.pixelSize: 11
+                    font.bold: true
                 }
             }
         }

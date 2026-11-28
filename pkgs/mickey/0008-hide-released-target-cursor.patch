@@ -4,7 +4,7 @@
          });
      }
      let mut in_control = InControl::default();
-+    let hide_cursor = std::env::var_os("MICKEY_HIDE_CURSOR").is_some();
++    let manage_cursor = std::env::var_os("MICKEY_MANAGE_CURSOR").is_some();
      // Where the keyboard was before it came where it is: what the bring
      // the clipboard hotkey takes the clipboard from (#437).
      let mut came_from: Option<usize> = None;
@@ -15,7 +15,7 @@
 +                // After a peer leaves, the first real local pointer event
 +                // returns visibility. Remote injection uses Mickey's own
 +                // virtual devices, which the capture readers already exclude.
-+                if hide_cursor
++                if manage_cursor
 +                    && !in_control.here()
 +                    && focus_machine.focus() == Focus::Local
 +                    && matches!(event, InputEvent::Motion { .. } | InputEvent::Button { .. })
@@ -31,7 +31,7 @@
          eprintln!("mickey: {err}; the source will not see this PC's monitors");
          Vec::new()
      });
-+    let hide_cursor = std::env::var_os("MICKEY_HIDE_CURSOR").is_some();
++    let manage_cursor = std::env::var_os("MICKEY_MANAGE_CURSOR").is_some();
      let output = |effect| {
          let mut emitter = emitter.lock_anyway();
          match effect {
@@ -44,7 +44,7 @@
 -                    emit::unpark();
 -                } else {
 -                    emit::park();
-+                if !hide_cursor {
++                if !manage_cursor {
 +                    if here {
 +                        emit::unpark();
 +                    } else {
