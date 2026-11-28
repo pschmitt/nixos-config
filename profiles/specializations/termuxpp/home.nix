@@ -216,6 +216,8 @@ in
       theme = "rounded";
       # Gboard's font on the Pixel; the system font elsewhere.
       font = "google-sans";
+      # Medium labels, as heavy as Gboard's.
+      font-weight = 500;
       # Full-height rows ("true" lowers them to three quarters, "custom" sets row-height in dp).
       compact = false;
       keys =
