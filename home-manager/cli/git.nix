@@ -34,6 +34,7 @@
           "jollyfin"
           "nyetbox"
           "stricknani"
+          "syncwich"
           "tagesschau"
           "termuxpp"
         ];
