@@ -275,6 +275,8 @@ in
               keycap
               // {
                 key = "|";
+                # A double tap types "/".
+                double-tap = "/";
                 # Long press opens a Gboard-style menu; slide to an item and lift.
                 menu = [
                   "~"
