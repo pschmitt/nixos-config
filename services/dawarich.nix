@@ -9,7 +9,7 @@ let
     "dawarich_dawarich"
   ];
   # renovate: datasource=docker depName=freikin/dawarich
-  dawarichVersion = "1.23.0";
+  dawarichVersion = "1.24.0";
   # renovate: datasource=docker depName=postgis/postgis
   postgisVersion = "17-3.5-alpine";
   # renovate: datasource=docker depName=redis
